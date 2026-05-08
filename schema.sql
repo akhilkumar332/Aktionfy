@@ -3,11 +3,21 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- Phase 2.1: Users Table
 CREATE TABLE users (
-    id TEXT PRIMARY KEY,
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     api_key TEXT UNIQUE NOT NULL,
     email TEXT,
+    password_hash TEXT,
+    role TEXT DEFAULT 'user' CHECK (role IN ('user', 'staff', 'admin')),
+    last_login TIMESTAMP WITH TIME ZONE,
     tier TEXT DEFAULT 'free' CHECK (tier IN ('free', 'plus', 'pro')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Management Portal Sessions
+CREATE TABLE web_sessions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
 
 -- Phase 2.3 & 3.1 & 3.2: Tasks Table with advanced fields
