@@ -56,6 +56,7 @@ func main() {
 		log.Fatalf("Unable to connect to Redis: %v", err)
 	}
 
+	globalRateLimiter.client = redisClient
 	GlobalSessionManager.Init(redisClient)
 
 	// 2. Initialize MCP Server

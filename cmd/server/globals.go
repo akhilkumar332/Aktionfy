@@ -11,7 +11,5 @@ var (
 	redisClient       *redis.Client
 	workerID          string
 	workerWG          sync.WaitGroup
-	globalRateLimiter = &rateLimiter{
-		users: make(map[string]*userRateLimit),
-	}
+	globalRateLimiter = &rateLimiter{}
 )
