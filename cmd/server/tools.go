@@ -86,7 +86,7 @@ func registerTools(s *server.MCPServer) {
 		}
 
 		// Calculate initial next_run
-		nextRun, err := calculateNextRun(triggerType, triggerConfig)
+		nextRun, err := calculateNextRun(triggerType, triggerConfig, time.Now().UTC())
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("invalid trigger configuration: %v", err)), nil
 		}
