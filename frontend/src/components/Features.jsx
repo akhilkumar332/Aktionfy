@@ -4,16 +4,22 @@ import { motion } from 'framer-motion';
 const Features = () => {
   const features = [
     {
+      title: 'Contextual Chaining',
+      description: 'Create multi-step AI pipelines. Completion of one task immediately triggers the next, automatically threading output context between executions.',
+      icon: Layers,
+      color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
+    },
+    {
+      title: 'Global Secret Vault',
+      description: 'Store API keys once and reuse them across all tasks. AES-256-GCM encrypted persistence ensures your credentials are never exposed.',
+      icon: Shield,
+      color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    },
+    {
       title: 'Persistent Scheduling',
       description: 'Durable task queues with sub-second precision. Even if the entire worker cluster restarts, your schedules resume exactly where they left off.',
       icon: Clock,
       color: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    },
-    {
-      title: 'Secure Secret Storage',
-      description: 'AES-256-GCM encrypted persistence for your sensitive API keys and credentials. Data is decrypted only in-memory during execution.',
-      icon: Shield,
-      color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
     },
     {
       title: 'Human-in-the-Loop',
@@ -32,12 +38,6 @@ const Features = () => {
       description: 'Built-in node reapers and dead letter queues. Failed tasks are automatically recovered, retried, or escalated based on custom policies.',
       icon: Repeat,
       color: 'bg-red-500/10 text-red-400 border-red-500/20',
-    },
-    {
-      title: 'Contextual Chaining',
-      description: 'Orchestrate multi-step AI actions where future tasks depend on the historical output of predecessors. Build truly complex AI workflows.',
-      icon: Layers,
-      color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
     },
   ];
 

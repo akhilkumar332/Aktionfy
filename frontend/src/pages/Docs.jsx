@@ -18,10 +18,11 @@ const Overview = () => (
         </p>
         <p className="mt-4 font-bold">Schedule MCP fills this gap by providing:</p>
         <ul className="list-disc pl-6 space-y-2 mt-4 text-slate-600">
-          <li><strong>Durable State:</strong> Tasks survive server restarts and client disconnections.</li>
-          <li><strong>Secure Persistence:</strong> AES-256-GCM encrypted storage for task secrets and API keys.</li>
+          <li><strong>Autonomous Pipelines:</strong> Sequential task chaining where completion triggers the next action.</li>
+          <li><strong>Secure Persistence:</strong> AES-256-GCM encrypted Global Secret Vault for centralized API key management.</li>
+          <li><strong>Prompt Injection:</strong> Dynamic resolution of <code>{`{{secrets.NAME}}`}</code> and parent context injection.</li>
           <li><strong>Human-in-the-Loop:</strong> Real-time approval workflows for sensitive automated actions.</li>
-          <li><strong>Autonomous Triggers:</strong> Cron-based and interval scheduling that runs 24/7.</li>
+          <li><strong>Durable State:</strong> Tasks survive server restarts and client disconnections.</li>
           <li><strong>Live Telemetry:</strong> Real-time status updates and log streaming powered by Redis.</li>
         </ul>
       </section>
@@ -29,13 +30,13 @@ const Overview = () => (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 not-prose">
         <div className="p-8 rounded-3xl bg-blue-50 border border-blue-100 shadow-sm">
           <Database className="text-blue-600 mb-4" size={32} />
-          <h3 className="font-bold text-xl text-blue-900 mb-2">High Scalability</h3>
-          <p className="text-blue-700/70 text-sm">Distributed orchestration via Redis Pub/Sub ensures linear scaling across nodes.</p>
+          <h3 className="font-bold text-xl text-blue-900 mb-2">Linear Scalability</h3>
+          <p className="text-blue-700/70 text-sm">Distributed orchestration via Redis Pub/Sub ensures performance remains constant across nodes.</p>
         </div>
-        <div className="p-8 rounded-3xl bg-amber-50 border border-amber-100 shadow-sm">
-          <Shield className="text-amber-600 mb-4" size={32} />
-          <h3 className="font-bold text-xl text-amber-900 mb-2">Zero-Trust Secrets</h3>
-          <p className="text-amber-700/70 text-sm">Your credentials are encrypted at-rest and only decrypted in-memory during execution.</p>
+        <div className="p-8 rounded-3xl bg-indigo-50 border border-indigo-100 shadow-sm">
+          <Layers className="text-indigo-600 mb-4" size={32} />
+          <h3 className="font-bold text-xl text-indigo-900 mb-2">Agentic Chaining</h3>
+          <p className="text-indigo-700/70 text-sm">Link tasks together to build complex, self-executing AI multi-step workflows.</p>
         </div>
       </div>
     </div>
@@ -193,6 +194,34 @@ const CoreConcepts = () => (
         </div>
 
         <div className="flex gap-8 group">
+          <div className="flex-shrink-0 w-12 h-12 bg-white border border-slate-200 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-500">
+            <Layers size={24} />
+          </div>
+          <div>
+            <h3 className="text-2xl font-bold text-ink-900 mb-2">Sequential Pipelines</h3>
+            <p className="text-slate-600 leading-relaxed">
+              Tasks can be chained together. When a parent task finishes, any dependent tasks flagged with 
+              <code>trigger_on_completion</code> are fired immediately. The parent task's LLM output is 
+              automatically injected into the child task's context, enabling complex multi-step workflows.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex gap-8 group">
+          <div className="flex-shrink-0 w-12 h-12 bg-white border border-slate-200 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-500">
+            <Shield size={24} />
+          </div>
+          <div>
+            <h3 className="text-2xl font-bold text-ink-900 mb-2">Secure Injection</h3>
+            <p className="text-slate-600 leading-relaxed">
+              Our <strong>Prompt Resolver</strong> securely handles credentials. When a task runs, any 
+              <code>{`{{secrets.NAME}}`}</code> tags in your prompt are replaced with decrypted values 
+              from the vault. This happens in-memory just milliseconds before the physical LLM call.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex gap-8 group">
           <div className="flex-shrink-0 w-12 h-12 bg-white border border-slate-200 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-accent-orange group-hover:text-white transition-colors duration-500">
             <Database size={24} />
           </div>
@@ -202,19 +231,6 @@ const CoreConcepts = () => (
               We use <code>FOR UPDATE SKIP LOCKED</code> at the database level. This allows multiple 
               parallel worker nodes to safely "claim" due tasks without ever double-triggering an 
               action, providing industry-standard consistency.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex gap-8 group">
-          <div className="flex-shrink-0 w-12 h-12 bg-white border border-slate-200 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-accent-orange group-hover:text-white transition-colors duration-500">
-            <Layers size={24} />
-          </div>
-          <div>
-            <h3 className="text-2xl font-bold text-ink-900 mb-2">Tiered Quotas</h3>
-            <p className="text-slate-600 leading-relaxed">
-              Resource management is built-in. Every API request is validated against a user's 
-              Plan Tier (Free, Plus, Pro) to ensure fair usage and system stability.
             </p>
           </div>
         </div>
@@ -246,7 +262,7 @@ const ApiReference = () => (
               <div className="grid grid-cols-2 gap-4 text-xs">
                 <div className="space-y-1">
                   <p className="font-bold text-slate-400">Arguments</p>
-                  <p className="font-mono text-slate-800">name (string), trigger_type (string), agent_prompt (string)</p>
+                  <p className="font-mono text-slate-800">name, trigger_type, agent_prompt, secrets (optional), requires_approval (bool)</p>
                 </div>
                 <div className="space-y-1 text-right">
                   <p className="font-bold text-slate-400">Trigger Types</p>
@@ -258,11 +274,31 @@ const ApiReference = () => (
 
           <div className="border border-slate-100 rounded-2xl overflow-hidden shadow-sm bg-white">
             <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+              <span className="font-mono font-bold text-ink-900">store_secret</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">V3 Tool</span>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-slate-600">Encrypts and stores a sensitive value in the Global Secret Vault.</p>
+            </div>
+          </div>
+
+          <div className="border border-slate-100 rounded-2xl overflow-hidden shadow-sm bg-white">
+            <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+              <span className="font-mono font-bold text-ink-900">list_secrets</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">V3 Tool</span>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-slate-600">Returns a Markdown table of names of stored secrets (never exposes values).</p>
+            </div>
+          </div>
+
+          <div className="border border-slate-100 rounded-2xl overflow-hidden shadow-sm bg-white">
+            <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
               <span className="font-mono font-bold text-ink-900">list_tasks</span>
               <span className="text-[10px] font-bold uppercase tracking-widest bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">Core Tool</span>
             </div>
             <div className="p-6">
-              <p className="text-sm text-slate-600">Returns a JSON array of all active and paused tasks for the authenticated user.</p>
+              <p className="text-sm text-slate-600">Returns a beautiful Markdown table and raw JSON of all active and paused tasks.</p>
             </div>
           </div>
         </div>
@@ -380,24 +416,24 @@ const SecurityDocs = () => (
       </header>
 
       <section className="grid grid-cols-1 md:grid-cols-2 gap-8 not-prose">
-        <div className="p-8 rounded-3xl bg-white border border-slate-200">
+        <div className="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm">
           <Shield size={32} className="text-emerald-500 mb-4" />
-          <h3 className="font-bold text-xl mb-2">Bcrypt Hashing</h3>
-          <p className="text-slate-500 text-sm">All passwords are hashed using Bcrypt with a minimum cost factor of 12 before touching the database.</p>
+          <h3 className="font-bold text-xl mb-2">Zero-Trust Vault</h3>
+          <p className="text-slate-500 text-sm">Task secrets are encrypted using AES-256-GCM at rest. We never store plain-text credentials; they are decrypted only in-memory during task execution.</p>
         </div>
-        <div className="p-8 rounded-3xl bg-white border border-slate-200">
+        <div className="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm">
           <Zap size={32} className="text-amber-500 mb-4" />
           <h3 className="font-bold text-xl mb-2">CSRF Protection</h3>
-          <p className="text-slate-500 text-sm">Every mutation request is protected by double-submit cookie tokens and strictly validated Origins.</p>
+          <p className="text-slate-500 text-sm">Every mutation request is protected by double-submit cookie tokens and strictly validated Origins, mitigating cross-site scripting risks.</p>
         </div>
       </section>
 
       <section>
-        <h2 className="text-2xl font-bold text-ink-900 mb-4">Session Isolation</h2>
+        <h2 className="text-2xl font-bold text-ink-900 mb-4">Identity & Session Isolation</h2>
         <p>
           We use **Database-backed Sessions** instead of simple JWTs. This allows for instant session revocation 
           (e.g., when a user logs out or rotates an API key). Session cookies are set with <code>HttpOnly</code>, 
-          <code>Secure</code>, and <code>SameSite=Lax</code> flags to mitigate XSS and CSRF risks.
+          <code>Secure</code>, and <code>SameSite=Lax</code> flags.
         </p>
       </section>
 
