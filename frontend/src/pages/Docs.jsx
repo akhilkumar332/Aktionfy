@@ -1,102 +1,406 @@
 import React from 'react';
 import DocumentationLayout from '../components/DocumentationLayout';
+import { Terminal, Shield, Zap, Globe, Layers, Settings, Database, Code } from 'lucide-react';
 
-const DevOverview = () => (
+const Overview = () => (
   <DocumentationLayout>
     <div className="space-y-12">
       <header>
-        <h1 className="text-4xl font-extrabold text-ink-900 mb-4 tracking-tighter">Documentation Overview</h1>
-        <p className="text-xl text-slate-500 font-medium">Welcome to the Schedule MCP developer documentation. Learn how to build persistent AI workflows with time-based triggers.</p>
+        <h1 className="text-4xl font-extrabold text-ink-900 mb-4 tracking-tighter">Overview</h1>
+        <p className="text-xl text-slate-500 font-medium text-balance">Schedule MCP is a production-grade orchestration engine that brings persistence and reliability to the Model Context Protocol ecosystem.</p>
       </header>
 
       <section>
-        <h2 className="text-2xl font-bold text-ink-900 mb-4">What is Schedule MCP?</h2>
+        <h2 className="text-2xl font-bold text-ink-900 mb-4">The Persistence Gap</h2>
         <p>
-          Schedule MCP is a high-performance orchestration layer designed to give Model Context Protocol (MCP) tools 
-          the ability to handle long-running and recurring tasks. Unlike standard MCP implementations which are 
-          session-based and transient, Schedule MCP provides a persistent state engine that ensures your tasks 
-          are executed even if your local client or server restarts.
+          Standard MCP implementations are inherently transient. Tools only exist while a session is active, 
+          and there is no native way to trigger actions based on wall-clock time. If your LLM needs to 
+          "remember" to perform a task in 4 hours, or every Monday at 9 AM, standard MCP fails.
         </p>
+        <p className="mt-4 font-bold">Schedule MCP fills this gap by providing:</p>
+        <ul className="list-disc pl-6 space-y-2 mt-4 text-slate-600">
+          <li><strong>Durable State:</strong> Tasks survive server restarts and client disconnections.</li>
+          <li><strong>Autonomous Triggers:</strong> Cron-based and interval scheduling that runs even when you're sleeping.</li>
+          <li><strong>Managed Context:</strong> Historical task outputs are preserved and passed to future executions.</li>
+        </ul>
       </section>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 not-prose">
-        <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm">
-          <h3 className="font-bold text-lg mb-2">Persistent Workflows</h3>
-          <p className="text-slate-500 text-sm">PostgreSQL-backed task queues with ACID compliance.</p>
+        <div className="p-8 rounded-3xl bg-blue-50 border border-blue-100 shadow-sm">
+          <Database className="text-blue-600 mb-4" size={32} />
+          <h3 className="font-bold text-xl text-blue-900 mb-2">ACID Compliant</h3>
+          <p className="text-blue-700/70 text-sm">Every task state change is backed by PostgreSQL transactions.</p>
         </div>
-        <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm">
-          <h3 className="font-bold text-lg mb-2">Distributed Execution</h3>
-          <p className="text-slate-500 text-sm">Scale horizontally across multiple nodes with Redis locking.</p>
+        <div className="p-8 rounded-3xl bg-amber-50 border border-amber-100 shadow-sm">
+          <Globe className="text-amber-600 mb-4" size={32} />
+          <h3 className="font-bold text-xl text-amber-900 mb-2">Node Resilient</h3>
+          <p className="text-amber-700/70 text-sm">Redis-backed locks ensure exactly-once execution across clusters.</p>
         </div>
       </div>
     </div>
   </DocumentationLayout>
 );
 
-const ProtocolSpec = () => (
+const QuickStart = () => (
   <DocumentationLayout>
     <div className="space-y-12">
       <header>
-        <h1 className="text-4xl font-extrabold text-ink-900 mb-4 tracking-tighter">MCP Protocol Specification</h1>
-        <p className="text-xl text-slate-500 font-medium">Technical deep-dive into how we implement and extend the Model Context Protocol.</p>
+        <h1 className="text-4xl font-extrabold text-ink-900 mb-4 tracking-tighter">Quick Start</h1>
+        <p className="text-xl text-slate-500 font-medium">Get your first persistent AI task running in under 5 minutes.</p>
       </header>
 
       <section>
-        <h2 className="text-2xl font-bold text-ink-900 mb-4">The Transport Layer</h2>
-        <p>
-          We use **Server-Sent Events (SSE)** for the primary communication channel. This allows our backend to 
-          push triggers to your local client (Claude Desktop/Cursor) whenever a scheduled window is reached.
-        </p>
-        <pre className="p-4 rounded-xl font-mono text-sm overflow-x-auto">
-{`GET /sse HTTP/1.1
-Host: api.schedulemcp.com
-X-API-Key: YOUR_SECURE_KEY`}
+        <h2 className="text-2xl font-bold text-ink-900 mb-6">1. Create an Account</h2>
+        <p>Head over to the <a href="/signup">Sign Up</a> page. Every new account starts on the <strong>Free Tier</strong>, allowing up to 2 concurrent active tasks.</p>
+      </section>
+
+      <section>
+        <h2 className="text-2xl font-bold text-ink-900 mb-6">2. Connect your Client</h2>
+        <p>Copy your API key from the Dashboard and add the server to your <code>mcp_config.json</code>:</p>
+        <pre className="p-6 rounded-2xl bg-ink-900 text-emerald-400 font-mono text-sm shadow-xl">
+{`{
+  "mcpServers": {
+    "schedule": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/inspector", "http://localhost:8080/sse"],
+      "env": { "X-API-KEY": "YOUR_KEY" }
+    }
+  }
+}`}
         </pre>
       </section>
 
       <section>
-        <h2 className="text-2xl font-bold text-ink-900 mb-4">Sampling Flow</h2>
-        <p>
-          When a task is due, the server issues a <code>sampling/createMessage</code> request via the SSE bridge. 
-          The client intercepts this, performs the LLM action, and posts the result back to the server.
-        </p>
+        <h2 className="text-2xl font-bold text-ink-900 mb-6">3. Schedule a Task</h2>
+        <p>Use your LLM (Claude/Cursor) to create a task via the <code>create_task</code> tool:</p>
+        <div className="bg-slate-100 p-6 rounded-2xl font-medium border border-slate-200">
+          "Create a task named 'Check News' that runs every hour at minute 0 using cron '0 * * * *' and asks me 'What's happening in AI today?'"
+        </div>
       </section>
     </div>
   </DocumentationLayout>
 );
 
-const DevGuide = () => (
+const InstallationDocs = () => (
   <DocumentationLayout>
     <div className="space-y-12">
       <header>
-        <h1 className="text-4xl font-extrabold text-ink-900 mb-4 tracking-tighter">Developer Guide</h1>
-        <p className="text-xl text-slate-500 font-medium">Step-by-step instructions for building and extending the scheduler.</p>
+        <h1 className="text-4xl font-extrabold text-ink-900 mb-4 tracking-tighter">Installation</h1>
+        <p className="text-xl text-slate-500 font-medium text-balance">Comprehensive guide for deploying Schedule MCP in your own environment.</p>
       </header>
 
       <section>
-        <h2 className="text-2xl font-bold text-ink-900 mb-4">Building a Tool</h2>
-        <p>
-          To add a new capability, you define it in <code>cmd/server/tools.go</code>. We provide a simplified 
-          SDK wrapper that makes registration straightforward:
-        </p>
-        <pre className="p-4 rounded-xl font-mono text-sm overflow-x-auto">
-{`s.AddTool(mcp.NewTool("my_action", 
-  mcp.WithDescription("Does something cool"),
-), handlerFunc)`}
-        </pre>
+        <h2 className="text-2xl font-bold text-ink-900 mb-6 flex items-center gap-3">
+          <Terminal size={24} className="text-accent-orange" /> Self-Hosted (Docker)
+        </h2>
+        <p className="mb-6">The recommended way to run Schedule MCP is via Docker Compose. This ensures all dependencies like PostgreSQL and Redis are wired correctly.</p>
+        <div className="space-y-4">
+          <div className="p-4 bg-slate-100 rounded-xl font-mono text-sm">
+            $ git clone https://github.com/your-repo/schedule-mcp.git
+          </div>
+          <div className="p-4 bg-slate-100 rounded-xl font-mono text-sm">
+            $ cd schedule-mcp && docker-compose up -d
+          </div>
+        </div>
       </section>
 
-      <section className="bg-ink-900 p-8 rounded-3xl text-white not-prose">
+      <section className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm not-prose">
         <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-          <span className="text-accent-orange">💡</span> Pro Tip
+          <Settings size={20} className="text-slate-400" /> Environment Configuration
         </h3>
-        <p className="text-slate-400">
-          Always use UTC for timestamps. Our scheduler logic (Pass 4) strictly enforces UTC to avoid 
-          daylight savings issues across distributed node clusters.
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left">
+            <thead>
+              <tr className="border-b border-slate-100 text-slate-400 uppercase tracking-widest text-[10px]">
+                <th className="py-3 px-2">Variable</th>
+                <th className="py-3 px-2">Default</th>
+                <th className="py-3 px-2">Purpose</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              <tr>
+                <td className="py-3 px-2 font-mono text-accent-orange">DATABASE_URL</td>
+                <td className="py-3 px-2 text-slate-400 italic">required</td>
+                <td className="py-3 px-2 text-slate-600">PostgreSQL connection string</td>
+              </tr>
+              <tr>
+                <td className="py-3 px-2 font-mono text-accent-orange">REDIS_URL</td>
+                <td className="py-3 px-2 font-mono">localhost:6379</td>
+                <td className="py-3 px-2 text-slate-600">Redis cache and Pub/Sub host</td>
+              </tr>
+              <tr>
+                <td className="py-3 px-2 font-mono text-accent-orange">STRIPE_API_KEY</td>
+                <td className="py-3 px-2 text-slate-400 italic">optional</td>
+                <td className="py-3 px-2 text-slate-600">Secret key for billing integration</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </DocumentationLayout>
+);
+
+const CoreConcepts = () => (
+  <DocumentationLayout>
+    <div className="space-y-12">
+      <header>
+        <h1 className="text-4xl font-extrabold text-ink-900 mb-4 tracking-tighter">Core Concepts</h1>
+        <p className="text-xl text-slate-500 font-medium">Understand the mental model behind our scheduling engine.</p>
+      </header>
+
+      <div className="space-y-10">
+        <div className="flex gap-8 group">
+          <div className="flex-shrink-0 w-12 h-12 bg-white border border-slate-200 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-accent-orange group-hover:text-white transition-colors duration-500">
+            <Zap size={24} />
+          </div>
+          <div>
+            <h3 className="text-2xl font-bold text-ink-900 mb-2">The Sampling Bridge</h3>
+            <p className="text-slate-600 leading-relaxed">
+              Execution doesn't happen on our server. Instead, we use a **Pub/Sub bridge** to notify your 
+              physical client session that a task is due. Your client then "samples" the LLM and 
+              returns the output to us for logging and further scheduling.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex gap-8 group">
+          <div className="flex-shrink-0 w-12 h-12 bg-white border border-slate-200 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-accent-orange group-hover:text-white transition-colors duration-500">
+            <Database size={24} />
+          </div>
+          <div>
+            <h3 className="text-2xl font-bold text-ink-900 mb-2">Transactional Locking</h3>
+            <p className="text-slate-600 leading-relaxed">
+              We use <code>FOR UPDATE SKIP LOCKED</code> at the database level. This allows multiple 
+              parallel worker nodes to safely "claim" due tasks without ever double-triggering an 
+              action, providing industry-standard consistency.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex gap-8 group">
+          <div className="flex-shrink-0 w-12 h-12 bg-white border border-slate-200 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-accent-orange group-hover:text-white transition-colors duration-500">
+            <Layers size={24} />
+          </div>
+          <div>
+            <h3 className="text-2xl font-bold text-ink-900 mb-2">Tiered Quotas</h3>
+            <p className="text-slate-600 leading-relaxed">
+              Resource management is built-in. Every API request is validated against a user's 
+              Plan Tier (Free, Plus, Pro) to ensure fair usage and system stability.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </DocumentationLayout>
+);
+
+const ApiReference = () => (
+  <DocumentationLayout>
+    <div className="space-y-12">
+      <header>
+        <h1 className="text-4xl font-extrabold text-ink-900 mb-4 tracking-tighter">API Reference</h1>
+        <p className="text-xl text-slate-500 font-medium text-balance">Technical documentation for the REST API and MCP Tools.</p>
+      </header>
+
+      <section>
+        <h2 className="text-2xl font-bold text-ink-900 mb-6 flex items-center gap-3">
+          <Code size={24} className="text-accent-orange" /> MCP Tools
+        </h2>
+        <div className="space-y-6">
+          <div className="border border-slate-100 rounded-2xl overflow-hidden shadow-sm bg-white">
+            <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+              <span className="font-mono font-bold text-ink-900">create_task</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">Core Tool</span>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-slate-600">Creates a new durable schedule entry.</p>
+              <div className="grid grid-cols-2 gap-4 text-xs">
+                <div className="space-y-1">
+                  <p className="font-bold text-slate-400">Arguments</p>
+                  <p className="font-mono text-slate-800">name (string), trigger_type (string), agent_prompt (string)</p>
+                </div>
+                <div className="space-y-1 text-right">
+                  <p className="font-bold text-slate-400">Trigger Types</p>
+                  <p className="font-mono text-slate-800">interval, cron, date</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="border border-slate-100 rounded-2xl overflow-hidden shadow-sm bg-white">
+            <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+              <span className="font-mono font-bold text-ink-900">list_tasks</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">Core Tool</span>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-slate-600">Returns a JSON array of all active and paused tasks for the authenticated user.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2 className="text-2xl font-bold text-ink-900 mb-6">REST Endpoints</h2>
+        <div className="bg-ink-900 p-6 rounded-2xl space-y-4 font-mono text-xs">
+          <div className="flex gap-4">
+            <span className="text-blue-400 font-bold w-12">GET</span>
+            <span className="text-slate-300">/api/dashboard</span>
+            <span className="text-slate-500 ml-auto">Retrieve account stats</span>
+          </div>
+          <div className="flex gap-4 border-t border-white/5 pt-4">
+            <span className="text-emerald-400 font-bold w-12">POST</span>
+            <span className="text-slate-300">/api/auth/login</span>
+            <span className="text-slate-500 ml-auto">Initiate browser session</span>
+          </div>
+        </div>
+      </section>
+    </div>
+  </DocumentationLayout>
+);
+
+const WorkerArchitecture = () => (
+  <DocumentationLayout>
+    <div className="space-y-12">
+      <header>
+        <h1 className="text-4xl font-extrabold text-ink-900 mb-4 tracking-tighter">Worker Architecture</h1>
+        <p className="text-xl text-slate-500 font-medium">Inside the distributed execution engine.</p>
+      </header>
+
+      <section className="bg-white p-10 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden not-prose">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-accent-orange/5 rounded-full -translate-x-[-20%] -translate-y-[20%] blur-2xl"></div>
+        <h2 className="text-2xl font-bold mb-8">The Lifecycle of a Task</h2>
+        <div className="space-y-12 relative z-10">
+          <div className="flex items-center gap-6">
+            <div className="w-8 h-8 rounded-full bg-ink-900 text-white flex items-center justify-center font-bold">1</div>
+            <div className="h-px flex-1 bg-slate-100"></div>
+            <div className="text-sm font-bold text-slate-600">Claimed via SQL Lock</div>
+          </div>
+          <div className="flex items-center gap-6">
+            <div className="w-8 h-8 rounded-full bg-ink-900 text-white flex items-center justify-center font-bold">2</div>
+            <div className="h-px flex-1 bg-slate-100"></div>
+            <div className="text-sm font-bold text-slate-600">Published to Redis Pub/Sub</div>
+          </div>
+          <div className="flex items-center gap-6">
+            <div className="w-8 h-8 rounded-full bg-accent-orange text-white flex items-center justify-center font-bold">3</div>
+            <div className="h-px flex-1 bg-slate-100"></div>
+            <div className="text-sm font-bold text-slate-900 italic">Execution Node Triggers SSE</div>
+          </div>
+          <div className="flex items-center gap-6">
+            <div className="w-8 h-8 rounded-full bg-ink-900 text-white flex items-center justify-center font-bold">4</div>
+            <div className="h-px flex-1 bg-slate-100"></div>
+            <div className="text-sm font-bold text-slate-600">Result Logged & Re-scheduled</div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2 className="text-2xl font-bold text-ink-900 mb-4">The Reaper Process</h2>
+        <p>
+          To ensure reliability, a separate <strong>Reaper</strong> process runs every 1 minute. 
+          It scans the database for tasks that have been in the "processing" state for more than 5 minutes 
+          (indicating a worker node failure) and resets them back to "active" for another node to pick up.
         </p>
       </section>
     </div>
   </DocumentationLayout>
 );
 
-export { DevOverview, ProtocolSpec, DevGuide };
+const ProtocolSpecDoc = () => (
+  <DocumentationLayout>
+    <div className="space-y-12">
+      <header>
+        <h1 className="text-4xl font-extrabold text-ink-900 mb-4 tracking-tighter">Protocol Specification</h1>
+        <p className="text-xl text-slate-500 font-medium">Deep technical details on the Schedule MCP implementation of the protocol.</p>
+      </header>
+
+      <section>
+        <h2 className="text-2xl font-bold text-ink-900 mb-4">The SSE Transport</h2>
+        <p>
+          We implement the **SSE Transport** as defined in the MCP base spec, but with a persistent connection model. 
+          Every client connection is assigned a unique internal ID and mapped to a User in Redis.
+        </p>
+      </section>
+
+      <section>
+        <h2 className="text-2xl font-bold text-ink-900 mb-4">Remote Sampling (createMessage)</h2>
+        <p>
+          This is our core innovation. When the server decides a task is due, it crafts a <code>sampling/createMessage</code> 
+          JSON-RPC notification.
+        </p>
+        <pre className="p-6 rounded-2xl bg-ink-900 text-emerald-400 font-mono text-sm overflow-x-auto">
+{`{
+  "jsonrpc": "2.0",
+  "method": "sampling/createMessage",
+  "params": {
+    "messages": [{ "role": "user", "content": { "type": "text", "text": "..." } }],
+    "maxTokens": 1000
+  }
+}`}
+        </pre>
+      </section>
+    </div>
+  </DocumentationLayout>
+);
+
+const SecurityDocs = () => (
+  <DocumentationLayout>
+    <div className="space-y-12">
+      <header>
+        <h1 className="text-4xl font-extrabold text-ink-900 mb-4 tracking-tighter">Auth & Security</h1>
+        <p className="text-xl text-slate-500 font-medium">How we protect your credentials and AI tasks.</p>
+      </header>
+
+      <section className="grid grid-cols-1 md:grid-cols-2 gap-8 not-prose">
+        <div className="p-8 rounded-3xl bg-white border border-slate-200">
+          <Shield size={32} className="text-emerald-500 mb-4" />
+          <h3 className="font-bold text-xl mb-2">Bcrypt Hashing</h3>
+          <p className="text-slate-500 text-sm">All passwords are hashed using Bcrypt with a minimum cost factor of 12 before touching the database.</p>
+        </div>
+        <div className="p-8 rounded-3xl bg-white border border-slate-200">
+          <Zap size={32} className="text-amber-500 mb-4" />
+          <h3 className="font-bold text-xl mb-2">CSRF Protection</h3>
+          <p className="text-slate-500 text-sm">Every mutation request is protected by double-submit cookie tokens and strictly validated Origins.</p>
+        </div>
+      </section>
+
+      <section>
+        <h2 className="text-2xl font-bold text-ink-900 mb-4">Session Isolation</h2>
+        <p>
+          We use **Database-backed Sessions** instead of simple JWTs. This allows for instant session revocation 
+          (e.g., when a user logs out or rotates an API key). Session cookies are set with <code>HttpOnly</code>, 
+          <code>Secure</code>, and <code>SameSite=Lax</code> flags to mitigate XSS and CSRF risks.
+        </p>
+      </section>
+
+      <section className="p-8 bg-red-50 border border-red-100 rounded-3xl not-prose">
+        <h3 className="text-red-900 font-bold flex items-center gap-2 mb-4">
+          <ShieldCheck size={20} /> Data Privacy
+        </h3>
+        <p className="text-red-700 text-sm">
+          Schedule MCP never logs the actual contents of your API keys or passwords. Even our Staff monitoring 
+          views (Pass 5) only display masked identifiers and high-level execution metadata.
+        </p>
+      </section>
+    </div>
+  </DocumentationLayout>
+);
+
+// Minimal Crown icon helper
+const ShieldCheck = ({ size, className }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
+    <path d="m9 12 2 2 4-4" />
+  </svg>
+);
+
+export { 
+  Overview, 
+  QuickStart, 
+  InstallationDocs, 
+  CoreConcepts, 
+  ApiReference, 
+  WorkerArchitecture, 
+  ProtocolSpecDoc, 
+  SecurityDocs 
+};
