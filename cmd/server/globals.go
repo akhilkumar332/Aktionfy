@@ -15,7 +15,7 @@ import (
 var (
 	dbPool            *pgxpool.Pool
 	queries           *db.Queries
-	redisClient       *redis.Client
+	RedisClient       *redis.Client
 	templates         *template.Template
 	workerID          string
 	workerWG          sync.WaitGroup

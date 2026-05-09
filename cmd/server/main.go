@@ -22,6 +22,24 @@ import (
 	"schedule-mcp/db"
 )
 
+func initRedis() {
+	redisUrl := os.Getenv("REDIS_URL")
+	if redisUrl == "" {
+		redisUrl = "redis://localhost:6379/0"
+	}
+	opts, err := redis.ParseURL(redisUrl)
+	if err != nil {
+		log.Fatalf("Failed to parse Redis URL: %v", err)
+	}
+	RedisClient = redis.NewClient(opts)
+	
+	_, err = RedisClient.Ping(context.Background()).Result()
+	if err != nil {
+		log.Fatalf("Failed to connect to Redis: %v", err)
+	}
+	log.Println("Connected to Redis")
+}
+
 func main() {
 	hostname, _ := os.Hostname()
 	workerID = fmt.Sprintf("%s-%d", hostname, time.Now().UTC().UnixNano())
@@ -45,24 +63,11 @@ func main() {
 	queries = db.New(dbPool)
 
 	// 1.5 Initialize Redis Client
-	redisUrl := os.Getenv("REDIS_URL")
-	if redisUrl == "" {
-		redisUrl = "redis://localhost:6379/0"
-	}
-	opt, err := redis.ParseURL(redisUrl)
-	if err != nil {
-		log.Fatalf("Invalid Redis URL: %v", err)
-	}
-	redisClient = redis.NewClient(opt)
-	defer redisClient.Close()
-	
-	// Check Redis Connection
-	if err := redisClient.Ping(ctx).Err(); err != nil {
-		log.Fatalf("Unable to connect to Redis: %v", err)
-	}
+	initRedis()
+	defer RedisClient.Close()
 
-	globalRateLimiter.client = redisClient
-	GlobalSessionManager.Init(redisClient)
+	globalRateLimiter.client = RedisClient
+	GlobalSessionManager.Init(RedisClient)
 
 	// 2. Initialize MCP Server
 	mcpServer := server.NewMCPServer("scheduled-actions", "1.0.0")
@@ -119,7 +124,7 @@ func main() {
 		if err := dbPool.Ping(c.Request().Context()); err != nil {
 			return c.JSON(http.StatusServiceUnavailable, APIResponse{Success: false, Error: "Database unavailable"})
 		}
-		if err := redisClient.Ping(c.Request().Context()).Err(); err != nil {
+		if err := RedisClient.Ping(c.Request().Context()).Err(); err != nil {
 			return c.JSON(http.StatusServiceUnavailable, APIResponse{Success: false, Error: "Redis unavailable"})
 		}
 		return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "OK"})

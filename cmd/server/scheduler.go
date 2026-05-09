@@ -98,7 +98,7 @@ func runScheduler(ctx context.Context, s *server.MCPServer) {
 						"trigger_type":   t.TriggerType.String,
 						"trigger_config": string(t.TriggerConfig),
 					})
-					subscribers, err := redisClient.Publish(workerCtx, fmt.Sprintf("trigger_task:%s", t.UserID), string(payloadBytes)).Result()
+					subscribers, err := RedisClient.Publish(workerCtx, fmt.Sprintf("trigger_task:%s", t.UserID), string(payloadBytes)).Result()
 					if err != nil || subscribers == 0 {
 						if err == nil {
 							err = fmt.Errorf("no active subscribers received the payload")
