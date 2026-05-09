@@ -36,10 +36,10 @@ const Footer = () => {
           <div>
             <h4 className="font-bold text-white mb-6 uppercase text-xs tracking-widest">Product</h4>
             <ul className="space-y-4">
-              <li><a href="#features" className="text-slate-400 hover:text-white transition-colors text-sm">Features</a></li>
-              <li><a href="#pricing" className="text-slate-400 hover:text-white transition-colors text-sm">Pricing</a></li>
-              <li><a href="#installation" className="text-slate-400 hover:text-white transition-colors text-sm">Installation</a></li>
-              <li><a href="/dashboard" className="text-slate-400 hover:text-white transition-colors text-sm">Dashboard</a></li>
+              <li><Link to="/#features" className="text-slate-400 hover:text-white transition-colors text-sm">Features</Link></li>
+              <li><Link to="/#pricing" className="text-slate-400 hover:text-white transition-colors text-sm">Pricing</Link></li>
+              <li><Link to="/#installation" className="text-slate-400 hover:text-white transition-colors text-sm">Installation</Link></li>
+              <li><Link to="/dashboard" className="text-slate-400 hover:text-white transition-colors text-sm">Dashboard</Link></li>
               <li><a href="#" className="text-slate-400 hover:text-white transition-colors text-sm">SLA & Security</a></li>
             </ul>
           </div>
@@ -48,10 +48,10 @@ const Footer = () => {
           <div>
             <h4 className="font-bold text-white mb-6 uppercase text-xs tracking-widest">Resources</h4>
             <ul className="space-y-4">
-              <li><a href="#" className="text-slate-400 hover:text-white transition-colors text-sm">Documentation</a></li>
-              <li><a href="#" className="text-slate-400 hover:text-white transition-colors text-sm">MCP Protocol Spec</a></li>
+              <li><Link to="/docs/overview" className="text-slate-400 hover:text-white transition-colors text-sm">Documentation</Link></li>
+              <li><Link to="/docs/protocol-spec" className="text-slate-400 hover:text-white transition-colors text-sm">MCP Protocol Spec</Link></li>
               <li><a href="#" className="text-slate-400 hover:text-white transition-colors text-sm">Blog</a></li>
-              <li><a href="#" className="text-slate-400 hover:text-white transition-colors text-sm">Developer Guide</a></li>
+              <li><Link to="/docs/api-reference" className="text-slate-400 hover:text-white transition-colors text-sm">Developer Guide</Link></li>
               <li><a href="#" className="text-slate-400 hover:text-white transition-colors text-sm">Status Page</a></li>
             </ul>
           </div>
