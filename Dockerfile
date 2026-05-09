@@ -1,33 +1,31 @@
-# Build Stage
-FROM golang:1.24-alpine AS builder
+# Stage 1: Build React Frontend
+FROM node:20-alpine AS frontend-builder
+WORKDIR /app/frontend
+COPY frontend/package*.json ./
+RUN npm install
+COPY frontend/ ./
+RUN npm run build
 
+# Stage 2: Build Go Backend
+FROM golang:1.25-alpine AS backend-builder
 WORKDIR /app
-
-# Download dependencies
 COPY go.mod go.sum ./
 RUN go mod download
-
-# Copy source code
 COPY . .
+RUN go build -o /app/server ./cmd/server
 
-# Ensure go.mod and go.sum are updated with manual additions
-RUN go mod tidy
-
-# Build the binary, stripping debug info to keep it small
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /go/bin/mcp-server ./cmd/server
-
-# Run Stage
-# Using scratch for an ultra-small image, or alpine if we need CA certs
+# Stage 3: Final Image
 FROM alpine:latest
+WORKDIR /app
+RUN apk add --no-cache ca-certificates
 
-# Need CA certificates for remote API calls if the SDK makes any HTTPS requests
-RUN apk --no-cache add ca-certificates tzdata
+# Copy artifacts
+COPY --from=backend-builder /app/server ./
+COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
+COPY schema.sql ./
 
-WORKDIR /
-
-COPY --from=builder /go/bin/mcp-server /mcp-server
-
-# Expose port (default 8080)
+# Environment variables
+ENV PORT=8080
 EXPOSE 8080
 
-ENTRYPOINT ["/mcp-server"]
+CMD ["./server"]

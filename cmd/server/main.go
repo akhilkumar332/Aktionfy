@@ -94,7 +94,30 @@ func main() {
 	fs := http.FileServer(http.Dir("static"))
 	mux.Handle("/static/", http.StripPrefix("/static/", fs))
 
-	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+	// Serve React Frontend assets
+	frontendFS := http.FileServer(http.Dir("frontend/dist"))
+	mux.Handle("/assets/", frontendFS)
+
+	// Catch-all handler for React SPA
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// If the request is for an API or static file, the handlers above will catch it.
+		// Otherwise, serve index.html for client-side routing.
+		path := r.URL.Path
+		if len(path) > 4 && path[:5] == "/api/" {
+			http.NotFound(w, r)
+			return
+		}
+		
+		// Check if file exists in dist, otherwise serve index.html
+		fpath := "frontend/dist" + path
+		if _, err := os.Stat(fpath); os.IsNotExist(err) || path == "/" {
+			http.ServeFile(w, r, "frontend/dist/index.html")
+		} else {
+			frontendFS.ServeHTTP(w, r)
+		}
+	})
+
+	mux.HandleFunc("/api/healthz", func(w http.ResponseWriter, r *http.Request) {
 		if err := dbPool.Ping(r.Context()); err != nil {
 			http.Error(w, "Database unavailable", http.StatusServiceUnavailable)
 			return
