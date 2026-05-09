@@ -1,0 +1,20 @@
+{
+  "name": "@google-schedule-actions/mcp",
+  "version": "1.0.0",
+  "description": "NPM wrapper for Scheduled Actions MCP Go binary",
+  "main": "index.js",
+  "bin": {
+    "schedule-mcp": "index.js"
+  },
+  "scripts": {
+    "install": "node install.js"
+  },
+  "keywords": [
+    "mcp",
+    "scheduler",
+    "google",
+    "actions"
+  ],
+  "author": "Google",
+  "license": "Apache-2.0"
+}
