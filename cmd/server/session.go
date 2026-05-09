@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -154,18 +155,33 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 						var tid pgtype.UUID
 						_ = parseUUID(taskID, &tid)
 
+						// Fetch task details for SSE event
+						dbCtx, dbCancel := context.WithTimeout(context.Background(), 15*time.Second)
+						defer dbCancel()
+
+						t, _ := queries.GetTaskByID(dbCtx, tid)
+						userEmail, _ := queries.GetUserEmail(dbCtx, userID)
+						emailStr := ""
+						if userEmail.Valid {
+							emailStr = userEmail.String
+						}
+
 						if err != nil {
 							log.Printf("Pub/Sub Sampling failed for user %s: %v", userID, err)
 							
 							// Phase 10.2: Properly log failure back to DB instead of failing silently
-							dbCtx, dbCancel := context.WithTimeout(context.Background(), 10*time.Second)
-							defer dbCancel()
-							
-							_ = queries.CreateTaskLog(dbCtx, db.CreateTaskLogParams{
+							logID, _ := queries.CreateTaskLog(dbCtx, db.CreateTaskLogParams{
 								TaskID:       tid,
 								UserID:       userID,
 								Status:       "failure",
 								ErrorMessage: pgtype.Text{String: err.Error(), Valid: true},
+							})
+							
+							// Emit Redis event
+							_ = PublishEvent(dbCtx, PubSubEvent{
+								UserID:    userID,
+								EventType: "task_executed",
+								Payload:   fmt.Sprintf(`{"id":"%s", "task_id":"%s", "status":"failure", "execution_time":"%s", "task_name":"%s", "user_email":"%s", "error_message":"%s"}`, formatUUID(logID), taskID, time.Now().Format(time.RFC3339), t.Name, emailStr, strings.ReplaceAll(err.Error(), `"`, `'`)),
 							})
 							
 							// Increment failure count securely
@@ -176,7 +192,7 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 									Status: pgtype.Text{String: StatusError, Valid: true},
 									ID:     tid,
 								})
-								sendFailureEmail(dbCtx, userID, taskID, "Unknown Task") 
+								sendFailureEmail(dbCtx, userID, taskID, t.Name) 
 							} else {
 								// Unlock so it can be retried by the scheduler
 								_ = queries.UpdateTaskStatus(dbCtx, db.UpdateTaskStatusParams{
@@ -198,13 +214,18 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 						log.Printf("Received LLM Response for user %s: %s", userID, llmResponse)
 						
 						// Save the actual LLM response to the specific task log
-						dbCtx, dbCancel := context.WithTimeout(context.Background(), 15*time.Second)
-						defer dbCancel()
-						_ = queries.CreateTaskLog(dbCtx, db.CreateTaskLogParams{
+						logID, _ := queries.CreateTaskLog(dbCtx, db.CreateTaskLogParams{
 							TaskID:      tid,
 							UserID:      userID,
 							Status:      "success",
 							LlmResponse: pgtype.Text{String: llmResponse, Valid: true},
+						})
+
+						// Emit Redis event
+						_ = PublishEvent(dbCtx, PubSubEvent{
+							UserID:    userID,
+							EventType: "task_executed",
+							Payload:   fmt.Sprintf(`{"id":"%s", "task_id":"%s", "status":"success", "execution_time":"%s", "task_name":"%s", "user_email":"%s", "llm_response":"%s"}`, formatUUID(logID), taskID, time.Now().Format(time.RFC3339), t.Name, emailStr, strings.ReplaceAll(llmResponse, `"`, `'`)),
 						})
 
 						// Iteration 2: Advance the task status

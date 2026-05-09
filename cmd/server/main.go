@@ -154,6 +154,8 @@ func main() {
 	api := e.Group("/api", csrfMiddleware, EchoSessionMiddleware)
 	api.GET("/dashboard", apiDashboardHandler)
 	api.POST("/rotate-api-key", apiRotateAPIKeyHandler)
+	api.POST("/tasks/:id/approve", apiApproveTaskHandler)
+	api.POST("/tasks/:id/deny", apiDenyTaskHandler)
 	
 	staff := api.Group("", EchoRequireRole("staff", "admin"))
 	staff.GET("/monitor", apiMonitorHandler)

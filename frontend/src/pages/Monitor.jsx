@@ -1,12 +1,24 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
 import axios from 'axios';
 import { Terminal, ShieldAlert, CheckCircle2, Clock, Cpu } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useSSE } from '../hooks/useSSE';
 
 const Monitor = () => {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  useSSE(useCallback((event) => {
+    if (event.event_type === 'task_executed') {
+      try {
+        const newLog = typeof event.payload === 'string' ? JSON.parse(event.payload) : event.payload;
+        setLogs(prev => [newLog, ...prev]);
+      } catch (err) {
+        console.error('Failed to parse task_executed payload', err);
+      }
+    }
+  }, []));
 
   useEffect(() => {
     const fetchLogs = async () => {

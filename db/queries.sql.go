@@ -155,9 +155,10 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 	return i, err
 }
 
-const createTaskLog = `-- name: CreateTaskLog :exec
+const createTaskLog = `-- name: CreateTaskLog :one
 INSERT INTO task_logs (task_id, user_id, status, error_message, llm_response) 
 VALUES ($1, $2, $3, $4, $5)
+RETURNING id
 `
 
 type CreateTaskLogParams struct {
@@ -168,15 +169,17 @@ type CreateTaskLogParams struct {
 	LlmResponse  pgtype.Text
 }
 
-func (q *Queries) CreateTaskLog(ctx context.Context, arg CreateTaskLogParams) error {
-	_, err := q.db.Exec(ctx, createTaskLog,
+func (q *Queries) CreateTaskLog(ctx context.Context, arg CreateTaskLogParams) (pgtype.UUID, error) {
+	row := q.db.QueryRow(ctx, createTaskLog,
 		arg.TaskID,
 		arg.UserID,
 		arg.Status,
 		arg.ErrorMessage,
 		arg.LlmResponse,
 	)
-	return err
+	var id pgtype.UUID
+	err := row.Scan(&id)
+	return id, err
 }
 
 const createUser = `-- name: CreateUser :one
@@ -283,6 +286,35 @@ func (q *Queries) GetLatestTaskLogResponse(ctx context.Context, taskID pgtype.UU
 	var llm_response pgtype.Text
 	err := row.Scan(&llm_response)
 	return llm_response, err
+}
+
+const getTaskByID = `-- name: GetTaskByID :one
+SELECT id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status FROM tasks WHERE id = $1
+`
+
+func (q *Queries) GetTaskByID(ctx context.Context, id pgtype.UUID) (Task, error) {
+	row := q.db.QueryRow(ctx, getTaskByID, id)
+	var i Task
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.TriggerType,
+		&i.TriggerConfig,
+		&i.AgentPrompt,
+		&i.Status,
+		&i.LockedBy,
+		&i.NextRun,
+		&i.LastRun,
+		&i.FailureCount,
+		&i.MissedTaskPolicy,
+		&i.DependsOnTaskID,
+		&i.CreatedAt,
+		&i.RequiresApproval,
+		&i.EncryptedSecrets,
+		&i.LastApprovalStatus,
+	)
+	return i, err
 }
 
 const getTaskLogs = `-- name: GetTaskLogs :many
@@ -530,6 +562,27 @@ UPDATE tasks SET status = 'active', locked_by = NULL WHERE locked_by = $1
 
 func (q *Queries) RevertProcessingTasks(ctx context.Context, lockedBy pgtype.Text) error {
 	_, err := q.db.Exec(ctx, revertProcessingTasks, lockedBy)
+	return err
+}
+
+const updateTaskApprovalStatus = `-- name: UpdateTaskApprovalStatus :exec
+UPDATE tasks SET last_approval_status = $1, status = $2, locked_by = NULL WHERE id = $3 AND user_id = $4
+`
+
+type UpdateTaskApprovalStatusParams struct {
+	LastApprovalStatus pgtype.Text
+	Status             pgtype.Text
+	ID                 pgtype.UUID
+	UserID             string
+}
+
+func (q *Queries) UpdateTaskApprovalStatus(ctx context.Context, arg UpdateTaskApprovalStatusParams) error {
+	_, err := q.db.Exec(ctx, updateTaskApprovalStatus,
+		arg.LastApprovalStatus,
+		arg.Status,
+		arg.ID,
+		arg.UserID,
+	)
 	return err
 }
 

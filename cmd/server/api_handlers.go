@@ -251,6 +251,48 @@ func apiAdminUpdateUserHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "User updated successfully"})
 }
 
+func apiApproveTaskHandler(c echo.Context) error {
+	user := getUserFromEcho(c)
+	idStr := c.Param("id")
+	var id pgtype.UUID
+	if err := parseUUID(idStr, &id); err != nil {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid task ID"})
+	}
+
+	err := queries.UpdateTaskApprovalStatus(c.Request().Context(), db.UpdateTaskApprovalStatusParams{
+		LastApprovalStatus: pgtype.Text{String: "approved", Valid: true},
+		Status:             pgtype.Text{String: StatusActive, Valid: true},
+		ID:                 id,
+		UserID:             user.ID,
+	})
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to approve task"})
+	}
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Task approved"})
+}
+
+func apiDenyTaskHandler(c echo.Context) error {
+	user := getUserFromEcho(c)
+	idStr := c.Param("id")
+	var id pgtype.UUID
+	if err := parseUUID(idStr, &id); err != nil {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid task ID"})
+	}
+
+	err := queries.UpdateTaskApprovalStatus(c.Request().Context(), db.UpdateTaskApprovalStatusParams{
+		LastApprovalStatus: pgtype.Text{String: "denied", Valid: true},
+		Status:             pgtype.Text{String: StatusPaused, Valid: true},
+		ID:                 id,
+		UserID:             user.ID,
+	})
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to deny task"})
+	}
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Task denied"})
+}
+
 func getUserFromEcho(c echo.Context) *User {
 	user, _ := c.Get("user").(*User)
 	return user

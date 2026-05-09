@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -43,15 +44,44 @@ func runScheduler(ctx context.Context, s *server.MCPServer) {
 					isOnline := GlobalSessionManager.IsOnline(workerCtx, t.UserID)
 
 					taskID := formatUUID(t.ID)
+					userEmail, _ := queries.GetUserEmail(workerCtx, t.UserID)
+					emailStr := ""
+					if userEmail.Valid {
+						emailStr = userEmail.String
+					}
+
+					// Human-in-the-Loop: Check if approval is required
+					if t.RequiresApproval.Bool && t.LastApprovalStatus.String != "approved" {
+						log.Printf("Task %s requires approval. Pausing.", taskID)
+						_ = queries.UpdateTaskApprovalStatus(workerCtx, db.UpdateTaskApprovalStatusParams{
+							LastApprovalStatus: pgtype.Text{String: "pending", Valid: true},
+							Status:             pgtype.Text{String: StatusPaused, Valid: true},
+							ID:                 t.ID,
+							UserID:             t.UserID,
+						})
+						_ = PublishEvent(workerCtx, PubSubEvent{
+							UserID:    t.UserID,
+							EventType: "approval_required",
+							Payload:   fmt.Sprintf(`{"task_id":"%s", "task_name":"%s"}`, taskID, t.Name),
+						})
+						return
+					}
 
 					if !isOnline {
 						log.Printf("User %s is offline. Task %s missed.", t.UserID, taskID)
 						// Phase 1.2: Execution Logging
-						_ = queries.CreateTaskLog(workerCtx, db.CreateTaskLogParams{
+						logID, _ := queries.CreateTaskLog(workerCtx, db.CreateTaskLogParams{
 							TaskID:       t.ID,
 							UserID:       t.UserID,
 							Status:       "missed",
 							ErrorMessage: pgtype.Text{String: "user offline", Valid: true},
+						})
+
+						// Emit Redis event
+						_ = PublishEvent(workerCtx, PubSubEvent{
+							UserID:    t.UserID,
+							EventType: "task_executed",
+							Payload:   fmt.Sprintf(`{"id":"%s", "task_id":"%s", "status":"missed", "execution_time":"%s", "task_name":"%s", "user_email":"%s", "error_message":"user offline"}`, formatUUID(logID), taskID, time.Now().Format(time.RFC3339), t.Name, emailStr),
 						})
 						
 						// Phase 3.1: Missed Task Policy
@@ -106,11 +136,18 @@ func runScheduler(ctx context.Context, s *server.MCPServer) {
 						log.Printf("Failed to deliver task %s for user %s: %v", taskID, t.UserID, err)
 						// Phase 2.3: Dead Letter Queue
 						failureCount := t.FailureCount.Int32 + 1
-						_ = queries.CreateTaskLog(workerCtx, db.CreateTaskLogParams{
+						logID, _ := queries.CreateTaskLog(workerCtx, db.CreateTaskLogParams{
 							TaskID:       t.ID,
 							UserID:       t.UserID,
 							Status:       "failure",
 							ErrorMessage: pgtype.Text{String: err.Error(), Valid: true},
+						})
+
+						// Emit Redis event
+						_ = PublishEvent(workerCtx, PubSubEvent{
+							UserID:    t.UserID,
+							EventType: "task_executed",
+							Payload:   fmt.Sprintf(`{"id":"%s", "task_id":"%s", "status":"failure", "execution_time":"%s", "task_name":"%s", "user_email":"%s", "error_message":"%s"}`, formatUUID(logID), taskID, time.Now().Format(time.RFC3339), t.Name, emailStr, strings.ReplaceAll(err.Error(), `"`, `'`)),
 						})
 						
 						if failureCount >= 3 {
@@ -134,11 +171,18 @@ func runScheduler(ctx context.Context, s *server.MCPServer) {
 					}
 
 					// Log Success delivery to node (session.go will log the actual LLM response)
-					_ = queries.CreateTaskLog(workerCtx, db.CreateTaskLogParams{
+					logID, _ := queries.CreateTaskLog(workerCtx, db.CreateTaskLogParams{
 						TaskID:      t.ID,
 						UserID:      t.UserID,
 						Status:      "success",
 						LlmResponse: pgtype.Text{String: "Task delivered to node via Redis", Valid: true},
+					})
+
+					// Emit Redis event
+					_ = PublishEvent(workerCtx, PubSubEvent{
+						UserID:    t.UserID,
+						EventType: "task_executed",
+						Payload:   fmt.Sprintf(`{"id":"%s", "task_id":"%s", "status":"success", "execution_time":"%s", "task_name":"%s", "user_email":"%s", "llm_response":"Task delivered to node via Redis"}`, formatUUID(logID), taskID, time.Now().Format(time.RFC3339), t.Name, emailStr),
 					})
 
 					// Iteration 2: We no longer update the task status or call completeTask here.

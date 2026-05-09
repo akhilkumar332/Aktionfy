@@ -91,7 +91,8 @@ BEGIN
         locked_by = NULL,
         last_run = NOW(),
         failure_count = 0, -- reset on success
-        next_run = new_next_run
+        next_run = new_next_run,
+        last_approval_status = CASE WHEN requires_approval THEN 'pending' ELSE last_approval_status END
     WHERE id = task_id;
 END;
 $$ LANGUAGE plpgsql;

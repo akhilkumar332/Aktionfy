@@ -1,29 +1,99 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import DashboardLayout from '../components/DashboardLayout';
 import axios from 'axios';
-import { Crown, ListChecks, Key, RefreshCw, Copy, Check, ShieldCheck, Zap, ArrowRight } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Crown, ListChecks, Key, RefreshCw, Copy, Check, ShieldCheck, Zap, ArrowRight, Bell, ShieldAlert } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useSSE } from '../hooks/useSSE';
 
 const Dashboard = () => {
   const { user, checkAuth } = useAuth();
   const [taskCount, setTaskCount] = useState(0);
   const [copied, setCopied] = useState(false);
   const [rotating, setRotating] = useState(false);
+  const [toasts, setToasts] = useState([]);
+  const [pendingApprovals, setPendingApprovals] = useState([]);
+
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await axios.get('/api/dashboard');
+      if (res.data.success) {
+        setTaskCount(res.data.data.taskCount);
+      }
+    } catch (err) {
+      console.error('Failed to fetch dashboard data', err);
+    }
+  }, []);
+
+  const addToast = useCallback((message, type = 'success') => {
+    const id = Date.now();
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 5000);
+  }, []);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await axios.get('/api/dashboard');
-        if (res.data.success) {
-          setTaskCount(res.data.data.taskCount);
-        }
-      } catch (err) {
-        console.error('Failed to fetch dashboard data', err);
-      }
-    };
     fetchData();
-  }, []);
+  }, [fetchData]);
+
+  useSSE(useCallback((event) => {
+    console.log('Dashboard received SSE event:', event);
+    
+    if (event.event_type === 'task_executed') {
+      try {
+        const payload = typeof event.payload === 'string' ? JSON.parse(event.payload) : event.payload;
+        addToast(
+          `Task ${payload.task_name || payload.task_id.slice(0, 8)} executed: ${payload.status}`, 
+          payload.status === 'success' ? 'success' : 'error'
+        );
+        fetchData();
+      } catch (e) {
+        console.error('Error parsing task_executed payload', e);
+      }
+    }
+
+    if (event.event_type === 'task_status_changed') {
+      addToast('Task status updated');
+      fetchData();
+    }
+
+    if (event.event_type === 'approval_required') {
+      try {
+        const payload = typeof event.payload === 'string' ? JSON.parse(event.payload) : event.payload;
+        setPendingApprovals(prev => {
+          // Avoid duplicates
+          if (prev.find(a => a.task_id === payload.task_id)) return prev;
+          return [...prev, payload];
+        });
+        addToast(`Manual Approval Required: ${payload.task_name}`, 'error');
+      } catch (e) {
+        console.error('Error parsing approval_required payload', e);
+      }
+    }
+  }, [addToast, fetchData]));
+
+  const handleApprove = async (taskId) => {
+    try {
+      await axios.post(`/api/tasks/${taskId}/approve`);
+      setPendingApprovals(prev => prev.filter(a => a.task_id !== taskId));
+      addToast('Task approved and resumed');
+      fetchData();
+    } catch (err) {
+      addToast('Failed to approve task', 'error');
+    }
+  };
+
+  const handleDeny = async (taskId) => {
+    try {
+      await axios.post(`/api/tasks/${taskId}/deny`);
+      setPendingApprovals(prev => prev.filter(a => a.task_id !== taskId));
+      addToast('Task execution denied');
+      fetchData();
+    } catch (err) {
+      addToast('Failed to deny task', 'error');
+    }
+  };
 
   const handleCopy = () => {
     navigator.clipboard.writeText(user?.api_key);
@@ -70,6 +140,53 @@ const Dashboard = () => {
         </motion.h1>
         <p className="text-slate-400 font-medium tracking-wide uppercase text-[10px] tracking-[0.2em]">Operational Status: <span className="text-emerald-500">Nominal</span></p>
       </header>
+
+      {/* Pending Approvals Section */}
+      <AnimatePresence>
+        {pendingApprovals.length > 0 && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mb-12 overflow-hidden"
+          >
+            <h2 className="text-xl font-black text-white uppercase tracking-widest mb-6 flex items-center gap-3">
+              <ShieldAlert className="text-red-500 animate-pulse" size={20} />
+              Manual Intervention Required
+            </h2>
+            <div className="flex flex-col gap-4">
+              {pendingApprovals.map((approval) => (
+                <motion.div 
+                  key={approval.task_id}
+                  layout
+                  initial={{ x: -20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  className="bg-red-500/5 border border-red-500/20 p-8 rounded-[2rem] flex flex-col md:flex-row items-center justify-between gap-6 backdrop-blur-xl"
+                >
+                  <div>
+                    <h4 className="text-white font-bold text-lg mb-1">{approval.task_name}</h4>
+                    <p className="text-slate-500 text-xs font-mono">ID: {approval.task_id}</p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <button 
+                      onClick={() => handleDeny(approval.task_id)}
+                      className="px-8 py-4 rounded-xl text-xs font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
+                    >
+                      Deny
+                    </button>
+                    <button 
+                      onClick={() => handleApprove(approval.task_id)}
+                      className="bg-red-500 text-white px-10 py-4 rounded-xl text-xs font-black uppercase tracking-widest shadow-[0_10px_30px_rgba(239,68,68,0.3)] hover:scale-105 transition-transform"
+                    >
+                      Approve Execution
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {new URLSearchParams(window.location.search).get('payment') === 'success' && (
         <div className="bg-emerald-500/10 text-emerald-400 p-6 rounded-3xl border border-emerald-500/20 mb-12 font-bold flex items-center gap-4 shadow-[0_0_50px_rgba(16,185,129,0.1)]">
@@ -167,6 +284,30 @@ const Dashboard = () => {
              <ShieldCheck size={12} className="text-red-900" /> Key rotation will instantly terminate all existing client connections.
           </div>
         </div>
+      </div>
+
+      {/* Real-time Toast Notifications */}
+      <div className="fixed bottom-8 right-8 z-[100] flex flex-col gap-3 pointer-events-none">
+        <AnimatePresence>
+          {toasts.map((toast) => (
+            <motion.div
+              key={toast.id}
+              initial={{ opacity: 0, x: 50, scale: 0.9 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 20, scale: 0.9 }}
+              className={`pointer-events-auto px-6 py-4 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border flex items-center gap-4 backdrop-blur-2xl min-w-[300px] ${
+                toast.type === 'success' 
+                  ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
+                  : 'bg-red-500/10 border-red-500/20 text-red-400'
+              }`}
+            >
+              <div className={`p-2 rounded-xl ${toast.type === 'success' ? 'bg-emerald-500/20' : 'bg-red-500/20'}`}>
+                {toast.type === 'success' ? <Zap size={16} /> : <Bell size={16} />}
+              </div>
+              <span className="text-xs font-black uppercase tracking-widest">{toast.message}</span>
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
     </DashboardLayout>
   );

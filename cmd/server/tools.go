@@ -238,6 +238,14 @@ func registerTools(s *server.MCPServer) {
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("db error: %v", err)), nil
 		}
+
+		// Emit Redis event
+		_ = PublishEvent(ctx, PubSubEvent{
+			UserID:    userID,
+			EventType: "task_status_changed",
+			Payload:   fmt.Sprintf(`{"task_id":"%s", "status":"%s"}`, id, StatusPaused),
+		})
+
 		resBytes, _ := json.Marshal(map[string]string{"status": StatusPaused})
 		return mcp.NewToolResultText(string(resBytes)), nil
 	})
@@ -273,6 +281,14 @@ func registerTools(s *server.MCPServer) {
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("db error: %v", err)), nil
 		}
+
+		// Emit Redis event
+		_ = PublishEvent(ctx, PubSubEvent{
+			UserID:    userID,
+			EventType: "task_status_changed",
+			Payload:   fmt.Sprintf(`{"task_id":"%s", "status":"%s"}`, id, StatusActive),
+		})
+
 		resBytes, _ := json.Marshal(map[string]string{"status": StatusActive})
 		return mcp.NewToolResultText(string(resBytes)), nil
 	})

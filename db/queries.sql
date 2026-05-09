@@ -52,9 +52,10 @@ UPDATE tasks SET status = 'active', locked_by = NULL WHERE locked_by = $1;
 -- name: GetUserByAPIKey :one
 SELECT id, tier FROM users WHERE api_key = $1;
 
--- name: CreateTaskLog :exec
+-- name: CreateTaskLog :one
 INSERT INTO task_logs (task_id, user_id, status, error_message, llm_response) 
-VALUES ($1, $2, $3, $4, $5);
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id;
 
 -- name: UpdateTaskNextRun :exec
 UPDATE tasks SET status = $1, locked_by = NULL, next_run = $2 WHERE id = $3;
@@ -97,6 +98,12 @@ RETURNING *;
 
 -- name: ListUserTasks :many
 SELECT id, name, trigger_type, status, next_run, requires_approval, encrypted_secrets, last_approval_status FROM tasks WHERE user_id = $1;
+
+-- name: GetTaskByID :one
+SELECT * FROM tasks WHERE id = $1;
+
+-- name: UpdateTaskApprovalStatus :exec
+UPDATE tasks SET last_approval_status = $1, status = $2, locked_by = NULL WHERE id = $3 AND user_id = $4;
 
 -- name: DeleteTask :exec
 DELETE FROM tasks WHERE id = $1 AND user_id = $2;
