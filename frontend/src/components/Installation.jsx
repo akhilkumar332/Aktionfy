@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Terminal, Copy, Check, ExternalLink, Cpu, Layout } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const Installation = () => {
   const [copied, setCopied] = useState(null);
@@ -36,10 +37,15 @@ const Installation = () => {
 }`;
 
   return (
-    <section id="installation" className="py-32 bg-paper-50">
+    <section id="installation" className="py-32 bg-paper-50 overflow-hidden">
       <div className="container mx-auto px-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
-          <div>
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+          >
             <h2 className="text-4xl md:text-5xl font-bold text-ink-900 mb-8 tracking-tight">
               Get up and running in <span className="text-accent-orange italic">seconds</span>.
             </h2>
@@ -49,7 +55,14 @@ const Installation = () => {
 
             <div className="space-y-8">
               {steps.map((step, idx) => (
-                <div key={idx} className="flex gap-6">
+                <motion.div 
+                  key={idx}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.2, duration: 0.5 }}
+                  className="flex gap-6"
+                >
                   <div className="flex-shrink-0 w-12 h-12 bg-white border border-slate-200 rounded-xl flex items-center justify-center shadow-sm">
                     <step.icon size={24} className="text-accent-orange" />
                   </div>
@@ -57,7 +70,7 @@ const Installation = () => {
                     <h4 className="text-lg font-bold text-ink-900 mb-2">{step.title}</h4>
                     <p className="text-slate-500 font-medium leading-relaxed">{step.description}</p>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
 
@@ -72,14 +85,21 @@ const Installation = () => {
               <a 
                 href="https://modelcontextprotocol.io" 
                 target="_blank"
+                rel="noreferrer"
                 className="inline-flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-ink-900 transition-colors"
               >
                 Learn about MCP <ExternalLink size={14} />
               </a>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="relative">
+          <motion.div 
+            initial={{ opacity: 0, x: 50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="relative"
+          >
             <div className="absolute inset-0 bg-accent-orange/5 blur-[100px] rounded-full"></div>
             <div className="relative bg-[#141413] rounded-3xl border border-white/10 shadow-2xl overflow-hidden">
               <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-white/5">
@@ -105,7 +125,7 @@ const Installation = () => {
                 </pre>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>

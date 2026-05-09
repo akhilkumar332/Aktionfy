@@ -1,5 +1,6 @@
 import React from 'react';
 import { Layers, Shield, Zap, Globe, RefreshCcw, Database } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const Features = () => {
   const features = [
@@ -41,34 +42,66 @@ const Features = () => {
     },
   ];
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.6, ease: "easeOut" }
+    }
+  };
+
   return (
     <section id="features" className="py-32 bg-white">
       <div className="container mx-auto px-6">
-        <div className="max-w-3xl mx-auto text-center mb-24">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="max-w-3xl mx-auto text-center mb-24"
+        >
           <h2 className="text-4xl md:text-5xl font-bold text-ink-900 mb-6 tracking-tight leading-tight">
             Everything you need for <span className="text-accent-orange">industrial-grade</span> AI automation.
           </h2>
           <p className="text-xl text-slate-500 font-medium">
             We've solved the hard problems of state, time, and distributed consistency so you can focus on building agents.
           </p>
-        </div>
+        </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12"
+        >
           {features.map((f, index) => (
-            <div 
-              key={f.title} 
-              className="group p-8 rounded-3xl border border-slate-100 hover:border-slate-200 hover:shadow-xl hover:shadow-slate-100/50 transition-all duration-300"
+            <motion.div 
+              key={f.title}
+              variants={itemVariants}
+              className="group p-8 rounded-3xl border border-slate-100 hover:border-accent-orange hover:shadow-2xl hover:shadow-orange-100 transition-all duration-500 bg-white"
             >
-              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-8 ${f.color} group-hover:scale-110 transition-transform`}>
+              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-8 ${f.color} group-hover:scale-110 transition-transform duration-500`}>
                 <f.icon size={28} />
               </div>
-              <h3 className="text-2xl font-bold text-ink-900 mb-4 tracking-tight">{f.title}</h3>
+              <h3 className="text-2xl font-bold text-ink-900 mb-4 tracking-tight group-hover:text-accent-orange transition-colors">{f.title}</h3>
               <p className="text-slate-500 leading-relaxed font-medium">
                 {f.description}
               </p>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );

@@ -2,6 +2,7 @@ import React from 'react';
 import { Check, Zap, Rocket, Shield } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
+import { motion } from 'framer-motion';
 
 const Pricing = () => {
   const { user } = useAuth();
@@ -78,24 +79,34 @@ const Pricing = () => {
   ];
 
   return (
-    <section id="pricing" className="py-32 bg-white">
+    <section id="pricing" className="py-32 bg-white overflow-hidden">
       <div className="container mx-auto px-6">
-        <div className="max-w-3xl mx-auto text-center mb-20">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="max-w-3xl mx-auto text-center mb-20"
+        >
           <h2 className="text-4xl md:text-5xl font-bold text-ink-900 mb-6 tracking-tight">
             Simple, transparent <span className="text-accent-orange italic">pricing</span>.
           </h2>
           <p className="text-xl text-slate-500 font-medium">
             Choose the plan that fits your workflow. Scale up as your automation needs grow.
           </p>
-        </div>
+        </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {plans.map((plan) => (
-            <div
+          {plans.map((plan, idx) => (
+            <motion.div
               key={plan.name}
-              className={`relative p-8 rounded-3xl border transition-all duration-300 ${
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: idx * 0.2, duration: 0.8, ease: "easeOut" }}
+              className={`relative p-8 rounded-3xl border transition-all duration-300 flex flex-col ${
                 plan.highlight
-                  ? 'border-accent-orange shadow-xl scale-105 z-10 bg-white'
+                  ? 'border-accent-orange shadow-2xl scale-105 z-10 bg-white'
                   : 'border-slate-100 hover:border-slate-200 hover:shadow-lg bg-paper-50/50'
               }`}
             >
@@ -105,7 +116,7 @@ const Pricing = () => {
                 </div>
               )}
 
-              <div className="mb-8">
+              <div className="mb-8 flex-1">
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-6 ${
                   plan.highlight ? 'bg-accent-orange text-white' : 'bg-slate-100 text-slate-600'
                 }`}>
@@ -117,23 +128,23 @@ const Pricing = () => {
                   {plan.period && <span className="text-slate-500 font-medium">{plan.period}</span>}
                 </div>
                 <p className="text-slate-500 text-sm leading-relaxed">{plan.description}</p>
+                
+                <ul className="space-y-4 my-10">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-3 text-sm text-slate-600">
+                      <div className="mt-0.5 text-accent-orange flex-shrink-0">
+                        <Check size={16} />
+                      </div>
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
               </div>
-
-              <ul className="space-y-4 mb-10">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-3 text-sm text-slate-600">
-                    <div className="mt-0.5 text-accent-orange">
-                      <Check size={16} />
-                    </div>
-                    {feature}
-                  </li>
-                ))}
-              </ul>
 
               <button
                 disabled={plan.active}
                 onClick={plan.onClick}
-                className={`w-full py-4 rounded-2xl font-bold transition-all active:scale-95 ${
+                className={`w-full py-4 rounded-2xl font-bold transition-all active:scale-95 mt-auto ${
                   plan.active
                     ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
                     : plan.highlight
@@ -143,7 +154,7 @@ const Pricing = () => {
               >
                 {plan.cta}
               </button>
-            </div>
+            </motion.div>
           ))}
         </div>
 
