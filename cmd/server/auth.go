@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/crypto/bcrypt"
+	"schedule-mcp/db"
 )
 
 // RegisterUser hashes password, generates API key, and inserts user into DB
@@ -23,44 +25,59 @@ func RegisterUser(ctx context.Context, email, password string) (*User, error) {
 	}
 	apiKey := hex.EncodeToString(apiKeyBytes)
 
-	var user User
-	err = dbPool.QueryRow(ctx, 
-		"INSERT INTO users (email, password_hash, api_key) VALUES ($1, $2, $3) RETURNING id, email, api_key, role, tier, created_at",
-		email, string(hashedPassword), apiKey,
-	).Scan(&user.ID, &user.Email, &user.APIKey, &user.Role, &user.Tier, &user.CreatedAt)
-	
+	u, err := queries.CreateUser(ctx, db.CreateUserParams{
+		Email:        pgtype.Text{String: email, Valid: true},
+		PasswordHash: pgtype.Text{String: string(hashedPassword), Valid: true},
+		ApiKey:       apiKey,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert user: %w", err)
 	}
 
-	return &user, nil
+	return &User{
+		ID:        u.ID,
+		Email:     u.Email.String,
+		APIKey:    u.ApiKey,
+		Role:      u.Role.String,
+		Tier:      u.Tier.String,
+		CreatedAt: u.CreatedAt.Time,
+	}, nil
 }
 
 // LoginUser verifies password and creates a session
 func LoginUser(ctx context.Context, email, password string) (string, error) {
-	var userID, passwordHash string
-	err := dbPool.QueryRow(ctx, "SELECT id, password_hash FROM users WHERE email = $1", email).Scan(&userID, &passwordHash)
+	info, err := queries.GetAuthInfoByEmail(ctx, pgtype.Text{String: email, Valid: true})
 	if err != nil {
 		return "", fmt.Errorf("invalid email or password")
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(password))
+	err = bcrypt.CompareHashAndPassword([]byte(info.PasswordHash.String), []byte(password))
 	if err != nil {
 		return "", fmt.Errorf("invalid email or password")
 	}
 
-	var sessionID string
-	expiresAt := time.Now().UTC().Add(24 * time.Hour)
-	err = dbPool.QueryRow(ctx, 
-		"INSERT INTO web_sessions (user_id, expires_at) VALUES ($1, $2) RETURNING id",
-		userID, expiresAt,
-	).Scan(&sessionID)
+	sessionID, err := queries.CreateWebSession(ctx, db.CreateWebSessionParams{
+		UserID:    pgtype.Text{String: info.ID, Valid: true},
+		ExpiresAt: pgtype.Timestamptz{Time: time.Now().UTC().Add(24 * time.Hour), Valid: true},
+	})
 
 	if err != nil {
 		return "", fmt.Errorf("failed to create session: %w", err)
 	}
 
-	return sessionID, nil
+	// sessionID is a UUID (pgtype.UUID)
+	var idStr [36]byte
+	hex.Encode(idStr[:8], sessionID.Bytes[:4])
+	idStr[8] = '-'
+	hex.Encode(idStr[9:13], sessionID.Bytes[4:6])
+	idStr[13] = '-'
+	hex.Encode(idStr[14:18], sessionID.Bytes[6:8])
+	idStr[18] = '-'
+	hex.Encode(idStr[19:23], sessionID.Bytes[8:10])
+	idStr[23] = '-'
+	hex.Encode(idStr[24:], sessionID.Bytes[10:])
+
+	return string(idStr[:]), nil
 }
 
 // RotateAPIKey generates a new API key for the user and updates the DB
@@ -71,7 +88,10 @@ func RotateAPIKey(ctx context.Context, userID string) (string, error) {
 	}
 	newAPIKey := hex.EncodeToString(apiKeyBytes)
 
-	_, err := dbPool.Exec(ctx, "UPDATE users SET api_key = $1 WHERE id = $2", newAPIKey, userID)
+	err := queries.UpdateUserAPIKey(ctx, db.UpdateUserAPIKeyParams{
+		ApiKey: newAPIKey,
+		ID:     userID,
+	})
 	if err != nil {
 		return "", fmt.Errorf("failed to update api key: %w", err)
 	}

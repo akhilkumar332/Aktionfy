@@ -2,14 +2,15 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/mark3labs/mcp-go/server"
 	"github.com/robfig/cron/v3"
+	"schedule-mcp/db"
 )
 
 // runScheduler queries the DB every 10 seconds for due tasks
@@ -22,58 +23,79 @@ func runScheduler(ctx context.Context, s *server.MCPServer) {
 		case <-ticker.C:
 			// 1. Claim batch of tasks using PLpgSQL function with timeout
 			claimCtx, claimCancel := context.WithTimeout(ctx, 5*time.Second)
-			tasks := claimDueTasks(claimCtx, 50, workerID)
+			tasks, err := queries.ClaimDueTasks(claimCtx, db.ClaimDueTasksParams{
+				BatchSize: 50,
+				WorkerID:  workerID,
+			})
 			claimCancel()
+
+			if err != nil {
+				log.Printf("Error claiming tasks: %v", err)
+				continue
+			}
 
 			for _, task := range tasks {
 				workerWG.Add(1)
-				go func(t Task) {
+				go func(t db.Task) {
 					defer workerWG.Done()
 					workerCtx := context.Background()
 					// 2. Check if user is online via Redis
 					isOnline := GlobalSessionManager.IsOnline(workerCtx, t.UserID)
 
+					taskID := formatUUID(t.ID)
+
 					if !isOnline {
-						log.Printf("User %s is offline. Task %s missed.", t.UserID, t.ID)
+						log.Printf("User %s is offline. Task %s missed.", t.UserID, taskID)
 						// Phase 1.2: Execution Logging
-						_, _ = dbPool.Exec(workerCtx, "INSERT INTO task_logs (task_id, user_id, status, error_message) VALUES ($1, $2, 'missed', 'user offline')", t.ID, t.UserID)
+						_ = queries.CreateTaskLog(workerCtx, db.CreateTaskLogParams{
+							TaskID:       t.ID,
+							UserID:       t.UserID,
+							Status:       "missed",
+							ErrorMessage: pgtype.Text{String: "user offline", Valid: true},
+						})
 						
 						// Phase 3.1: Missed Task Policy
-						if t.MissedTaskPolicy == PolicyRunImmediate {
+						if t.MissedTaskPolicy.String == PolicyRunImmediate {
 							// Push next_run ahead by 1 minute to prevent rapid polling spam while offline
-							_, _ = dbPool.Exec(workerCtx, "UPDATE tasks SET status = $1, locked_by = NULL, next_run = NOW() + INTERVAL '1 minute' WHERE id = $2", StatusActive, t.ID)
+							_ = queries.UpdateTaskNextRun(workerCtx, db.UpdateTaskNextRunParams{
+								Status:  pgtype.Text{String: StatusActive, Valid: true},
+								NextRun: pgtype.Timestamptz{Time: time.Now().UTC().Add(1 * time.Minute), Valid: true},
+								ID:      t.ID,
+							})
 							return
 						} else {
 							// "skip": calculate next run and update
 							var config map[string]interface{}
 							if err := json.Unmarshal(t.TriggerConfig, &config); err == nil {
-								if newNextRun, calcErr := calculateNextRun(t.TriggerType, config, time.Now().UTC()); calcErr == nil {
-									completeTask(workerCtx, t.ID, newNextRun)
+								if newNextRun, calcErr := calculateNextRun(t.TriggerType.String, config, time.Now().UTC()); calcErr == nil {
+									completeTask(workerCtx, taskID, newNextRun)
 									return
 								}
 							}
-							_, _ = dbPool.Exec(workerCtx, "UPDATE tasks SET status = $1, locked_by = NULL WHERE id = $2", StatusPaused, t.ID)
+							_ = queries.UpdateTaskStatus(workerCtx, db.UpdateTaskStatusParams{
+								Status: pgtype.Text{String: StatusPaused, Valid: true},
+								ID:     t.ID,
+							})
 							return
 						}
 					}
 
 					// Phase 9.2: Cross-Task Context Check
 					finalPrompt := t.AgentPrompt
-					if t.DependsOnTaskID != nil {
-						var parentOutput sql.NullString
-						err := dbPool.QueryRow(workerCtx, "SELECT llm_response FROM task_logs WHERE task_id = $1 ORDER BY execution_time DESC LIMIT 1", *t.DependsOnTaskID).Scan(&parentOutput)
+					if t.DependsOnTaskID.Valid {
+						parentOutput, err := queries.GetLatestTaskLogResponse(workerCtx, t.DependsOnTaskID)
 						if err == nil && parentOutput.Valid && parentOutput.String != "" {
 							finalPrompt = fmt.Sprintf("Context from previous task:\n%s\n\nYour Prompt:\n%s", parentOutput.String, t.AgentPrompt)
 						}
 					}
 
 					// Phase 6.1: Publish to Redis Pub/Sub so the correct node with the SSE connection can trigger it
-					executionID := fmt.Sprintf("%s-%d", t.ID, time.Now().UTC().UnixNano())
+					executionID := fmt.Sprintf("%s-%d", taskID, time.Now().UTC().UnixNano())
 					payloadBytes, _ := json.Marshal(map[string]interface{}{
-						"task_id":        t.ID,
+						"task_id":        taskID,
 						"prompt":         finalPrompt,
 						"execution_id":   executionID,
-						"trigger_type":   t.TriggerType,
+						"trigger_type":   t.TriggerType.String,
 						"trigger_config": string(t.TriggerConfig),
 					})
 					subscribers, err := redisClient.Publish(workerCtx, fmt.Sprintf("trigger_task:%s", t.UserID), string(payloadBytes)).Result()
@@ -81,29 +103,47 @@ func runScheduler(ctx context.Context, s *server.MCPServer) {
 						if err == nil {
 							err = fmt.Errorf("no active subscribers received the payload")
 						}
-						log.Printf("Failed to deliver task %s for user %s: %v", t.ID, t.UserID, err)
+						log.Printf("Failed to deliver task %s for user %s: %v", taskID, t.UserID, err)
 						// Phase 2.3: Dead Letter Queue
-						t.FailureCount++
-						_, _ = dbPool.Exec(workerCtx, "INSERT INTO task_logs (task_id, user_id, status, error_message) VALUES ($1, $2, 'failure', $3)", t.ID, t.UserID, err.Error())
+						failureCount := t.FailureCount.Int32 + 1
+						_ = queries.CreateTaskLog(workerCtx, db.CreateTaskLogParams{
+							TaskID:       t.ID,
+							UserID:       t.UserID,
+							Status:       "failure",
+							ErrorMessage: pgtype.Text{String: err.Error(), Valid: true},
+						})
 						
-						if t.FailureCount >= 3 {
-							log.Printf("Task %s failed 3 times, setting status to error.", t.ID)
-							_, _ = dbPool.Exec(workerCtx, "UPDATE tasks SET status = $1, locked_by = NULL, failure_count = $2 WHERE id = $3", StatusError, t.FailureCount, t.ID)
+						if failureCount >= 3 {
+							log.Printf("Task %s failed 3 times, setting status to error.", taskID)
+							_ = queries.UpdateTaskStatusAndFailureCount(workerCtx, db.UpdateTaskStatusAndFailureCountParams{
+								Status:       pgtype.Text{String: StatusError, Valid: true},
+								FailureCount: pgtype.Int4{Int32: failureCount, Valid: true},
+								ID:           t.ID,
+							})
 							
 							// Phase 9.1: Real Dead Letter Email Alert
-							sendFailureEmail(workerCtx, t.UserID, t.ID, t.Name)
+							sendFailureEmail(workerCtx, t.UserID, taskID, t.Name)
 						} else {
-							_, _ = dbPool.Exec(workerCtx, "UPDATE tasks SET status = $1, locked_by = NULL, failure_count = $2 WHERE id = $3", StatusActive, t.FailureCount, t.ID)
+							_ = queries.UpdateTaskStatusAndFailureCount(workerCtx, db.UpdateTaskStatusAndFailureCountParams{
+								Status:       pgtype.Text{String: StatusActive, Valid: true},
+								FailureCount: pgtype.Int4{Int32: failureCount, Valid: true},
+								ID:           t.ID,
+							})
 						}
 						return
 					}
 
 					// Log Success delivery to node (session.go will log the actual LLM response)
-					_, _ = dbPool.Exec(workerCtx, "INSERT INTO task_logs (task_id, user_id, status, llm_response) VALUES ($1, $2, 'success', 'Task delivered to node via Redis')", t.ID, t.UserID)
+					_ = queries.CreateTaskLog(workerCtx, db.CreateTaskLogParams{
+						TaskID:      t.ID,
+						UserID:      t.UserID,
+						Status:      "success",
+						LlmResponse: pgtype.Text{String: "Task delivered to node via Redis", Valid: true},
+					})
 
 					// Iteration 2: We no longer update the task status or call completeTask here.
 					// The execution node (session.go) is now responsible for advancing the task.
-					log.Printf("Task %s delivered to node. Remaining in 'processing' status.", t.ID)
+					log.Printf("Task %s delivered to node. Remaining in 'processing' status.", taskID)
 				}(task)
 			}
 		case <-ctx.Done():
@@ -112,42 +152,24 @@ func runScheduler(ctx context.Context, s *server.MCPServer) {
 	}
 }
 
-// claimDueTasks calls the PLpgSQL function to atomically get and lock tasks
-func claimDueTasks(ctx context.Context, batchSize int, wID string) []Task {
-	rows, err := dbPool.Query(ctx, "SELECT * FROM fn_claim_due_tasks($1, $2)", batchSize, wID)
-	if err != nil {
-		log.Printf("Error claiming tasks: %v", err)
-		return nil
-	}
-	defer rows.Close()
-
-	var tasks []Task
-	for rows.Next() {
-		var t Task
-		var lockedBy *string
-		var lastRun *time.Time
-		var createdAt time.Time
-		err := rows.Scan(
-			&t.ID, &t.UserID, &t.Name, &t.TriggerType, &t.TriggerConfig,
-			&t.AgentPrompt, &t.Status, &lockedBy, &t.NextRun, &lastRun,
-			&t.FailureCount, &t.MissedTaskPolicy, &t.DependsOnTaskID, &createdAt,
-		)
-		if err == nil {
-			tasks = append(tasks, t)
-		} else {
-			log.Printf("Error scanning task: %v", err)
-		}
-	}
-	return tasks
-}
-
 // completeTask calls the PLpgSQL function to set the task back to active and update next_run
 func completeTask(ctx context.Context, taskID string, nextRun time.Time, status ...string) {
 	finalStatus := StatusActive
 	if len(status) > 0 {
 		finalStatus = status[0]
 	}
-	_, err := dbPool.Exec(ctx, "SELECT fn_complete_task($1, $2, $3)", taskID, nextRun, finalStatus)
+	
+	var tid pgtype.UUID
+	if err := parseUUID(taskID, &tid); err != nil {
+		log.Printf("Invalid task ID in completeTask: %s", taskID)
+		return
+	}
+
+	err := queries.CompleteTask(ctx, db.CompleteTaskParams{
+		TaskID:     tid,
+		NewNextRun: pgtype.Timestamptz{Time: nextRun, Valid: true},
+		NewStatus:  finalStatus,
+	})
 	if err != nil {
 		log.Printf("Error completing task %s: %v", taskID, err)
 	}
@@ -206,11 +228,11 @@ func runReaper(ctx context.Context) {
 	for {
 		select {
 		case <-ticker.C:
-			res, err := dbPool.Exec(ctx, "UPDATE tasks SET status = 'active', locked_by = NULL WHERE status = 'processing' AND next_run < NOW() - INTERVAL '5 minutes'")
+			rows, err := queries.ReapStuckTasks(ctx)
 			if err != nil {
 				log.Printf("Reaper error: %v", err)
 			} else {
-				if rows := res.RowsAffected(); rows > 0 {
+				if rows > 0 {
 					log.Printf("Reaper: recovered %d stuck tasks", rows)
 				}
 			}

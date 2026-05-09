@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/gorilla/csrf"
+	"github.com/jackc/pgx/v5/pgtype"
+	"schedule-mcp/db"
 )
 
 type AuthInput struct {
@@ -96,16 +98,31 @@ func apiLoginHandler(w http.ResponseWriter, r *http.Request) {
 		Expires:  time.Now().UTC().Add(24 * time.Hour),
 	})
 
+	// Parse session ID into pgtype.UUID
+	var sessID pgtype.UUID
+	if err := parseUUID(sessionID, &sessID); err != nil {
+		sendJSON(w, http.StatusInternalServerError, APIResponse{Success: false, Error: "Internal Error"})
+		return
+	}
+
 	// Fetch user info to return
-	var user User
-	err = dbPool.QueryRow(r.Context(),
-		"SELECT id, email, api_key, role, tier, created_at FROM users WHERE id = (SELECT user_id FROM web_sessions WHERE id = $1)",
-		sessionID,
-	).Scan(&user.ID, &user.Email, &user.APIKey, &user.Role, &user.Tier, &user.CreatedAt)
+	u, err := queries.GetUserBySessionID(r.Context(), db.GetUserBySessionIDParams{
+		ID:        sessID,
+		ExpiresAt: pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},
+	})
 
 	if err != nil {
 		sendJSON(w, http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch user info"})
 		return
+	}
+
+	user := &User{
+		ID:        u.ID,
+		Email:     u.Email.String,
+		APIKey:    u.ApiKey,
+		Role:      u.Role.String,
+		Tier:      u.Tier.String,
+		CreatedAt: u.CreatedAt.Time,
 	}
 
 	sendJSON(w, http.StatusOK, APIResponse{
@@ -118,9 +135,9 @@ func apiLoginHandler(w http.ResponseWriter, r *http.Request) {
 func apiLogoutHandler(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("session_id")
 	if err == nil && cookie.Value != "" {
-		_, err = dbPool.Exec(r.Context(), "DELETE FROM web_sessions WHERE id = $1", cookie.Value)
-		if err != nil {
-			// log.Printf("Error deleting session: %v", err)
+		var sessID pgtype.UUID
+		if err := parseUUID(cookie.Value, &sessID); err == nil {
+			_ = queries.DeleteWebSession(r.Context(), sessID)
 		}
 	}
 
@@ -146,8 +163,7 @@ func apiLogoutHandler(w http.ResponseWriter, r *http.Request) {
 func apiDashboardHandler(w http.ResponseWriter, r *http.Request) {
 	user := getUser(r)
 
-	var taskCount int
-	err := dbPool.QueryRow(r.Context(), "SELECT COUNT(*) FROM tasks WHERE user_id = $1", user.ID).Scan(&taskCount)
+	taskCount, err := queries.CountUserTasks(r.Context(), user.ID)
 	if err != nil {
 		sendJSON(w, http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch task count"})
 		return
@@ -179,49 +195,54 @@ func apiRotateAPIKeyHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func apiMonitorHandler(w http.ResponseWriter, r *http.Request) {
-	rows, err := dbPool.Query(r.Context(), `
-		SELECT l.id, l.task_id, l.user_id, l.execution_time, l.status, l.llm_response, l.error_message, t.name as task_name, u.email as user_email
-		FROM task_logs l
-		JOIN tasks t ON l.task_id = t.id
-		JOIN users u ON l.user_id = u.id
-		ORDER BY l.execution_time DESC
-		LIMIT 100
-	`)
+	rows, err := queries.GetTaskLogs(r.Context())
 	if err != nil {
 		sendJSON(w, http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch logs"})
 		return
 	}
-	defer rows.Close()
 
 	var logs []TaskLog
-	for rows.Next() {
-		var l TaskLog
-		err := rows.Scan(&l.ID, &l.TaskID, &l.UserID, &l.ExecutionTime, &l.Status, &l.LLMResponse, &l.ErrorMessage, &l.TaskName, &l.UserEmail)
-		if err != nil {
-			continue
+	for _, l := range rows {
+		var llmResp, errMsg *string
+		if l.LlmResponse.Valid {
+			llmResp = &l.LlmResponse.String
 		}
-		logs = append(logs, l)
+		if l.ErrorMessage.Valid {
+			errMsg = &l.ErrorMessage.String
+		}
+		logs = append(logs, TaskLog{
+			ID:            formatUUID(l.ID),
+			TaskID:        formatUUID(l.TaskID),
+			UserID:        l.UserID,
+			ExecutionTime: l.ExecutionTime.Time,
+			Status:        l.Status,
+			LLMResponse:   llmResp,
+			ErrorMessage:  errMsg,
+			TaskName:      l.TaskName,
+			UserEmail:     l.UserEmail.String,
+		})
 	}
 
 	sendJSON(w, http.StatusOK, APIResponse{Success: true, Data: logs})
 }
 
 func apiAdminUsersHandler(w http.ResponseWriter, r *http.Request) {
-	rows, err := dbPool.Query(r.Context(), "SELECT id, email, role, tier, created_at FROM users ORDER BY created_at DESC")
+	rows, err := queries.ListUsers(r.Context())
 	if err != nil {
 		sendJSON(w, http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch users"})
 		return
 	}
-	defer rows.Close()
 
 	var users []User
-	for rows.Next() {
-		var u User
-		err := rows.Scan(&u.ID, &u.Email, &u.Role, &u.Tier, &u.CreatedAt)
-		if err != nil {
-			continue
-		}
-		users = append(users, u)
+	for _, u := range rows {
+		users = append(users, User{
+			ID:        u.ID,
+			Email:     u.Email.String,
+			APIKey:    u.ApiKey,
+			Role:      u.Role.String,
+			Tier:      u.Tier.String,
+			CreatedAt: u.CreatedAt.Time,
+		})
 	}
 
 	sendJSON(w, http.StatusOK, APIResponse{Success: true, Data: users})
@@ -246,7 +267,10 @@ func apiAdminUpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if input.Role != "" {
-		_, err := dbPool.Exec(r.Context(), "UPDATE users SET role = $1 WHERE id = $2", input.Role, input.UserID)
+		err := queries.UpdateUserRole(r.Context(), db.UpdateUserRoleParams{
+			Role: pgtype.Text{String: input.Role, Valid: true},
+			ID:   input.UserID,
+		})
 		if err != nil {
 			sendJSON(w, http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to update user role"})
 			return
@@ -254,7 +278,10 @@ func apiAdminUpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if input.Tier != "" {
-		_, err := dbPool.Exec(r.Context(), "UPDATE users SET tier = $1 WHERE id = $2", input.Tier, input.UserID)
+		err := queries.UpdateUserTier(r.Context(), db.UpdateUserTierParams{
+			Tier: pgtype.Text{String: input.Tier, Valid: true},
+			ID:   input.UserID,
+		})
 		if err != nil {
 			sendJSON(w, http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to update user tier"})
 			return

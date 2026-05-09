@@ -6,7 +6,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/mark3labs/mcp-go/server"
+	"schedule-mcp/db"
 )
 
 // sessionMiddleware extracts session_id from cookie and hydrates context
@@ -22,11 +24,21 @@ func sessionMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		var user User
-		err = dbPool.QueryRow(r.Context(),
-			"SELECT u.id, u.email, u.api_key, u.role, u.tier, u.created_at FROM web_sessions s JOIN users u ON s.user_id = u.id WHERE s.id = $1 AND s.expires_at > $2",
-			cookie.Value, time.Now().UTC(),
-		).Scan(&user.ID, &user.Email, &user.APIKey, &user.Role, &user.Tier, &user.CreatedAt)
+		// Parse session ID into pgtype.UUID
+		var sessionID pgtype.UUID
+		if err := parseUUID(cookie.Value, &sessionID); err != nil {
+			if strings.HasPrefix(r.URL.Path, "/api/") {
+				sendJSON(w, http.StatusUnauthorized, APIResponse{Success: false, Error: "Invalid session"})
+				return
+			}
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		u, err := queries.GetUserBySessionID(r.Context(), db.GetUserBySessionIDParams{
+			ID:        sessionID,
+			ExpiresAt: pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},
+		})
 
 		if err != nil {
 			if strings.HasPrefix(r.URL.Path, "/api/") {
@@ -37,7 +49,16 @@ func sessionMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), "user", &user)
+		user := &User{
+			ID:        u.ID,
+			Email:     u.Email.String,
+			APIKey:    u.ApiKey,
+			Role:      u.Role.String,
+			Tier:      u.Tier.String,
+			CreatedAt: u.CreatedAt.Time,
+		}
+
+		ctx := context.WithValue(r.Context(), "user", user)
 		ctx = context.WithValue(ctx, "user_id", user.ID)
 		ctx = context.WithValue(ctx, "user_role", user.Role)
 		next.ServeHTTP(w, r.WithContext(ctx))
@@ -83,22 +104,21 @@ func authMiddleware(next http.Handler, mcpServer *server.MCPServer) http.Handler
 			return
 		}
 
-		var userID, userTier string
-		err := dbPool.QueryRow(r.Context(), "SELECT id, tier FROM users WHERE api_key = $1", apiKey).Scan(&userID, &userTier)
+		u, err := queries.GetUserByAPIKey(r.Context(), apiKey)
 		if err != nil {
 			http.Error(w, "Unauthorized: Invalid API Key", http.StatusUnauthorized)
 			return
 		}
 
 		// Phase 4: Rate Limiting
-		if !globalRateLimiter.Allow(r.Context(), userID) {
+		if !globalRateLimiter.Allow(r.Context(), u.ID) {
 			http.Error(w, "Too Many Requests", http.StatusTooManyRequests)
 			return
 		}
 
 		// Add UserID and Tier to context for use in tools
-		ctx := context.WithValue(r.Context(), "user_id", userID)
-		ctx = context.WithValue(ctx, "user_tier", userTier)
+		ctx := context.WithValue(r.Context(), "user_id", u.ID)
+		ctx = context.WithValue(ctx, "user_tier", u.Tier.String)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

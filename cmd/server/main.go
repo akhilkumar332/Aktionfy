@@ -11,10 +11,12 @@ import (
 	"time"
 
 	"github.com/gorilla/csrf"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/mark3labs/mcp-go/server"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/redis/go-redis/v9"
+	"schedule-mcp/db"
 )
 
 func main() {
@@ -36,6 +38,8 @@ func main() {
 		log.Fatalf("Unable to connect to database: %v", err)
 	}
 	defer dbPool.Close()
+
+	queries = db.New(dbPool)
 
 	// 1.5 Initialize Redis Client
 	redisUrl := os.Getenv("REDIS_URL")
@@ -203,11 +207,11 @@ func main() {
 	}
 
 	log.Printf("Reverting tasks locked by worker %s to active...", workerID)
-	res, err := dbPool.Exec(context.Background(), "UPDATE tasks SET status = 'active', locked_by = NULL WHERE locked_by = $1", workerID)
+	err = queries.RevertProcessingTasks(context.Background(), pgtype.Text{String: workerID, Valid: true})
 	if err != nil {
 		log.Printf("Failed to revert processing tasks: %v", err)
 	} else {
-		log.Printf("Reverted %d tasks", res.RowsAffected())
+		log.Printf("Reverted tasks for worker %s", workerID)
 	}
 
 	if err := srv.Shutdown(shutdownCtx); err != nil {

@@ -7,8 +7,10 @@ import (
 	"log"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
+	"schedule-mcp/db"
 )
 
 // registerTools sets up the MCP tools for managing schedules
@@ -35,18 +37,17 @@ func registerTools(s *server.MCPServer) {
 		userTier, _ := ctx.Value("user_tier").(string)
 
 		// Phase 2.2: Tool Quotas
-		var taskCount int
-		err := dbPool.QueryRow(ctx, "SELECT COUNT(*) FROM tasks WHERE user_id = $1", userID).Scan(&taskCount)
+		taskCount, err := queries.CountUserTasks(ctx, userID)
 		if err != nil {
 			log.Printf("Quota check error: %v", err)
 			return mcp.NewToolResultError("Quota check failed. Please try again later."), nil
 		}
 		
-		if userTier == TierFree && taskCount >= QuotaFree {
+		if userTier == TierFree && int(taskCount) >= QuotaFree {
 			return mcp.NewToolResultError(fmt.Sprintf("quota exceeded: free tier allows maximum %d tasks", QuotaFree)), nil
-		} else if userTier == TierPlus && taskCount >= QuotaPlus {
+		} else if userTier == TierPlus && int(taskCount) >= QuotaPlus {
 			return mcp.NewToolResultError(fmt.Sprintf("quota exceeded: plus tier allows maximum %d tasks", QuotaPlus)), nil
-		} else if userTier == TierPro && taskCount >= QuotaPro {
+		} else if userTier == TierPro && int(taskCount) >= QuotaPro {
 			return mcp.NewToolResultError(fmt.Sprintf("quota exceeded: pro tier allows maximum %d tasks", QuotaPro)), nil
 		}
 
@@ -80,19 +81,18 @@ func registerTools(s *server.MCPServer) {
 			missedPolicy = mp
 		}
 		
-		var dependsOn *string
+		var dependsOn pgtype.UUID
 		if dep, ok := args["depends_on_task_id"].(string); ok && dep != "" {
-			// Basic UUID length validation to prevent Postgres 500 errors
-			if len(dep) == 36 {
-				// Check if task exists and belongs to user
-				var exists bool
-				err := dbPool.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM tasks WHERE id = $1 AND user_id = $2)", dep, userID).Scan(&exists)
-				if err != nil || !exists {
-					return mcp.NewToolResultError("invalid depends_on_task_id: task not found or unauthorized"), nil
-				}
-				dependsOn = &dep
-			} else {
+			if err := parseUUID(dep, &dependsOn); err != nil {
 				return mcp.NewToolResultError("invalid depends_on_task_id format, expected UUID"), nil
+			}
+			// Check ownership
+			exists, err := queries.CheckTaskOwnership(ctx, db.CheckTaskOwnershipParams{
+				ID:     dependsOn,
+				UserID: userID,
+			})
+			if err != nil || !exists {
+				return mcp.NewToolResultError("invalid depends_on_task_id: task not found or unauthorized"), nil
 			}
 		}
 		
@@ -108,18 +108,22 @@ func registerTools(s *server.MCPServer) {
 			return mcp.NewToolResultError(fmt.Sprintf("invalid trigger configuration: %v", err)), nil
 		}
 
-		var taskID string
-		err = dbPool.QueryRow(ctx, `
-			INSERT INTO tasks (user_id, name, trigger_type, trigger_config, agent_prompt, missed_task_policy, depends_on_task_id, next_run)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-			RETURNING id
-		`, userID, name, triggerType, triggerConfigBytes, agentPrompt, missedPolicy, dependsOn, nextRun).Scan(&taskID)
+		taskID, err := queries.CreateTask(ctx, db.CreateTaskParams{
+			UserID:           userID,
+			Name:             name,
+			TriggerType:      pgtype.Text{String: triggerType, Valid: true},
+			TriggerConfig:    triggerConfigBytes,
+			AgentPrompt:      agentPrompt,
+			MissedTaskPolicy: pgtype.Text{String: missedPolicy, Valid: true},
+			DependsOnTaskID:  dependsOn,
+			NextRun:          pgtype.Timestamptz{Time: nextRun, Valid: true},
+		})
 
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("failed to insert task: %v", err)), nil
 		}
 
-		resBytes, _ := json.Marshal(map[string]string{"status": "success", "task_id": taskID, "next_run": nextRun.Format(time.RFC3339)})
+		resBytes, _ := json.Marshal(map[string]string{"status": "success", "task_id": formatUUID(taskID), "next_run": nextRun.Format(time.RFC3339)})
 		return mcp.NewToolResultText(string(resBytes)), nil
 	})
 
@@ -132,27 +136,20 @@ func registerTools(s *server.MCPServer) {
 			return mcp.NewToolResultError("unauthorized"), nil
 		}
 
-		rows, err := dbPool.Query(ctx, "SELECT id, name, trigger_type, status, next_run FROM tasks WHERE user_id = $1", userID)
+		rows, err := queries.ListUserTasks(ctx, userID)
 		if err != nil {
-			return mcp.NewToolResultError(fmt.Sprintf("db error: %v", err)), nil
+			return mcp.NewToolResultError(fmt.Errorf("db error: %v", err).Error()), nil
 		}
-		defer rows.Close()
 
 		var tasks []map[string]interface{}
-		for rows.Next() {
-			var id, name, tType, status string
-			var nextRun time.Time
-			if err := rows.Scan(&id, &name, &tType, &status, &nextRun); err == nil {
-				tasks = append(tasks, map[string]interface{}{
-					"id":           id,
-					"name":         name,
-					"trigger_type": tType,
-					"status":       status,
-					"next_run":     nextRun.Format(time.RFC3339),
-				})
-			} else {
-				log.Printf("Error scanning task row for user %s: %v", userID, err)
-			}
+		for _, t := range rows {
+			tasks = append(tasks, map[string]interface{}{
+				"id":           formatUUID(t.ID),
+				"name":         t.Name,
+				"trigger_type": t.TriggerType.String,
+				"status":       t.Status.String,
+				"next_run":     t.NextRun.Time.Format(time.RFC3339),
+			})
 		}
 		
 		resBytes, _ := json.Marshal(tasks)
@@ -179,7 +176,23 @@ func registerTools(s *server.MCPServer) {
 		if !ok {
 			return mcp.NewToolResultError("missing or invalid 'id'"), nil
 		}
-		_, err := dbPool.Exec(ctx, "UPDATE tasks SET status = $1 WHERE id = $2 AND user_id = $3", StatusPaused, id, userID)
+		
+		var tid pgtype.UUID
+		if err := parseUUID(id, &tid); err != nil {
+			return mcp.NewToolResultError("invalid task ID format"), nil
+		}
+
+		err := queries.UpdateTaskStatusByUserID(ctx, db.UpdateTaskStatusByUserIDParams{
+			Status: pgtype.Text{String: StatusPaused, Valid: true},
+			ID:     tid,
+			UserID: userID,
+		})
+		// Note: The original code didn't check ownership here, but it's good practice.
+		// For now I'll stick to original logic but using sqlc.
+		// Actually, I'll add ownership check to queries.sql for safety.
+		// But wait, the original UPDATE had `WHERE id = $2 AND user_id = $3`.
+		// I should update my query in queries.sql.
+
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("db error: %v", err)), nil
 		}
@@ -204,8 +217,17 @@ func registerTools(s *server.MCPServer) {
 		if !ok {
 			return mcp.NewToolResultError("missing or invalid 'id'"), nil
 		}
-		// Also reset failure_count when resuming
-		_, err := dbPool.Exec(ctx, "UPDATE tasks SET status = $1, failure_count = 0 WHERE id = $2 AND user_id = $3", StatusActive, id, userID)
+		
+		var tid pgtype.UUID
+		if err := parseUUID(id, &tid); err != nil {
+			return mcp.NewToolResultError("invalid task ID format"), nil
+		}
+
+		err := queries.ResetTaskFailureCount(ctx, db.ResetTaskFailureCountParams{
+			Status: pgtype.Text{String: StatusActive, Valid: true},
+			ID:     tid,
+			UserID: userID,
+		})
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("db error: %v", err)), nil
 		}
@@ -230,7 +252,16 @@ func registerTools(s *server.MCPServer) {
 		if !ok {
 			return mcp.NewToolResultError("missing or invalid 'id'"), nil
 		}
-		_, err := dbPool.Exec(ctx, "DELETE FROM tasks WHERE id = $1 AND user_id = $2", id, userID)
+		
+		var tid pgtype.UUID
+		if err := parseUUID(id, &tid); err != nil {
+			return mcp.NewToolResultError("invalid task ID format"), nil
+		}
+
+		err := queries.DeleteTask(ctx, db.DeleteTaskParams{
+			ID:     tid,
+			UserID: userID,
+		})
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("db error: %v", err)), nil
 		}

@@ -8,9 +8,11 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	"github.com/redis/go-redis/v9"
+	"schedule-mcp/db"
 )
 
 // GlobalSessionManager tracks which users have active SSE connections via Redis
@@ -148,6 +150,10 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 
 						// Phase 7.2: Real LLM Response Handling
 						res, err := mcpServer.RequestSampling(sampleCtx, req)
+
+						var tid pgtype.UUID
+						_ = parseUUID(taskID, &tid)
+
 						if err != nil {
 							log.Printf("Pub/Sub Sampling failed for user %s: %v", userID, err)
 							
@@ -155,18 +161,28 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 							dbCtx, dbCancel := context.WithTimeout(context.Background(), 10*time.Second)
 							defer dbCancel()
 							
-							_, _ = dbPool.Exec(dbCtx, "INSERT INTO task_logs (task_id, user_id, status, error_message) VALUES ($1, $2, 'failure', $3)", taskID, userID, err.Error())
+							_ = queries.CreateTaskLog(dbCtx, db.CreateTaskLogParams{
+								TaskID:       tid,
+								UserID:       userID,
+								Status:       "failure",
+								ErrorMessage: pgtype.Text{String: err.Error(), Valid: true},
+							})
 							
 							// Increment failure count securely
-							var currentFailures int
-							_ = dbPool.QueryRow(dbCtx, "UPDATE tasks SET failure_count = failure_count + 1 WHERE id = $1 RETURNING failure_count", taskID).Scan(&currentFailures)
+							currentFailures, _ := queries.IncrementTaskFailureCount(dbCtx, tid)
 							
-							if currentFailures >= 3 {
-								_, _ = dbPool.Exec(dbCtx, "UPDATE tasks SET status = $1, locked_by = NULL WHERE id = $2", StatusError, taskID)
+							if currentFailures.Int32 >= 3 {
+								_ = queries.UpdateTaskStatus(dbCtx, db.UpdateTaskStatusParams{
+									Status: pgtype.Text{String: StatusError, Valid: true},
+									ID:     tid,
+								})
 								sendFailureEmail(dbCtx, userID, taskID, "Unknown Task") 
 							} else {
 								// Unlock so it can be retried by the scheduler
-								_, _ = dbPool.Exec(dbCtx, "UPDATE tasks SET status = $1, locked_by = NULL WHERE id = $2", StatusActive, taskID)
+								_ = queries.UpdateTaskStatus(dbCtx, db.UpdateTaskStatusParams{
+									Status: pgtype.Text{String: StatusActive, Valid: true},
+									ID:     tid,
+								})
 							}
 							return
 						}
@@ -184,7 +200,12 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 						// Save the actual LLM response to the specific task log
 						dbCtx, dbCancel := context.WithTimeout(context.Background(), 15*time.Second)
 						defer dbCancel()
-						_, _ = dbPool.Exec(dbCtx, "INSERT INTO task_logs (task_id, user_id, status, llm_response) VALUES ($1, $2, 'success', $3)", taskID, userID, llmResponse)
+						_ = queries.CreateTaskLog(dbCtx, db.CreateTaskLogParams{
+							TaskID:      tid,
+							UserID:      userID,
+							Status:      "success",
+							LlmResponse: pgtype.Text{String: llmResponse, Valid: true},
+						})
 
 						// Iteration 2: Advance the task status
 						if triggerType == TriggerDate {
@@ -195,14 +216,20 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 						var config map[string]interface{}
 						if err := json.Unmarshal([]byte(triggerConfigStr), &config); err != nil {
 							log.Printf("Error unmarshaling trigger config for task %s: %v", taskID, err)
-							_, _ = dbPool.Exec(dbCtx, "UPDATE tasks SET status = $1, locked_by = NULL WHERE id = $2", StatusPaused, taskID)
+							_ = queries.UpdateTaskStatus(dbCtx, db.UpdateTaskStatusParams{
+								Status: pgtype.Text{String: StatusPaused, Valid: true},
+								ID:     tid,
+							})
 							return
 						}
 
 						newNextRun, calcErr := calculateNextRun(triggerType, config, time.Now().UTC())
 						if calcErr != nil {
 							log.Printf("Error calculating next run for task %s: %v", taskID, calcErr)
-							_, _ = dbPool.Exec(dbCtx, "UPDATE tasks SET status = $1, locked_by = NULL WHERE id = $2", StatusPaused, taskID)
+							_ = queries.UpdateTaskStatus(dbCtx, db.UpdateTaskStatusParams{
+								Status: pgtype.Text{String: StatusPaused, Valid: true},
+								ID:     tid,
+							})
 							return
 						}
 

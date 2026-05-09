@@ -19,7 +19,7 @@ ORDER BY l.execution_time DESC
 LIMIT 100;
 
 -- name: ListUsers :many
-SELECT id, email, role, tier, created_at FROM users ORDER BY created_at DESC;
+SELECT id, email, api_key, role, tier, created_at FROM users ORDER BY created_at DESC;
 
 -- name: UpdateUserRole :exec
 UPDATE users SET role = $1 WHERE id = $2;
@@ -103,3 +103,6 @@ DELETE FROM tasks WHERE id = $1 AND user_id = $2;
 
 -- name: ResetTaskFailureCount :exec
 UPDATE tasks SET status = $1, failure_count = 0 WHERE id = $2 AND user_id = $3;
+
+-- name: UpdateTaskStatusByUserID :exec
+UPDATE tasks SET status = $1, locked_by = NULL WHERE id = $2 AND user_id = $3;
