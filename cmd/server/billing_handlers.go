@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/labstack/echo/v4"
@@ -46,7 +47,11 @@ func apiCreateCheckoutSession(c echo.Context) error {
 	s, err := session.New(params)
 	if err != nil {
 		log.Printf("Stripe session error: %v", err)
-		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to create checkout session"})
+		errorMessage := "Failed to create checkout session"
+		if strings.Contains(err.Error(), "Invalid API Key") {
+			errorMessage = "Stripe configuration error: Invalid API Key. Please ensure STRIPE_API_KEY is set correctly."
+		}
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: errorMessage})
 	}
 
 	return c.JSON(http.StatusOK, APIResponse{

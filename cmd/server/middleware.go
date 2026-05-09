@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -72,7 +73,8 @@ func EchoRequireRole(roles ...string) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			userRole, ok := c.Get("user_role").(string)
-			if !ok {
+			if !ok || userRole == "" {
+				log.Printf("RBAC Denial: No user_role found in context for %s", c.Request().URL.Path)
 				if strings.HasPrefix(c.Request().URL.Path, "/api/") {
 					return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
 				}
@@ -85,8 +87,9 @@ func EchoRequireRole(roles ...string) echo.MiddlewareFunc {
 				}
 			}
 
+			log.Printf("RBAC Denial: User role '%s' not in allowed list %v for %s", userRole, roles, c.Request().URL.Path)
 			if strings.HasPrefix(c.Request().URL.Path, "/api/") {
-				return c.JSON(http.StatusForbidden, APIResponse{Success: false, Error: "Forbidden"})
+				return c.JSON(http.StatusForbidden, APIResponse{Success: false, Error: "Forbidden - Insufficient permissions"})
 			}
 			return echo.NewHTTPError(http.StatusForbidden, "Forbidden")
 		}
