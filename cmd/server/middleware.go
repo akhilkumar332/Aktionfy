@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/mark3labs/mcp-go/server"
@@ -13,6 +14,10 @@ func sessionMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("session_id")
 		if err != nil {
+			if strings.HasPrefix(r.URL.Path, "/api/") {
+				sendJSON(w, http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+				return
+			}
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -24,6 +29,10 @@ func sessionMiddleware(next http.Handler) http.Handler {
 		).Scan(&user.ID, &user.Email, &user.APIKey, &user.Role, &user.Tier, &user.CreatedAt)
 
 		if err != nil {
+			if strings.HasPrefix(r.URL.Path, "/api/") {
+				sendJSON(w, http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+				return
+			}
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -41,6 +50,10 @@ func RequireRole(roles ...string) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			userRole, ok := r.Context().Value("user_role").(string)
 			if !ok {
+				if strings.HasPrefix(r.URL.Path, "/api/") {
+					sendJSON(w, http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+					return
+				}
 				http.Error(w, "Forbidden", http.StatusForbidden)
 				return
 			}
@@ -52,6 +65,10 @@ func RequireRole(roles ...string) func(http.Handler) http.Handler {
 				}
 			}
 
+			if strings.HasPrefix(r.URL.Path, "/api/") {
+				sendJSON(w, http.StatusForbidden, APIResponse{Success: false, Error: "Forbidden"})
+				return
+			}
 			http.Error(w, "Forbidden", http.StatusForbidden)
 		})
 	}

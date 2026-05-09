@@ -115,10 +115,6 @@ func apiLogoutHandler(w http.ResponseWriter, r *http.Request) {
 
 func apiDashboardHandler(w http.ResponseWriter, r *http.Request) {
 	user := getUser(r)
-	if user == nil {
-		sendJSON(w, http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
-		return
-	}
 
 	var taskCount int
 	err := dbPool.QueryRow(r.Context(), "SELECT COUNT(*) FROM tasks WHERE user_id = $1", user.ID).Scan(&taskCount)
@@ -142,10 +138,6 @@ func apiRotateAPIKeyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user := getUser(r)
-	if user == nil {
-		sendJSON(w, http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
-		return
-	}
 
 	newKey, err := RotateAPIKey(r.Context(), user.ID)
 	if err != nil {
