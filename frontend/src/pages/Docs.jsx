@@ -20,21 +20,23 @@ const Overview = () => (
         <p className="mt-4 font-bold">Schedule MCP fills this gap by providing:</p>
         <ul className="list-disc pl-6 space-y-2 mt-4 text-slate-600">
           <li><strong>Durable State:</strong> Tasks survive server restarts and client disconnections.</li>
-          <li><strong>Autonomous Triggers:</strong> Cron-based and interval scheduling that runs even when you're sleeping.</li>
-          <li><strong>Managed Context:</strong> Historical task outputs are preserved and passed to future executions.</li>
+          <li><strong>Secure Persistence:</strong> AES-256-GCM encrypted storage for task secrets and API keys.</li>
+          <li><strong>Human-in-the-Loop:</strong> Real-time approval workflows for sensitive automated actions.</li>
+          <li><strong>Autonomous Triggers:</strong> Cron-based and interval scheduling that runs 24/7.</li>
+          <li><strong>Live Telemetry:</strong> Real-time status updates and log streaming powered by Redis.</li>
         </ul>
       </section>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 not-prose">
         <div className="p-8 rounded-3xl bg-blue-50 border border-blue-100 shadow-sm">
           <Database className="text-blue-600 mb-4" size={32} />
-          <h3 className="font-bold text-xl text-blue-900 mb-2">ACID Compliant</h3>
-          <p className="text-blue-700/70 text-sm">Every task state change is backed by PostgreSQL transactions.</p>
+          <h3 className="font-bold text-xl text-blue-900 mb-2">High Scalability</h3>
+          <p className="text-blue-700/70 text-sm">Distributed orchestration via Redis Pub/Sub ensures linear scaling across nodes.</p>
         </div>
         <div className="p-8 rounded-3xl bg-amber-50 border border-amber-100 shadow-sm">
-          <Globe className="text-amber-600 mb-4" size={32} />
-          <h3 className="font-bold text-xl text-amber-900 mb-2">Node Resilient</h3>
-          <p className="text-amber-700/70 text-sm">Redis-backed locks ensure exactly-once execution across clusters.</p>
+          <Shield className="text-amber-600 mb-4" size={32} />
+          <h3 className="font-bold text-xl text-amber-900 mb-2">Zero-Trust Secrets</h3>
+          <p className="text-amber-700/70 text-sm">Your credentials are encrypted at-rest and only decrypted in-memory during execution.</p>
         </div>
       </div>
     </div>
@@ -56,18 +58,24 @@ const QuickStart = () => (
 
       <section>
         <h2 className="text-2xl font-bold text-ink-900 mb-6">2. Connect your Client</h2>
-        <p>Copy your API key from the Dashboard and add the server to your <code>mcp_config.json</code>:</p>
-        <pre className="p-6 rounded-2xl bg-ink-900 text-emerald-400 font-mono text-sm shadow-xl">
+        <p className="mb-4">Install the global CLI client using <code>npx</code> and copy your API key from the Dashboard:</p>
+        <div className="space-y-4">
+          <pre className="p-6 rounded-2xl bg-ink-900 text-emerald-400 font-mono text-sm shadow-xl">
+            $ npx @google-schedule-actions/mcp install --api-key YOUR_KEY
+          </pre>
+          <p className="text-sm text-slate-500 italic">Alternatively, manually configure your <code>mcp_config.json</code>:</p>
+          <pre className="p-6 rounded-2xl bg-ink-900 text-emerald-400 font-mono text-sm shadow-xl">
 {`{
   "mcpServers": {
     "schedule": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/inspector", "http://localhost:8080/sse"],
+      "command": "schedule-mcp",
+      "args": ["run"],
       "env": { "X-API-KEY": "YOUR_KEY" }
     }
   }
 }`}
-        </pre>
+          </pre>
+        </div>
       </section>
 
       <section>
@@ -91,12 +99,28 @@ const InstallationDocs = () => (
 
       <section>
         <h2 className="text-2xl font-bold text-ink-900 mb-6 flex items-center gap-3">
-          <Terminal size={24} className="text-accent-orange" /> Self-Hosted (Docker)
+          <Terminal size={24} className="text-accent-orange" /> Client-Side (Global Installer)
         </h2>
-        <p className="mb-6">The recommended way to run Schedule MCP is via Docker Compose. This ensures all dependencies like PostgreSQL and Redis are wired correctly.</p>
+        <p className="mb-6">The fastest way to install the Schedule MCP client on any machine with Node.js installed.</p>
         <div className="space-y-4">
           <div className="p-4 bg-slate-100 rounded-xl font-mono text-sm">
-            $ git clone https://github.com/your-repo/schedule-mcp.git
+            $ npx @google-schedule-actions/mcp install
+          </div>
+          <p className="text-sm text-slate-500">For non-NPM environments, use the standard shell installer:</p>
+          <div className="p-4 bg-slate-100 rounded-xl font-mono text-sm">
+            $ curl -sL https://github.com/akhilkumar332/schedule-mcp/install.sh | bash
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2 className="text-2xl font-bold text-ink-900 mb-6 flex items-center gap-3">
+          <Globe size={24} className="text-blue-500" /> Self-Hosted Server (Docker)
+        </h2>
+        <p className="mb-6">Deploy your own private Schedule MCP server using Docker Compose.</p>
+        <div className="space-y-4">
+          <div className="p-4 bg-slate-100 rounded-xl font-mono text-sm">
+            $ git clone https://github.com/akhilkumar332/schedule-mcp.git
           </div>
           <div className="p-4 bg-slate-100 rounded-xl font-mono text-sm">
             $ cd schedule-mcp && docker-compose up -d
@@ -126,7 +150,12 @@ const InstallationDocs = () => (
               <tr>
                 <td className="py-3 px-2 font-mono text-accent-orange">REDIS_URL</td>
                 <td className="py-3 px-2 font-mono">localhost:6379</td>
-                <td className="py-3 px-2 text-slate-600">Redis cache and Pub/Sub host</td>
+                <td className="py-3 px-2 text-slate-600">Redis orchestration and Pub/Sub</td>
+              </tr>
+              <tr>
+                <td className="py-3 px-2 font-mono text-accent-orange">ENCRYPTION_KEY</td>
+                <td className="py-3 px-2 text-slate-400 italic">required</td>
+                <td className="py-3 px-2 text-slate-600">64-character hex key for AES-256-GCM</td>
               </tr>
               <tr>
                 <td className="py-3 px-2 font-mono text-accent-orange">STRIPE_API_KEY</td>

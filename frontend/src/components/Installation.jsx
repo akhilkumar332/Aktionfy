@@ -18,17 +18,23 @@ const Installation = () => {
       icon: Layout,
     },
     {
+      title: 'Install CLI Client',
+      description: 'Run the global installer with a single command to deploy the MCP bridge to your local machine.',
+      icon: Terminal,
+    },
+    {
       title: 'Bridge the Session',
       description: 'Add the Schedule MCP engine to your local configuration via the Model Context Protocol bridge.',
       icon: Boxes,
     }
   ];
 
+  const installCommand = 'npx @google-schedule-actions/mcp install';
   const configSnippet = `{
   "mcpServers": {
     "schedule-mcp": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/inspector", "http://localhost:8080/sse"],
+      "command": "schedule-mcp",
+      "args": ["run"],
       "env": {
         "X-API-KEY": "YOUR_ENCRYPTED_KEY"
       }
@@ -72,6 +78,14 @@ const Installation = () => {
                   <div>
                     <h4 className="text-xl font-bold text-white mb-3 tracking-tight">{step.title}</h4>
                     <p className="text-slate-500 font-medium leading-relaxed max-w-sm">{step.description}</p>
+                    {step.title === 'Install CLI Client' && (
+                       <div className="mt-4 bg-black/40 border border-white/5 rounded-xl p-4 flex items-center justify-between group/cmd">
+                          <code className="text-emerald-400 text-xs">{installCommand}</code>
+                          <button onClick={() => handleCopy(installCommand, 'install')} className="text-slate-600 hover:text-white">
+                             {copied === 'install' ? <Check size={14} /> : <Copy size={14} />}
+                          </button>
+                       </div>
+                    )}
                   </div>
                 </motion.div>
               ))}
