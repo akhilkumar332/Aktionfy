@@ -54,6 +54,8 @@ func EchoSessionMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			CreatedAt: u.CreatedAt.Time,
 		}
 
+		log.Printf("Session Validated: UserID=%s, Email=%s, Role=%s", user.ID, user.Email, user.Role)
+
 		c.Set("user", user)
 		c.Set("user_id", user.ID)
 		c.Set("user_role", user.Role)
