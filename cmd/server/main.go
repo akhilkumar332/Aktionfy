@@ -66,6 +66,12 @@ func main() {
 	initRedis()
 	defer RedisClient.Close()
 
+	go func() {
+		SubscribeToEvents(context.Background(), func(event PubSubEvent) {
+			log.Printf("Received event for user %s: %s", event.UserID, event.EventType)
+		})
+	}()
+
 	globalRateLimiter.client = RedisClient
 	GlobalSessionManager.Init(RedisClient)
 
