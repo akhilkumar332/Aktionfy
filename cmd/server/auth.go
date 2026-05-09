@@ -50,7 +50,7 @@ func LoginUser(ctx context.Context, email, password string) (string, error) {
 	}
 
 	var sessionID string
-	expiresAt := time.Now().Add(24 * time.Hour)
+	expiresAt := time.Now().UTC().Add(24 * time.Hour)
 	err = dbPool.QueryRow(ctx, 
 		"INSERT INTO web_sessions (user_id, expires_at) VALUES ($1, $2) RETURNING id",
 		userID, expiresAt,

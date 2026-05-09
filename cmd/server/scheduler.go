@@ -46,7 +46,7 @@ func runScheduler(ctx context.Context, s *server.MCPServer) {
 							// "skip": calculate next run and update
 							var config map[string]interface{}
 							if err := json.Unmarshal(t.TriggerConfig, &config); err == nil {
-								if newNextRun, calcErr := calculateNextRun(t.TriggerType, config, time.Now()); calcErr == nil {
+								if newNextRun, calcErr := calculateNextRun(t.TriggerType, config, time.Now().UTC()); calcErr == nil {
 									completeTask(workerCtx, t.ID, newNextRun)
 									return
 								}
@@ -67,7 +67,7 @@ func runScheduler(ctx context.Context, s *server.MCPServer) {
 					}
 
 					// Phase 6.1: Publish to Redis Pub/Sub so the correct node with the SSE connection can trigger it
-					executionID := fmt.Sprintf("%s-%d", t.ID, time.Now().UnixNano())
+					executionID := fmt.Sprintf("%s-%d", t.ID, time.Now().UTC().UnixNano())
 					payloadBytes, _ := json.Marshal(map[string]interface{}{
 						"task_id":        t.ID,
 						"prompt":         finalPrompt,

@@ -3,6 +3,7 @@
 {{define "title"}}Dashboard - Schedule MCP{{end}}
 
 {{define "content"}}
+{{if .User}}
 <header class="mb-4">
     <h1>Welcome back, {{.User.Email}}</h1>
     <p class="text-muted">Here's an overview of your scheduled tasks and account status.</p>
@@ -29,7 +30,7 @@
     <div class="bento-card">
         <h3 class="mb-4"><i class="fas fa-tasks mr-2" style="color: #3b82f6;"></i> Total Tasks</h3>
         <div style="font-size: 2rem; font-weight: 700;">
-            {{.Data.TaskCount}}
+            {{if .Data.TaskCount}}{{.Data.TaskCount}}{{else}}0{{end}}
         </div>
         <p class="mt-4 text-muted">
             <a href="/tasks" style="color: var(--accent-primary); font-weight: 600;">Manage all tasks</a>
@@ -59,4 +60,10 @@ function copyApiKey() {
     });
 }
 </script>
+{{else}}
+<div class="alert alert-error" style="background-color: #fee2e2; color: #b91c1c; padding: 2rem; border-radius: 0.5rem; text-align: center;">
+    <i class="fas fa-exclamation-triangle mr-2"></i>
+    Unauthorized. Please <a href="/login" style="text-decoration: underline; font-weight: 600;">login</a> to view your dashboard.
+</div>
+{{end}}
 {{end}}

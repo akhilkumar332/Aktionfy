@@ -20,7 +20,7 @@ func sessionMiddleware(next http.Handler) http.Handler {
 		var user User
 		err = dbPool.QueryRow(r.Context(),
 			"SELECT u.id, u.email, u.api_key, u.role, u.tier, u.created_at FROM web_sessions s JOIN users u ON s.user_id = u.id WHERE s.id = $1 AND s.expires_at > $2",
-			cookie.Value, time.Now(),
+			cookie.Value, time.Now().UTC(),
 		).Scan(&user.ID, &user.Email, &user.APIKey, &user.Role, &user.Tier, &user.CreatedAt)
 
 		if err != nil {

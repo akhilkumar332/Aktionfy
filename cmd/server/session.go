@@ -66,123 +66,158 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 	
 	sm.AddUser(ctx, userID)
 	
-	// Subscribe to tasks meant for this user
-	pubsub := sm.redisClient.Subscribe(context.Background(), fmt.Sprintf("trigger_task:%s", userID))
-	defer pubsub.Close()
-	
-	ch := pubsub.Channel()
-
+	var backoff time.Duration = 1 * time.Second
 	for {
+		// Subscribe to tasks meant for this user
+		pubsub := sm.redisClient.Subscribe(ctx, fmt.Sprintf("trigger_task:%s", userID))
+		
+		// Wait for subscription confirmation
+		_, err := pubsub.Receive(ctx)
+		if err != nil {
+			log.Printf("Failed to subscribe to Redis for user %s: %v. Retrying in %v...", userID, err, backoff)
+			pubsub.Close()
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(backoff):
+				if backoff < 30*time.Second {
+					backoff *= 2
+				}
+				continue
+			}
+		}
+		
+		// Reset backoff on successful subscription
+		backoff = 1 * time.Second
+		
+		ch := pubsub.Channel()
+		
+		// Inner loop for processing messages
+		func() {
+			defer pubsub.Close()
+			for {
+				select {
+				case <-ctx.Done():
+					// The HTTP request was cancelled (connection closed)
+					sm.RemoveUser(context.Background(), userID)
+					return
+				case <-ticker.C:
+					sm.AddUser(ctx, userID)
+				case msg, ok := <-ch:
+					if !ok {
+						log.Printf("Redis channel closed for user %s. Re-subscribing...", userID)
+						return
+					}
+					// Received a task trigger from another node
+					log.Printf("Received Pub/Sub task trigger for user %s", userID)
+					
+					// Fire the sampling request asynchronously
+					workerWG.Add(1)
+					go func(payload string) {
+						defer workerWG.Done()
+						sampleCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+						defer cancel()
+						
+						var taskData map[string]string
+						if err := json.Unmarshal([]byte(payload), &taskData); err != nil {
+							log.Printf("Failed to unmarshal pubsub payload: %v", err)
+							return
+						}
+						
+						taskID := taskData["task_id"]
+						prompt := taskData["prompt"]
+						executionID := taskData["execution_id"]
+						triggerType := taskData["trigger_type"]
+						triggerConfigStr := taskData["trigger_config"]
+
+						// Phase 10.1: Prevent Double Execution if user is connected from multiple terminals
+						locked, err := sm.redisClient.SetNX(sampleCtx, fmt.Sprintf("lock:exec:%s", executionID), "locked", 5*time.Minute).Result()
+						if err != nil || !locked {
+							log.Printf("Task %s already executed by another connection for user %s", taskID, userID)
+							return
+						}
+
+						req := mcp.CreateMessageRequest{
+							CreateMessageParams: mcp.CreateMessageParams{
+								Messages: []mcp.SamplingMessage{
+									{Role: "user", Content: mcp.TextContent{Type: "text", Text: prompt}},
+								},
+								MaxTokens: 1000,
+							},
+						}
+
+						// Phase 7.2: Real LLM Response Handling
+						res, err := mcpServer.RequestSampling(sampleCtx, req)
+						if err != nil {
+							log.Printf("Pub/Sub Sampling failed for user %s: %v", userID, err)
+							
+							// Phase 10.2: Properly log failure back to DB instead of failing silently
+							dbCtx, dbCancel := context.WithTimeout(context.Background(), 10*time.Second)
+							defer dbCancel()
+							
+							_, _ = dbPool.Exec(dbCtx, "INSERT INTO task_logs (task_id, user_id, status, error_message) VALUES ($1, $2, 'failure', $3)", taskID, userID, err.Error())
+							
+							// Increment failure count securely
+							var currentFailures int
+							_ = dbPool.QueryRow(dbCtx, "UPDATE tasks SET failure_count = failure_count + 1 WHERE id = $1 RETURNING failure_count", taskID).Scan(&currentFailures)
+							
+							if currentFailures >= 3 {
+								_, _ = dbPool.Exec(dbCtx, "UPDATE tasks SET status = $1, locked_by = NULL WHERE id = $2", StatusError, taskID)
+								sendFailureEmail(dbCtx, userID, taskID, "Unknown Task") 
+							} else {
+								// Unlock so it can be retried by the scheduler
+								_, _ = dbPool.Exec(dbCtx, "UPDATE tasks SET status = $1, locked_by = NULL WHERE id = $2", StatusActive, taskID)
+							}
+							return
+						}
+
+						// Safely extract the LLM's text response
+						llmResponse := "No response provided by LLM"
+						if res != nil {
+							// Convert response to JSON string for the log
+							resBytes, _ := json.Marshal(res)
+							llmResponse = string(resBytes)
+						}
+
+						log.Printf("Received LLM Response for user %s: %s", userID, llmResponse)
+						
+						// Save the actual LLM response to the specific task log
+						dbCtx, dbCancel := context.WithTimeout(context.Background(), 15*time.Second)
+						defer dbCancel()
+						_, _ = dbPool.Exec(dbCtx, "INSERT INTO task_logs (task_id, user_id, status, llm_response) VALUES ($1, $2, 'success', $3)", taskID, userID, llmResponse)
+
+						// Iteration 2: Advance the task status
+						if triggerType == TriggerDate {
+							completeTask(dbCtx, taskID, time.Now().UTC(), StatusCompleted)
+							return
+						}
+
+						var config map[string]interface{}
+						if err := json.Unmarshal([]byte(triggerConfigStr), &config); err != nil {
+							log.Printf("Error unmarshaling trigger config for task %s: %v", taskID, err)
+							_, _ = dbPool.Exec(dbCtx, "UPDATE tasks SET status = $1, locked_by = NULL WHERE id = $2", StatusPaused, taskID)
+							return
+						}
+
+						newNextRun, calcErr := calculateNextRun(triggerType, config, time.Now().UTC())
+						if calcErr != nil {
+							log.Printf("Error calculating next run for task %s: %v", taskID, calcErr)
+							_, _ = dbPool.Exec(dbCtx, "UPDATE tasks SET status = $1, locked_by = NULL WHERE id = $2", StatusPaused, taskID)
+							return
+						}
+
+						completeTask(dbCtx, taskID, newNextRun)
+					}(msg.Payload)
+				}
+			}
+		}()
+
+		// Check if we exited the inner loop because of ctx.Done()
 		select {
 		case <-ctx.Done():
-			// The HTTP request was cancelled (connection closed)
-			// Use a new context to remove the user since the request ctx is cancelled
-			sm.RemoveUser(context.Background(), userID)
 			return
-		case <-ticker.C:
-			sm.AddUser(ctx, userID)
-		case msg := <-ch:
-			// Received a task trigger from another node
-			// We execute it here because we have the physical SSE connection
-			log.Printf("Received Pub/Sub task trigger for user %s on node", userID)
-			
-			// Fire the sampling request asynchronously
-			workerWG.Add(1)
-			go func(payload string) {
-				defer workerWG.Done()
-				sampleCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-				defer cancel()
-				
-				var taskData map[string]string
-				if err := json.Unmarshal([]byte(payload), &taskData); err != nil {
-					log.Printf("Failed to unmarshal pubsub payload: %v", err)
-					return
-				}
-				
-				taskID := taskData["task_id"]
-				prompt := taskData["prompt"]
-				executionID := taskData["execution_id"]
-				triggerType := taskData["trigger_type"]
-				triggerConfigStr := taskData["trigger_config"]
-
-				// Phase 10.1: Prevent Double Execution if user is connected from multiple terminals
-				locked, err := sm.redisClient.SetNX(sampleCtx, fmt.Sprintf("lock:exec:%s", executionID), "locked", 5*time.Minute).Result()
-				if err != nil || !locked {
-					log.Printf("Task %s already executed by another connection for user %s", taskID, userID)
-					return
-				}
-
-				req := mcp.CreateMessageRequest{
-					CreateMessageParams: mcp.CreateMessageParams{
-						Messages: []mcp.SamplingMessage{
-							{Role: "user", Content: mcp.TextContent{Type: "text", Text: prompt}},
-						},
-						MaxTokens: 1000,
-					},
-				}
-
-				// Phase 7.2: Real LLM Response Handling
-				res, err := mcpServer.RequestSampling(sampleCtx, req)
-				if err != nil {
-					log.Printf("Pub/Sub Sampling failed for user %s: %v", userID, err)
-					
-					// Phase 10.2: Properly log failure back to DB instead of failing silently
-					dbCtx, dbCancel := context.WithTimeout(context.Background(), 10*time.Second)
-					defer dbCancel()
-					
-					_, _ = dbPool.Exec(dbCtx, "INSERT INTO task_logs (task_id, user_id, status, error_message) VALUES ($1, $2, 'failure', $3)", taskID, userID, err.Error())
-					
-					// Increment failure count securely
-					var currentFailures int
-					_ = dbPool.QueryRow(dbCtx, "UPDATE tasks SET failure_count = failure_count + 1 WHERE id = $1 RETURNING failure_count", taskID).Scan(&currentFailures)
-					
-					if currentFailures >= 3 {
-						_, _ = dbPool.Exec(dbCtx, "UPDATE tasks SET status = $1, locked_by = NULL WHERE id = $2", StatusError, taskID)
-						sendFailureEmail(dbCtx, userID, taskID, "Unknown Task") 
-					} else {
-						// Unlock so it can be retried by the scheduler
-						_, _ = dbPool.Exec(dbCtx, "UPDATE tasks SET status = $1, locked_by = NULL WHERE id = $2", StatusActive, taskID)
-					}
-					return
-				}
-
-				// Safely extract the LLM's text response
-				llmResponse := "No response provided by LLM"
-				if res != nil {
-					// Convert response to JSON string for the log
-					resBytes, _ := json.Marshal(res)
-					llmResponse = string(resBytes)
-				}
-
-				log.Printf("Received LLM Response for user %s: %s", userID, llmResponse)
-				
-				// Save the actual LLM response to the specific task log
-				dbCtx, dbCancel := context.WithTimeout(context.Background(), 15*time.Second)
-				defer dbCancel()
-				_, _ = dbPool.Exec(dbCtx, "INSERT INTO task_logs (task_id, user_id, status, llm_response) VALUES ($1, $2, 'success', $3)", taskID, userID, llmResponse)
-
-				// Iteration 2: Advance the task status
-				if triggerType == TriggerDate {
-					completeTask(dbCtx, taskID, time.Now(), StatusCompleted)
-					return
-				}
-
-				var config map[string]interface{}
-				if err := json.Unmarshal([]byte(triggerConfigStr), &config); err != nil {
-					log.Printf("Error unmarshaling trigger config for task %s: %v", taskID, err)
-					_, _ = dbPool.Exec(dbCtx, "UPDATE tasks SET status = $1, locked_by = NULL WHERE id = $2", StatusPaused, taskID)
-					return
-				}
-
-				newNextRun, calcErr := calculateNextRun(triggerType, config, time.Now())
-				if calcErr != nil {
-					log.Printf("Error calculating next run for task %s: %v", taskID, calcErr)
-					_, _ = dbPool.Exec(dbCtx, "UPDATE tasks SET status = $1, locked_by = NULL WHERE id = $2", StatusPaused, taskID)
-					return
-				}
-
-				completeTask(dbCtx, taskID, newNextRun)
-			}(msg.Payload)
+		default:
+			// Continue to outer loop to re-subscribe
 		}
 	}
 }

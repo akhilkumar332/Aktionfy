@@ -20,7 +20,7 @@ import (
 
 func main() {
 	hostname, _ := os.Hostname()
-	workerID = fmt.Sprintf("%s-%d", hostname, time.Now().UnixNano())
+	workerID = fmt.Sprintf("%s-%d", hostname, time.Now().UTC().UnixNano())
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -146,7 +146,7 @@ func main() {
 				HttpOnly: true,
 				Secure:   os.Getenv("ENV") == "production",
 				SameSite: http.SameSiteLaxMode,
-				Expires:  time.Now().Add(24 * time.Hour),
+				Expires:  time.Now().UTC().Add(24 * time.Hour),
 			})
 			http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
 		}

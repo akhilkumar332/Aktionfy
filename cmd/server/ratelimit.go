@@ -57,7 +57,7 @@ func (rl *rateLimiter) Allow(ctx context.Context, userID string) bool {
 		return false
 	}
 
-	now := time.Now().UnixMilli()
+	now := time.Now().UTC().UnixMilli()
 	key := "ratelimit:" + userID
 
 	ctx, cancel := context.WithTimeout(ctx, 100*time.Millisecond)

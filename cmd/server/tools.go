@@ -150,6 +150,8 @@ func registerTools(s *server.MCPServer) {
 					"status":       status,
 					"next_run":     nextRun.Format(time.RFC3339),
 				})
+			} else {
+				log.Printf("Error scanning task row for user %s: %v", userID, err)
 			}
 		}
 		
