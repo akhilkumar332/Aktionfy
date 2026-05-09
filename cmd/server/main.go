@@ -107,6 +107,22 @@ func main() {
 		w.Write([]byte("OK"))
 	})
 
+	// API Auth Handlers
+	mux.Handle("/api/auth/signup", csrfMiddleware(http.HandlerFunc(apiSignupHandler)))
+	mux.Handle("/api/auth/login", csrfMiddleware(http.HandlerFunc(apiLoginHandler)))
+	mux.Handle("/api/auth/logout", csrfMiddleware(http.HandlerFunc(apiLogoutHandler)))
+	mux.Handle("/api/healthz", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := dbPool.Ping(r.Context()); err != nil {
+			sendJSON(w, http.StatusServiceUnavailable, APIResponse{Success: false, Error: "Database unavailable"})
+			return
+		}
+		if err := redisClient.Ping(r.Context()).Err(); err != nil {
+			sendJSON(w, http.StatusServiceUnavailable, APIResponse{Success: false, Error: "Redis unavailable"})
+			return
+		}
+		sendJSON(w, http.StatusOK, APIResponse{Success: true, Message: "OK"})
+	}))
+
 	// Auth Handlers
 	mux.Handle("/signup", csrfMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
