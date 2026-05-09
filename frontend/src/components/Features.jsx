@@ -1,110 +1,106 @@
 import React from 'react';
-import { Layers, Shield, Zap, Globe, RefreshCcw, Database } from 'lucide-react';
+import { Layers, Shield, Zap, Globe, RefreshCcw, Database, Cpu, Server, Repeat } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Features = () => {
   const features = [
     {
       title: 'Persistent Scheduling',
-      description: 'Tasks are stored in a multi-tenant PostgreSQL database with millisecond precision. Even if the entire worker cluster restarts, your schedules resume instantly.',
-      icon: Database,
-      color: 'bg-blue-100 text-blue-600',
+      description: 'Durable task queues with sub-second precision. Even if the entire worker cluster restarts, your schedules resume exactly where they left off.',
+      icon: Clock,
+      color: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
     },
     {
       title: 'Reliable Sampling',
-      description: 'Leveraging the Model Context Protocol to trigger LLM actions. We handle the physical connection state and SSE handshakes so you don\'t have to.',
+      description: 'Leveraging the Model Context Protocol to bridge local LLM sessions with cloud orchestration. We manage the physical handshake and context injection.',
       icon: Zap,
-      color: 'bg-amber-100 text-amber-600',
+      color: 'bg-amber-500/10 text-accent-orange border-accent-orange/20',
     },
     {
-      title: 'Multi-Node Resilience',
-      description: 'Distributed worker nodes utilize Redis-backed locks to ensure no task is ever double-fired or lost. True stateless horizontal scaling.',
-      icon: Globe,
-      color: 'bg-emerald-100 text-emerald-600',
+      title: 'Elastic Architecture',
+      description: 'Distributed execution nodes utilize Redis-backed locks for absolute concurrency safety. Scale horizontally without vertical bottlenecks.',
+      icon: Server,
+      color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
     },
     {
-      title: 'Advanced RBAC',
-      description: 'Full Role-Based Access Control out of the box. Manage User, Staff, and Admin permissions with secure session isolation.',
+      title: 'Enterprise RBAC',
+      description: 'Fine-grained permissions for User, Staff, and Admin roles. Secure session isolation with cryptographically signed identities.',
       icon: Shield,
-      color: 'bg-purple-100 text-purple-600',
+      color: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
     },
     {
-      title: 'Smart Retries',
-      description: 'Built-in dead letter queue logic. Failed tasks are automatically retried with exponential backoff and owner notifications.',
-      icon: RefreshCcw,
-      color: 'bg-red-100 text-red-600',
+      title: 'Auto-Recovery Engine',
+      description: 'Built-in node reapers and dead letter queues. Failed tasks are automatically recovered, retried, or escalated based on custom policies.',
+      icon: Repeat,
+      color: 'bg-red-500/10 text-red-400 border-red-500/20',
     },
     {
-      title: 'Cross-Task Context',
-      description: 'Tasks can depend on the output of previous tasks. Create complex chains of AI actions with shared historical context.',
+      title: 'Contextual Chaining',
+      description: 'Orchestrate multi-step AI actions where future tasks depend on the historical output of predecessors. Build truly complex AI workflows.',
       icon: Layers,
-      color: 'bg-indigo-100 text-indigo-600',
+      color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
     },
   ];
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.6, ease: "easeOut" }
-    }
-  };
-
   return (
-    <section id="features" className="py-32 bg-white">
-      <div className="container mx-auto px-6">
+    <section id="features" className="py-40 bg-ai-black relative overflow-hidden">
+      {/* Background Accents */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full pointer-events-none opacity-20">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-accent-orange/10 rounded-full blur-[120px]"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[120px]"></div>
+      </div>
+
+      <div className="container mx-auto px-6 relative z-10">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="max-w-3xl mx-auto text-center mb-24"
+          className="max-w-4xl mx-auto text-center mb-32"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-ink-900 mb-6 tracking-tight leading-tight">
-            Everything you need for <span className="text-accent-orange">industrial-grade</span> AI automation.
+          <span className="text-accent-orange font-bold text-xs uppercase tracking-[0.4em] mb-6 inline-block">Capabilities</span>
+          <h2 className="text-5xl md:text-7xl font-bold text-white mb-8 tracking-tighter leading-tight">
+            Built for the next decade of <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-500">Autonomous Intelligence.</span>
           </h2>
-          <p className="text-xl text-slate-500 font-medium">
-            We've solved the hard problems of state, time, and distributed consistency so you can focus on building agents.
+          <p className="text-xl text-slate-400 font-medium max-w-2xl mx-auto">
+            Industrial-grade orchestration for developers who demand 100% reliability from their AI automation layer.
           </p>
         </motion.div>
 
-        <motion.div 
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12"
-        >
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {features.map((f, index) => (
             <motion.div 
               key={f.title}
-              variants={itemVariants}
-              className="group p-8 rounded-3xl border border-slate-100 hover:border-accent-orange hover:shadow-2xl hover:shadow-orange-100 transition-all duration-500 bg-white"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: index * 0.1, duration: 0.6 }}
+              className={`group relative p-10 rounded-[2.5rem] border bg-white/5 backdrop-blur-sm ${f.color} hover:bg-white/10 transition-all duration-500`}
             >
-              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-8 ${f.color} group-hover:scale-110 transition-transform duration-500`}>
-                <f.icon size={28} />
+              <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-[2.5rem]"></div>
+              
+              <div className="relative z-10">
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-10 bg-black/40 border border-white/5 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-2xl">
+                  <f.icon size={32} />
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-5 tracking-tight">{f.title}</h3>
+                <p className="text-slate-400 leading-relaxed font-medium">
+                  {f.description}
+                </p>
               </div>
-              <h3 className="text-2xl font-bold text-ink-900 mb-4 tracking-tight group-hover:text-accent-orange transition-colors">{f.title}</h3>
-              <p className="text-slate-500 leading-relaxed font-medium">
-                {f.description}
-              </p>
             </motion.div>
           ))}
-        </motion.div>
+        </div>
       </div>
     </section>
   );
 };
+
+const Clock = ({ size, className }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+  </svg>
+);
 
 export default Features;

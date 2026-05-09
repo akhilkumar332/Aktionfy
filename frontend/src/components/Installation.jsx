@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Terminal, Copy, Check, ExternalLink, Cpu, Layout } from 'lucide-react';
+import { Terminal, Copy, Check, ExternalLink, Cpu, Layout, Boxes } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Installation = () => {
@@ -13,14 +13,14 @@ const Installation = () => {
 
   const steps = [
     {
-      title: 'Step 1: Get your API Key',
-      description: 'Sign up for a free account and copy your unique API key from the dashboard.',
+      title: 'Initialize Workspace',
+      description: 'Sign up for a professional account and generate your cryptographically secure API key.',
       icon: Layout,
     },
     {
-      title: 'Step 2: Add to MCP Config',
-      description: 'Add the Schedule MCP server to your local Claude Desktop or Cursor configuration.',
-      icon: Cpu,
+      title: 'Bridge the Session',
+      description: 'Add the Schedule MCP engine to your local configuration via the Model Context Protocol bridge.',
+      icon: Boxes,
     }
   ];
 
@@ -30,30 +30,33 @@ const Installation = () => {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/inspector", "http://localhost:8080/sse"],
       "env": {
-        "X-API-KEY": "YOUR_API_KEY_HERE"
+        "X-API-KEY": "YOUR_ENCRYPTED_KEY"
       }
     }
   }
 }`;
 
   return (
-    <section id="installation" className="py-32 bg-paper-50 overflow-hidden">
-      <div className="container mx-auto px-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+    <section id="installation" className="py-40 bg-ai-black overflow-hidden relative">
+      <div className="absolute inset-0 bg-gradient-to-b from-ai-black via-ai-grey to-ai-black"></div>
+      
+      <div className="container mx-auto px-6 relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-32 items-center">
           <motion.div
             initial={{ opacity: 0, x: -50 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
           >
-            <h2 className="text-4xl md:text-5xl font-bold text-ink-900 mb-8 tracking-tight">
-              Get up and running in <span className="text-accent-orange italic">seconds</span>.
+            <span className="text-accent-orange font-bold text-xs uppercase tracking-[0.4em] mb-6 inline-block text-glow">Setup Guide</span>
+            <h2 className="text-5xl md:text-7xl font-bold text-white mb-10 tracking-tighter">
+              Deployment in <span className="text-accent-orange italic underline decoration-white/10 underline-offset-[12px]">Seconds.</span>
             </h2>
-            <p className="text-xl text-slate-500 font-medium mb-12 leading-relaxed">
-              Schedule MCP integrates seamlessly with your existing local LLM tools via the Model Context Protocol.
+            <p className="text-xl text-slate-400 font-medium mb-16 leading-relaxed max-w-xl">
+              Engineered for seamless integration with Claude Desktop, Cursor, and custom MCP clients.
             </p>
 
-            <div className="space-y-8">
+            <div className="space-y-12">
               {steps.map((step, idx) => (
                 <motion.div 
                   key={idx}
@@ -61,56 +64,56 @@ const Installation = () => {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: idx * 0.2, duration: 0.5 }}
-                  className="flex gap-6"
+                  className="flex gap-8 group"
                 >
-                  <div className="flex-shrink-0 w-12 h-12 bg-white border border-slate-200 rounded-xl flex items-center justify-center shadow-sm">
-                    <step.icon size={24} className="text-accent-orange" />
+                  <div className="flex-shrink-0 w-14 h-14 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center shadow-2xl group-hover:bg-accent-orange group-hover:text-white transition-all duration-500">
+                    <step.icon size={28} />
                   </div>
                   <div>
-                    <h4 className="text-lg font-bold text-ink-900 mb-2">{step.title}</h4>
-                    <p className="text-slate-500 font-medium leading-relaxed">{step.description}</p>
+                    <h4 className="text-xl font-bold text-white mb-3 tracking-tight">{step.title}</h4>
+                    <p className="text-slate-500 font-medium leading-relaxed max-w-sm">{step.description}</p>
                   </div>
                 </motion.div>
               ))}
             </div>
 
-            <div className="mt-12 flex flex-wrap gap-4">
+            <div className="mt-16 flex flex-wrap gap-8 items-center">
               <a 
-                href="#" 
-                className="inline-flex items-center gap-2 text-sm font-bold text-accent-orange hover:underline"
+                href="/docs/quickstart" 
+                className="group inline-flex items-center gap-2 text-sm font-bold text-accent-orange hover:text-white transition-colors"
               >
-                View full documentation <ExternalLink size={14} />
+                Detailed Docs <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
               </a>
-              <span className="text-slate-300">|</span>
+              <div className="h-1 w-1 rounded-full bg-slate-800"></div>
               <a 
                 href="https://modelcontextprotocol.io" 
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-ink-900 transition-colors"
+                className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-white transition-colors"
               >
-                Learn about MCP <ExternalLink size={14} />
+                Protocol Spec <ExternalLink size={14} />
               </a>
             </div>
           </motion.div>
 
           <motion.div 
-            initial={{ opacity: 0, x: 50 }}
-            whileInView={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
             className="relative"
           >
-            <div className="absolute inset-0 bg-accent-orange/5 blur-[100px] rounded-full"></div>
-            <div className="relative bg-[#141413] rounded-3xl border border-white/10 shadow-2xl overflow-hidden">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-white/5">
-                <div className="flex gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-slate-700"></div>
-                  <div className="w-3 h-3 rounded-full bg-slate-700"></div>
-                  <div className="w-3 h-3 rounded-full bg-slate-700"></div>
+            <div className="absolute inset-0 bg-accent-orange/10 blur-[120px] rounded-full animate-pulse"></div>
+            <div className="relative bg-black/60 backdrop-blur-3xl rounded-[3rem] border border-white/10 shadow-[0_40px_100px_rgba(0,0,0,0.8)] overflow-hidden">
+              <div className="flex items-center justify-between px-10 py-6 border-b border-white/5 bg-white/5">
+                <div className="flex gap-2">
+                  <div className="w-3 h-3 rounded-full bg-red-500/20"></div>
+                  <div className="w-3 h-3 rounded-full bg-amber-500/20"></div>
+                  <div className="w-3 h-3 rounded-full bg-emerald-500/20"></div>
                 </div>
                 <button 
                   onClick={() => handleCopy(configSnippet, 'config')}
-                  className="flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-white transition-colors"
+                  className="flex items-center gap-2 text-[10px] font-bold text-slate-500 hover:text-white uppercase tracking-widest transition-colors"
                 >
                   {copied === 'config' ? (
                     <><Check size={14} className="text-emerald-500" /> Copied!</>
@@ -119,8 +122,8 @@ const Installation = () => {
                   )}
                 </button>
               </div>
-              <div className="p-8 font-mono text-sm leading-relaxed overflow-x-auto">
-                <pre className="text-emerald-400">
+              <div className="p-10 font-mono text-sm leading-relaxed overflow-x-auto min-h-[300px] flex items-center">
+                <pre className="text-emerald-400/90 w-full">
                   {configSnippet}
                 </pre>
               </div>
@@ -131,5 +134,11 @@ const Installation = () => {
     </section>
   );
 };
+
+const ArrowRight = ({ size, className }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M5 12h14M12 5l7 7-7 7" />
+  </svg>
+);
 
 export default Installation;

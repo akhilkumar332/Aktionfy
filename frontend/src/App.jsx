@@ -7,6 +7,7 @@ import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import Monitor from './pages/Monitor';
 import AdminUsers from './pages/AdminUsers';
+import AdminSEO from './pages/AdminSEO';
 import { 
   Overview, 
   QuickStart, 
@@ -23,8 +24,8 @@ const ProtectedRoute = ({ children, roles }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#faf9f5]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#d97706]"></div>
+      <div className="min-h-screen flex items-center justify-center bg-ai-black text-white">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-orange"></div>
       </div>
     );
   }
@@ -82,6 +83,15 @@ function App() {
             element={
               <ProtectedRoute roles={['admin']}>
                 <AdminUsers />
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="/admin/seo" 
+            element={
+              <ProtectedRoute roles={['admin']}>
+                <AdminSEO />
               </ProtectedRoute>
             } 
           />

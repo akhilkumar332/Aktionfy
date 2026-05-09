@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Clock, Menu, X, ArrowRight } from 'lucide-react';
+import { Clock, Menu, X, ArrowRight, Activity } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
@@ -10,7 +10,7 @@ const Navbar = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
+      setIsScrolled(window.scrollY > 20);
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
@@ -19,93 +19,97 @@ const Navbar = () => {
   const navLinks = [
     { name: 'Features', href: '#features' },
     { name: 'Pricing', href: '#pricing' },
-    { name: 'Installation', href: '#installation' },
+    { name: 'Docs', href: '/docs/overview' },
   ];
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-      isScrolled ? 'bg-white/80 backdrop-blur-md border-b border-slate-200 py-3' : 'bg-transparent py-5'
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+      isScrolled ? 'bg-ai-black/60 backdrop-blur-xl border-b border-white/5 py-4' : 'bg-transparent py-8'
     }`}>
       <div className="container mx-auto px-6">
         <div className="flex items-center justify-between">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 group">
-            <div className="bg-accent-orange p-1.5 rounded-lg text-white group-hover:scale-110 transition-transform">
-              <Clock size={20} />
+          {/* Brand Logo */}
+          <Link to="/" className="flex items-center gap-2 group relative">
+            <div className="bg-accent-orange p-2 rounded-xl text-white group-hover:rotate-[360deg] transition-transform duration-700 shadow-[0_0_20px_rgba(217,119,6,0.3)]">
+              <Clock size={22} />
             </div>
-            <span className="font-bold text-xl text-ink-900 tracking-tight">Schedule MCP</span>
+            <div className="flex flex-col">
+              <span className="font-bold text-lg text-white tracking-tighter leading-tight group-hover:text-accent-orange transition-colors">Schedule MCP</span>
+              <span className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.3em] leading-tight">Engine v1.0</span>
+            </div>
           </Link>
 
-          {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-8">
-            <div className="flex items-center gap-6">
+          {/* Premium Desktop Nav */}
+          <div className="hidden md:flex items-center gap-10">
+            <div className="flex items-center gap-8">
               {navLinks.map((link) => (
                 <a
                   key={link.name}
                   href={link.href}
-                  className="text-sm font-medium text-slate-600 hover:text-accent-orange transition-colors"
+                  className="text-[13px] font-bold text-slate-400 hover:text-white uppercase tracking-widest transition-colors"
                 >
                   {link.name}
                 </a>
               ))}
             </div>
-            <div className="h-4 w-px bg-slate-200"></div>
+            
             <div className="flex items-center gap-4">
               {user ? (
                 <Link
                   to="/dashboard"
-                  className="text-sm font-bold text-ink-900 bg-white border border-slate-200 px-5 py-2 rounded-full hover:bg-slate-50 transition-all flex items-center gap-2 shadow-sm"
+                  className="group relative text-sm font-bold text-white bg-white/5 border border-white/10 px-6 py-2.5 rounded-2xl hover:bg-white/10 transition-all flex items-center gap-3"
                 >
-                  Dashboard <ArrowRight size={16} />
+                  <Activity size={16} className="text-accent-orange animate-pulse" />
+                  Dashboard
                 </Link>
               ) : (
                 <>
                   <Link
                     to="/login"
-                    className="text-sm font-medium text-slate-600 hover:text-ink-900 transition-colors"
+                    className="text-sm font-bold text-slate-400 hover:text-white transition-colors"
                   >
                     Login
                   </Link>
                   <Link
                     to="/signup"
-                    className="text-sm font-bold text-white bg-ink-900 px-6 py-2.5 rounded-full hover:bg-gray-800 transition-all shadow-md active:scale-95"
+                    className="relative px-7 py-3 text-sm font-bold text-white bg-accent-orange rounded-2xl hover:bg-amber-700 transition-all shadow-[0_10px_30px_rgba(217,119,6,0.2)] active:scale-95 overflow-hidden"
                   >
-                    Sign Up
+                    Get Started
                   </Link>
                 </>
               )}
             </div>
           </div>
 
-          {/* Mobile Toggle */}
+          {/* Mobile Menu Button */}
           <button
-            className="md:hidden text-ink-900"
+            className="md:hidden text-white p-2 hover:bg-white/5 rounded-lg transition-colors"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
-            {isMobileMenuOpen ? <X /> : <Menu />}
+            {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Sidebar Overlay */}
       {isMobileMenuOpen && (
-        <div className="md:hidden absolute top-full left-0 right-0 bg-white border-b border-slate-200 shadow-xl animate-in slide-in-from-top duration-300">
-          <div className="flex flex-col p-6 gap-4 text-center">
+        <div className="md:hidden fixed inset-0 z-40 bg-ai-black/95 backdrop-blur-2xl animate-in fade-in duration-300">
+          <div className="flex flex-col items-center justify-center h-full gap-8">
             {navLinks.map((link) => (
               <a
                 key={link.name}
                 href={link.href}
-                className="text-lg font-medium text-slate-600"
+                className="text-3xl font-bold text-white tracking-tighter"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 {link.name}
               </a>
             ))}
-            <div className="h-px w-full bg-slate-100 my-2"></div>
+            <div className="w-12 h-px bg-white/10"></div>
             {user ? (
               <Link
                 to="/dashboard"
-                className="bg-accent-orange text-white py-3 rounded-xl font-bold"
+                className="text-2xl font-bold text-accent-orange"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Dashboard
@@ -114,14 +118,14 @@ const Navbar = () => {
               <>
                 <Link
                   to="/login"
-                  className="text-slate-600 font-medium py-2"
+                  className="text-2xl font-bold text-white"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Login
                 </Link>
                 <Link
                   to="/signup"
-                  className="bg-ink-900 text-white py-3 rounded-xl font-bold"
+                  className="px-10 py-4 bg-accent-orange text-white rounded-2xl font-bold text-xl shadow-2xl"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Sign Up

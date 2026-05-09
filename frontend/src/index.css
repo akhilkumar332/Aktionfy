@@ -5,6 +5,12 @@
   --color-ink-900: #141413;
   --color-accent-orange: #d97706;
   --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  
+  /* Dark AI Theme */
+  --color-ai-black: #050505;
+  --color-ai-grey: #111111;
+  --color-ai-border: rgba(255, 255, 255, 0.1);
+  --color-ai-glow: rgba(217, 119, 6, 0.15);
 }
 
 :root {
@@ -12,6 +18,29 @@
   color: var(--color-ink-900);
 }
 
+.dark-theme {
+  background-color: var(--color-ai-black);
+  color: #ffffff;
+}
+
 body {
   @apply antialiased;
+}
+
+.glass-card {
+  @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl;
+}
+
+.glow-text {
+  text-shadow: 0 0 20px rgba(217, 119, 6, 0.5);
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+  100% { transform: translateY(0px); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
 }

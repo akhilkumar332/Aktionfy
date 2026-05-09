@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Activity, Users, LogOut, Clock } from 'lucide-react';
+import { LayoutDashboard, Activity, Users, LogOut, Clock, Search } from 'lucide-react';
 
 const DashboardLayout = ({ children }) => {
   const { user, logout } = useAuth();
@@ -17,59 +17,60 @@ const DashboardLayout = ({ children }) => {
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', roles: ['user', 'staff', 'admin'] },
     { icon: Activity, label: 'System Monitor', path: '/monitor', roles: ['staff', 'admin'] },
     { icon: Users, label: 'User Management', path: '/admin/users', roles: ['admin'] },
+    { icon: Search, label: 'SEO Manager', path: '/admin/seo', roles: ['admin'] },
   ];
 
   return (
-    <div className="flex min-h-screen bg-[#faf9f5]">
-      {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col">
-        <div className="p-6 border-b border-slate-100 flex items-center gap-3">
-          <div className="bg-[#d97706] p-2 rounded-lg text-white">
-            <Clock className="w-5 h-5" />
+    <div className="flex min-h-screen bg-ai-black text-white">
+      {/* Premium Sidebar */}
+      <aside className="w-72 bg-black/40 backdrop-blur-2xl border-r border-white/5 flex flex-col sticky top-0 h-screen">
+        <div className="p-8 border-b border-white/5 flex items-center gap-3">
+          <div className="bg-accent-orange p-2 rounded-xl text-white shadow-[0_0_20px_rgba(217,119,6,0.3)]">
+            <Clock size={20} />
           </div>
-          <span className="font-bold text-lg text-[#141413]">Schedule MCP</span>
+          <span className="font-bold text-xl tracking-tighter">Schedule MCP</span>
         </div>
 
-        <nav className="flex-1 p-4 space-y-2">
+        <nav className="flex-1 p-6 space-y-2">
           {navItems.map((item) => (
             item.roles.includes(user?.role) && (
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-colors ${
+                className={`flex items-center gap-4 px-4 py-3 rounded-2xl transition-all duration-300 ${
                   location.pathname === item.path
-                    ? 'bg-[#d97706]/10 text-[#d97706] font-semibold'
-                    : 'text-slate-600 hover:bg-slate-50'
+                    ? 'bg-accent-orange/10 text-accent-orange font-bold border border-accent-orange/20 shadow-[0_0_30px_rgba(217,119,6,0.1)]'
+                    : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
                 }`}
               >
-                <item.icon className="w-5 h-5" />
-                {item.label}
+                <item.icon size={20} className={location.pathname === item.path ? 'animate-pulse' : ''} />
+                <span className="text-[13px] uppercase tracking-widest">{item.label}</span>
               </Link>
             )
           ))}
         </nav>
 
-        <div className="p-4 border-t border-slate-100">
-          <div className="px-4 py-3 bg-slate-50 rounded-xl mb-4">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Logged in as</p>
-            <p className="text-sm font-medium text-slate-900 truncate">{user?.email}</p>
-            <span className="inline-block mt-1 px-2 py-0.5 bg-slate-200 text-[10px] font-bold rounded uppercase">
+        <div className="p-6 border-t border-white/5 bg-white/[0.02]">
+          <div className="px-5 py-4 bg-black/40 rounded-2xl border border-white/5 mb-6">
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">Authenticated As</p>
+            <p className="text-sm font-bold text-white truncate mb-1">{user?.email}</p>
+            <span className="inline-flex px-2 py-0.5 bg-accent-orange/10 text-accent-orange text-[9px] font-black rounded-lg uppercase tracking-widest border border-accent-orange/20">
               {user?.role}
             </span>
           </div>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 w-full px-4 py-2.5 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+            className="flex items-center gap-4 w-full px-5 py-3 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-2xl transition-all font-bold text-[11px] uppercase tracking-[0.2em]"
           >
-            <LogOut className="w-5 h-5" />
-            Logout
+            <LogOut size={18} />
+            Termination
           </button>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 p-8 overflow-y-auto">
-        <div className="max-w-5xl mx-auto">
+      {/* Main Content Area */}
+      <main className="flex-1 p-10 md:p-16 overflow-y-auto">
+        <div className="max-w-6xl mx-auto">
           {children}
         </div>
       </main>

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { LogIn } from 'lucide-react';
+import { LogIn, Sparkles, ArrowRight } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -22,60 +23,73 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#faf9f5]">
-      <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 w-full max-w-md">
-        <div className="flex flex-col items-center mb-8">
-          <div className="bg-[#d97706]/10 p-3 rounded-xl mb-4">
-            <LogIn className="w-8 h-8 text-[#d97706]" />
-          </div>
-          <h1 className="text-2xl font-bold text-[#141413]">Login to Schedule MCP</h1>
-          <p className="text-slate-500 mt-2 text-center">Manage your persistent AI actions</p>
+    <div className="min-h-screen flex items-center justify-center bg-ai-black relative overflow-hidden">
+      {/* Background Decor */}
+      <div className="absolute top-0 left-0 w-full h-full bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none"></div>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-accent-orange/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="relative z-10 bg-white/[0.03] backdrop-blur-2xl p-12 rounded-[3rem] border border-white/10 shadow-[0_40px_100px_rgba(0,0,0,0.8)] w-full max-w-lg"
+      >
+        <div className="flex flex-col items-center mb-12">
+          <Link to="/" className="bg-accent-orange p-3 rounded-2xl text-white mb-8 shadow-[0_0_30px_rgba(217,119,6,0.3)] hover:rotate-[360deg] transition-transform duration-1000">
+            <Sparkles size={32} />
+          </Link>
+          <h1 className="text-4xl font-black text-white tracking-tighter mb-2">Welcome Back.</h1>
+          <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Access your neural orchestration layer</p>
         </div>
 
         {error && (
-          <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-6 text-sm border border-red-100">
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="bg-red-500/10 text-red-400 p-4 rounded-2xl mb-8 text-xs font-bold border border-red-500/20 text-center uppercase tracking-widest"
+          >
             {error}
-          </div>
+          </motion.div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-2">
+            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Neural Identity</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-[#d97706]/20 focus:border-[#d97706] outline-none"
-              placeholder="you@example.com"
+              className="w-full bg-black/40 px-6 py-5 rounded-2xl border border-white/10 text-white focus:border-accent-orange outline-none transition-all placeholder:text-slate-700"
+              placeholder="id@network.com"
               required
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
+          <div className="space-y-2">
+            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Access Key</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-[#d97706]/20 focus:border-[#d97706] outline-none"
+              className="w-full bg-black/40 px-6 py-5 rounded-2xl border border-white/10 text-white focus:border-accent-orange outline-none transition-all placeholder:text-slate-700"
               placeholder="••••••••"
               required
             />
           </div>
+          
           <button
             type="submit"
-            className="w-full bg-[#141413] text-white py-3 rounded-lg font-semibold hover:bg-[#141413]/90 transition-colors"
+            className="w-full bg-white text-ink-900 py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-xs hover:bg-slate-100 transition-all shadow-[0_0_40px_rgba(255,255,255,0.1)] active:scale-[0.98] flex items-center justify-center gap-3"
           >
-            Sign In
+            Authenticate <ArrowRight size={16} />
           </button>
         </form>
 
-        <p className="text-center mt-6 text-sm text-slate-600">
-          Don't have an account?{' '}
-          <Link to="/signup" className="text-[#d97706] font-medium hover:underline">
-            Sign up for free
+        <p className="text-center mt-10 text-[10px] font-bold text-slate-600 uppercase tracking-widest">
+          New to the network?{' '}
+          <Link to="/signup" className="text-accent-orange hover:text-white transition-colors underline underline-offset-4">
+            Request Access
           </Link>
         </p>
-      </div>
+      </motion.div>
     </div>
   );
 };
