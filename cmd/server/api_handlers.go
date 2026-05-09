@@ -293,6 +293,31 @@ func apiDenyTaskHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Task denied"})
 }
 
+func apiListSecretsHandler(c echo.Context) error {
+	user := getUserFromEcho(c)
+	rows, err := queries.ListUserSecrets(c.Request().Context(), user.ID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch secrets"})
+	}
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: rows})
+}
+
+func apiDeleteSecretHandler(c echo.Context) error {
+	user := getUserFromEcho(c)
+	name := c.Param("name")
+
+	err := queries.DeleteUserSecret(c.Request().Context(), db.DeleteUserSecretParams{
+		UserID: user.ID,
+		Name:   name,
+	})
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to delete secret"})
+	}
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Secret deleted"})
+}
+
 func getUserFromEcho(c echo.Context) *User {
 	user, _ := c.Get("user").(*User)
 	return user

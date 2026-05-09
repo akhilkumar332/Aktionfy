@@ -331,4 +331,103 @@ func registerTools(s *server.MCPServer) {
 		resBytes, _ := json.Marshal(map[string]string{"status": "deleted"})
 		return mcp.NewToolResultText(string(resBytes)), nil
 	})
+
+	storeSecretTool := mcp.NewTool("store_secret",
+		mcp.WithDescription("Stores an encrypted secret for the user"),
+		mcp.WithString("name", mcp.Required(), mcp.Description("Secret name")),
+		mcp.WithString("value", mcp.Required(), mcp.Description("Secret value")),
+	)
+	s.AddTool(storeSecretTool, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args, ok := req.Params.Arguments.(map[string]interface{})
+		if !ok {
+			return mcp.NewToolResultError("invalid arguments"), nil
+		}
+		userID, ok := ctx.Value("user_id").(string)
+		if !ok {
+			return mcp.NewToolResultError("unauthorized"), nil
+		}
+		name, ok := args["name"].(string)
+		if !ok {
+			return mcp.NewToolResultError("missing or invalid 'name'"), nil
+		}
+		value, ok := args["value"].(string)
+		if !ok {
+			return mcp.NewToolResultError("missing or invalid 'value'"), nil
+		}
+
+		encrypted, err := Encrypt([]byte(value))
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("encryption error: %v", err)), nil
+		}
+
+		_, err = queries.UpsertUserSecret(ctx, db.UpsertUserSecretParams{
+			UserID:         userID,
+			Name:           name,
+			EncryptedValue: encrypted,
+		})
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("db error: %v", err)), nil
+		}
+
+		return mcp.NewToolResultText("Secret stored successfully"), nil
+	})
+
+	listSecretsTool := mcp.NewTool("list_secrets",
+		mcp.WithDescription("Lists user's secret names and creation dates"),
+	)
+	s.AddTool(listSecretsTool, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		userID, ok := ctx.Value("user_id").(string)
+		if !ok {
+			return mcp.NewToolResultError("unauthorized"), nil
+		}
+
+		rows, err := queries.ListUserSecrets(ctx, userID)
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("db error: %v", err)), nil
+		}
+
+		var md strings.Builder
+		md.WriteString("| Name | Created At |\n")
+		md.WriteString("|---|---|\n")
+
+		for _, r := range rows {
+			createdAt := r.CreatedAt.Time.Format("2006-01-02 15:04")
+			md.WriteString(fmt.Sprintf("| %s | %s |\n", r.Name, createdAt))
+		}
+
+		if len(rows) == 0 {
+			return mcp.NewToolResultText("No secrets found."), nil
+		}
+
+		return mcp.NewToolResultText(md.String()), nil
+	})
+
+	deleteSecretTool := mcp.NewTool("delete_secret",
+		mcp.WithDescription("Deletes a user secret"),
+		mcp.WithString("name", mcp.Required(), mcp.Description("Secret name")),
+	)
+	s.AddTool(deleteSecretTool, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args, ok := req.Params.Arguments.(map[string]interface{})
+		if !ok {
+			return mcp.NewToolResultError("invalid arguments"), nil
+		}
+		userID, ok := ctx.Value("user_id").(string)
+		if !ok {
+			return mcp.NewToolResultError("unauthorized"), nil
+		}
+		name, ok := args["name"].(string)
+		if !ok {
+			return mcp.NewToolResultError("missing or invalid 'name'"), nil
+		}
+
+		err := queries.DeleteUserSecret(ctx, db.DeleteUserSecretParams{
+			UserID: userID,
+			Name:   name,
+		})
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("db error: %v", err)), nil
+		}
+
+		return mcp.NewToolResultText("Secret deleted successfully"), nil
+	})
 }

@@ -156,6 +156,8 @@ func main() {
 	api.POST("/rotate-api-key", apiRotateAPIKeyHandler)
 	api.POST("/tasks/:id/approve", apiApproveTaskHandler)
 	api.POST("/tasks/:id/deny", apiDenyTaskHandler)
+	api.GET("/secrets", apiListSecretsHandler)
+	api.DELETE("/secrets/:name", apiDeleteSecretHandler)
 	
 	staff := api.Group("", EchoRequireRole("staff", "admin"))
 	staff.GET("/monitor", apiMonitorHandler)

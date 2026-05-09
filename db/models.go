@@ -49,6 +49,14 @@ type User struct {
 	CreatedAt    pgtype.Timestamptz
 }
 
+type UserSecret struct {
+	ID             pgtype.UUID
+	UserID         string
+	Name           string
+	EncryptedValue []byte
+	CreatedAt      pgtype.Timestamptz
+}
+
 type WebSession struct {
 	ID        pgtype.UUID
 	UserID    pgtype.Text

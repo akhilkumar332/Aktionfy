@@ -113,3 +113,18 @@ UPDATE tasks SET status = $1, failure_count = 0 WHERE id = $2 AND user_id = $3;
 
 -- name: UpdateTaskStatusByUserID :exec
 UPDATE tasks SET status = $1, locked_by = NULL WHERE id = $2 AND user_id = $3;
+
+-- name: UpsertUserSecret :one
+INSERT INTO user_secrets (user_id, name, encrypted_value)
+VALUES ($1, $2, $3)
+ON CONFLICT (user_id, name) DO UPDATE SET encrypted_value = $3
+RETURNING id;
+
+-- name: GetUserSecret :one
+SELECT encrypted_value FROM user_secrets WHERE user_id = $1 AND name = $2;
+
+-- name: ListUserSecrets :many
+SELECT id, name, created_at FROM user_secrets WHERE user_id = $1 ORDER BY name ASC;
+
+-- name: DeleteUserSecret :exec
+DELETE FROM user_secrets WHERE user_id = $1 AND name = $2;

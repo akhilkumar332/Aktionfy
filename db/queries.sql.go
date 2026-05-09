@@ -249,6 +249,20 @@ func (q *Queries) DeleteTask(ctx context.Context, arg DeleteTaskParams) error {
 	return err
 }
 
+const deleteUserSecret = `-- name: DeleteUserSecret :exec
+DELETE FROM user_secrets WHERE user_id = $1 AND name = $2
+`
+
+type DeleteUserSecretParams struct {
+	UserID string
+	Name   string
+}
+
+func (q *Queries) DeleteUserSecret(ctx context.Context, arg DeleteUserSecretParams) error {
+	_, err := q.db.Exec(ctx, deleteUserSecret, arg.UserID, arg.Name)
+	return err
+}
+
 const deleteWebSession = `-- name: DeleteWebSession :exec
 DELETE FROM web_sessions WHERE id = $1
 `
@@ -430,6 +444,22 @@ func (q *Queries) GetUserEmail(ctx context.Context, id string) (pgtype.Text, err
 	return email, err
 }
 
+const getUserSecret = `-- name: GetUserSecret :one
+SELECT encrypted_value FROM user_secrets WHERE user_id = $1 AND name = $2
+`
+
+type GetUserSecretParams struct {
+	UserID string
+	Name   string
+}
+
+func (q *Queries) GetUserSecret(ctx context.Context, arg GetUserSecretParams) ([]byte, error) {
+	row := q.db.QueryRow(ctx, getUserSecret, arg.UserID, arg.Name)
+	var encrypted_value []byte
+	err := row.Scan(&encrypted_value)
+	return encrypted_value, err
+}
+
 const incrementTaskFailureCount = `-- name: IncrementTaskFailureCount :one
 UPDATE tasks SET failure_count = failure_count + 1 
 WHERE id = $1 
@@ -441,6 +471,36 @@ func (q *Queries) IncrementTaskFailureCount(ctx context.Context, id pgtype.UUID)
 	var failure_count pgtype.Int4
 	err := row.Scan(&failure_count)
 	return failure_count, err
+}
+
+const listUserSecrets = `-- name: ListUserSecrets :many
+SELECT id, name, created_at FROM user_secrets WHERE user_id = $1 ORDER BY name ASC
+`
+
+type ListUserSecretsRow struct {
+	ID        pgtype.UUID
+	Name      string
+	CreatedAt pgtype.Timestamptz
+}
+
+func (q *Queries) ListUserSecrets(ctx context.Context, userID string) ([]ListUserSecretsRow, error) {
+	rows, err := q.db.Query(ctx, listUserSecrets, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListUserSecretsRow
+	for rows.Next() {
+		var i ListUserSecretsRow
+		if err := rows.Scan(&i.ID, &i.Name, &i.CreatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listUserTasks = `-- name: ListUserTasks :many
@@ -685,4 +745,24 @@ type UpdateUserTierParams struct {
 func (q *Queries) UpdateUserTier(ctx context.Context, arg UpdateUserTierParams) error {
 	_, err := q.db.Exec(ctx, updateUserTier, arg.Tier, arg.ID)
 	return err
+}
+
+const upsertUserSecret = `-- name: UpsertUserSecret :one
+INSERT INTO user_secrets (user_id, name, encrypted_value)
+VALUES ($1, $2, $3)
+ON CONFLICT (user_id, name) DO UPDATE SET encrypted_value = $3
+RETURNING id
+`
+
+type UpsertUserSecretParams struct {
+	UserID         string
+	Name           string
+	EncryptedValue []byte
+}
+
+func (q *Queries) UpsertUserSecret(ctx context.Context, arg UpsertUserSecretParams) (pgtype.UUID, error) {
+	row := q.db.QueryRow(ctx, upsertUserSecret, arg.UserID, arg.Name, arg.EncryptedValue)
+	var id pgtype.UUID
+	err := row.Scan(&id)
+	return id, err
 }
