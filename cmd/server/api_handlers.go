@@ -80,12 +80,18 @@ func apiLoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Determine if we should use Secure cookies.
+	useSecure := os.Getenv("ENV") == "production"
+	if os.Getenv("LOCAL_DEV") == "true" {
+		useSecure = false
+	}
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session_id",
 		Value:    sessionID,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   os.Getenv("ENV") == "production",
+		Secure:   useSecure,
 		SameSite: http.SameSiteLaxMode,
 		Expires:  time.Now().UTC().Add(24 * time.Hour),
 	})
@@ -118,12 +124,18 @@ func apiLogoutHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Determine if we should use Secure cookies.
+	useSecure := os.Getenv("ENV") == "production"
+	if os.Getenv("LOCAL_DEV") == "true" {
+		useSecure = false
+	}
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session_id",
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   os.Getenv("ENV") == "production",
+		Secure:   useSecure,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   -1,
 	})

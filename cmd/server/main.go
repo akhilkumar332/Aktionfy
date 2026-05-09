@@ -62,9 +62,17 @@ func main() {
 	if len(csrfKey) < 32 {
 		csrfKey = "01234567890123456789012345678901" // 32-byte fallback
 	}
+	
+	// Determine if we should use Secure cookies.
+	// Only use Secure if ENV is production AND we are NOT on localhost.
+	useSecure := os.Getenv("ENV") == "production"
+	if os.Getenv("LOCAL_DEV") == "true" {
+		useSecure = false
+	}
+
 	csrfMiddleware := csrf.Protect(
 		[]byte(csrfKey),
-		csrf.Secure(os.Getenv("ENV") == "production"),
+		csrf.Secure(useSecure),
 		csrf.SameSite(csrf.SameSiteLaxMode),
 		csrf.Path("/"),
 	)

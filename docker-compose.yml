@@ -32,6 +32,7 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - PORT=8080
       - ENV=production
+      - LOCAL_DEV=true
       - CSRF_KEY=9478330a1088469a91088469a1088469 -- replace this with a real 32-byte key in production
     depends_on:
       db:
