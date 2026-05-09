@@ -13,23 +13,24 @@ func sessionMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("session_id")
 		if err != nil {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			next.ServeHTTP(w, r)
 			return
 		}
 
-		var userID, userRole string
+		var user User
 		err = dbPool.QueryRow(r.Context(),
-			"SELECT user_id, u.role FROM web_sessions s JOIN users u ON s.user_id = u.id WHERE s.id = $1 AND s.expires_at > $2",
+			"SELECT u.id, u.email, u.api_key, u.role, u.tier, u.created_at FROM web_sessions s JOIN users u ON s.user_id = u.id WHERE s.id = $1 AND s.expires_at > $2",
 			cookie.Value, time.Now(),
-		).Scan(&userID, &userRole)
+		).Scan(&user.ID, &user.Email, &user.APIKey, &user.Role, &user.Tier, &user.CreatedAt)
 
 		if err != nil {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			next.ServeHTTP(w, r)
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), "user_id", userID)
-		ctx = context.WithValue(ctx, "user_role", userRole)
+		ctx := context.WithValue(r.Context(), "user", &user)
+		ctx = context.WithValue(ctx, "user_id", user.ID)
+		ctx = context.WithValue(ctx, "user_role", user.Role)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -77,10 +78,6 @@ func authMiddleware(next http.Handler, mcpServer *server.MCPServer) http.Handler
 			http.Error(w, "Too Many Requests", http.StatusTooManyRequests)
 			return
 		}
-
-		// Phase 6.2: Distributed Session Tracking via Redis
-		// MaintainHeartbeat will block until r.Context() is cancelled (client disconnects)
-		go GlobalSessionManager.MaintainHeartbeat(r.Context(), userID, mcpServer)
 
 		// Add UserID and Tier to context for use in tools
 		ctx := context.WithValue(r.Context(), "user_id", userID)

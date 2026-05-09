@@ -68,7 +68,8 @@ BEGIN
         LEFT JOIN tasks dep ON t.depends_on_task_id = dep.id
         WHERE t.next_run <= NOW() 
           AND t.status = 'active'
-          AND (t.depends_on_task_id IS NULL OR dep.status = 'completed' OR dep.status = 'active') -- Simplistic check
+          -- Ensure dependency belongs to same user AND is in a valid state
+          AND (t.depends_on_task_id IS NULL OR (dep.user_id = t.user_id AND (dep.status = 'completed' OR dep.status = 'active')))
         ORDER BY t.next_run ASC
         LIMIT batch_size
         FOR UPDATE OF t SKIP LOCKED -- CRITICAL: Prevents race conditions
@@ -79,11 +80,11 @@ $$ LANGUAGE plpgsql;
 
 -- The "Post-Execution" Function
 -- After the Go worker sends the Sampling request, it calls this to set the next time.
-CREATE OR REPLACE FUNCTION fn_complete_task(task_id UUID, new_next_run TIMESTAMP WITH TIME ZONE)
+CREATE OR REPLACE FUNCTION fn_complete_task(task_id UUID, new_next_run TIMESTAMP WITH TIME ZONE, new_status TEXT DEFAULT 'active')
 RETURNS VOID AS $$
 BEGIN
     UPDATE tasks
-    SET status = 'active',
+    SET status = new_status,
         locked_by = NULL,
         last_run = NOW(),
         failure_count = 0, -- reset on success

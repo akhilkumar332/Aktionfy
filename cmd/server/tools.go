@@ -73,6 +73,12 @@ func registerTools(s *server.MCPServer) {
 		if dep, ok := args["depends_on_task_id"].(string); ok && dep != "" {
 			// Basic UUID length validation to prevent Postgres 500 errors
 			if len(dep) == 36 {
+				// Check if task exists and belongs to user
+				var exists bool
+				err := dbPool.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM tasks WHERE id = $1 AND user_id = $2)", dep, userID).Scan(&exists)
+				if err != nil || !exists {
+					return mcp.NewToolResultError("invalid depends_on_task_id: task not found or unauthorized"), nil
+				}
 				dependsOn = &dep
 			} else {
 				return mcp.NewToolResultError("invalid depends_on_task_id format, expected UUID"), nil

@@ -2,9 +2,8 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -12,11 +11,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/gorilla/csrf"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/mark3labs/mcp-go/server"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/redis/go-redis/v9"
-	"github.com/stripe/stripe-go/v78/webhook"
 )
 
 func main() {
@@ -59,6 +58,16 @@ func main() {
 	globalRateLimiter.client = redisClient
 	GlobalSessionManager.Init(redisClient)
 
+	// Initialize templates
+	templates = template.Must(template.ParseGlob("templates/*.html"))
+
+	// CSRF Setup
+	csrfKey := os.Getenv("CSRF_KEY")
+	if len(csrfKey) < 32 {
+		csrfKey = "01234567890123456789012345678901" // 32-byte fallback
+	}
+	csrfMiddleware := csrf.Protect([]byte(csrfKey), csrf.Secure(os.Getenv("ENV") == "production"))
+
 	// 2. Initialize MCP Server
 	mcpServer := server.NewMCPServer("scheduled-actions", "1.0.0")
 
@@ -71,11 +80,19 @@ func main() {
 	// Assuming the SDK provides an SSE handler endpoint.
 	// We wrap it with auth middleware to extract X-API-Key and verify user_id
 	sseServer := server.NewSSEServer(mcpServer)
-	mux.Handle("/sse", authMiddleware(sseServer.SSEHandler(), mcpServer))
+	mux.Handle("/sse", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userID := r.Context().Value("user_id").(string)
+		go GlobalSessionManager.MaintainHeartbeat(r.Context(), userID, mcpServer)
+		sseServer.SSEHandler().ServeHTTP(w, r)
+	}), mcpServer))
 	mux.Handle("/message", authMiddleware(sseServer.MessageHandler(), mcpServer))
 
 	// Phase 4: Telemetry & Observability
 	mux.Handle("/metrics", promhttp.Handler())
+
+	// Static files
+	fs := http.FileServer(http.Dir("static"))
+	mux.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		if err := dbPool.Ping(r.Context()); err != nil {
@@ -90,84 +107,93 @@ func main() {
 		w.Write([]byte("OK"))
 	})
 
-	// Phase 8: The Monetization API (Billing)
-	mux.HandleFunc("/webhooks/stripe", func(w http.ResponseWriter, r *http.Request) {
-		endpointSecret := os.Getenv("STRIPE_WEBHOOK_SECRET")
-		if endpointSecret == "" {
-			log.Println("STRIPE_WEBHOOK_SECRET not set, cannot verify webhook.")
-			http.Error(w, "Server Configuration Error", http.StatusInternalServerError)
+	// Auth Handlers
+	mux.Handle("/signup", csrfMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			renderTemplate(w, r, "signup", PageData{})
 			return
 		}
-
-		payload, err := io.ReadAll(r.Body)
-		if err != nil {
-			log.Printf("Error reading request body: %v\n", err)
-			w.WriteHeader(http.StatusServiceUnavailable)
-			return
-		}
-
-		// Verify Stripe signature
-		event, err := webhook.ConstructEvent(payload, r.Header.Get("Stripe-Signature"), endpointSecret)
-		if err != nil {
-			log.Printf("Error verifying webhook signature: %v\n", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		if event.Type == "checkout.session.completed" {
-			// Extract email or user ID from the session to upgrade
-			var session map[string]interface{}
-			err := json.Unmarshal(event.Data.Raw, &session)
+		if r.Method == http.MethodPost {
+			email := r.FormValue("email")
+			password := r.FormValue("password")
+			_, err := RegisterUser(r.Context(), email, password)
 			if err != nil {
-				log.Printf("Error parsing webhook JSON: %v\n", err)
-				w.WriteHeader(http.StatusBadRequest)
+				renderTemplate(w, r, "signup", PageData{Error: err.Error()})
 				return
 			}
-			
-			// Assuming customer_email or client_reference_id holds the user info
-			email, _ := session["customer_details"].(map[string]interface{})["email"].(string)
-			if email != "" {
-				_, err = dbPool.Exec(r.Context(), "UPDATE users SET tier = 'pro' WHERE email = $1", email)
-				if err != nil {
-					log.Printf("Failed to upgrade user %s: %v", email, err)
-				} else {
-					log.Printf("Upgraded user %s to pro tier via webhook", email)
-				}
+			http.Redirect(w, r, "/login?message=Account+created+successfully", http.StatusSeeOther)
+		}
+	})))
+
+	mux.Handle("/login", csrfMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			msg := r.URL.Query().Get("message")
+			renderTemplate(w, r, "login", PageData{Message: msg})
+			return
+		}
+		if r.Method == http.MethodPost {
+			email := r.FormValue("email")
+			password := r.FormValue("password")
+			sessionID, err := LoginUser(r.Context(), email, password)
+			if err != nil {
+				renderTemplate(w, r, "login", PageData{Error: "Invalid email or password"})
+				return
 			}
+			http.SetCookie(w, &http.Cookie{
+				Name:     "session_id",
+				Value:    sessionID,
+				Path:     "/",
+				HttpOnly: true,
+				Expires:  time.Now().Add(24 * time.Hour),
+			})
+			http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
 		}
+	})))
 
-		w.WriteHeader(http.StatusOK)
-	})
+	mux.Handle("/logout", csrfMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.SetCookie(w, &http.Cookie{
+			Name:     "session_id",
+			Value:    "",
+			Path:     "/",
+			HttpOnly: true,
+			MaxAge:   -1,
+		})
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+	})))
 
-	mux.HandleFunc("/dashboard", func(w http.ResponseWriter, r *http.Request) {
-		apiKey := r.URL.Query().Get("api_key")
-		if apiKey == "" {
-			http.Error(w, "Missing api_key in URL parameters", http.StatusBadRequest)
+	// Dashboard
+	mux.Handle("/dashboard", csrfMiddleware(sessionMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user := getUser(r)
+		if user == nil {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
 
-		var email, tier string
-		err := dbPool.QueryRow(r.Context(), "SELECT email, tier FROM users WHERE api_key = $1", apiKey).Scan(&email, &tier)
+		var taskCount int
+		err := dbPool.QueryRow(r.Context(), "SELECT COUNT(*) FROM tasks WHERE user_id = $1", user.ID).Scan(&taskCount)
 		if err != nil {
-			http.Error(w, "Invalid API Key", http.StatusUnauthorized)
-			return
+			log.Printf("Error fetching task count: %v", err)
 		}
 
-		w.Header().Set("Content-Type", "text/html")
-		html := fmt.Sprintf(`
-		<html><body>
-			<h1>Schedule MCP Dashboard</h1>
-			<p>User Email: <strong>%s</strong></p>
-			<p>Your API Key: <strong>%s</strong></p>
-			<p>Current Tier: <strong>%s</strong></p>
-			<a href="https://buy.stripe.com/checkout">Upgrade to Pro</a>
-		</body></html>
-		`, email, apiKey, tier)
-		w.Write([]byte(html))
-	})
+		renderTemplate(w, r, "dashboard", PageData{
+			User:        user,
+			CurrentPage: "dashboard",
+			Data: map[string]interface{}{
+				"TaskCount": taskCount,
+			},
+		})
+	}))))
 
-	// 4. Start Background Scheduler
+	// Staff & Admin Views
+	mux.Handle("/monitor", csrfMiddleware(sessionMiddleware(RequireRole("staff", "admin")(http.HandlerFunc(monitorHandler)))))
+	mux.Handle("/admin/users", csrfMiddleware(sessionMiddleware(RequireRole("admin")(http.HandlerFunc(adminUsersHandler)))))
+	mux.Handle("/admin/users/update", csrfMiddleware(sessionMiddleware(RequireRole("admin")(http.HandlerFunc(adminUpdateUserHandler)))))
+
+	// Phase 8: The Monetization API (Billing)
+
+	// 4. Start Background Scheduler & Reaper
 	go runScheduler(ctx, mcpServer)
+	go runReaper(ctx)
 
 	// 5. Start HTTP Server
 	port := os.Getenv("PORT")
@@ -227,4 +253,135 @@ func main() {
 		log.Fatalf("Server Shutdown Failed: %+v", err)
 	}
 	log.Println("Server exited properly")
+}
+
+type PageData struct {
+	User        *User
+	Error       string
+	Message     string
+	CurrentPage string
+	Data        interface{}
+	CSRFField   template.HTML
+}
+
+func renderTemplate(w http.ResponseWriter, r *http.Request, tmpl string, data PageData) {
+	data.CSRFField = csrf.TemplateField(r)
+	err := templates.ExecuteTemplate(w, tmpl+".html", data)
+	if err != nil {
+		log.Printf("Template execution error: %v", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
+}
+
+func getUser(r *http.Request) *User {
+	user, _ := r.Context().Value("user").(*User)
+	return user
+}
+
+func monitorHandler(w http.ResponseWriter, r *http.Request) {
+	user := getUser(r)
+	if user == nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	rows, err := dbPool.Query(r.Context(), `
+		SELECT l.id, l.task_id, l.user_id, l.execution_time, l.status, l.llm_response, l.error_message, t.name as task_name, u.email as user_email
+		FROM task_logs l
+		JOIN tasks t ON l.task_id = t.id
+		JOIN users u ON l.user_id = u.id
+		ORDER BY l.execution_time DESC
+		LIMIT 100
+	`)
+	if err != nil {
+		log.Printf("Error fetching logs: %v", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var logs []TaskLog
+	for rows.Next() {
+		var l TaskLog
+		err := rows.Scan(&l.ID, &l.TaskID, &l.UserID, &l.ExecutionTime, &l.Status, &l.LLMResponse, &l.ErrorMessage, &l.TaskName, &l.UserEmail)
+		if err != nil {
+			log.Printf("Error scanning log: %v", err)
+			continue
+		}
+		logs = append(logs, l)
+	}
+
+	renderTemplate(w, r, "monitor", PageData{
+		User:        user,
+		CurrentPage: "monitor",
+		Data: map[string]interface{}{
+			"Logs": logs,
+		},
+	})
+}
+
+func adminUsersHandler(w http.ResponseWriter, r *http.Request) {
+	user := getUser(r)
+	if user == nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	rows, err := dbPool.Query(r.Context(), "SELECT id, email, role, tier, created_at FROM users ORDER BY created_at DESC")
+	if err != nil {
+		log.Printf("Error fetching users: %v", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var users []User
+	for rows.Next() {
+		var u User
+		err := rows.Scan(&u.ID, &u.Email, &u.Role, &u.Tier, &u.CreatedAt)
+		if err != nil {
+			log.Printf("Error scanning user: %v", err)
+			continue
+		}
+		users = append(users, u)
+	}
+
+	renderTemplate(w, r, "admin_users", PageData{
+		User:        user,
+		CurrentPage: "admin_users",
+		Data: map[string]interface{}{
+			"Users": users,
+		},
+	})
+}
+
+func adminUpdateUserHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID := r.FormValue("user_id")
+	role := r.FormValue("role")
+	tier := r.FormValue("tier")
+
+	if role != "" {
+		_, err := dbPool.Exec(r.Context(), "UPDATE users SET role = $1 WHERE id = $2", role, userID)
+		if err != nil {
+			log.Printf("Error updating user role: %v", err)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	if tier != "" {
+		_, err := dbPool.Exec(r.Context(), "UPDATE users SET tier = $1 WHERE id = $2", tier, userID)
+		if err != nil {
+			log.Printf("Error updating user tier: %v", err)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
 }
