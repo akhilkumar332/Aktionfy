@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import DashboardLayout from '../components/DashboardLayout';
 import axios from 'axios';
-import { Crown, ListChecks, Key, RefreshCw, Copy, Check, ShieldCheck, Zap } from 'lucide-react';
+import { Crown, ListChecks, Key, RefreshCw, Copy, Check, ShieldCheck, Zap, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Dashboard = () => {
