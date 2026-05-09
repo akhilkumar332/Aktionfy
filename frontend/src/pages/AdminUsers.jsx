@@ -46,9 +46,9 @@ const AdminUsers = () => {
             <thead className="bg-slate-50 text-slate-500 text-sm uppercase tracking-wider">
               <tr>
                 <th className="px-6 py-4 font-semibold">User</th>
+                <th className="px-6 py-4 font-semibold">API Key</th>
                 <th className="px-6 py-4 font-semibold">Role</th>
                 <th className="px-6 py-4 font-semibold">Tier</th>
-                <th className="px-6 py-4 font-semibold">Joined</th>
                 <th className="px-6 py-4 font-semibold text-right">Actions</th>
               </tr>
             </thead>
@@ -73,6 +73,11 @@ const AdminUsers = () => {
                         <div className="text-xs text-slate-400 font-mono">{u.id}</div>
                       </div>
                     </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <code className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-600 font-mono">
+                      {u.api_key}
+                    </code>
                   </td>
                   <td className="px-6 py-4">
                     {u.role === 'admin' ? (

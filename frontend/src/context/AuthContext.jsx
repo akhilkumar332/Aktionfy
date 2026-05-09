@@ -34,8 +34,7 @@ export const AuthProvider = ({ children }) => {
       
       const res = await axios.get('/api/dashboard');
       if (res.data.success) {
-        // Use functional update to prevent overwriting manual login
-        setUser(prev => prev || res.data.data.user);
+        setUser(res.data.data.user);
       }
     } catch (err) {
       if (err.response?.status === 401) {
