@@ -62,3 +62,19 @@ func LoginUser(ctx context.Context, email, password string) (string, error) {
 
 	return sessionID, nil
 }
+
+// RotateAPIKey generates a new API key for the user and updates the DB
+func RotateAPIKey(ctx context.Context, userID string) (string, error) {
+	apiKeyBytes := make([]byte, 16)
+	if _, err := rand.Read(apiKeyBytes); err != nil {
+		return "", fmt.Errorf("failed to generate api key: %w", err)
+	}
+	newAPIKey := hex.EncodeToString(apiKeyBytes)
+
+	_, err := dbPool.Exec(ctx, "UPDATE users SET api_key = $1 WHERE id = $2", newAPIKey, userID)
+	if err != nil {
+		return "", fmt.Errorf("failed to update api key: %w", err)
+	}
+
+	return newAPIKey, nil
+}

@@ -144,6 +144,8 @@ func main() {
 				Value:    sessionID,
 				Path:     "/",
 				HttpOnly: true,
+				Secure:   os.Getenv("ENV") == "production",
+				SameSite: http.SameSiteLaxMode,
 				Expires:  time.Now().Add(24 * time.Hour),
 			})
 			http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
@@ -151,11 +153,21 @@ func main() {
 	})))
 
 	mux.Handle("/logout", csrfMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cookie, err := r.Cookie("session_id")
+		if err == nil && cookie.Value != "" {
+			_, err = dbPool.Exec(r.Context(), "DELETE FROM web_sessions WHERE id = $1", cookie.Value)
+			if err != nil {
+				log.Printf("Error deleting session: %v", err)
+			}
+		}
+
 		http.SetCookie(w, &http.Cookie{
 			Name:     "session_id",
 			Value:    "",
 			Path:     "/",
 			HttpOnly: true,
+			Secure:   os.Getenv("ENV") == "production",
+			SameSite: http.SameSiteLaxMode,
 			MaxAge:   -1,
 		})
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -182,6 +194,27 @@ func main() {
 				"TaskCount": taskCount,
 			},
 		})
+	}))))
+
+	mux.Handle("/rotate-api-key", csrfMiddleware(sessionMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		user := getUser(r)
+		if user == nil {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+
+		_, err := RotateAPIKey(r.Context(), user.ID)
+		if err != nil {
+			log.Printf("Error rotating API key: %v", err)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		http.Redirect(w, r, "/dashboard?message=API+key+rotated+successfully", http.StatusSeeOther)
 	}))))
 
 	// Staff & Admin Views

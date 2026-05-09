@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -36,20 +37,27 @@ func registerTools(s *server.MCPServer) {
 		// Phase 2.2: Tool Quotas
 		var taskCount int
 		err := dbPool.QueryRow(ctx, "SELECT COUNT(*) FROM tasks WHERE user_id = $1", userID).Scan(&taskCount)
-		if err == nil {
-			if userTier == TierFree && taskCount >= QuotaFree {
-				return mcp.NewToolResultError(fmt.Sprintf("quota exceeded: free tier allows maximum %d tasks", QuotaFree)), nil
-			} else if userTier == TierPlus && taskCount >= QuotaPlus {
-				return mcp.NewToolResultError(fmt.Sprintf("quota exceeded: plus tier allows maximum %d tasks", QuotaPlus)), nil
-			} else if userTier == TierPro && taskCount >= QuotaPro {
-				return mcp.NewToolResultError(fmt.Sprintf("quota exceeded: pro tier allows maximum %d tasks", QuotaPro)), nil
-			}
+		if err != nil {
+			log.Printf("Quota check error: %v", err)
+			return mcp.NewToolResultError("Quota check failed. Please try again later."), nil
+		}
+		
+		if userTier == TierFree && taskCount >= QuotaFree {
+			return mcp.NewToolResultError(fmt.Sprintf("quota exceeded: free tier allows maximum %d tasks", QuotaFree)), nil
+		} else if userTier == TierPlus && taskCount >= QuotaPlus {
+			return mcp.NewToolResultError(fmt.Sprintf("quota exceeded: plus tier allows maximum %d tasks", QuotaPlus)), nil
+		} else if userTier == TierPro && taskCount >= QuotaPro {
+			return mcp.NewToolResultError(fmt.Sprintf("quota exceeded: pro tier allows maximum %d tasks", QuotaPro)), nil
 		}
 
 		name, ok := args["name"].(string)
 		if !ok {
 			return mcp.NewToolResultError("missing or invalid 'name'"), nil
 		}
+		if len(name) > 100 {
+			return mcp.NewToolResultError("name too long: maximum 100 characters"), nil
+		}
+
 		triggerType, ok := args["trigger_type"].(string)
 		if !ok {
 			return mcp.NewToolResultError("missing or invalid 'trigger_type'"), nil
@@ -57,6 +65,9 @@ func registerTools(s *server.MCPServer) {
 		agentPrompt, ok := args["agent_prompt"].(string)
 		if !ok {
 			return mcp.NewToolResultError("missing or invalid 'agent_prompt'"), nil
+		}
+		if len(agentPrompt) > 10000 {
+			return mcp.NewToolResultError("agent_prompt too long: maximum 10,000 characters"), nil
 		}
 		triggerConfig, ok := args["trigger_config"].(map[string]interface{})
 		if !ok {
