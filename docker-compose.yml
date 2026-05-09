@@ -33,6 +33,10 @@ services:
       - PORT=8080
       - ENV=production
       - LOCAL_DEV=true
+      - BASE_URL=http://localhost:8080
+      - STRIPE_API_KEY=sk_test_...
+      - STRIPE_WEBHOOK_SECRET=whsec_...
+      - STRIPE_PRO_PRICE_ID=price_...
       - CSRF_KEY=9478330a1088469a91088469a1088469 -- replace this with a real 32-byte key in production
     depends_on:
       db:

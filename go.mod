@@ -11,6 +11,7 @@ require (
 	github.com/redis/go-redis/v9 v9.7.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/sendgrid/sendgrid-go v3.16.1+incompatible
+	github.com/stripe/stripe-go/v78 v78.12.0
 	golang.org/x/crypto v0.51.0
 )
 

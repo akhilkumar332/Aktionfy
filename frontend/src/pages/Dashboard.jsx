@@ -45,12 +45,32 @@ const Dashboard = () => {
     }
   };
 
+  const handleUpgrade = async () => {
+    try {
+      const res = await axios.post('/api/billing/create-checkout-session');
+      if (res.data.success && res.data.data.url) {
+        window.location.href = res.data.data.url;
+      } else {
+        alert('Failed to start checkout');
+      }
+    } catch (err) {
+      console.error('Upgrade error', err);
+      alert('Failed to initiate upgrade');
+    }
+  };
+
   return (
     <DashboardLayout>
       <header className="mb-8">
         <h1 className="text-3xl font-bold text-[#141413]">Dashboard</h1>
         <p className="text-slate-500 mt-1">Manage your account and scheduled actions.</p>
       </header>
+
+      {new URLSearchParams(window.location.search).get('payment') === 'success' && (
+        <div className="bg-emerald-50 text-emerald-700 p-4 rounded-xl border border-emerald-100 mb-8 font-medium animate-in fade-in slide-in-from-top-4 duration-500">
+          Payment successful! Your account is being upgraded to PRO.
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Tier Card */}
@@ -67,9 +87,14 @@ const Dashboard = () => {
           <p className="text-sm text-slate-500 flex-1">
             {user?.tier === 'free' ? 'Limited to 5 active tasks.' : 'Up to 50 active tasks.'}
           </p>
-          <button className="mt-4 text-sm font-semibold text-[#d97706] hover:underline text-left">
-            Upgrade Plan →
-          </button>
+          {user?.tier === 'free' && (
+            <button 
+              onClick={handleUpgrade}
+              className="mt-4 text-sm font-semibold text-[#d97706] hover:underline text-left"
+            >
+              Upgrade to PRO →
+            </button>
+          )}
         </div>
 
         {/* Task Stats Card */}
