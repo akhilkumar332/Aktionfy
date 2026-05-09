@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -23,6 +24,8 @@ func registerTools(s *server.MCPServer) {
 		mcp.WithObject("trigger_config", mcp.Required(), mcp.Description("Trigger configuration")),
 		mcp.WithString("missed_task_policy", mcp.Description("Policy for missed tasks (skip, run_immediate)")),
 		mcp.WithString("depends_on_task_id", mcp.Description("Optional UUID of a task this task depends on")),
+		mcp.WithObject("secrets", mcp.Description("Optional secrets to be stored securely (e.g. API keys)")),
+		mcp.WithBoolean("requires_approval", mcp.Description("If true, the task will require manual approval before each execution")),
 	)
 
 	s.AddTool(createTaskTool, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -80,6 +83,23 @@ func registerTools(s *server.MCPServer) {
 		if mp, ok := args["missed_task_policy"].(string); ok && (mp == PolicySkip || mp == PolicyRunImmediate) {
 			missedPolicy = mp
 		}
+
+		requiresApproval := false
+		if ra, ok := args["requires_approval"].(bool); ok {
+			requiresApproval = ra
+		}
+
+		var encryptedSecrets []byte
+		if secrets, ok := args["secrets"].(map[string]interface{}); ok && len(secrets) > 0 {
+			secretsBytes, err := json.Marshal(secrets)
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("invalid secrets JSON: %v", err)), nil
+			}
+			encryptedSecrets, err = Encrypt(secretsBytes)
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("encryption error: %v", err)), nil
+			}
+		}
 		
 		var dependsOn pgtype.UUID
 		if dep, ok := args["depends_on_task_id"].(string); ok && dep != "" {
@@ -108,7 +128,7 @@ func registerTools(s *server.MCPServer) {
 			return mcp.NewToolResultError(fmt.Sprintf("invalid trigger configuration: %v", err)), nil
 		}
 
-		taskID, err := queries.CreateTask(ctx, db.CreateTaskParams{
+		task, err := queries.CreateTask(ctx, db.CreateTaskParams{
 			UserID:           userID,
 			Name:             name,
 			TriggerType:      pgtype.Text{String: triggerType, Valid: true},
@@ -117,13 +137,15 @@ func registerTools(s *server.MCPServer) {
 			MissedTaskPolicy: pgtype.Text{String: missedPolicy, Valid: true},
 			DependsOnTaskID:  dependsOn,
 			NextRun:          pgtype.Timestamptz{Time: nextRun, Valid: true},
+			RequiresApproval: pgtype.Bool{Bool: requiresApproval, Valid: true},
+			EncryptedSecrets: encryptedSecrets,
 		})
 
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("failed to insert task: %v", err)), nil
 		}
 
-		resBytes, _ := json.Marshal(map[string]string{"status": "success", "task_id": formatUUID(taskID), "next_run": nextRun.Format(time.RFC3339)})
+		resBytes, _ := json.Marshal(map[string]string{"status": "success", "task_id": formatUUID(task.ID), "next_run": nextRun.Format(time.RFC3339)})
 		return mcp.NewToolResultText(string(resBytes)), nil
 	})
 
@@ -142,21 +164,41 @@ func registerTools(s *server.MCPServer) {
 		}
 
 		var tasks []map[string]interface{}
+		var md strings.Builder
+		md.WriteString("| ID | Prompt | Status | Next Run | Approval |\n")
+		md.WriteString("|---|---|---|---|---|\n")
+
 		for _, t := range rows {
+			idStr := formatUUID(t.ID)
+			approval := "Optional"
+			if t.RequiresApproval.Bool {
+				approval = "Required"
+			}
+			nextRunStr := t.NextRun.Time.Format("2006-01-02 15:04")
+
+			cleanName := strings.ReplaceAll(t.Name, "|", "\\|")
+			md.WriteString(fmt.Sprintf("| %s | %s | %s | %s | %s |\n",
+				idStr, cleanName, t.Status.String, nextRunStr, approval))
+
 			tasks = append(tasks, map[string]interface{}{
-				"id":           formatUUID(t.ID),
-				"name":         t.Name,
-				"trigger_type": t.TriggerType.String,
-				"status":       t.Status.String,
-				"next_run":     t.NextRun.Time.Format(time.RFC3339),
+				"id":                   idStr,
+				"name":                 t.Name,
+				"trigger_type":         t.TriggerType.String,
+				"status":               t.Status.String,
+				"next_run":             t.NextRun.Time.Format(time.RFC3339),
+				"requires_approval":    t.RequiresApproval.Bool,
+				"has_secrets":          len(t.EncryptedSecrets) > 0,
+				"last_approval_status": t.LastApprovalStatus.String,
 			})
 		}
-		
+
 		resBytes, _ := json.Marshal(tasks)
 		if string(resBytes) == "null" {
 			resBytes = []byte("[]")
 		}
-		return mcp.NewToolResultText(string(resBytes)), nil
+
+		finalOutput := fmt.Sprintf("%s\n<!-- JSON: %s -->", md.String(), string(resBytes))
+		return mcp.NewToolResultText(finalOutput), nil
 	})
 
 	pauseTaskTool := mcp.NewTool("pause_task",

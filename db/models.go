@@ -9,20 +9,23 @@ import (
 )
 
 type Task struct {
-	ID               pgtype.UUID
-	UserID           string
-	Name             string
-	TriggerType      pgtype.Text
-	TriggerConfig    []byte
-	AgentPrompt      string
-	Status           pgtype.Text
-	LockedBy         pgtype.Text
-	NextRun          pgtype.Timestamptz
-	LastRun          pgtype.Timestamptz
-	FailureCount     pgtype.Int4
-	MissedTaskPolicy pgtype.Text
-	DependsOnTaskID  pgtype.UUID
-	CreatedAt        pgtype.Timestamptz
+	ID                 pgtype.UUID
+	UserID             string
+	Name               string
+	TriggerType        pgtype.Text
+	TriggerConfig      []byte
+	AgentPrompt        string
+	Status             pgtype.Text
+	LockedBy           pgtype.Text
+	NextRun            pgtype.Timestamptz
+	LastRun            pgtype.Timestamptz
+	FailureCount       pgtype.Int4
+	MissedTaskPolicy   pgtype.Text
+	DependsOnTaskID    pgtype.UUID
+	CreatedAt          pgtype.Timestamptz
+	RequiresApproval   pgtype.Bool
+	EncryptedSecrets   []byte
+	LastApprovalStatus pgtype.Text
 }
 
 type TaskLog struct {

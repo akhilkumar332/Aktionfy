@@ -35,7 +35,10 @@ CREATE TABLE tasks (
     failure_count INT DEFAULT 0, -- Phase 2.3: Dead Letter Queue
     missed_task_policy TEXT DEFAULT 'skip' CHECK (missed_task_policy IN ('skip', 'run_immediately')), -- Phase 3.1
     depends_on_task_id UUID REFERENCES tasks(id) ON DELETE SET NULL, -- Phase 3.2
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    requires_approval BOOLEAN DEFAULT FALSE,
+    encrypted_secrets BYTEA,
+    last_approval_status VARCHAR(20) -- 'pending', 'approved', 'denied'
 );
 
 -- Index for high-speed polling

@@ -28,7 +28,7 @@ func (q *Queries) CheckTaskOwnership(ctx context.Context, arg CheckTaskOwnership
 }
 
 const claimDueTasks = `-- name: ClaimDueTasks :many
-SELECT id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at FROM fn_claim_due_tasks($1, $2)
+SELECT id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status FROM fn_claim_due_tasks($1, $2)
 `
 
 type ClaimDueTasksParams struct {
@@ -60,6 +60,9 @@ func (q *Queries) ClaimDueTasks(ctx context.Context, arg ClaimDueTasksParams) ([
 			&i.MissedTaskPolicy,
 			&i.DependsOnTaskID,
 			&i.CreatedAt,
+			&i.RequiresApproval,
+			&i.EncryptedSecrets,
+			&i.LastApprovalStatus,
 		); err != nil {
 			return nil, err
 		}
@@ -98,9 +101,9 @@ func (q *Queries) CountUserTasks(ctx context.Context, userID string) (int64, err
 }
 
 const createTask = `-- name: CreateTask :one
-INSERT INTO tasks (user_id, name, trigger_type, trigger_config, agent_prompt, missed_task_policy, depends_on_task_id, next_run) 
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
-RETURNING id
+INSERT INTO tasks (user_id, name, trigger_type, trigger_config, agent_prompt, missed_task_policy, depends_on_task_id, next_run, requires_approval, encrypted_secrets) 
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
+RETURNING id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status
 `
 
 type CreateTaskParams struct {
@@ -112,9 +115,11 @@ type CreateTaskParams struct {
 	MissedTaskPolicy pgtype.Text
 	DependsOnTaskID  pgtype.UUID
 	NextRun          pgtype.Timestamptz
+	RequiresApproval pgtype.Bool
+	EncryptedSecrets []byte
 }
 
-func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (pgtype.UUID, error) {
+func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error) {
 	row := q.db.QueryRow(ctx, createTask,
 		arg.UserID,
 		arg.Name,
@@ -124,10 +129,30 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (pgtype.
 		arg.MissedTaskPolicy,
 		arg.DependsOnTaskID,
 		arg.NextRun,
+		arg.RequiresApproval,
+		arg.EncryptedSecrets,
 	)
-	var id pgtype.UUID
-	err := row.Scan(&id)
-	return id, err
+	var i Task
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.TriggerType,
+		&i.TriggerConfig,
+		&i.AgentPrompt,
+		&i.Status,
+		&i.LockedBy,
+		&i.NextRun,
+		&i.LastRun,
+		&i.FailureCount,
+		&i.MissedTaskPolicy,
+		&i.DependsOnTaskID,
+		&i.CreatedAt,
+		&i.RequiresApproval,
+		&i.EncryptedSecrets,
+		&i.LastApprovalStatus,
+	)
+	return i, err
 }
 
 const createTaskLog = `-- name: CreateTaskLog :exec
@@ -387,15 +412,18 @@ func (q *Queries) IncrementTaskFailureCount(ctx context.Context, id pgtype.UUID)
 }
 
 const listUserTasks = `-- name: ListUserTasks :many
-SELECT id, name, trigger_type, status, next_run FROM tasks WHERE user_id = $1
+SELECT id, name, trigger_type, status, next_run, requires_approval, encrypted_secrets, last_approval_status FROM tasks WHERE user_id = $1
 `
 
 type ListUserTasksRow struct {
-	ID          pgtype.UUID
-	Name        string
-	TriggerType pgtype.Text
-	Status      pgtype.Text
-	NextRun     pgtype.Timestamptz
+	ID                 pgtype.UUID
+	Name               string
+	TriggerType        pgtype.Text
+	Status             pgtype.Text
+	NextRun            pgtype.Timestamptz
+	RequiresApproval   pgtype.Bool
+	EncryptedSecrets   []byte
+	LastApprovalStatus pgtype.Text
 }
 
 func (q *Queries) ListUserTasks(ctx context.Context, userID string) ([]ListUserTasksRow, error) {
@@ -413,6 +441,9 @@ func (q *Queries) ListUserTasks(ctx context.Context, userID string) ([]ListUserT
 			&i.TriggerType,
 			&i.Status,
 			&i.NextRun,
+			&i.RequiresApproval,
+			&i.EncryptedSecrets,
+			&i.LastApprovalStatus,
 		); err != nil {
 			return nil, err
 		}

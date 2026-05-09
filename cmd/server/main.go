@@ -44,6 +44,9 @@ func main() {
 	hostname, _ := os.Hostname()
 	workerID = fmt.Sprintf("%s-%d", hostname, time.Now().UTC().UnixNano())
 
+	// 0. Initialize Encryption
+	initCrypto()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
