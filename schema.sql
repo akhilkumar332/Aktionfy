@@ -59,29 +59,85 @@ CREATE TABLE task_logs (
     error_message TEXT
 );
 
+CREATE TABLE audit_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+    action TEXT NOT NULL,
+    resource_type TEXT NOT NULL,
+    resource_id TEXT,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_audit_logs_created_at ON audit_logs (created_at DESC);
+CREATE INDEX idx_audit_logs_user_id ON audit_logs (user_id);
+
+CREATE TABLE outbound_webhooks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    endpoint_url TEXT NOT NULL,
+    event_types JSONB NOT NULL DEFAULT '[]'::jsonb,
+    encrypted_signing_secret BYTEA NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_outbound_webhooks_user_id ON outbound_webhooks (user_id);
+
+CREATE TABLE webhook_deliveries (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    webhook_id UUID NOT NULL REFERENCES outbound_webhooks(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    event_type TEXT NOT NULL,
+    status_code INT,
+    success BOOLEAN NOT NULL DEFAULT FALSE,
+    response_body TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_webhook_deliveries_webhook_id ON webhook_deliveries (webhook_id, created_at DESC);
+
 -- The "Claim" Function
 -- This grabs 'batch_size' tasks that are due and locks them so other workers ignore them.
 CREATE OR REPLACE FUNCTION fn_claim_due_tasks(batch_size INT, worker_id TEXT)
 RETURNS SETOF tasks AS $$
+DECLARE
+    claimed_task tasks%ROWTYPE;
 BEGIN
-    RETURN QUERY
-    UPDATE tasks
-    SET status = 'processing', -- Temporary state to prevent double-firing
-        locked_by = worker_id
-    WHERE id IN (
-        SELECT t.id 
-        FROM tasks t
-        -- Phase 3.2: Ensure dependencies are met (or no dependencies exist)
-        LEFT JOIN tasks dep ON t.depends_on_task_id = dep.id
-        WHERE t.next_run <= NOW() 
-          AND t.status = 'active'
-          -- Ensure dependency belongs to same user AND is in a valid state
-          AND (t.depends_on_task_id IS NULL OR (dep.user_id = t.user_id AND (dep.status = 'completed' OR dep.status = 'active')))
-        ORDER BY t.next_run ASC
-        LIMIT batch_size
-        FOR UPDATE OF t SKIP LOCKED -- CRITICAL: Prevents race conditions
-    )
-    RETURNING *;
+    FOR claimed_task IN
+        WITH claimed AS (
+            UPDATE tasks
+            SET status = 'processing', -- Temporary state to prevent double-firing
+                locked_by = worker_id
+            WHERE id IN (
+                SELECT t.id 
+                FROM tasks t
+                -- Phase 3.2: Ensure dependencies are met (or no dependencies exist)
+                LEFT JOIN tasks dep ON t.depends_on_task_id = dep.id
+                WHERE t.next_run <= NOW() 
+                  AND t.status = 'active'
+                  -- Ensure dependency belongs to same user AND is in a valid state
+                  AND (t.depends_on_task_id IS NULL OR (dep.user_id = t.user_id AND (dep.status = 'completed' OR dep.status = 'active')))
+                ORDER BY t.next_run ASC
+                LIMIT batch_size
+                FOR UPDATE OF t SKIP LOCKED -- CRITICAL: Prevents race conditions
+            )
+            RETURNING *
+        )
+        SELECT * FROM claimed
+    LOOP
+        -- NOTIFY is delivered only if the transaction commits, so the claim and wake-up signal stay atomic.
+        PERFORM pg_notify(
+            'task_claimed',
+            json_build_object(
+                'task_id', claimed_task.id::text,
+                'user_id', claimed_task.user_id,
+                'worker_id', worker_id
+            )::text
+        );
+        RETURN NEXT claimed_task;
+    END LOOP;
+    RETURN;
 END;
 $$ LANGUAGE plpgsql;
 

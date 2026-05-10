@@ -76,7 +76,3 @@ func (rl *rateLimiter) Allow(ctx context.Context, userID string) bool {
 	}
 	return allowed == 1
 }
-
-func (rl *rateLimiter) cleanup() {
-	// No-op: Redis EXPIRE handles cleanup
-}

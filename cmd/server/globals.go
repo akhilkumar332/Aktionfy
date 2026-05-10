@@ -3,20 +3,19 @@ package main
 import (
 	"encoding/hex"
 	"fmt"
-	"html/template"
-	"strings"
-	"sync"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
 	"schedule-mcp/db"
+	"strings"
+	"sync"
 )
 
 var (
 	dbPool            *pgxpool.Pool
 	queries           *db.Queries
 	RedisClient       *redis.Client
-	templates         *template.Template
+	appConfig         runtimeConfig
 	workerID          string
 	workerWG          sync.WaitGroup
 	globalRateLimiter = &rateLimiter{}

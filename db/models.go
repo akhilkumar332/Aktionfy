@@ -8,6 +8,26 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type AuditLog struct {
+	ID           pgtype.UUID
+	UserID       pgtype.Text
+	Action       string
+	ResourceType string
+	ResourceID   pgtype.Text
+	Metadata     []byte
+	CreatedAt    pgtype.Timestamptz
+}
+
+type OutboundWebhook struct {
+	ID                     pgtype.UUID
+	UserID                 string
+	EndpointUrl            string
+	EventTypes             []byte
+	EncryptedSigningSecret []byte
+	IsActive               bool
+	CreatedAt              pgtype.Timestamptz
+}
+
 type SeoSetting struct {
 	ID          int32
 	Title       string
@@ -71,4 +91,15 @@ type WebSession struct {
 	ID        pgtype.UUID
 	UserID    pgtype.Text
 	ExpiresAt pgtype.Timestamptz
+}
+
+type WebhookDelivery struct {
+	ID           pgtype.UUID
+	WebhookID    pgtype.UUID
+	UserID       string
+	EventType    string
+	StatusCode   pgtype.Int4
+	Success      bool
+	ResponseBody pgtype.Text
+	CreatedAt    pgtype.Timestamptz
 }

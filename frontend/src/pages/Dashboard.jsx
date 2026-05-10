@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import DashboardLayout from '../components/DashboardLayout';
 import axios from 'axios';
@@ -223,7 +224,7 @@ const Dashboard = () => {
         </div>
 
         {/* Task Stats Card */}
-        <div className="bg-white/5 p-10 rounded-[2.5rem] border border-white/10 shadow-2xl flex flex-col group hover:bg-white/[0.08] transition-all duration-500 backdrop-blur-xl">
+        <Link to="/tasks" className="bg-white/5 p-10 rounded-[2.5rem] border border-white/10 shadow-2xl flex flex-col group hover:bg-white/[0.08] transition-all duration-500 backdrop-blur-xl cursor-pointer">
           <div className="flex items-center gap-4 mb-8">
             <div className="bg-blue-500/10 p-3 rounded-2xl text-blue-400 group-hover:scale-110 transition-transform">
               <ListChecks size={24} />
@@ -236,7 +237,7 @@ const Dashboard = () => {
           <p className="text-slate-500 text-sm font-medium flex-1">
             Durable schedules currently active across your global node network.
           </p>
-        </div>
+        </Link>
 
         {/* Identity Card */}
         <div className="bg-white/5 p-10 rounded-[2.5rem] border border-white/10 shadow-2xl flex flex-col group hover:bg-white/[0.08] transition-all duration-500 backdrop-blur-xl">

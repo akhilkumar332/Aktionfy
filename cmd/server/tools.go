@@ -22,7 +22,7 @@ func registerTools(s *server.MCPServer) {
 		mcp.WithString("trigger_type", mcp.Required(), mcp.Description("Trigger type (e.g. interval, cron)")),
 		mcp.WithString("agent_prompt", mcp.Required(), mcp.Description("Agent prompt")),
 		mcp.WithObject("trigger_config", mcp.Required(), mcp.Description("Trigger configuration")),
-		mcp.WithString("missed_task_policy", mcp.Description("Policy for missed tasks (skip, run_immediate)")),
+		mcp.WithString("missed_task_policy", mcp.Description("Policy for missed tasks (skip, run_immediately)")),
 		mcp.WithString("depends_on_task_id", mcp.Description("Optional UUID of a task this task depends on")),
 		mcp.WithObject("secrets", mcp.Description("Optional secrets to be stored securely (e.g. API keys)")),
 		mcp.WithBoolean("requires_approval", mcp.Description("If true, the task will require manual approval before each execution")),
@@ -33,11 +33,11 @@ func registerTools(s *server.MCPServer) {
 		if !ok {
 			return mcp.NewToolResultError("invalid arguments"), nil
 		}
-		userID, ok := ctx.Value("user_id").(string)
+		userID, ok := ctx.Value(userIDKey).(string)
 		if !ok {
 			return mcp.NewToolResultError("unauthorized"), nil
 		}
-		val := ctx.Value("user_tier")
+		val := ctx.Value(userTierKey)
 		userTier, ok := val.(string)
 		if !ok {
 			userTier = TierFree
@@ -49,7 +49,7 @@ func registerTools(s *server.MCPServer) {
 			log.Printf("Quota check error: %v", err)
 			return mcp.NewToolResultError("Quota check failed. Please try again later."), nil
 		}
-		
+
 		if userTier == TierFree && int(taskCount) >= QuotaFree {
 			return mcp.NewToolResultError(fmt.Sprintf("quota exceeded: free tier allows maximum %d tasks", QuotaFree)), nil
 		} else if userTier == TierPlus && int(taskCount) >= QuotaPlus {
@@ -81,11 +81,17 @@ func registerTools(s *server.MCPServer) {
 		if !ok {
 			return mcp.NewToolResultError("missing or invalid 'trigger_config'"), nil
 		}
-		
+
 		// Optional Phase 3 fields
 		missedPolicy := PolicySkip
-		if mp, ok := args["missed_task_policy"].(string); ok && (mp == PolicySkip || mp == PolicyRunImmediate) {
-			missedPolicy = mp
+		if mp, ok := args["missed_task_policy"].(string); ok {
+			switch mp {
+			case PolicySkip, PolicyRunImmediate:
+				missedPolicy = mp
+			case "run_immediate":
+				// Backward-compatible alias for older clients/docs.
+				missedPolicy = PolicyRunImmediate
+			}
 		}
 
 		requiresApproval := false
@@ -104,7 +110,7 @@ func registerTools(s *server.MCPServer) {
 				return mcp.NewToolResultError(fmt.Sprintf("encryption error: %v", err)), nil
 			}
 		}
-		
+
 		var dependsOn pgtype.UUID
 		if dep, ok := args["depends_on_task_id"].(string); ok && dep != "" {
 			if err := parseUUID(dep, &dependsOn); err != nil {
@@ -119,7 +125,7 @@ func registerTools(s *server.MCPServer) {
 				return mcp.NewToolResultError("invalid depends_on_task_id: task not found or unauthorized"), nil
 			}
 		}
-		
+
 		// trigger_config needs to be saved as JSONB
 		triggerConfigBytes, err := json.Marshal(triggerConfig)
 		if err != nil {
@@ -148,6 +154,15 @@ func registerTools(s *server.MCPServer) {
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("failed to insert task: %v", err)), nil
 		}
+		writeAuditLog(ctx, AuditEvent{
+			UserID:       userID,
+			Action:       "task.create",
+			ResourceType: "task",
+			ResourceID:   formatUUID(task.ID),
+			Metadata: map[string]interface{}{
+				"trigger_type": triggerType,
+			},
+		})
 
 		resBytes, _ := json.Marshal(map[string]string{"status": "success", "task_id": formatUUID(task.ID), "next_run": nextRun.Format(time.RFC3339)})
 		return mcp.NewToolResultText(string(resBytes)), nil
@@ -157,7 +172,7 @@ func registerTools(s *server.MCPServer) {
 		mcp.WithDescription("Lists user's active tasks"),
 	)
 	s.AddTool(listTasksTool, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		userID, ok := ctx.Value("user_id").(string)
+		userID, ok := ctx.Value(userIDKey).(string)
 		if !ok {
 			return mcp.NewToolResultError("unauthorized"), nil
 		}
@@ -214,7 +229,7 @@ func registerTools(s *server.MCPServer) {
 		if !ok {
 			return mcp.NewToolResultError("invalid arguments"), nil
 		}
-		userID, ok := ctx.Value("user_id").(string)
+		userID, ok := ctx.Value(userIDKey).(string)
 		if !ok {
 			return mcp.NewToolResultError("unauthorized"), nil
 		}
@@ -222,13 +237,23 @@ func registerTools(s *server.MCPServer) {
 		if !ok {
 			return mcp.NewToolResultError("missing or invalid 'id'"), nil
 		}
-		
+
 		var tid pgtype.UUID
 		if err := parseUUID(id, &tid); err != nil {
 			return mcp.NewToolResultError("invalid task ID format"), nil
 		}
+		exists, err := queries.CheckTaskOwnership(ctx, db.CheckTaskOwnershipParams{
+			ID:     tid,
+			UserID: userID,
+		})
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("db error: %v", err)), nil
+		}
+		if !exists {
+			return mcp.NewToolResultError("task not found"), nil
+		}
 
-		err := queries.UpdateTaskStatusByUserID(ctx, db.UpdateTaskStatusByUserIDParams{
+		err = queries.UpdateTaskStatusByUserID(ctx, db.UpdateTaskStatusByUserIDParams{
 			Status: pgtype.Text{String: StatusPaused, Valid: true},
 			ID:     tid,
 			UserID: userID,
@@ -253,6 +278,12 @@ func registerTools(s *server.MCPServer) {
 			EventType: "task_status_changed",
 			Payload:   string(evtPayload),
 		})
+		writeAuditLog(ctx, AuditEvent{
+			UserID:       userID,
+			Action:       "task.pause",
+			ResourceType: "task",
+			ResourceID:   id,
+		})
 
 		resBytes, _ := json.Marshal(map[string]string{"status": StatusPaused})
 		return mcp.NewToolResultText(string(resBytes)), nil
@@ -267,7 +298,7 @@ func registerTools(s *server.MCPServer) {
 		if !ok {
 			return mcp.NewToolResultError("invalid arguments"), nil
 		}
-		userID, ok := ctx.Value("user_id").(string)
+		userID, ok := ctx.Value(userIDKey).(string)
 		if !ok {
 			return mcp.NewToolResultError("unauthorized"), nil
 		}
@@ -275,13 +306,23 @@ func registerTools(s *server.MCPServer) {
 		if !ok {
 			return mcp.NewToolResultError("missing or invalid 'id'"), nil
 		}
-		
+
 		var tid pgtype.UUID
 		if err := parseUUID(id, &tid); err != nil {
 			return mcp.NewToolResultError("invalid task ID format"), nil
 		}
+		exists, err := queries.CheckTaskOwnership(ctx, db.CheckTaskOwnershipParams{
+			ID:     tid,
+			UserID: userID,
+		})
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("db error: %v", err)), nil
+		}
+		if !exists {
+			return mcp.NewToolResultError("task not found"), nil
+		}
 
-		err := queries.ResetTaskFailureCount(ctx, db.ResetTaskFailureCountParams{
+		err = queries.ResetTaskFailureCount(ctx, db.ResetTaskFailureCountParams{
 			Status: pgtype.Text{String: StatusActive, Valid: true},
 			ID:     tid,
 			UserID: userID,
@@ -297,6 +338,12 @@ func registerTools(s *server.MCPServer) {
 			EventType: "task_status_changed",
 			Payload:   string(payload),
 		})
+		writeAuditLog(ctx, AuditEvent{
+			UserID:       userID,
+			Action:       "task.resume",
+			ResourceType: "task",
+			ResourceID:   id,
+		})
 
 		resBytes, _ := json.Marshal(map[string]string{"status": StatusActive})
 		return mcp.NewToolResultText(string(resBytes)), nil
@@ -311,7 +358,7 @@ func registerTools(s *server.MCPServer) {
 		if !ok {
 			return mcp.NewToolResultError("invalid arguments"), nil
 		}
-		userID, ok := ctx.Value("user_id").(string)
+		userID, ok := ctx.Value(userIDKey).(string)
 		if !ok {
 			return mcp.NewToolResultError("unauthorized"), nil
 		}
@@ -319,19 +366,35 @@ func registerTools(s *server.MCPServer) {
 		if !ok {
 			return mcp.NewToolResultError("missing or invalid 'id'"), nil
 		}
-		
+
 		var tid pgtype.UUID
 		if err := parseUUID(id, &tid); err != nil {
 			return mcp.NewToolResultError("invalid task ID format"), nil
 		}
-
-		err := queries.DeleteTask(ctx, db.DeleteTaskParams{
+		exists, err := queries.CheckTaskOwnership(ctx, db.CheckTaskOwnershipParams{
 			ID:     tid,
 			UserID: userID,
 		})
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("db error: %v", err)), nil
 		}
+		if !exists {
+			return mcp.NewToolResultError("task not found"), nil
+		}
+
+		err = queries.DeleteTask(ctx, db.DeleteTaskParams{
+			ID:     tid,
+			UserID: userID,
+		})
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("db error: %v", err)), nil
+		}
+		writeAuditLog(ctx, AuditEvent{
+			UserID:       userID,
+			Action:       "task.delete",
+			ResourceType: "task",
+			ResourceID:   id,
+		})
 		resBytes, _ := json.Marshal(map[string]string{"status": "deleted"})
 		return mcp.NewToolResultText(string(resBytes)), nil
 	})
@@ -346,7 +409,7 @@ func registerTools(s *server.MCPServer) {
 		if !ok {
 			return mcp.NewToolResultError("invalid arguments"), nil
 		}
-		userID, ok := ctx.Value("user_id").(string)
+		userID, ok := ctx.Value(userIDKey).(string)
 		if !ok {
 			return mcp.NewToolResultError("unauthorized"), nil
 		}
@@ -372,6 +435,12 @@ func registerTools(s *server.MCPServer) {
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("db error: %v", err)), nil
 		}
+		writeAuditLog(ctx, AuditEvent{
+			UserID:       userID,
+			Action:       "secret.upsert",
+			ResourceType: "secret",
+			ResourceID:   name,
+		})
 
 		return mcp.NewToolResultText("Secret stored successfully"), nil
 	})
@@ -380,7 +449,7 @@ func registerTools(s *server.MCPServer) {
 		mcp.WithDescription("Lists user's secret names and creation dates"),
 	)
 	s.AddTool(listSecretsTool, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		userID, ok := ctx.Value("user_id").(string)
+		userID, ok := ctx.Value(userIDKey).(string)
 		if !ok {
 			return mcp.NewToolResultError("unauthorized"), nil
 		}
@@ -415,7 +484,7 @@ func registerTools(s *server.MCPServer) {
 		if !ok {
 			return mcp.NewToolResultError("invalid arguments"), nil
 		}
-		userID, ok := ctx.Value("user_id").(string)
+		userID, ok := ctx.Value(userIDKey).(string)
 		if !ok {
 			return mcp.NewToolResultError("unauthorized"), nil
 		}
@@ -431,6 +500,12 @@ func registerTools(s *server.MCPServer) {
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("db error: %v", err)), nil
 		}
+		writeAuditLog(ctx, AuditEvent{
+			UserID:       userID,
+			Action:       "secret.delete",
+			ResourceType: "secret",
+			ResourceID:   name,
+		})
 
 		return mcp.NewToolResultText("Secret deleted successfully"), nil
 	})

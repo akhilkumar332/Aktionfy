@@ -340,6 +340,46 @@ func (q *Queries) GetDependentTasksToTrigger(ctx context.Context, dependsOnTaskI
 	return items, nil
 }
 
+const getDispatchableTaskByID = `-- name: GetDispatchableTaskByID :one
+SELECT id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion FROM tasks
+WHERE id = $1
+  AND user_id = $2
+  AND status = 'processing'
+  AND locked_by = $3
+`
+
+type GetDispatchableTaskByIDParams struct {
+	ID       pgtype.UUID
+	UserID   string
+	LockedBy pgtype.Text
+}
+
+func (q *Queries) GetDispatchableTaskByID(ctx context.Context, arg GetDispatchableTaskByIDParams) (Task, error) {
+	row := q.db.QueryRow(ctx, getDispatchableTaskByID, arg.ID, arg.UserID, arg.LockedBy)
+	var i Task
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.TriggerType,
+		&i.TriggerConfig,
+		&i.AgentPrompt,
+		&i.Status,
+		&i.LockedBy,
+		&i.NextRun,
+		&i.LastRun,
+		&i.FailureCount,
+		&i.MissedTaskPolicy,
+		&i.DependsOnTaskID,
+		&i.CreatedAt,
+		&i.RequiresApproval,
+		&i.EncryptedSecrets,
+		&i.LastApprovalStatus,
+		&i.TriggerOnCompletion,
+	)
+	return i, err
+}
+
 const getLatestTaskLogResponse = `-- name: GetLatestTaskLogResponse :one
 SELECT l.llm_response FROM task_logs l
 INNER JOIN tasks t ON l.task_id = t.id
@@ -733,6 +773,29 @@ func (q *Queries) UpdateSEOSettings(ctx context.Context, arg UpdateSEOSettingsPa
 		arg.Description,
 		arg.Keywords,
 		arg.OgImage,
+	)
+	return err
+}
+
+const updateTaskAgentPromptAndPolicy = `-- name: UpdateTaskAgentPromptAndPolicy :exec
+UPDATE tasks
+SET agent_prompt = $1, missed_task_policy = $2
+WHERE id = $3 AND user_id = $4
+`
+
+type UpdateTaskAgentPromptAndPolicyParams struct {
+	AgentPrompt      string
+	MissedTaskPolicy pgtype.Text
+	ID               pgtype.UUID
+	UserID           string
+}
+
+func (q *Queries) UpdateTaskAgentPromptAndPolicy(ctx context.Context, arg UpdateTaskAgentPromptAndPolicyParams) error {
+	_, err := q.db.Exec(ctx, updateTaskAgentPromptAndPolicy,
+		arg.AgentPrompt,
+		arg.MissedTaskPolicy,
+		arg.ID,
+		arg.UserID,
 	)
 	return err
 }

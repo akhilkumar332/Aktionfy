@@ -8,10 +8,12 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"syscall"
 	"time"
 
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/gorilla/csrf"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -23,8 +25,7 @@ import (
 	"schedule-mcp/db"
 )
 
-func initRedis() {
-	redisUrl := os.Getenv("REDIS_URL")
+func initRedis(redisUrl string) {
 	if redisUrl == "" {
 		redisUrl = "redis://localhost:6379/0"
 	}
@@ -33,7 +34,7 @@ func initRedis() {
 		log.Fatalf("Failed to parse Redis URL: %v", err)
 	}
 	RedisClient = redis.NewClient(opts)
-	
+
 	_, err = RedisClient.Ping(context.Background()).Result()
 	if err != nil {
 		log.Fatalf("Failed to connect to Redis: %v", err)
@@ -44,6 +45,12 @@ func initRedis() {
 func main() {
 	hostname, _ := os.Hostname()
 	workerID = fmt.Sprintf("%s-%d", hostname, time.Now().UTC().UnixNano())
+
+	cfg, err := loadRuntimeConfigFromEnv()
+	if err != nil {
+		log.Fatalf("Invalid runtime configuration: %v", err)
+	}
+	appConfig = cfg
 
 	// 0. Initialize Encryption
 	initCrypto()
@@ -56,28 +63,64 @@ func main() {
 	if dbUrl == "" {
 		dbUrl = "postgres://postgres:postgres@localhost:5432/mcp?sslmode=disable"
 	}
-	
-	var err error
+
 	dbPool, err = pgxpool.New(ctx, dbUrl)
 	if err != nil {
 		log.Fatalf("Unable to connect to database: %v", err)
 	}
 	defer dbPool.Close()
 
-	// Run migrations
-	if err := runMigrations(ctx, dbPool); err != nil {
-		log.Printf("Warning: migrations failed: %v", err)
+	// Initialize and run migrations using golang-migrate
+	// Ensure the migrations path is correct relative to the executable.
+	// If running from inside a container, it might need adjustment.
+	// For this example, we assume './migrations' relative to the executable.
+	// The DB URL should be derived from environment variables.
+	// Ensure database connection is valid before attempting migrations
+	ctxForMigrations := context.Background() // Use a background context for migrations
+	if err := dbPool.Ping(ctxForMigrations); err != nil {
+		log.Fatalf("Database not available for migrations: %v", err)
 	}
+
+	// Use migrate.New with the database URL for simplicity
+	m, err := migrate.New(
+		"file://migrations", // Path to migration files
+		dbUrl,              // Database connection URL
+	)
+
+	if err != nil {
+		log.Fatalf("Failed to create migration instance: %v", err)
+	}
+
+	// Apply pending migrations
+	err = m.Up()
+	if err != nil && err != migrate.ErrNoChange {
+		// If migration fails, log the error and consider stopping the application startup
+		// depending on whether migrations are critical for startup.
+		log.Fatalf("Failed to apply migrations: %v", err)
+	} else if err == migrate.ErrNoChange {
+		log.Println("No pending migrations to apply.")
+	} else {
+		log.Println("Migrations applied successfully.")
+	}
+
+	// Optional: You can also implement rollback logic or version checking here if needed.
+	// For example, to check current version:
+	// version, dirty, err := m.Version()
+	// if err != nil && err != migrate.ErrNilVersion {
+	//     log.Printf("Failed to get migration version: %v", err)
+	// } else {
+	//     log.Printf("Current migration version: %d, dirty: %t", version, dirty)
+	// }
 
 	queries = db.New(dbPool)
 
 	// 1.5 Initialize Redis Client
-	initRedis()
+	initRedis(cfg.RedisURL)
 	defer RedisClient.Close()
 
 	go func() {
 		SubscribeToEvents(context.Background(), func(event PubSubEvent) {
-			log.Printf("Received event for user %s: %s", event.UserID, event.EventType)
+			handleSystemEvent(context.Background(), event)
 		})
 	}()
 
@@ -94,25 +137,25 @@ func main() {
 	e := echo.New()
 
 	// Standard Echo Middleware
+	//lint:ignore SA1019 simple logger is sufficient
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
+	e.Use(middleware.RequestID())
+	e.Use(prometheusMiddleware)
 
 	// CSRF Setup
-	csrfKey := os.Getenv("CSRF_KEY")
+	csrfKey := cfg.CSRFKey
 	if len(csrfKey) < 32 {
-		csrfKey = "01234567890123456789012345678901" // 32-byte fallback
+		csrfKey = defaultCSRFKey // non-production fallback
 	}
-	useSecure := os.Getenv("ENV") == "production"
-	if os.Getenv("LOCAL_DEV") == "true" {
-		useSecure = false
-	}
+	useSecure := cfg.secureCookies()
 
 	csrfMiddleware := echo.WrapMiddleware(csrf.Protect(
 		[]byte(csrfKey),
 		csrf.Secure(useSecure),
 		csrf.SameSite(csrf.SameSiteLaxMode),
 		csrf.Path("/"),
-		csrf.TrustedOrigins([]string{"localhost:8080", "127.0.0.1:8080"}),
+		csrf.TrustedOrigins(cfg.csrfTrustedOrigins()),
 		csrf.ErrorHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			log.Printf("CSRF Failure for %s %s: %v", r.Method, r.URL.Path, csrf.FailureReason(r))
 			w.Header().Set("Content-Type", "application/json")
@@ -127,7 +170,11 @@ func main() {
 	// MCP SSE Handlers (using net/http compatible wrappers)
 	sseServer := server.NewSSEServer(mcpServer)
 	e.GET("/sse", echo.WrapHandler(NetHttpAuthMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userID := r.Context().Value("user_id").(string)
+		userID, ok := r.Context().Value(userIDKey).(string)
+		if !ok || userID == "" {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
 		go GlobalSessionManager.MaintainHeartbeat(r.Context(), userID, mcpServer)
 		sseServer.SSEHandler().ServeHTTP(w, r)
 	}), mcpServer)))
@@ -160,18 +207,31 @@ func main() {
 	api := e.Group("/api", csrfMiddleware, EchoSessionMiddleware)
 	api.GET("/dashboard", apiDashboardHandler)
 	api.POST("/rotate-api-key", apiRotateAPIKeyHandler)
+	api.GET("/tasks", apiListTasksHandler)
+	api.GET("/tasks/export", apiExportTasksHandler)
+	api.POST("/tasks/import", apiImportTasksHandler)
+	api.POST("/tasks/:id/pause", apiPauseTaskHandler)
+	api.POST("/tasks/:id/resume", apiResumeTaskHandler)
+	api.DELETE("/tasks/:id", apiDeleteTaskHandler)
+	api.PATCH("/tasks/:id", apiUpdateTaskHandler)
 	api.POST("/tasks/:id/approve", apiApproveTaskHandler)
 	api.POST("/tasks/:id/deny", apiDenyTaskHandler)
 	api.GET("/secrets", apiListSecretsHandler)
 	api.POST("/secrets", apiUpsertSecretHandler)
 	api.DELETE("/secrets/:name", apiDeleteSecretHandler)
-	
+	api.GET("/webhooks", apiListWebhooksHandler)
+	api.POST("/webhooks", apiCreateWebhookHandler)
+	api.DELETE("/webhooks/:id", apiDeleteWebhookHandler)
+	api.GET("/webhooks/:id/deliveries", apiWebhookDeliveriesHandler)
+
 	staff := api.Group("", EchoRequireRole("staff", "admin"))
 	staff.GET("/monitor", apiMonitorHandler)
-	
+
 	admin := api.Group("/admin", EchoRequireRole("admin"))
 	admin.GET("/users", apiAdminUsersHandler)
 	admin.POST("/users/update", apiAdminUpdateUserHandler)
+	admin.GET("/audit-logs", apiAdminAuditLogsHandler)
+	admin.GET("/usage", apiAdminUsageHandler)
 	admin.GET("/seo", apiGetSEOHandler)
 	admin.POST("/seo", apiUpdateSEOHandler)
 
@@ -191,7 +251,8 @@ func main() {
 	})
 
 	// 4. Start Background Scheduler & Reaper
-	go runScheduler(ctx, mcpServer)
+	go listenForTaskClaims(ctx, dbUrl)
+	go runScheduler(ctx)
 	go runReaper(ctx)
 
 	// Bootstrap Admin
@@ -209,7 +270,7 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
-	
+
 	go func() {
 		if err := e.Start(":" + port); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("shuting down the server: %v", err)
@@ -252,42 +313,4 @@ func main() {
 		log.Fatalf("Server Shutdown Failed: %+v", err)
 	}
 	log.Println("Server exited properly")
-}
-
-func getUser(r *http.Request) *User {
-	user, _ := r.Context().Value("user").(*User)
-	return user
-}
-
-func runMigrations(ctx context.Context, pool *pgxpool.Pool) error {
-	entries, err := os.ReadDir("migrations")
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil
-		}
-		return err
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() || !entry.Type().IsRegular() {
-			continue
-		}
-		if filepath.Ext(entry.Name()) != ".sql" {
-			continue
-		}
-
-		log.Printf("Applying migration: %s", entry.Name())
-		content, err := os.ReadFile(filepath.Join("migrations", entry.Name()))
-		if err != nil {
-			return fmt.Errorf("failed to read migration %s: %w", entry.Name(), err)
-		}
-
-		_, err = pool.Exec(ctx, string(content))
-		if err != nil {
-			// Some migrations might fail if already applied partially (e.g. column already exists)
-			// But for now, we just log it and continue if it's 007 which is idempotent
-			log.Printf("Migration %s result: %v", entry.Name(), err)
-		}
-	}
-	return nil
 }

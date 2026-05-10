@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -65,14 +64,16 @@ func (sm *SessionManager) IsOnline(ctx context.Context, userID string) bool {
 func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, mcpServer *server.MCPServer) {
 	ticker := time.NewTicker(15 * time.Second)
 	defer ticker.Stop()
-	
+	activeSSEConnections.Inc()
+	defer activeSSEConnections.Dec()
+
 	sm.AddUser(ctx, userID)
-	
+
 	var backoff time.Duration = 1 * time.Second
 	for {
 		// Subscribe to tasks meant for this user
 		pubsub := sm.redisClient.Subscribe(ctx, fmt.Sprintf("trigger_task:%s", userID))
-		
+
 		// Wait for subscription confirmation
 		_, err := pubsub.Receive(ctx)
 		if err != nil {
@@ -88,12 +89,12 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 				continue
 			}
 		}
-		
+
 		// Reset backoff on successful subscription
 		backoff = 1 * time.Second
-		
+
 		ch := pubsub.Channel()
-		
+
 		// Inner loop for processing messages
 		func() {
 			defer pubsub.Close()
@@ -112,23 +113,28 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 					}
 					// Received a task trigger from another node
 					log.Printf("Received Pub/Sub task trigger for user %s", userID)
-					
+
 					// Fire the sampling request asynchronously
 					workerWG.Add(1)
 					go func(payload string) {
 						defer workerWG.Done()
-						
+						executionStart := time.Now()
+
 						var taskData map[string]string
 						if err := json.Unmarshal([]byte(payload), &taskData); err != nil {
 							log.Printf("Failed to unmarshal pubsub payload: %v", err)
 							return
 						}
-						
+
 						taskID := taskData["task_id"]
 						prompt := taskData["prompt"]
 						executionID := taskData["execution_id"]
 						triggerType := taskData["trigger_type"]
 						triggerConfigStr := taskData["trigger_config"]
+						if taskID == "" || prompt == "" || executionID == "" || triggerType == "" || triggerConfigStr == "" {
+							log.Printf("Incomplete Pub/Sub payload for user %s: %+v", userID, taskData)
+							return
+						}
 
 						var tid pgtype.UUID
 						if err := parseUUID(taskID, &tid); err != nil {
@@ -136,8 +142,8 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 							return
 						}
 
-						// 1. Fetch task details early (needed for resolvePrompt and metadata)
-						dbCtx, dbCancel := context.WithTimeout(context.Background(), 15*time.Second)
+						// Keep DB operations alive across prompt resolution, sampling, and status updates.
+						dbCtx, dbCancel := context.WithTimeout(context.Background(), 45*time.Second)
 						defer dbCancel()
 
 						t, err := queries.GetTaskByID(dbCtx, db.GetTaskByIDParams{
@@ -186,8 +192,10 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 						res, err := mcpServer.RequestSampling(sampleCtx, req)
 
 						if err != nil {
+							observeTaskOutcome("execution_failure")
+							observeTaskExecutionDuration(executionStart, "failure")
 							log.Printf("Pub/Sub Sampling failed for user %s: %v", userID, err)
-							
+
 							// Phase 10.2: Properly log failure back to DB instead of failing silently
 							logID, logErr := queries.CreateTaskLog(dbCtx, db.CreateTaskLogParams{
 								TaskID:       tid,
@@ -198,7 +206,7 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 							if logErr != nil {
 								log.Printf("Error creating failure log for task %s: %v", taskID, logErr)
 							}
-							
+
 							// Emit Redis event
 							evtPayload, _ := json.Marshal(map[string]interface{}{
 								"id":               formatUUID(logID),
@@ -218,7 +226,7 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 							}); err != nil {
 								log.Printf("Error publishing task_executed (failure) for %s: %v", taskID, err)
 							}
-							
+
 							// Increment failure count securely
 							currentFailures, err := queries.IncrementTaskFailureCount(dbCtx, db.IncrementTaskFailureCountParams{
 								ID:     tid,
@@ -227,7 +235,7 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 							if err != nil {
 								log.Printf("Error incrementing failure count for task %s: %v", taskID, err)
 							}
-							
+
 							if currentFailures.Int32 >= 3 {
 								if err := queries.UpdateTaskStatus(dbCtx, db.UpdateTaskStatusParams{
 									Status: pgtype.Text{String: StatusError, Valid: true},
@@ -236,7 +244,7 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 								}); err != nil {
 									log.Printf("Error updating status to error for task %s: %v", taskID, err)
 								}
-								sendFailureEmail(dbCtx, userID, taskID, t.Name) 
+								sendFailureEmail(dbCtx, userID, taskID, t.Name)
 							} else {
 								// Unlock so it can be retried by the scheduler
 								if err := queries.UpdateTaskStatus(dbCtx, db.UpdateTaskStatusParams{
@@ -257,9 +265,12 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 							resBytes, _ := json.Marshal(res)
 							llmResponse = string(resBytes)
 						}
+						llmResponse = sanitizeLLMResponseForStorage(llmResponse)
 
 						log.Printf("Received LLM Response for user %s: %s", userID, llmResponse)
-						
+						observeTaskOutcome("execution_success")
+						observeTaskExecutionDuration(executionStart, "success")
+
 						// Save the actual LLM response to the specific task log
 						logID, err := queries.CreateTaskLog(dbCtx, db.CreateTaskLogParams{
 							TaskID:      tid,
@@ -337,17 +348,4 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 			// Continue to outer loop to re-subscribe
 		}
 	}
-}
-
-// flushWriter is a simple wrapper to ensure SSE flushes
-type flushWriter struct {
-	http.ResponseWriter
-}
-
-func (fw *flushWriter) Write(p []byte) (n int, err error) {
-	n, err = fw.ResponseWriter.Write(p)
-	if flusher, ok := fw.ResponseWriter.(http.Flusher); ok {
-		flusher.Flush()
-	}
-	return
 }

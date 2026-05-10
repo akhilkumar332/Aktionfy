@@ -4,6 +4,15 @@ import (
 	"time"
 )
 
+type contextKey string
+
+const (
+	userKey     contextKey = "user"
+	userIDKey   contextKey = "user_id"
+	userRoleKey contextKey = "user_role"
+	userTierKey contextKey = "user_tier"
+)
+
 type TaskLog struct {
 	ID            string    `json:"id"`
 	TaskID        string    `json:"task_id"`

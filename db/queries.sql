@@ -103,6 +103,13 @@ SELECT id, name, trigger_type, status, next_run, requires_approval, encrypted_se
 -- name: GetTaskByID :one
 SELECT * FROM tasks WHERE id = $1 AND user_id = $2;
 
+-- name: GetDispatchableTaskByID :one
+SELECT * FROM tasks
+WHERE id = $1
+  AND user_id = $2
+  AND status = 'processing'
+  AND locked_by = $3;
+
 -- name: GetDependentTasksToTrigger :many
 SELECT t.* FROM tasks t
 INNER JOIN tasks parent ON t.depends_on_task_id = parent.id
@@ -145,3 +152,8 @@ SELECT * FROM seo_settings WHERE id = 1;
 UPDATE seo_settings 
 SET title = $1, description = $2, keywords = $3, og_image = $4, updated_at = NOW()
 WHERE id = 1;
+
+-- name: UpdateTaskAgentPromptAndPolicy :exec
+UPDATE tasks
+SET agent_prompt = $1, missed_task_policy = $2
+WHERE id = $3 AND user_id = $4;

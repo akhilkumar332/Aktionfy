@@ -16,9 +16,13 @@ var encryptionKey []byte
 func initCrypto() {
 	keyHex := os.Getenv("ENCRYPTION_KEY")
 	if keyHex == "" {
-		// Log warning for local dev but don't use hardcoded key
-		log.Println("WARNING: ENCRYPTION_KEY not set. Secrets will not be secure.")
-		encryptionKey = make([]byte, 32) // Zero key or handle as error
+		// If ENCRYPTION_KEY is not provided, log a critical error and exit.
+		// In a production environment, this key must be set.
+		// For local development, a specific test key or a different mechanism might be used,
+		// but a zero-filled key is insecure and should not be used for any real data.
+		log.Fatal("CRITICAL: ENCRYPTION_KEY environment variable is not set. Cannot initialize crypto securely.")
+		// The code below will not be reached if log.Fatal is called.
+		// encryptionKey = make([]byte, 32) // This fallback is removed.
 		return
 	}
 	key, err := hex.DecodeString(keyHex)

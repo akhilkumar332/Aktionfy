@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"net/http"
-	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gorilla/csrf"
@@ -36,11 +38,24 @@ func apiSignupHandler(c echo.Context) error {
 	if err := c.Bind(&input); err != nil {
 		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid request body"})
 	}
+	input.Email = strings.TrimSpace(input.Email)
+	if input.Email == "" || input.Password == "" {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Email and password are required"})
+	}
 
 	user, err := RegisterUser(c.Request().Context(), input.Email, input.Password)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: err.Error()})
 	}
+	writeAuditLog(c.Request().Context(), AuditEvent{
+		UserID:       user.ID,
+		Action:       "auth.signup",
+		ResourceType: "user",
+		ResourceID:   user.ID,
+		Metadata: map[string]interface{}{
+			"email": user.Email,
+		},
+	})
 
 	return c.JSON(http.StatusCreated, APIResponse{
 		Success:   true,
@@ -54,6 +69,10 @@ func apiLoginHandler(c echo.Context) error {
 	if err := c.Bind(&input); err != nil {
 		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid request body"})
 	}
+	input.Email = strings.TrimSpace(input.Email)
+	if input.Email == "" || input.Password == "" {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Email and password are required"})
+	}
 
 	sessionID, err := LoginUser(c.Request().Context(), input.Email, input.Password)
 	if err != nil {
@@ -61,10 +80,7 @@ func apiLoginHandler(c echo.Context) error {
 	}
 
 	// Determine if we should use Secure cookies.
-	useSecure := os.Getenv("ENV") == "production"
-	if os.Getenv("LOCAL_DEV") == "true" {
-		useSecure = false
-	}
+	useSecure := appConfig.secureCookies()
 
 	c.SetCookie(&http.Cookie{
 		Name:     "session_id",
@@ -100,6 +116,12 @@ func apiLoginHandler(c echo.Context) error {
 		Tier:      u.Tier.String,
 		CreatedAt: u.CreatedAt.Time,
 	}
+	writeAuditLog(c.Request().Context(), AuditEvent{
+		UserID:       user.ID,
+		Action:       "auth.login",
+		ResourceType: "session",
+		ResourceID:   sessionID,
+	})
 
 	return c.JSON(http.StatusOK, APIResponse{
 		Success:   true,
@@ -109,6 +131,7 @@ func apiLoginHandler(c echo.Context) error {
 }
 
 func apiLogoutHandler(c echo.Context) error {
+	user := getUserFromEcho(c)
 	cookie, err := c.Cookie("session_id")
 	if err == nil && cookie.Value != "" {
 		var sessID pgtype.UUID
@@ -118,10 +141,7 @@ func apiLogoutHandler(c echo.Context) error {
 	}
 
 	// Determine if we should use Secure cookies.
-	useSecure := os.Getenv("ENV") == "production"
-	if os.Getenv("LOCAL_DEV") == "true" {
-		useSecure = false
-	}
+	useSecure := appConfig.secureCookies()
 
 	c.SetCookie(&http.Cookie{
 		Name:     "session_id",
@@ -132,12 +152,23 @@ func apiLogoutHandler(c echo.Context) error {
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   -1,
 	})
+	if user != nil && err == nil && cookie.Value != "" {
+		writeAuditLog(c.Request().Context(), AuditEvent{
+			UserID:       user.ID,
+			Action:       "auth.logout",
+			ResourceType: "session",
+			ResourceID:   cookie.Value,
+		})
+	}
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Logged out successfully"})
 }
 
 func apiDashboardHandler(c echo.Context) error {
 	user := getUserFromEcho(c)
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
 
 	taskCount, err := queries.CountUserTasks(c.Request().Context(), user.ID)
 	if err != nil {
@@ -155,13 +186,83 @@ func apiDashboardHandler(c echo.Context) error {
 
 func apiRotateAPIKeyHandler(c echo.Context) error {
 	user := getUserFromEcho(c)
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
 
 	newKey, err := RotateAPIKey(c.Request().Context(), user.ID)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to rotate API key"})
 	}
+	writeAuditLog(c.Request().Context(), AuditEvent{
+		UserID:       user.ID,
+		Action:       "user.rotate_api_key",
+		ResourceType: "user",
+		ResourceID:   user.ID,
+	})
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: map[string]string{"api_key": newKey}})
+}
+
+func apiExportTasksHandler(c echo.Context) error {
+	user := getUserFromEcho(c)
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
+
+	tasks, err := exportUserTasks(c.Request().Context(), user.ID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to export tasks"})
+	}
+
+	writeAuditLog(c.Request().Context(), AuditEvent{
+		UserID:       user.ID,
+		Action:       "task.export",
+		ResourceType: "task_bundle",
+		Metadata: map[string]interface{}{
+			"count": len(tasks),
+		},
+	})
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: map[string]interface{}{
+		"tasks":           tasks,
+		"exported_at":     time.Now().UTC().Format(time.RFC3339),
+		"includesSecrets": false,
+	}})
+}
+
+func apiImportTasksHandler(c echo.Context) error {
+	user := getUserFromEcho(c)
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
+
+	var input ImportTasksRequest
+	if err := c.Bind(&input); err != nil {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid request body"})
+	}
+	if len(input.Tasks) == 0 {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "At least one task is required"})
+	}
+
+	mapping, err := importUserTasks(c.Request().Context(), user.ID, input.Tasks)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: err.Error()})
+	}
+
+	writeAuditLog(c.Request().Context(), AuditEvent{
+		UserID:       user.ID,
+		Action:       "task.import",
+		ResourceType: "task_bundle",
+		Metadata: map[string]interface{}{
+			"count": len(input.Tasks),
+		},
+	})
+
+	return c.JSON(http.StatusCreated, APIResponse{Success: true, Data: map[string]interface{}{
+		"imported_count": len(input.Tasks),
+		"legacy_to_new":  mapping,
+	}})
 }
 
 func apiMonitorHandler(c echo.Context) error {
@@ -247,19 +348,47 @@ func apiAdminUpdateUserHandler(c echo.Context) error {
 			return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to update user tier"})
 		}
 	}
+	adminUser := getUserFromEcho(c)
+	adminID := ""
+	if adminUser != nil {
+		adminID = adminUser.ID
+	}
+	writeAuditLog(c.Request().Context(), AuditEvent{
+		UserID:       adminID,
+		Action:       "admin.update_user",
+		ResourceType: "user",
+		ResourceID:   input.UserID,
+		Metadata: map[string]interface{}{
+			"role": input.Role,
+			"tier": input.Tier,
+		},
+	})
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "User updated successfully"})
 }
 
 func apiApproveTaskHandler(c echo.Context) error {
 	user := getUserFromEcho(c)
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
 	idStr := c.Param("id")
 	var id pgtype.UUID
 	if err := parseUUID(idStr, &id); err != nil {
 		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid task ID"})
 	}
+	exists, err := queries.CheckTaskOwnership(c.Request().Context(), db.CheckTaskOwnershipParams{
+		ID:     id,
+		UserID: user.ID,
+	})
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to verify task ownership"})
+	}
+	if !exists {
+		return c.JSON(http.StatusNotFound, APIResponse{Success: false, Error: "Task not found"})
+	}
 
-	err := queries.UpdateTaskApprovalStatus(c.Request().Context(), db.UpdateTaskApprovalStatusParams{
+	err = queries.UpdateTaskApprovalStatus(c.Request().Context(), db.UpdateTaskApprovalStatusParams{
 		LastApprovalStatus: pgtype.Text{String: "approved", Valid: true},
 		Status:             pgtype.Text{String: StatusActive, Valid: true},
 		ID:                 id,
@@ -268,19 +397,38 @@ func apiApproveTaskHandler(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to approve task"})
 	}
+	writeAuditLog(c.Request().Context(), AuditEvent{
+		UserID:       user.ID,
+		Action:       "task.approve",
+		ResourceType: "task",
+		ResourceID:   idStr,
+	})
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Task approved"})
 }
 
 func apiDenyTaskHandler(c echo.Context) error {
 	user := getUserFromEcho(c)
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
 	idStr := c.Param("id")
 	var id pgtype.UUID
 	if err := parseUUID(idStr, &id); err != nil {
 		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid task ID"})
 	}
+	exists, err := queries.CheckTaskOwnership(c.Request().Context(), db.CheckTaskOwnershipParams{
+		ID:     id,
+		UserID: user.ID,
+	})
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to verify task ownership"})
+	}
+	if !exists {
+		return c.JSON(http.StatusNotFound, APIResponse{Success: false, Error: "Task not found"})
+	}
 
-	err := queries.UpdateTaskApprovalStatus(c.Request().Context(), db.UpdateTaskApprovalStatusParams{
+	err = queries.UpdateTaskApprovalStatus(c.Request().Context(), db.UpdateTaskApprovalStatusParams{
 		LastApprovalStatus: pgtype.Text{String: "denied", Valid: true},
 		Status:             pgtype.Text{String: StatusPaused, Valid: true},
 		ID:                 id,
@@ -289,12 +437,21 @@ func apiDenyTaskHandler(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to deny task"})
 	}
+	writeAuditLog(c.Request().Context(), AuditEvent{
+		UserID:       user.ID,
+		Action:       "task.deny",
+		ResourceType: "task",
+		ResourceID:   idStr,
+	})
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Task denied"})
 }
 
 func apiListSecretsHandler(c echo.Context) error {
 	user := getUserFromEcho(c)
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
 	rows, err := queries.ListUserSecrets(c.Request().Context(), user.ID)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch secrets"})
@@ -305,6 +462,9 @@ func apiListSecretsHandler(c echo.Context) error {
 
 func apiDeleteSecretHandler(c echo.Context) error {
 	user := getUserFromEcho(c)
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
 	name := c.Param("name")
 
 	err := queries.DeleteUserSecret(c.Request().Context(), db.DeleteUserSecretParams{
@@ -314,6 +474,12 @@ func apiDeleteSecretHandler(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to delete secret"})
 	}
+	writeAuditLog(c.Request().Context(), AuditEvent{
+		UserID:       user.ID,
+		Action:       "secret.delete",
+		ResourceType: "secret",
+		ResourceID:   name,
+	})
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Secret deleted"})
 }
@@ -323,8 +489,170 @@ type UpsertSecretInput struct {
 	Value string `json:"value"`
 }
 
+func apiListWebhooksHandler(c echo.Context) error {
+	user := getUserFromEcho(c)
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
+
+	rows, err := dbPool.Query(c.Request().Context(), `
+SELECT id::text, endpoint_url, event_types::text, is_active, created_at
+FROM outbound_webhooks
+WHERE user_id = $1
+ORDER BY created_at DESC
+`, user.ID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch webhooks"})
+	}
+	defer rows.Close()
+
+	var hooks []WebhookSubscription
+	for rows.Next() {
+		var hook WebhookSubscription
+		var eventTypesJSON string
+		if err := rows.Scan(&hook.ID, &hook.EndpointURL, &eventTypesJSON, &hook.IsActive, &hook.CreatedAt); err != nil {
+			return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to scan webhooks"})
+		}
+		_ = json.Unmarshal([]byte(eventTypesJSON), &hook.EventTypes)
+		hooks = append(hooks, hook)
+	}
+	if err := rows.Err(); err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to read webhooks"})
+	}
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: hooks})
+}
+
+func apiCreateWebhookHandler(c echo.Context) error {
+	user := getUserFromEcho(c)
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
+
+	var input WebhookCreateInput
+	if err := c.Bind(&input); err != nil {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid request body"})
+	}
+	if input.EndpointURL == "" {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "endpoint_url is required"})
+	}
+	if len(input.EventTypes) == 0 {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "event_types are required"})
+	}
+	secret := input.SigningSecret
+	if secret == "" {
+		generated, err := generateSigningSecret()
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to generate signing secret"})
+		}
+		secret = generated
+	}
+	encryptedSecret, err := Encrypt([]byte(secret))
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to encrypt signing secret"})
+	}
+	eventTypesJSON, _ := json.Marshal(input.EventTypes)
+
+	var id string
+	var createdAt time.Time
+	if err := dbPool.QueryRow(c.Request().Context(), `
+INSERT INTO outbound_webhooks (user_id, endpoint_url, event_types, encrypted_signing_secret)
+VALUES ($1, $2, $3::jsonb, $4)
+RETURNING id::text, created_at
+`, user.ID, input.EndpointURL, string(eventTypesJSON), encryptedSecret).Scan(&id, &createdAt); err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to create webhook"})
+	}
+
+	writeAuditLog(c.Request().Context(), AuditEvent{
+		UserID:       user.ID,
+		Action:       "webhook.create",
+		ResourceType: "webhook",
+		ResourceID:   id,
+		Metadata: map[string]interface{}{
+			"endpoint_url": input.EndpointURL,
+			"event_types":  input.EventTypes,
+		},
+	})
+
+	return c.JSON(http.StatusCreated, APIResponse{Success: true, Data: map[string]interface{}{
+		"id":             id,
+		"endpoint_url":   input.EndpointURL,
+		"event_types":    input.EventTypes,
+		"is_active":      true,
+		"created_at":     createdAt.UTC().Format(time.RFC3339),
+		"signing_secret": secret,
+	}})
+}
+
+func apiDeleteWebhookHandler(c echo.Context) error {
+	user := getUserFromEcho(c)
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
+	id := c.Param("id")
+	tag, err := dbPool.Exec(c.Request().Context(), `
+DELETE FROM outbound_webhooks
+WHERE id = $1::uuid AND user_id = $2
+`, id, user.ID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to delete webhook"})
+	}
+	if tag.RowsAffected() == 0 {
+		return c.JSON(http.StatusNotFound, APIResponse{Success: false, Error: "Webhook not found"})
+	}
+
+	writeAuditLog(c.Request().Context(), AuditEvent{
+		UserID:       user.ID,
+		Action:       "webhook.delete",
+		ResourceType: "webhook",
+		ResourceID:   id,
+	})
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Webhook deleted"})
+}
+
+func apiWebhookDeliveriesHandler(c echo.Context) error {
+	user := getUserFromEcho(c)
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
+	id := c.Param("id")
+
+	rows, err := dbPool.Query(c.Request().Context(), `
+SELECT wd.id::text, wd.webhook_id::text, wd.event_type, wd.status_code, wd.success, wd.response_body, wd.created_at
+FROM webhook_deliveries wd
+INNER JOIN outbound_webhooks ow ON wd.webhook_id = ow.id
+WHERE wd.webhook_id = $1::uuid AND ow.user_id = $2
+ORDER BY wd.created_at DESC
+LIMIT 100
+`, id, user.ID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch webhook deliveries"})
+	}
+	defer rows.Close()
+
+	var deliveries []WebhookDelivery
+	for rows.Next() {
+		var d WebhookDelivery
+		var body *string
+		if err := rows.Scan(&d.ID, &d.WebhookID, &d.EventType, &d.StatusCode, &d.Success, &body, &d.CreatedAt); err != nil {
+			return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to scan webhook deliveries"})
+		}
+		d.ResponseBody = body
+		deliveries = append(deliveries, d)
+	}
+	if err := rows.Err(); err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to read webhook deliveries"})
+	}
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: deliveries})
+}
+
 func apiUpsertSecretHandler(c echo.Context) error {
 	user := getUserFromEcho(c)
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
 	var input UpsertSecretInput
 	if err := c.Bind(&input); err != nil {
 		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid request body"})
@@ -347,6 +675,12 @@ func apiUpsertSecretHandler(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to store secret"})
 	}
+	writeAuditLog(c.Request().Context(), AuditEvent{
+		UserID:       user.ID,
+		Action:       "secret.upsert",
+		ResourceType: "secret",
+		ResourceID:   input.Name,
+	})
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Secret stored successfully"})
 }
@@ -392,4 +726,80 @@ func apiUpdateSEOHandler(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "SEO settings updated successfully"})
+}
+
+func apiAdminAuditLogsHandler(c echo.Context) error {
+	limit := 100
+	if raw := c.QueryParam("limit"); raw != "" {
+		parsed, err := strconv.Atoi(raw)
+		if err != nil || parsed <= 0 || parsed > 500 {
+			return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "limit must be between 1 and 500"})
+		}
+		limit = parsed
+	}
+
+	rows, err := dbPool.Query(c.Request().Context(), `
+SELECT id::text, user_id, action, resource_type, resource_id, metadata::text, created_at
+FROM audit_logs
+ORDER BY created_at DESC
+LIMIT $1
+`, limit)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch audit logs"})
+	}
+	defer rows.Close()
+
+	var logs []AuditLogEntry
+	for rows.Next() {
+		var entry AuditLogEntry
+		var userID *string
+		var resourceID *string
+		var metadataText string
+		var createdAt time.Time
+		if err := rows.Scan(&entry.ID, &userID, &entry.Action, &entry.ResourceType, &resourceID, &metadataText, &createdAt); err != nil {
+			return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to scan audit logs"})
+		}
+		entry.UserID = userID
+		entry.ResourceID = resourceID
+		entry.CreatedAt = createdAt.UTC().Format(time.RFC3339)
+		entry.Metadata = map[string]interface{}{}
+		_ = json.Unmarshal([]byte(metadataText), &entry.Metadata)
+		logs = append(logs, entry)
+	}
+	if err := rows.Err(); err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to read audit logs"})
+	}
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: logs})
+}
+
+func apiAdminUsageHandler(c echo.Context) error {
+	var userCount, taskCount, successCount, failureCount, missedCount, auditCount int64
+	if err := dbPool.QueryRow(c.Request().Context(), "SELECT COUNT(*) FROM users").Scan(&userCount); err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to count users"})
+	}
+	if err := dbPool.QueryRow(c.Request().Context(), "SELECT COUNT(*) FROM tasks").Scan(&taskCount); err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to count tasks"})
+	}
+	if err := dbPool.QueryRow(c.Request().Context(), "SELECT COUNT(*) FROM task_logs WHERE status = 'success'").Scan(&successCount); err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to count success logs"})
+	}
+	if err := dbPool.QueryRow(c.Request().Context(), "SELECT COUNT(*) FROM task_logs WHERE status = 'failure'").Scan(&failureCount); err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to count failure logs"})
+	}
+	if err := dbPool.QueryRow(c.Request().Context(), "SELECT COUNT(*) FROM task_logs WHERE status = 'missed'").Scan(&missedCount); err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to count missed logs"})
+	}
+	if err := dbPool.QueryRow(c.Request().Context(), "SELECT COUNT(*) FROM audit_logs").Scan(&auditCount); err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to count audit logs"})
+	}
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: map[string]int64{
+		"users":            userCount,
+		"tasks":            taskCount,
+		"task_successes":   successCount,
+		"task_failures":    failureCount,
+		"task_missed":      missedCount,
+		"audit_log_events": auditCount,
+	}})
 }

@@ -61,9 +61,9 @@ func EchoSessionMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		c.Set("user_role", user.Role)
 		
 		// Also add to request context for downstream non-echo handlers if any
-		ctx := context.WithValue(c.Request().Context(), "user", user)
-		ctx = context.WithValue(ctx, "user_id", user.ID)
-		ctx = context.WithValue(ctx, "user_role", user.Role)
+		ctx := context.WithValue(c.Request().Context(), userKey, user)
+		ctx = context.WithValue(ctx, userIDKey, user.ID)
+		ctx = context.WithValue(ctx, userRoleKey, user.Role)
 		c.SetRequest(c.Request().WithContext(ctx))
 
 		return next(c)
@@ -120,8 +120,8 @@ func EchoAuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		c.Set("user_id", u.ID)
 		c.Set("user_tier", u.Tier.String)
 		
-		ctx := context.WithValue(c.Request().Context(), "user_id", u.ID)
-		ctx = context.WithValue(ctx, "user_tier", u.Tier.String)
+		ctx := context.WithValue(c.Request().Context(), userIDKey, u.ID)
+		ctx = context.WithValue(ctx, userTierKey, u.Tier.String)
 		c.SetRequest(c.Request().WithContext(ctx))
 
 		return next(c)
@@ -148,8 +148,9 @@ func NetHttpAuthMiddleware(next http.Handler, mcpServer *server.MCPServer) http.
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), "user_id", u.ID)
-		ctx = context.WithValue(ctx, "user_tier", u.Tier.String)
+		ctx := context.WithValue(r.Context(), userIDKey, u.ID)
+		ctx = context.WithValue(ctx, userTierKey, u.Tier.String)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
+

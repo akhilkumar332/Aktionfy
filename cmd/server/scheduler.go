@@ -7,21 +7,21 @@ import (
 	"log"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/mark3labs/mcp-go/server"
 	"github.com/robfig/cron/v3"
 	"schedule-mcp/db"
 )
 
 // runScheduler queries the DB every 10 seconds for due tasks
-func runScheduler(ctx context.Context, s *server.MCPServer) {
+func runScheduler(ctx context.Context) {
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ticker.C:
-			// 1. Claim batch of tasks using PLpgSQL function with timeout
+			// Claiming now emits a PostgreSQL NOTIFY from the same transaction.
 			claimCtx, claimCancel := context.WithTimeout(ctx, 5*time.Second)
 			tasks, err := queries.ClaimDueTasks(claimCtx, db.ClaimDueTasksParams{
 				BatchSize: 50,
@@ -30,221 +30,307 @@ func runScheduler(ctx context.Context, s *server.MCPServer) {
 			claimCancel()
 
 			if err != nil {
+				schedulerClaimErrorsTotal.Inc()
 				log.Printf("Error claiming tasks: %v", err)
 				continue
 			}
-
-			for _, task := range tasks {
-				workerWG.Add(1)
-				go func(t db.Task) {
-					defer workerWG.Done()
-					workerCtx := context.Background()
-					// 2. Check if user is online via Redis
-					isOnline := GlobalSessionManager.IsOnline(workerCtx, t.UserID)
-
-					taskID := formatUUID(t.ID)
-					userEmail, err := queries.GetUserEmail(workerCtx, t.UserID)
-					emailStr := ""
-					if err != nil {
-						log.Printf("Error fetching user email for %s: %v", t.UserID, err)
-					} else if userEmail.Valid {
-						emailStr = userEmail.String
-					}
-
-					// Human-in-the-Loop: Check if approval is required
-					if t.RequiresApproval.Bool && t.LastApprovalStatus.String != "approved" {
-						log.Printf("Task %s requires approval. Pausing.", taskID)
-						if err := queries.UpdateTaskApprovalStatus(workerCtx, db.UpdateTaskApprovalStatusParams{
-							LastApprovalStatus: pgtype.Text{String: "pending", Valid: true},
-							Status:             pgtype.Text{String: StatusPaused, Valid: true},
-							ID:                 t.ID,
-							UserID:             t.UserID,
-						}); err != nil {
-							log.Printf("Error updating task approval status for %s: %v", taskID, err)
-						}
-
-						evtPayload, _ := json.Marshal(map[string]interface{}{
-							"task_id":   taskID,
-							"task_name": t.Name,
-						})
-						if err := PublishEvent(workerCtx, PubSubEvent{
-							UserID:    t.UserID,
-							EventType: "approval_required",
-							Payload:   string(evtPayload),
-						}); err != nil {
-							log.Printf("Error publishing approval_required event for %s: %v", taskID, err)
-						}
-						return
-					}
-
-					if !isOnline {
-						log.Printf("User %s is offline. Task %s missed.", t.UserID, taskID)
-						// Phase 1.2: Execution Logging
-						logID, err := queries.CreateTaskLog(workerCtx, db.CreateTaskLogParams{
-							TaskID:       t.ID,
-							UserID:       t.UserID,
-							Status:       "missed",
-							ErrorMessage: pgtype.Text{String: "user offline", Valid: true},
-						})
-						if err != nil {
-							log.Printf("Error creating task log for %s (missed): %v", taskID, err)
-						}
-
-						// Emit Redis event
-						evtPayload, _ := json.Marshal(map[string]interface{}{
-							"id":             formatUUID(logID),
-							"task_id":        taskID,
-							"status":         "missed",
-							"execution_time": time.Now().Format(time.RFC3339),
-							"task_name":      t.Name,
-							"user_email":     emailStr,
-							"error_message":  "user offline",
-						})
-						if err := PublishEvent(workerCtx, PubSubEvent{
-							UserID:    t.UserID,
-							EventType: "task_executed",
-							Payload:   string(evtPayload),
-						}); err != nil {
-							log.Printf("Error publishing task_executed event for %s (missed): %v", taskID, err)
-						}
-						
-						// Phase 3.1: Missed Task Policy
-						if t.MissedTaskPolicy.String == PolicyRunImmediate {
-							// Push next_run ahead by 1 minute to prevent rapid polling spam while offline
-							if err := queries.UpdateTaskNextRun(workerCtx, db.UpdateTaskNextRunParams{
-								Status:  pgtype.Text{String: StatusActive, Valid: true},
-								NextRun: pgtype.Timestamptz{Time: time.Now().UTC().Add(1 * time.Minute), Valid: true},
-								ID:      t.ID,
-							}); err != nil {
-								log.Printf("Error updating next run for missed task %s: %v", taskID, err)
-							}
-							return
-						} else {
-							// "skip": calculate next run and update
-							var config map[string]interface{}
-							if err := json.Unmarshal(t.TriggerConfig, &config); err == nil {
-								if newNextRun, calcErr := calculateNextRun(t.TriggerType.String, config, time.Now().UTC()); calcErr == nil {
-									completeTask(workerCtx, taskID, newNextRun)
-									return
-								}
-							}
-							if err := queries.UpdateTaskStatus(workerCtx, db.UpdateTaskStatusParams{
-								Status: pgtype.Text{String: StatusPaused, Valid: true},
-								ID:     t.ID,
-							}); err != nil {
-								log.Printf("Error pausing task %s: %v", taskID, err)
-							}
-							return
-						}
-					}
-
-					// Phase 6.1: Publish to Redis Pub/Sub so the correct node with the SSE connection can trigger it
-					executionID := fmt.Sprintf("%s-%d", taskID, time.Now().UTC().UnixNano())
-					payloadBytes, _ := json.Marshal(map[string]interface{}{
-						"task_id":        taskID,
-						"prompt":         t.AgentPrompt,
-						"execution_id":   executionID,
-						"trigger_type":   t.TriggerType.String,
-						"trigger_config": string(t.TriggerConfig),
-					})
-					subscribers, err := RedisClient.Publish(workerCtx, fmt.Sprintf("trigger_task:%s", t.UserID), string(payloadBytes)).Result()
-					if err != nil || subscribers == 0 {
-						if err == nil {
-							err = fmt.Errorf("no active subscribers received the payload")
-						}
-						log.Printf("Failed to deliver task %s for user %s: %v", taskID, t.UserID, err)
-						// Phase 2.3: Dead Letter Queue
-						failureCount := t.FailureCount.Int32 + 1
-						logID, logErr := queries.CreateTaskLog(workerCtx, db.CreateTaskLogParams{
-							TaskID:       t.ID,
-							UserID:       t.UserID,
-							Status:       "failure",
-							ErrorMessage: pgtype.Text{String: err.Error(), Valid: true},
-						})
-						if logErr != nil {
-							log.Printf("Error creating task log for %s (failure): %v", taskID, logErr)
-						}
-
-						// Emit Redis event
-						evtPayload, _ := json.Marshal(map[string]interface{}{
-							"id":             formatUUID(logID),
-							"task_id":        taskID,
-							"status":         "failure",
-							"execution_time": time.Now().Format(time.RFC3339),
-							"task_name":      t.Name,
-							"user_email":     emailStr,
-							"error_message":  err.Error(),
-						})
-						if err := PublishEvent(workerCtx, PubSubEvent{
-							UserID:    t.UserID,
-							EventType: "task_executed",
-							Payload:   string(evtPayload),
-						}); err != nil {
-							log.Printf("Error publishing task_executed event for %s (failure): %v", taskID, err)
-						}
-						
-						if failureCount >= 3 {
-							log.Printf("Task %s failed 3 times, setting status to error.", taskID)
-							if err := queries.UpdateTaskStatusAndFailureCount(workerCtx, db.UpdateTaskStatusAndFailureCountParams{
-								Status:       pgtype.Text{String: StatusError, Valid: true},
-								FailureCount: pgtype.Int4{Int32: failureCount, Valid: true},
-								ID:           t.ID,
-							}); err != nil {
-								log.Printf("Error updating status to error for task %s: %v", taskID, err)
-							}
-							
-							// Phase 9.1: Real Dead Letter Email Alert
-							sendFailureEmail(workerCtx, t.UserID, taskID, t.Name)
-						} else {
-							if err := queries.UpdateTaskStatusAndFailureCount(workerCtx, db.UpdateTaskStatusAndFailureCountParams{
-								Status:       pgtype.Text{String: StatusActive, Valid: true},
-								FailureCount: pgtype.Int4{Int32: failureCount, Valid: true},
-								ID:           t.ID,
-							}); err != nil {
-								log.Printf("Error updating failure count for task %s: %v", taskID, err)
-							}
-						}
-						return
-					}
-
-					// Log Success delivery to node (session.go will log the actual LLM response)
-					logID, err := queries.CreateTaskLog(workerCtx, db.CreateTaskLogParams{
-						TaskID:      t.ID,
-						UserID:      t.UserID,
-						Status:      "success",
-						LlmResponse: pgtype.Text{String: "Task delivered to node via Redis", Valid: true},
-					})
-					if err != nil {
-						log.Printf("Error creating task log for %s (delivered): %v", taskID, err)
-					}
-
-					// Emit Redis event
-					evtPayload, _ := json.Marshal(map[string]interface{}{
-						"id":             formatUUID(logID),
-						"task_id":        taskID,
-						"status":         "success",
-						"execution_time": time.Now().Format(time.RFC3339),
-						"task_name":      t.Name,
-						"user_email":     emailStr,
-						"llm_response":   "Task delivered to node via Redis",
-					})
-					if err := PublishEvent(workerCtx, PubSubEvent{
-						UserID:    t.UserID,
-						EventType: "task_executed",
-						Payload:   string(evtPayload),
-					}); err != nil {
-						log.Printf("Error publishing task_executed event for %s (delivered): %v", taskID, err)
-					}
-
-					// Iteration 2: We no longer update the task status or call completeTask here.
-					// The execution node (session.go) is now responsible for advancing the task.
-					log.Printf("Task %s delivered to node. Remaining in 'processing' status.", taskID)
-				}(task)
+			if len(tasks) > 0 {
+				schedulerClaimsTotal.Add(float64(len(tasks)))
+				log.Printf("Claimed %d due task(s); waiting for NOTIFY dispatch", len(tasks))
 			}
 		case <-ctx.Done():
 			return
 		}
 	}
+}
+
+type taskClaimNotification struct {
+	TaskID   string `json:"task_id"`
+	UserID   string `json:"user_id"`
+	WorkerID string `json:"worker_id"`
+}
+
+func listenForTaskClaims(ctx context.Context, dbURL string) {
+	backoff := time.Second
+
+	for {
+		if ctx.Err() != nil {
+			return
+		}
+
+		conn, err := pgx.Connect(ctx, dbURL)
+		if err != nil {
+			log.Printf("Failed to connect task claim listener: %v. Retrying in %v...", err, backoff)
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(backoff):
+			}
+			if backoff < 30*time.Second {
+				backoff *= 2
+			}
+			continue
+		}
+
+		_, err = conn.Exec(ctx, "LISTEN task_claimed")
+		if err != nil {
+			log.Printf("Failed to LISTEN for task claims: %v", err)
+			conn.Close(context.Background())
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(backoff):
+			}
+			if backoff < 30*time.Second {
+				backoff *= 2
+			}
+			continue
+		}
+
+		backoff = time.Second
+		log.Printf("Listening for PostgreSQL task claim notifications as worker %s", workerID)
+
+		for {
+			notification, err := conn.WaitForNotification(ctx)
+			if err != nil {
+				conn.Close(context.Background())
+				if ctx.Err() != nil {
+					return
+				}
+				log.Printf("Task claim listener disconnected: %v", err)
+				break
+			}
+			handleTaskClaimNotification(notification.Payload)
+		}
+	}
+}
+
+func handleTaskClaimNotification(payload string) {
+	var notice taskClaimNotification
+	if err := json.Unmarshal([]byte(payload), &notice); err != nil {
+		log.Printf("Invalid task claim notification payload: %v", err)
+		return
+	}
+
+	if notice.WorkerID != workerID {
+		return
+	}
+
+	workerWG.Add(1)
+	go func() {
+		defer workerWG.Done()
+		workerCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+
+		var taskID pgtype.UUID
+		if err := parseUUID(notice.TaskID, &taskID); err != nil {
+			log.Printf("Invalid task ID in notification: %s", notice.TaskID)
+			return
+		}
+
+		t, err := queries.GetDispatchableTaskByID(workerCtx, db.GetDispatchableTaskByIDParams{
+			ID:       taskID,
+			UserID:   notice.UserID,
+			LockedBy: pgtype.Text{String: workerID, Valid: true},
+		})
+		if err != nil {
+			log.Printf("Skipping claimed task %s for worker %s: %v", notice.TaskID, workerID, err)
+			return
+		}
+
+		handleClaimedTask(context.Background(), t)
+	}()
+}
+
+func handleClaimedTask(workerCtx context.Context, t db.Task) {
+	isOnline := GlobalSessionManager.IsOnline(workerCtx, t.UserID)
+
+	taskID := formatUUID(t.ID)
+	userEmail, err := queries.GetUserEmail(workerCtx, t.UserID)
+	emailStr := ""
+	if err != nil {
+		log.Printf("Error fetching user email for %s: %v", t.UserID, err)
+	} else if userEmail.Valid {
+		emailStr = userEmail.String
+	}
+
+	if t.RequiresApproval.Bool && t.LastApprovalStatus.String != "approved" {
+		observeTaskOutcome("approval_required")
+		log.Printf("Task %s requires approval. Pausing.", taskID)
+		if err := queries.UpdateTaskApprovalStatus(workerCtx, db.UpdateTaskApprovalStatusParams{
+			LastApprovalStatus: pgtype.Text{String: "pending", Valid: true},
+			Status:             pgtype.Text{String: StatusPaused, Valid: true},
+			ID:                 t.ID,
+			UserID:             t.UserID,
+		}); err != nil {
+			log.Printf("Error updating task approval status for %s: %v", taskID, err)
+		}
+
+		evtPayload, _ := json.Marshal(map[string]interface{}{
+			"task_id":   taskID,
+			"task_name": t.Name,
+		})
+		if err := PublishEvent(workerCtx, PubSubEvent{
+			UserID:    t.UserID,
+			EventType: "approval_required",
+			Payload:   string(evtPayload),
+		}); err != nil {
+			log.Printf("Error publishing approval_required event for %s: %v", taskID, err)
+		}
+		return
+	}
+
+	if !isOnline {
+		observeTaskOutcome("missed")
+		log.Printf("User %s is offline. Task %s missed.", t.UserID, taskID)
+		logID, err := queries.CreateTaskLog(workerCtx, db.CreateTaskLogParams{
+			TaskID:       t.ID,
+			UserID:       t.UserID,
+			Status:       "missed",
+			ErrorMessage: pgtype.Text{String: "user offline", Valid: true},
+		})
+		if err != nil {
+			log.Printf("Error creating task log for %s (missed): %v", taskID, err)
+		}
+
+		evtPayload, _ := json.Marshal(map[string]interface{}{
+			"id":             formatUUID(logID),
+			"task_id":        taskID,
+			"status":         "missed",
+			"execution_time": time.Now().Format(time.RFC3339),
+			"task_name":      t.Name,
+			"user_email":     emailStr,
+			"error_message":  "user offline",
+		})
+		if err := PublishEvent(workerCtx, PubSubEvent{
+			UserID:    t.UserID,
+			EventType: "task_executed",
+			Payload:   string(evtPayload),
+		}); err != nil {
+			log.Printf("Error publishing task_executed event for %s (missed): %v", taskID, err)
+		}
+
+		if t.MissedTaskPolicy.String == PolicyRunImmediate {
+			if err := queries.UpdateTaskNextRun(workerCtx, db.UpdateTaskNextRunParams{
+				Status:  pgtype.Text{String: StatusActive, Valid: true},
+				NextRun: pgtype.Timestamptz{Time: time.Now().UTC().Add(1 * time.Minute), Valid: true},
+				ID:      t.ID,
+			}); err != nil {
+				log.Printf("Error updating next run for missed task %s: %v", taskID, err)
+			}
+			return
+		}
+
+		var config map[string]interface{}
+		if err := json.Unmarshal(t.TriggerConfig, &config); err == nil {
+			if newNextRun, calcErr := calculateNextRun(t.TriggerType.String, config, time.Now().UTC()); calcErr == nil {
+				completeTask(workerCtx, taskID, newNextRun)
+				return
+			}
+		}
+		if err := queries.UpdateTaskStatus(workerCtx, db.UpdateTaskStatusParams{
+			Status: pgtype.Text{String: StatusPaused, Valid: true},
+			ID:     t.ID,
+		}); err != nil {
+			log.Printf("Error pausing task %s: %v", taskID, err)
+		}
+		return
+	}
+
+	executionID := fmt.Sprintf("%s-%d", taskID, time.Now().UTC().UnixNano())
+	payloadBytes, _ := json.Marshal(map[string]interface{}{
+		"task_id":        taskID,
+		"prompt":         t.AgentPrompt,
+		"execution_id":   executionID,
+		"trigger_type":   t.TriggerType.String,
+		"trigger_config": string(t.TriggerConfig),
+	})
+	subscribers, err := RedisClient.Publish(workerCtx, fmt.Sprintf("trigger_task:%s", t.UserID), string(payloadBytes)).Result()
+	if err != nil || subscribers == 0 {
+		observeTaskOutcome("delivery_failure")
+		if err == nil {
+			err = fmt.Errorf("no active subscribers received the payload")
+		}
+		log.Printf("Failed to deliver task %s for user %s: %v", taskID, t.UserID, err)
+		failureCount := t.FailureCount.Int32 + 1
+		logID, logErr := queries.CreateTaskLog(workerCtx, db.CreateTaskLogParams{
+			TaskID:       t.ID,
+			UserID:       t.UserID,
+			Status:       "failure",
+			ErrorMessage: pgtype.Text{String: err.Error(), Valid: true},
+		})
+		if logErr != nil {
+			log.Printf("Error creating task log for %s (failure): %v", taskID, logErr)
+		}
+
+		evtPayload, _ := json.Marshal(map[string]interface{}{
+			"id":             formatUUID(logID),
+			"task_id":        taskID,
+			"status":         "failure",
+			"execution_time": time.Now().Format(time.RFC3339),
+			"task_name":      t.Name,
+			"user_email":     emailStr,
+			"error_message":  err.Error(),
+		})
+		if err := PublishEvent(workerCtx, PubSubEvent{
+			UserID:    t.UserID,
+			EventType: "task_executed",
+			Payload:   string(evtPayload),
+		}); err != nil {
+			log.Printf("Error publishing task_executed event for %s (failure): %v", taskID, err)
+		}
+
+		if failureCount >= 3 {
+			log.Printf("Task %s failed 3 times, setting status to error.", taskID)
+			if err := queries.UpdateTaskStatusAndFailureCount(workerCtx, db.UpdateTaskStatusAndFailureCountParams{
+				Status:       pgtype.Text{String: StatusError, Valid: true},
+				FailureCount: pgtype.Int4{Int32: failureCount, Valid: true},
+				ID:           t.ID,
+			}); err != nil {
+				log.Printf("Error updating status to error for task %s: %v", taskID, err)
+			}
+			sendFailureEmail(workerCtx, t.UserID, taskID, t.Name)
+		} else {
+			if err := queries.UpdateTaskStatusAndFailureCount(workerCtx, db.UpdateTaskStatusAndFailureCountParams{
+				Status:       pgtype.Text{String: StatusActive, Valid: true},
+				FailureCount: pgtype.Int4{Int32: failureCount, Valid: true},
+				ID:           t.ID,
+			}); err != nil {
+				log.Printf("Error updating failure count for task %s: %v", taskID, err)
+			}
+		}
+		return
+	}
+
+	observeTaskOutcome("delivered")
+	logID, err := queries.CreateTaskLog(workerCtx, db.CreateTaskLogParams{
+		TaskID:      t.ID,
+		UserID:      t.UserID,
+		Status:      "success",
+		LlmResponse: pgtype.Text{String: "Task delivered to node via Redis", Valid: true},
+	})
+	if err != nil {
+		log.Printf("Error creating task log for %s (delivered): %v", taskID, err)
+	}
+
+	evtPayload, _ := json.Marshal(map[string]interface{}{
+		"id":             formatUUID(logID),
+		"task_id":        taskID,
+		"status":         "success",
+		"execution_time": time.Now().Format(time.RFC3339),
+		"task_name":      t.Name,
+		"user_email":     emailStr,
+		"llm_response":   "Task delivered to node via Redis",
+	})
+	if err := PublishEvent(workerCtx, PubSubEvent{
+		UserID:    t.UserID,
+		EventType: "task_executed",
+		Payload:   string(evtPayload),
+	}); err != nil {
+		log.Printf("Error publishing task_executed event for %s (delivered): %v", taskID, err)
+	}
+
+	log.Printf("Task %s delivered to node. Remaining in 'processing' status.", taskID)
 }
 
 // completeTask calls the PLpgSQL function to set the task back to active and update next_run
@@ -253,7 +339,7 @@ func completeTask(ctx context.Context, taskID string, nextRun time.Time, status 
 	if len(status) > 0 {
 		finalStatus = status[0]
 	}
-	
+
 	var tid pgtype.UUID
 	if err := parseUUID(taskID, &tid); err != nil {
 		log.Printf("Invalid task ID in completeTask: %s", taskID)
@@ -278,17 +364,15 @@ func completeTask(ctx context.Context, taskID string, nextRun time.Time, status 
 	}
 
 	for _, t := range dependents {
-		executionID := fmt.Sprintf("%s-%d", formatUUID(t.ID), time.Now().UTC().UnixNano())
-		payloadBytes, _ := json.Marshal(map[string]interface{}{
-			"task_id":        formatUUID(t.ID),
-			"prompt":         t.AgentPrompt,
-			"execution_id":   executionID,
-			"trigger_type":   t.TriggerType.String,
-			"trigger_config": string(t.TriggerConfig),
-		})
-		if _, err := RedisClient.Publish(ctx, fmt.Sprintf("trigger_task:%s", t.UserID), string(payloadBytes)).Result(); err != nil {
-			log.Printf("Error triggering dependent task %s for user %s: %v", formatUUID(t.ID), t.UserID, err)
+		if err := queries.UpdateTaskNextRun(ctx, db.UpdateTaskNextRunParams{
+			Status:  pgtype.Text{String: StatusActive, Valid: true},
+			NextRun: pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},
+			ID:      t.ID,
+		}); err != nil {
+			log.Printf("Error making dependent task %s due immediately for user %s: %v", formatUUID(t.ID), t.UserID, err)
+			continue
 		}
+		log.Printf("Queued dependent task %s for immediate execution", formatUUID(t.ID))
 	}
 }
 
@@ -300,7 +384,7 @@ func calculateNextRun(triggerType string, config map[string]interface{}, now tim
 		if !ok {
 			return now, fmt.Errorf("missing cron expression")
 		}
-		
+
 		// Handle optional timezone
 		if tz, ok := config["timezone"].(string); ok && tz != "" {
 			cronExpr = fmt.Sprintf("CRON_TZ=%s %s", tz, cronExpr)
