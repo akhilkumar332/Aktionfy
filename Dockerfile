@@ -23,6 +23,7 @@ RUN apk add --no-cache ca-certificates
 COPY --from=backend-builder /app/server ./
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 COPY schema.sql ./
+COPY migrations/ ./migrations/
 # Copy static files if they are still used (though mostly for favicon/legacy)
 COPY static/ ./static/
 
