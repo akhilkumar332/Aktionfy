@@ -305,6 +305,26 @@ const ApiReference = () => (
       </section>
 
       <section>
+        <h2 className="text-2xl font-bold text-ink-900 mb-6 flex items-center gap-3">
+          <Globe size={24} className="text-blue-500" /> Outbound Webhooks
+        </h2>
+        <p className="mb-6">Integrate Schedule MCP with your external systems via event-driven callbacks.</p>
+        <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100 space-y-4">
+           <h4 className="font-bold text-ink-900">Supported Events</h4>
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-white p-4 rounded-xl border border-slate-200">
+                 <p className="font-mono text-xs font-bold text-accent-orange">task_executed</p>
+                 <p className="text-[11px] text-slate-500">Fires when a task completes successfully with LLM output.</p>
+              </div>
+              <div className="bg-white p-4 rounded-xl border border-slate-200">
+                 <p className="font-mono text-xs font-bold text-red-500">task_failed</p>
+                 <p className="text-[11px] text-slate-500">Fires when a task exceeds max retries or errors out.</p>
+              </div>
+           </div>
+        </div>
+      </section>
+
+      <section>
         <h2 className="text-2xl font-bold text-ink-900 mb-6">REST Endpoints</h2>
         <div className="bg-ink-900 p-6 rounded-2xl space-y-4 font-mono text-xs">
           <div className="flex gap-4">

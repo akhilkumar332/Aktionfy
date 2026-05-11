@@ -1,4 +1,4 @@
-import { Layers, Shield, Zap, Cpu, Repeat } from 'lucide-react';
+import { Layers, Shield, Zap, Cpu, Repeat, ExternalLink } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Features = () => {
@@ -17,9 +17,9 @@ const Features = () => {
     },
     {
       title: 'Persistent Scheduling',
-      description: 'Durable task queues with sub-second precision. Even if the entire worker cluster restarts, your schedules resume exactly where they left off.',
+      description: 'Durable task queues with sub-second precision. Even if your entire worker cluster restarts, your schedules resume exactly where they left off.',
       icon: Clock,
-      color: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+      color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
     },
     {
       title: 'Human-in-the-Loop',
@@ -28,14 +28,20 @@ const Features = () => {
       color: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
     },
     {
-      title: 'Real-time Live Dashboards',
-      description: 'Monitor task execution and AI responses in real-time. Powered by Redis Pub/Sub and SSE for instant telemetry and status updates.',
+      title: 'Real-time Dashboards',
+      description: 'Fully manage tasks, secrets, and webhooks via a beautiful GUI. Monitor AI responses in real-time with Redis-powered telemetry.',
       icon: Zap,
       color: 'bg-amber-500/10 text-accent-orange border-accent-orange/20',
     },
     {
+      title: 'Outbound Webhooks',
+      description: 'Integrate AI results into your own apps. Receive HTTP POST notifications whenever a scheduled task completes or fails.',
+      icon: ExternalLink,
+      color: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+    },
+    {
       title: 'Auto-Recovery Engine',
-      description: 'Built-in node reapers and dead letter queues. Failed tasks are automatically recovered, retried, or escalated based on custom policies.',
+      description: 'Built-in node reapers and dead letter queues. Failed tasks are automatically recovered or escalated based on custom policies.',
       icon: Repeat,
       color: 'bg-red-500/10 text-red-400 border-red-500/20',
     },
