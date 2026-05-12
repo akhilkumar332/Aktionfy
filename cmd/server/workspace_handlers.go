@@ -7,10 +7,9 @@ import (
 )
 
 func handleGetWorkspaces(c echo.Context) error {
-	userID := c.Get("user_id").(string)
-	
-	if queries == nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to fetch workspaces"})
+	userID := getUserID(c)
+	if userID == "" {
+		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 	}
 
 	workspaces, err := queries.GetUserWorkspaces(c.Request().Context(), userID)

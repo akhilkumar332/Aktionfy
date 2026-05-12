@@ -177,3 +177,10 @@ INSERT INTO dlq_tasks (task_id, error_message) VALUES ($1, $2) RETURNING *;
 
 -- name: CreateTemplate :one
 INSERT INTO templates (name, description, config, is_public, workspace_id) VALUES ($1, $2, $3, $4, $5) RETURNING *;
+
+-- name: CheckWorkspaceAccess :one
+SELECT EXISTS (
+    SELECT 1 FROM workspaces w
+    LEFT JOIN workspace_members wm ON w.id = wm.workspace_id
+    WHERE w.id = $1 AND (w.owner_id = $2 OR wm.user_id = $2)
+) AS has_access;

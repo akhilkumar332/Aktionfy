@@ -18,6 +18,11 @@ type createTemplateRequest struct {
 }
 
 func handleCreateTemplate(c echo.Context) error {
+	userID := getUserID(c)
+	if userID == "" {
+		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
+	}
+
 	var req createTemplateRequest
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request payload"})
@@ -27,6 +32,15 @@ func handleCreateTemplate(c echo.Context) error {
 	if req.WorkspaceID != "" {
 		if err := parseUUID(req.WorkspaceID, &workspaceID); err != nil {
 			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid workspace_id format"})
+		}
+
+		// Check workspace access
+		hasAccess, err := queries.CheckWorkspaceAccess(c.Request().Context(), db.CheckWorkspaceAccessParams{
+			ID:      workspaceID,
+			OwnerID: userID,
+		})
+		if err != nil || !hasAccess {
+			return c.JSON(http.StatusForbidden, map[string]string{"error": "Forbidden: No access to workspace"})
 		}
 	}
 

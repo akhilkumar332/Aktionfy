@@ -128,6 +128,19 @@ func EchoAuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
+func getUserFromEcho(c echo.Context) *User {
+	user, _ := c.Get("user").(*User)
+	return user
+}
+
+func getUserID(c echo.Context) string {
+	if user := getUserFromEcho(c); user != nil {
+		return user.ID
+	}
+	id, _ := c.Get("user_id").(string)
+	return id
+}
+
 // NetHttpAuthMiddleware is a wrapper to use EchoAuthMiddleware logic for standard library handlers (SSE/Message)
 func NetHttpAuthMiddleware(next http.Handler, mcpServer *server.MCPServer) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -685,11 +685,6 @@ func apiUpsertSecretHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Secret stored successfully"})
 }
 
-func getUserFromEcho(c echo.Context) *User {
-	user, _ := c.Get("user").(*User)
-	return user
-}
-
 type SEOUpdateInput struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`

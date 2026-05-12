@@ -9,7 +9,10 @@ import (
 )
 
 func apiListTasksHandler(c echo.Context) error {
-	userID := c.Get("user_id").(string)
+	userID := getUserID(c)
+	if userID == "" {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
 	
 	tasks, err := queries.ListUserTasks(c.Request().Context(), userID)
 	if err != nil {
@@ -20,7 +23,10 @@ func apiListTasksHandler(c echo.Context) error {
 }
 
 func apiPauseTaskHandler(c echo.Context) error {
-	userID := c.Get("user_id").(string)
+	userID := getUserID(c)
+	if userID == "" {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
 	taskIDStr := c.Param("id")
 	
 	var taskID pgtype.UUID
@@ -42,7 +48,10 @@ func apiPauseTaskHandler(c echo.Context) error {
 }
 
 func apiResumeTaskHandler(c echo.Context) error {
-	userID := c.Get("user_id").(string)
+	userID := getUserID(c)
+	if userID == "" {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
 	taskIDStr := c.Param("id")
 	var taskID pgtype.UUID
 	err := parseUUID(taskIDStr, &taskID)
@@ -63,7 +72,10 @@ func apiResumeTaskHandler(c echo.Context) error {
 }
 
 func apiDeleteTaskHandler(c echo.Context) error {
-	userID := c.Get("user_id").(string)
+	userID := getUserID(c)
+	if userID == "" {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
 	taskIDStr := c.Param("id")
 	var taskID pgtype.UUID
 	err := parseUUID(taskIDStr, &taskID)
@@ -88,7 +100,10 @@ type UpdateTaskRequest struct {
 }
 
 func apiUpdateTaskHandler(c echo.Context) error {
-	userID := c.Get("user_id").(string)
+	userID := getUserID(c)
+	if userID == "" {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
 	taskIDStr := c.Param("id")
 	var taskID pgtype.UUID
 	err := parseUUID(taskIDStr, &taskID)

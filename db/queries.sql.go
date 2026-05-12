@@ -27,6 +27,26 @@ func (q *Queries) CheckTaskOwnership(ctx context.Context, arg CheckTaskOwnership
 	return exists, err
 }
 
+const checkWorkspaceAccess = `-- name: CheckWorkspaceAccess :one
+SELECT EXISTS (
+    SELECT 1 FROM workspaces w
+    LEFT JOIN workspace_members wm ON w.id = wm.workspace_id
+    WHERE w.id = $1 AND (w.owner_id = $2 OR wm.user_id = $2)
+) AS has_access
+`
+
+type CheckWorkspaceAccessParams struct {
+	ID      pgtype.UUID
+	OwnerID string
+}
+
+func (q *Queries) CheckWorkspaceAccess(ctx context.Context, arg CheckWorkspaceAccessParams) (bool, error) {
+	row := q.db.QueryRow(ctx, checkWorkspaceAccess, arg.ID, arg.OwnerID)
+	var has_access bool
+	err := row.Scan(&has_access)
+	return has_access, err
+}
+
 const claimDueTasks = `-- name: ClaimDueTasks :many
 SELECT id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates FROM fn_claim_due_tasks($1, $2)
 `
