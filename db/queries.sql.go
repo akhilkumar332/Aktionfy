@@ -28,7 +28,7 @@ func (q *Queries) CheckTaskOwnership(ctx context.Context, arg CheckTaskOwnership
 }
 
 const claimDueTasks = `-- name: ClaimDueTasks :many
-SELECT id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion FROM fn_claim_due_tasks($1, $2)
+SELECT id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates FROM fn_claim_due_tasks($1, $2)
 `
 
 type ClaimDueTasksParams struct {
@@ -64,6 +64,11 @@ func (q *Queries) ClaimDueTasks(ctx context.Context, arg ClaimDueTasksParams) ([
 			&i.EncryptedSecrets,
 			&i.LastApprovalStatus,
 			&i.TriggerOnCompletion,
+			&i.WorkspaceID,
+			&i.MaxRetries,
+			&i.RetryCount,
+			&i.BackoffStrategy,
+			&i.UiCoordinates,
 		); err != nil {
 			return nil, err
 		}
@@ -104,7 +109,7 @@ func (q *Queries) CountUserTasks(ctx context.Context, userID string) (int64, err
 const createTask = `-- name: CreateTask :one
 INSERT INTO tasks (user_id, name, trigger_type, trigger_config, agent_prompt, missed_task_policy, depends_on_task_id, next_run, requires_approval, encrypted_secrets, trigger_on_completion) 
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) 
-RETURNING id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion
+RETURNING id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates
 `
 
 type CreateTaskParams struct {
@@ -155,6 +160,11 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		&i.EncryptedSecrets,
 		&i.LastApprovalStatus,
 		&i.TriggerOnCompletion,
+		&i.WorkspaceID,
+		&i.MaxRetries,
+		&i.RetryCount,
+		&i.BackoffStrategy,
+		&i.UiCoordinates,
 	)
 	return i, err
 }
@@ -184,6 +194,39 @@ func (q *Queries) CreateTaskLog(ctx context.Context, arg CreateTaskLogParams) (p
 	var id pgtype.UUID
 	err := row.Scan(&id)
 	return id, err
+}
+
+const createTemplate = `-- name: CreateTemplate :one
+INSERT INTO templates (name, description, config, is_public, workspace_id) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, description, config, is_public, workspace_id, created_at
+`
+
+type CreateTemplateParams struct {
+	Name        string
+	Description pgtype.Text
+	Config      []byte
+	IsPublic    pgtype.Bool
+	WorkspaceID pgtype.UUID
+}
+
+func (q *Queries) CreateTemplate(ctx context.Context, arg CreateTemplateParams) (Template, error) {
+	row := q.db.QueryRow(ctx, createTemplate,
+		arg.Name,
+		arg.Description,
+		arg.Config,
+		arg.IsPublic,
+		arg.WorkspaceID,
+	)
+	var i Template
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.Config,
+		&i.IsPublic,
+		&i.WorkspaceID,
+		&i.CreatedAt,
+	)
+	return i, err
 }
 
 const createUser = `-- name: CreateUser :one
@@ -237,6 +280,48 @@ func (q *Queries) CreateWebSession(ctx context.Context, arg CreateWebSessionPara
 	var id pgtype.UUID
 	err := row.Scan(&id)
 	return id, err
+}
+
+const createWebhookTrigger = `-- name: CreateWebhookTrigger :one
+INSERT INTO webhook_triggers (task_id, token) VALUES ($1, $2) RETURNING id, task_id, token, created_at
+`
+
+type CreateWebhookTriggerParams struct {
+	TaskID pgtype.UUID
+	Token  string
+}
+
+func (q *Queries) CreateWebhookTrigger(ctx context.Context, arg CreateWebhookTriggerParams) (WebhookTrigger, error) {
+	row := q.db.QueryRow(ctx, createWebhookTrigger, arg.TaskID, arg.Token)
+	var i WebhookTrigger
+	err := row.Scan(
+		&i.ID,
+		&i.TaskID,
+		&i.Token,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const createWorkspace = `-- name: CreateWorkspace :one
+INSERT INTO workspaces (name, owner_id) VALUES ($1, $2) RETURNING id, name, owner_id, created_at
+`
+
+type CreateWorkspaceParams struct {
+	Name    string
+	OwnerID pgtype.UUID
+}
+
+func (q *Queries) CreateWorkspace(ctx context.Context, arg CreateWorkspaceParams) (Workspace, error) {
+	row := q.db.QueryRow(ctx, createWorkspace, arg.Name, arg.OwnerID)
+	var i Workspace
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.OwnerID,
+		&i.CreatedAt,
+	)
+	return i, err
 }
 
 const deleteTask = `-- name: DeleteTask :exec
@@ -293,7 +378,7 @@ func (q *Queries) GetAuthInfoByEmail(ctx context.Context, email pgtype.Text) (Ge
 }
 
 const getDependentTasksToTrigger = `-- name: GetDependentTasksToTrigger :many
-SELECT t.id, t.user_id, t.name, t.trigger_type, t.trigger_config, t.agent_prompt, t.status, t.locked_by, t.next_run, t.last_run, t.failure_count, t.missed_task_policy, t.depends_on_task_id, t.created_at, t.requires_approval, t.encrypted_secrets, t.last_approval_status, t.trigger_on_completion FROM tasks t
+SELECT t.id, t.user_id, t.name, t.trigger_type, t.trigger_config, t.agent_prompt, t.status, t.locked_by, t.next_run, t.last_run, t.failure_count, t.missed_task_policy, t.depends_on_task_id, t.created_at, t.requires_approval, t.encrypted_secrets, t.last_approval_status, t.trigger_on_completion, t.workspace_id, t.max_retries, t.retry_count, t.backoff_strategy, t.ui_coordinates FROM tasks t
 INNER JOIN tasks parent ON t.depends_on_task_id = parent.id
 WHERE t.depends_on_task_id = $1 
   AND t.trigger_on_completion = TRUE 
@@ -329,6 +414,11 @@ func (q *Queries) GetDependentTasksToTrigger(ctx context.Context, dependsOnTaskI
 			&i.EncryptedSecrets,
 			&i.LastApprovalStatus,
 			&i.TriggerOnCompletion,
+			&i.WorkspaceID,
+			&i.MaxRetries,
+			&i.RetryCount,
+			&i.BackoffStrategy,
+			&i.UiCoordinates,
 		); err != nil {
 			return nil, err
 		}
@@ -341,7 +431,7 @@ func (q *Queries) GetDependentTasksToTrigger(ctx context.Context, dependsOnTaskI
 }
 
 const getDispatchableTaskByID = `-- name: GetDispatchableTaskByID :one
-SELECT id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion FROM tasks
+SELECT id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates FROM tasks
 WHERE id = $1
   AND user_id = $2
   AND status = 'processing'
@@ -376,6 +466,11 @@ func (q *Queries) GetDispatchableTaskByID(ctx context.Context, arg GetDispatchab
 		&i.EncryptedSecrets,
 		&i.LastApprovalStatus,
 		&i.TriggerOnCompletion,
+		&i.WorkspaceID,
+		&i.MaxRetries,
+		&i.RetryCount,
+		&i.BackoffStrategy,
+		&i.UiCoordinates,
 	)
 	return i, err
 }
@@ -419,7 +514,7 @@ func (q *Queries) GetSEOSettings(ctx context.Context) (SeoSetting, error) {
 }
 
 const getTaskByID = `-- name: GetTaskByID :one
-SELECT id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion FROM tasks WHERE id = $1 AND user_id = $2
+SELECT id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates FROM tasks WHERE id = $1 AND user_id = $2
 `
 
 type GetTaskByIDParams struct {
@@ -449,6 +544,46 @@ func (q *Queries) GetTaskByID(ctx context.Context, arg GetTaskByIDParams) (Task,
 		&i.EncryptedSecrets,
 		&i.LastApprovalStatus,
 		&i.TriggerOnCompletion,
+		&i.WorkspaceID,
+		&i.MaxRetries,
+		&i.RetryCount,
+		&i.BackoffStrategy,
+		&i.UiCoordinates,
+	)
+	return i, err
+}
+
+const getTaskByWebhookToken = `-- name: GetTaskByWebhookToken :one
+SELECT t.id, t.user_id, t.name, t.trigger_type, t.trigger_config, t.agent_prompt, t.status, t.locked_by, t.next_run, t.last_run, t.failure_count, t.missed_task_policy, t.depends_on_task_id, t.created_at, t.requires_approval, t.encrypted_secrets, t.last_approval_status, t.trigger_on_completion, t.workspace_id, t.max_retries, t.retry_count, t.backoff_strategy, t.ui_coordinates FROM tasks t JOIN webhook_triggers w ON t.id = w.task_id WHERE w.token = $1
+`
+
+func (q *Queries) GetTaskByWebhookToken(ctx context.Context, token string) (Task, error) {
+	row := q.db.QueryRow(ctx, getTaskByWebhookToken, token)
+	var i Task
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.TriggerType,
+		&i.TriggerConfig,
+		&i.AgentPrompt,
+		&i.Status,
+		&i.LockedBy,
+		&i.NextRun,
+		&i.LastRun,
+		&i.FailureCount,
+		&i.MissedTaskPolicy,
+		&i.DependsOnTaskID,
+		&i.CreatedAt,
+		&i.RequiresApproval,
+		&i.EncryptedSecrets,
+		&i.LastApprovalStatus,
+		&i.TriggerOnCompletion,
+		&i.WorkspaceID,
+		&i.MaxRetries,
+		&i.RetryCount,
+		&i.BackoffStrategy,
+		&i.UiCoordinates,
 	)
 	return i, err
 }
@@ -580,6 +715,37 @@ func (q *Queries) GetUserSecret(ctx context.Context, arg GetUserSecretParams) ([
 	var encrypted_value []byte
 	err := row.Scan(&encrypted_value)
 	return encrypted_value, err
+}
+
+const getUserWorkspaces = `-- name: GetUserWorkspaces :many
+SELECT w.id, w.name, w.owner_id, w.created_at FROM workspaces w 
+LEFT JOIN workspace_members wm ON w.id = wm.workspace_id 
+WHERE w.owner_id = $1 OR wm.user_id = $1
+`
+
+func (q *Queries) GetUserWorkspaces(ctx context.Context, ownerID pgtype.UUID) ([]Workspace, error) {
+	rows, err := q.db.Query(ctx, getUserWorkspaces, ownerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Workspace
+	for rows.Next() {
+		var i Workspace
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.OwnerID,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const incrementTaskFailureCount = `-- name: IncrementTaskFailureCount :one
@@ -714,6 +880,27 @@ func (q *Queries) ListUsers(ctx context.Context) ([]ListUsersRow, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const moveToDLQ = `-- name: MoveToDLQ :one
+INSERT INTO dlq_tasks (task_id, error_message) VALUES ($1, $2) RETURNING id, task_id, error_message, failed_at
+`
+
+type MoveToDLQParams struct {
+	TaskID       pgtype.UUID
+	ErrorMessage pgtype.Text
+}
+
+func (q *Queries) MoveToDLQ(ctx context.Context, arg MoveToDLQParams) (DlqTask, error) {
+	row := q.db.QueryRow(ctx, moveToDLQ, arg.TaskID, arg.ErrorMessage)
+	var i DlqTask
+	err := row.Scan(
+		&i.ID,
+		&i.TaskID,
+		&i.ErrorMessage,
+		&i.FailedAt,
+	)
+	return i, err
 }
 
 const reapStuckTasks = `-- name: ReapStuckTasks :execrows

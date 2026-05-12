@@ -157,3 +157,23 @@ WHERE id = 1;
 UPDATE tasks
 SET agent_prompt = $1, missed_task_policy = $2
 WHERE id = $3 AND user_id = $4;
+
+-- name: CreateWorkspace :one
+INSERT INTO workspaces (name, owner_id) VALUES ($1, $2) RETURNING *;
+
+-- name: GetUserWorkspaces :many
+SELECT w.* FROM workspaces w 
+LEFT JOIN workspace_members wm ON w.id = wm.workspace_id 
+WHERE w.owner_id = $1 OR wm.user_id = $1;
+
+-- name: CreateWebhookTrigger :one
+INSERT INTO webhook_triggers (task_id, token) VALUES ($1, $2) RETURNING *;
+
+-- name: GetTaskByWebhookToken :one
+SELECT t.* FROM tasks t JOIN webhook_triggers w ON t.id = w.task_id WHERE w.token = $1;
+
+-- name: MoveToDLQ :one
+INSERT INTO dlq_tasks (task_id, error_message) VALUES ($1, $2) RETURNING *;
+
+-- name: CreateTemplate :one
+INSERT INTO templates (name, description, config, is_public, workspace_id) VALUES ($1, $2, $3, $4, $5) RETURNING *;

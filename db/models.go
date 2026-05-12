@@ -18,6 +18,13 @@ type AuditLog struct {
 	CreatedAt    pgtype.Timestamptz
 }
 
+type DlqTask struct {
+	ID           pgtype.UUID
+	TaskID       pgtype.UUID
+	ErrorMessage pgtype.Text
+	FailedAt     pgtype.Timestamptz
+}
+
 type OutboundWebhook struct {
 	ID                     pgtype.UUID
 	UserID                 string
@@ -56,6 +63,11 @@ type Task struct {
 	EncryptedSecrets    []byte
 	LastApprovalStatus  pgtype.Text
 	TriggerOnCompletion pgtype.Bool
+	WorkspaceID         pgtype.UUID
+	MaxRetries          pgtype.Int4
+	RetryCount          pgtype.Int4
+	BackoffStrategy     pgtype.Text
+	UiCoordinates       []byte
 }
 
 type TaskLog struct {
@@ -66,6 +78,16 @@ type TaskLog struct {
 	Status        string
 	LlmResponse   pgtype.Text
 	ErrorMessage  pgtype.Text
+}
+
+type Template struct {
+	ID          pgtype.UUID
+	Name        string
+	Description pgtype.Text
+	Config      []byte
+	IsPublic    pgtype.Bool
+	WorkspaceID pgtype.UUID
+	CreatedAt   pgtype.Timestamptz
 }
 
 type User struct {
@@ -102,4 +124,24 @@ type WebhookDelivery struct {
 	Success      bool
 	ResponseBody pgtype.Text
 	CreatedAt    pgtype.Timestamptz
+}
+
+type WebhookTrigger struct {
+	ID        pgtype.UUID
+	TaskID    pgtype.UUID
+	Token     string
+	CreatedAt pgtype.Timestamptz
+}
+
+type Workspace struct {
+	ID        pgtype.UUID
+	Name      string
+	OwnerID   pgtype.UUID
+	CreatedAt pgtype.Timestamptz
+}
+
+type WorkspaceMember struct {
+	WorkspaceID pgtype.UUID
+	UserID      pgtype.UUID
+	Role        pgtype.Text
 }
