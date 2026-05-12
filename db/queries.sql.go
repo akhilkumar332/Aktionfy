@@ -592,6 +592,17 @@ func (q *Queries) ExportUserTasks(ctx context.Context, userID string) ([]Task, e
 	return items, nil
 }
 
+const getActiveWorkerCount = `-- name: GetActiveWorkerCount :one
+SELECT COUNT(*) FROM worker_heartbeats WHERE last_heartbeat > NOW() - INTERVAL '2 minutes'
+`
+
+func (q *Queries) GetActiveWorkerCount(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, getActiveWorkerCount)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const getAuthInfoByEmail = `-- name: GetAuthInfoByEmail :one
 SELECT id, password_hash FROM users WHERE email = $1
 `
@@ -606,6 +617,41 @@ func (q *Queries) GetAuthInfoByEmail(ctx context.Context, email pgtype.Text) (Ge
 	var i GetAuthInfoByEmailRow
 	err := row.Scan(&i.ID, &i.PasswordHash)
 	return i, err
+}
+
+const getDailyExecutionTrends = `-- name: GetDailyExecutionTrends :many
+SELECT 
+    DATE(start_time)::text as date,
+    COUNT(*)::int as count
+FROM execution_traces
+WHERE start_time > NOW() - INTERVAL '7 days'
+GROUP BY DATE(start_time)
+ORDER BY date ASC
+`
+
+type GetDailyExecutionTrendsRow struct {
+	Date  string
+	Count int32
+}
+
+func (q *Queries) GetDailyExecutionTrends(ctx context.Context) ([]GetDailyExecutionTrendsRow, error) {
+	rows, err := q.db.Query(ctx, getDailyExecutionTrends)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetDailyExecutionTrendsRow
+	for rows.Next() {
+		var i GetDailyExecutionTrendsRow
+		if err := rows.Scan(&i.Date, &i.Count); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getDependentTasksToTrigger = `-- name: GetDependentTasksToTrigger :many
@@ -710,6 +756,23 @@ func (q *Queries) GetDispatchableTaskByID(ctx context.Context, arg GetDispatchab
 	return i, err
 }
 
+const getGlobalSuccessRate = `-- name: GetGlobalSuccessRate :one
+SELECT 
+    CASE 
+        WHEN COUNT(*) = 0 THEN 100.0
+        ELSE (COUNT(*) FILTER (WHERE is_error = FALSE)::float / COUNT(*)::float) * 100.0
+    END as success_rate
+FROM execution_traces
+WHERE start_time > NOW() - INTERVAL '24 hours'
+`
+
+func (q *Queries) GetGlobalSuccessRate(ctx context.Context) (interface{}, error) {
+	row := q.db.QueryRow(ctx, getGlobalSuccessRate)
+	var success_rate interface{}
+	err := row.Scan(&success_rate)
+	return success_rate, err
+}
+
 const getLatestTaskLogResponse = `-- name: GetLatestTaskLogResponse :one
 SELECT l.llm_response FROM task_logs l
 INNER JOIN tasks t ON l.task_id = t.id
@@ -728,6 +791,19 @@ func (q *Queries) GetLatestTaskLogResponse(ctx context.Context, arg GetLatestTas
 	var llm_response pgtype.Text
 	err := row.Scan(&llm_response)
 	return llm_response, err
+}
+
+const getP99ExecutionLatency = `-- name: GetP99ExecutionLatency :one
+SELECT COALESCE(percentile_cont(0.99) WITHIN GROUP (ORDER BY duration_ms), 0)::float
+FROM execution_traces
+WHERE start_time > NOW() - INTERVAL '24 hours'
+`
+
+func (q *Queries) GetP99ExecutionLatency(ctx context.Context) (float64, error) {
+	row := q.db.QueryRow(ctx, getP99ExecutionLatency)
+	var column_1 float64
+	err := row.Scan(&column_1)
+	return column_1, err
 }
 
 const getSEOSettings = `-- name: GetSEOSettings :one
@@ -1750,4 +1826,23 @@ func (q *Queries) UpsertUserSecret(ctx context.Context, arg UpsertUserSecretPara
 	var id pgtype.UUID
 	err := row.Scan(&id)
 	return id, err
+}
+
+const upsertWorkerHeartbeat = `-- name: UpsertWorkerHeartbeat :exec
+INSERT INTO worker_heartbeats (worker_id, hostname, last_heartbeat, task_count)
+VALUES ($1, $2, NOW(), $3)
+ON CONFLICT (worker_id) DO UPDATE SET
+    last_heartbeat = EXCLUDED.last_heartbeat,
+    task_count = EXCLUDED.task_count
+`
+
+type UpsertWorkerHeartbeatParams struct {
+	WorkerID  string
+	Hostname  pgtype.Text
+	TaskCount pgtype.Int4
+}
+
+func (q *Queries) UpsertWorkerHeartbeat(ctx context.Context, arg UpsertWorkerHeartbeatParams) error {
+	_, err := q.db.Exec(ctx, upsertWorkerHeartbeat, arg.WorkerID, arg.Hostname, arg.TaskCount)
+	return err
 }

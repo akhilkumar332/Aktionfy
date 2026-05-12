@@ -265,3 +265,36 @@ SELECT * FROM templates WHERE id = $1;
 
 -- name: CreateTemplateSubscription :exec
 INSERT INTO user_template_subscriptions (user_id, template_id) VALUES ($1, $2) ON CONFLICT DO NOTHING;
+
+-- name: UpsertWorkerHeartbeat :exec
+INSERT INTO worker_heartbeats (worker_id, hostname, last_heartbeat, task_count)
+VALUES ($1, $2, NOW(), $3)
+ON CONFLICT (worker_id) DO UPDATE SET
+    last_heartbeat = EXCLUDED.last_heartbeat,
+    task_count = EXCLUDED.task_count;
+
+-- name: GetActiveWorkerCount :one
+SELECT COUNT(*) FROM worker_heartbeats WHERE last_heartbeat > NOW() - INTERVAL '2 minutes';
+
+-- name: GetP99ExecutionLatency :one
+SELECT COALESCE(percentile_cont(0.99) WITHIN GROUP (ORDER BY duration_ms), 0)::float
+FROM execution_traces
+WHERE start_time > NOW() - INTERVAL '24 hours';
+
+-- name: GetDailyExecutionTrends :many
+SELECT 
+    DATE(start_time)::text as date,
+    COUNT(*)::int as count
+FROM execution_traces
+WHERE start_time > NOW() - INTERVAL '7 days'
+GROUP BY DATE(start_time)
+ORDER BY date ASC;
+
+-- name: GetGlobalSuccessRate :one
+SELECT 
+    CASE 
+        WHEN COUNT(*) = 0 THEN 100.0
+        ELSE (COUNT(*) FILTER (WHERE is_error = FALSE)::float / COUNT(*)::float) * 100.0
+    END as success_rate
+FROM execution_traces
+WHERE start_time > NOW() - INTERVAL '24 hours';

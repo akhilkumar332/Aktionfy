@@ -257,3 +257,10 @@ ALTER TABLE tasks ADD COLUMN max_retries INT DEFAULT 0;
 ALTER TABLE tasks ADD COLUMN retry_count INT DEFAULT 0;
 ALTER TABLE tasks ADD COLUMN backoff_strategy VARCHAR(50) DEFAULT 'linear';
 ALTER TABLE tasks ADD COLUMN ui_coordinates JSONB;
+
+CREATE TABLE worker_heartbeats (
+    worker_id TEXT PRIMARY KEY,
+    hostname TEXT,
+    last_heartbeat TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    task_count INT DEFAULT 0 -- currently processing
+);

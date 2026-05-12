@@ -159,6 +159,13 @@ type WebhookTrigger struct {
 	CreatedAt pgtype.Timestamptz
 }
 
+type WorkerHeartbeat struct {
+	WorkerID      string
+	Hostname      pgtype.Text
+	LastHeartbeat pgtype.Timestamptz
+	TaskCount     pgtype.Int4
+}
+
 type Workspace struct {
 	ID        pgtype.UUID
 	Name      string
