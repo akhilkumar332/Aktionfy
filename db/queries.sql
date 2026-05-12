@@ -298,3 +298,38 @@ SELECT
     END as success_rate
 FROM execution_traces
 WHERE start_time > NOW() - INTERVAL '24 hours';
+
+-- name: CreateTaskVersion :one
+INSERT INTO task_versions (
+    task_id, name, trigger_type, trigger_config, agent_prompt, 
+    missed_task_policy, depends_on_task_id, requires_approval, 
+    trigger_on_completion, task_type, native_code
+) 
+SELECT 
+    t.id, t.name, t.trigger_type, t.trigger_config, t.agent_prompt, 
+    t.missed_task_policy, t.depends_on_task_id, t.requires_approval, 
+    t.trigger_on_completion, t.task_type, t.native_code
+FROM tasks t WHERE t.id = $1 AND t.user_id = $2
+RETURNING *;
+
+-- name: ListTaskVersions :many
+SELECT * FROM task_versions WHERE task_id = $1 ORDER BY created_at DESC;
+
+-- name: GetTaskVersionByID :one
+SELECT * FROM task_versions WHERE id = $1 AND task_id = $2;
+
+-- name: RestoreTaskFromVersion :exec
+UPDATE tasks
+SET 
+    name = v.name,
+    trigger_type = v.trigger_type,
+    trigger_config = v.trigger_config,
+    agent_prompt = v.agent_prompt,
+    missed_task_policy = v.missed_task_policy,
+    depends_on_task_id = v.depends_on_task_id,
+    requires_approval = v.requires_approval,
+    trigger_on_completion = v.trigger_on_completion,
+    task_type = v.task_type,
+    native_code = v.native_code
+FROM task_versions v
+WHERE tasks.id = $1 AND tasks.user_id = $2 AND v.id = $3 AND v.task_id = $1;

@@ -97,6 +97,22 @@ type TaskLog struct {
 	ErrorMessage  pgtype.Text
 }
 
+type TaskVersion struct {
+	ID                  pgtype.UUID
+	TaskID              pgtype.UUID
+	Name                string
+	TriggerType         string
+	TriggerConfig       []byte
+	AgentPrompt         string
+	MissedTaskPolicy    string
+	DependsOnTaskID     pgtype.UUID
+	RequiresApproval    bool
+	TriggerOnCompletion bool
+	TaskType            string
+	NativeCode          pgtype.Text
+	CreatedAt           pgtype.Timestamptz
+}
+
 type Template struct {
 	ID          pgtype.UUID
 	Name        string

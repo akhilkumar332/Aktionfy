@@ -320,6 +320,46 @@ func (q *Queries) CreateTaskLog(ctx context.Context, arg CreateTaskLogParams) (p
 	return id, err
 }
 
+const createTaskVersion = `-- name: CreateTaskVersion :one
+INSERT INTO task_versions (
+    task_id, name, trigger_type, trigger_config, agent_prompt, 
+    missed_task_policy, depends_on_task_id, requires_approval, 
+    trigger_on_completion, task_type, native_code
+) 
+SELECT 
+    t.id, t.name, t.trigger_type, t.trigger_config, t.agent_prompt, 
+    t.missed_task_policy, t.depends_on_task_id, t.requires_approval, 
+    t.trigger_on_completion, t.task_type, t.native_code
+FROM tasks t WHERE t.id = $1 AND t.user_id = $2
+RETURNING id, task_id, name, trigger_type, trigger_config, agent_prompt, missed_task_policy, depends_on_task_id, requires_approval, trigger_on_completion, task_type, native_code, created_at
+`
+
+type CreateTaskVersionParams struct {
+	ID     pgtype.UUID
+	UserID string
+}
+
+func (q *Queries) CreateTaskVersion(ctx context.Context, arg CreateTaskVersionParams) (TaskVersion, error) {
+	row := q.db.QueryRow(ctx, createTaskVersion, arg.ID, arg.UserID)
+	var i TaskVersion
+	err := row.Scan(
+		&i.ID,
+		&i.TaskID,
+		&i.Name,
+		&i.TriggerType,
+		&i.TriggerConfig,
+		&i.AgentPrompt,
+		&i.MissedTaskPolicy,
+		&i.DependsOnTaskID,
+		&i.RequiresApproval,
+		&i.TriggerOnCompletion,
+		&i.TaskType,
+		&i.NativeCode,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const createTemplate = `-- name: CreateTemplate :one
 INSERT INTO templates (name, description, config, is_public, workspace_id) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, description, config, is_public, workspace_id, created_at, price_id, is_premium, author_id
 `
@@ -987,6 +1027,36 @@ func (q *Queries) GetTaskLogs(ctx context.Context) ([]GetTaskLogsRow, error) {
 	return items, nil
 }
 
+const getTaskVersionByID = `-- name: GetTaskVersionByID :one
+SELECT id, task_id, name, trigger_type, trigger_config, agent_prompt, missed_task_policy, depends_on_task_id, requires_approval, trigger_on_completion, task_type, native_code, created_at FROM task_versions WHERE id = $1 AND task_id = $2
+`
+
+type GetTaskVersionByIDParams struct {
+	ID     pgtype.UUID
+	TaskID pgtype.UUID
+}
+
+func (q *Queries) GetTaskVersionByID(ctx context.Context, arg GetTaskVersionByIDParams) (TaskVersion, error) {
+	row := q.db.QueryRow(ctx, getTaskVersionByID, arg.ID, arg.TaskID)
+	var i TaskVersion
+	err := row.Scan(
+		&i.ID,
+		&i.TaskID,
+		&i.Name,
+		&i.TriggerType,
+		&i.TriggerConfig,
+		&i.AgentPrompt,
+		&i.MissedTaskPolicy,
+		&i.DependsOnTaskID,
+		&i.RequiresApproval,
+		&i.TriggerOnCompletion,
+		&i.TaskType,
+		&i.NativeCode,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getTemplateByIDRaw = `-- name: GetTemplateByIDRaw :one
 SELECT id, name, description, config, is_public, workspace_id, created_at, price_id, is_premium, author_id FROM templates WHERE id = $1
 `
@@ -1389,6 +1459,44 @@ func (q *Queries) ListTaskTraces(ctx context.Context, taskID pgtype.UUID) ([]Exe
 	return items, nil
 }
 
+const listTaskVersions = `-- name: ListTaskVersions :many
+SELECT id, task_id, name, trigger_type, trigger_config, agent_prompt, missed_task_policy, depends_on_task_id, requires_approval, trigger_on_completion, task_type, native_code, created_at FROM task_versions WHERE task_id = $1 ORDER BY created_at DESC
+`
+
+func (q *Queries) ListTaskVersions(ctx context.Context, taskID pgtype.UUID) ([]TaskVersion, error) {
+	rows, err := q.db.Query(ctx, listTaskVersions, taskID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TaskVersion
+	for rows.Next() {
+		var i TaskVersion
+		if err := rows.Scan(
+			&i.ID,
+			&i.TaskID,
+			&i.Name,
+			&i.TriggerType,
+			&i.TriggerConfig,
+			&i.AgentPrompt,
+			&i.MissedTaskPolicy,
+			&i.DependsOnTaskID,
+			&i.RequiresApproval,
+			&i.TriggerOnCompletion,
+			&i.TaskType,
+			&i.NativeCode,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listUserSecrets = `-- name: ListUserSecrets :many
 SELECT id, name, created_at FROM user_secrets WHERE user_id = $1 ORDER BY name ASC
 `
@@ -1590,6 +1698,34 @@ type ResetTaskFailureCountParams struct {
 
 func (q *Queries) ResetTaskFailureCount(ctx context.Context, arg ResetTaskFailureCountParams) error {
 	_, err := q.db.Exec(ctx, resetTaskFailureCount, arg.Status, arg.ID, arg.UserID)
+	return err
+}
+
+const restoreTaskFromVersion = `-- name: RestoreTaskFromVersion :exec
+UPDATE tasks
+SET 
+    name = v.name,
+    trigger_type = v.trigger_type,
+    trigger_config = v.trigger_config,
+    agent_prompt = v.agent_prompt,
+    missed_task_policy = v.missed_task_policy,
+    depends_on_task_id = v.depends_on_task_id,
+    requires_approval = v.requires_approval,
+    trigger_on_completion = v.trigger_on_completion,
+    task_type = v.task_type,
+    native_code = v.native_code
+FROM task_versions v
+WHERE tasks.id = $1 AND tasks.user_id = $2 AND v.id = $3 AND v.task_id = $1
+`
+
+type RestoreTaskFromVersionParams struct {
+	ID     pgtype.UUID
+	UserID string
+	ID_2   pgtype.UUID
+}
+
+func (q *Queries) RestoreTaskFromVersion(ctx context.Context, arg RestoreTaskFromVersionParams) error {
+	_, err := q.db.Exec(ctx, restoreTaskFromVersion, arg.ID, arg.UserID, arg.ID_2)
 	return err
 }
 
