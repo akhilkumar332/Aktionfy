@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -646,6 +647,29 @@ func runReaper(ctx context.Context) {
 				if rows > 0 {
 					log.Printf("Reaper: recovered %d stuck tasks", rows)
 				}
+			}
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+func runWorkerHeartbeat(ctx context.Context) {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	hostname, _ := os.Hostname()
+
+	for {
+		select {
+		case <-ticker.C:
+			err := queries.UpsertWorkerHeartbeat(ctx, db.UpsertWorkerHeartbeatParams{
+				WorkerID:  workerID,
+				Hostname:  pgtype.Text{String: hostname, Valid: true},
+				TaskCount: pgtype.Int4{Int32: 0, Valid: true}, // In future, track active go-routines
+			})
+			if err != nil {
+				log.Printf("Heartbeat error: %v", err)
 			}
 		case <-ctx.Done():
 			return

@@ -261,6 +261,7 @@ func main() {
 	go listenForTaskClaims(ctx, dbUrl)
 	go runScheduler(ctx)
 	go runReaper(ctx)
+	go runWorkerHeartbeat(ctx)
 
 	// Bootstrap Admin
 	adminEmail := os.Getenv("ADMIN_EMAIL")
