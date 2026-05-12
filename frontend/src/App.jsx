@@ -10,6 +10,7 @@ import Webhooks from './pages/Webhooks';
 import Workspaces from './pages/Workspaces';
 import Templates from './pages/Templates';
 import Monitor from './pages/Monitor';
+import WorkflowCanvas from './pages/WorkflowCanvas';
 import AdminUsers from './pages/AdminUsers';
 import AdminSEO from './pages/AdminSEO';
 import { 
@@ -114,6 +115,15 @@ function App() {
             element={
               <ProtectedRoute roles={['user', 'staff', 'admin']}>
                 <Templates />
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/canvas" 
+            element={
+              <ProtectedRoute roles={['user', 'staff', 'admin']}>
+                <WorkflowCanvas />
               </ProtectedRoute>
             } 
           />
