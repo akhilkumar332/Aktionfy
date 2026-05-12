@@ -239,9 +239,11 @@ func main() {
 	api.POST("/billing/create-checkout-session", apiCreateCheckoutSession)
 	e.POST("/webhooks/stripe", apiStripeWebhook)
 
-	// Inbound Webhooks
+	// Inbound Webhooks & V1 API
 	v1 := e.Group("/api/v1")
 	v1.POST("/webhooks/inbound/:token", handleInboundWebhook)
+	v1.GET("/workspaces", handleGetWorkspaces, EchoSessionMiddleware)
+	v1.POST("/templates", handleCreateTemplate, EchoSessionMiddleware)
 
 	// Catch-all handler for React SPA
 	e.GET("/*", func(c echo.Context) error {

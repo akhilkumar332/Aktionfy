@@ -1,0 +1,45 @@
+package main
+
+import (
+	"encoding/json"
+	"net/http"
+	"schedule-mcp/db"
+
+	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/labstack/echo/v4"
+)
+
+type createTemplateRequest struct {
+	Name        string          `json:"name"`
+	Description string          `json:"description"`
+	Config      json.RawMessage `json:"config"`
+	IsPublic    bool            `json:"is_public"`
+	WorkspaceID string          `json:"workspace_id,omitempty"`
+}
+
+func handleCreateTemplate(c echo.Context) error {
+	var req createTemplateRequest
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request payload"})
+	}
+
+	var workspaceID pgtype.UUID
+	if req.WorkspaceID != "" {
+		if err := parseUUID(req.WorkspaceID, &workspaceID); err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid workspace_id format"})
+		}
+	}
+
+	template, err := queries.CreateTemplate(c.Request().Context(), db.CreateTemplateParams{
+		Name:        req.Name,
+		Description: pgtype.Text{String: req.Description, Valid: req.Description != ""},
+		Config:      req.Config,
+		IsPublic:    pgtype.Bool{Bool: req.IsPublic, Valid: true},
+		WorkspaceID: workspaceID,
+	})
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to create template"})
+	}
+
+	return c.JSON(http.StatusCreated, template)
+}
