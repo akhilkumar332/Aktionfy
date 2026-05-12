@@ -65,19 +65,7 @@ func LoginUser(ctx context.Context, email, password string) (string, error) {
 		return "", fmt.Errorf("failed to create session: %w", err)
 	}
 
-	// sessionID is a UUID (pgtype.UUID)
-	var idStr [36]byte
-	hex.Encode(idStr[:8], sessionID.Bytes[:4])
-	idStr[8] = '-'
-	hex.Encode(idStr[9:13], sessionID.Bytes[4:6])
-	idStr[13] = '-'
-	hex.Encode(idStr[14:18], sessionID.Bytes[6:8])
-	idStr[18] = '-'
-	hex.Encode(idStr[19:23], sessionID.Bytes[8:10])
-	idStr[23] = '-'
-	hex.Encode(idStr[24:], sessionID.Bytes[10:])
-
-	return string(idStr[:]), nil
+	return formatUUID(sessionID), nil
 }
 
 // RotateAPIKey generates a new API key for the user and updates the DB

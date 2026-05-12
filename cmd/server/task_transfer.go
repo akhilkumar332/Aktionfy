@@ -27,39 +27,29 @@ type ImportTasksRequest struct {
 }
 
 func exportUserTasks(ctx context.Context, userID string) ([]TransferTask, error) {
-	rows, err := dbPool.Query(ctx, `
-SELECT id::text, name, trigger_type, trigger_config::text, agent_prompt, missed_task_policy, requires_approval,
-       COALESCE(depends_on_task_id::text, ''), trigger_on_completion
-FROM tasks
-WHERE user_id = $1
-ORDER BY created_at ASC
-`, userID)
+	rows, err := queries.ExportUserTasks(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	var tasks []TransferTask
-	for rows.Next() {
-		var task TransferTask
-		var triggerConfigText string
-		if err := rows.Scan(
-			&task.LegacyID,
-			&task.Name,
-			&task.TriggerType,
-			&triggerConfigText,
-			&task.AgentPrompt,
-			&task.MissedTaskPolicy,
-			&task.RequiresApproval,
-			&task.DependsOnLegacyID,
-			&task.TriggerOnCompletion,
-		); err != nil {
-			return nil, err
+	for _, row := range rows {
+		task := TransferTask{
+			LegacyID:            formatUUID(row.ID),
+			Name:                row.Name,
+			TriggerType:         row.TriggerType.String,
+			TriggerConfig:       json.RawMessage(row.TriggerConfig),
+			AgentPrompt:         row.AgentPrompt,
+			MissedTaskPolicy:    row.MissedTaskPolicy.String,
+			RequiresApproval:    row.RequiresApproval.Bool,
+			TriggerOnCompletion: row.TriggerOnCompletion.Bool,
 		}
-		task.TriggerConfig = json.RawMessage(triggerConfigText)
+		if row.DependsOnTaskID.Valid {
+			task.DependsOnLegacyID = formatUUID(row.DependsOnTaskID)
+		}
 		tasks = append(tasks, task)
 	}
-	return tasks, rows.Err()
+	return tasks, nil
 }
 
 func importUserTasks(ctx context.Context, userID string, tasks []TransferTask) (map[string]string, error) {
@@ -129,11 +119,14 @@ func importUserTasks(ctx context.Context, userID string, tasks []TransferTask) (
 		if !ok {
 			return nil, fmt.Errorf("dependency %q for task %q was not included in the import bundle", task.DependsOnLegacyID, task.LegacyID)
 		}
-		if _, err := dbPool.Exec(ctx, `
-UPDATE tasks
-SET depends_on_task_id = $1, trigger_on_completion = $2
-WHERE id = $3 AND user_id = $4
-`, parentID, task.TriggerOnCompletion, childID, userID); err != nil {
+		
+		err := queries.LinkTaskDependency(ctx, db.LinkTaskDependencyParams{
+			DependsOnTaskID:     pgtype.UUID{Bytes: parentID.Bytes, Valid: true},
+			TriggerOnCompletion: pgtype.Bool{Bool: task.TriggerOnCompletion, Valid: true},
+			ID:                  childID,
+			UserID:              userID,
+		})
+		if err != nil {
 			return nil, fmt.Errorf("failed to link imported dependency for %q: %w", task.LegacyID, err)
 		}
 	}

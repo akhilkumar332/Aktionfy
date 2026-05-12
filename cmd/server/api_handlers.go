@@ -495,29 +495,23 @@ func apiListWebhooksHandler(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
 	}
 
-	rows, err := dbPool.Query(c.Request().Context(), `
-SELECT id::text, endpoint_url, event_types::text, is_active, created_at
-FROM outbound_webhooks
-WHERE user_id = $1
-ORDER BY created_at DESC
-`, user.ID)
+	rows, err := queries.ListOutboundWebhooks(c.Request().Context(), user.ID)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch webhooks"})
 	}
-	defer rows.Close()
 
 	var hooks []WebhookSubscription
-	for rows.Next() {
-		var hook WebhookSubscription
-		var eventTypesJSON string
-		if err := rows.Scan(&hook.ID, &hook.EndpointURL, &eventTypesJSON, &hook.IsActive, &hook.CreatedAt); err != nil {
-			return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to scan webhooks"})
-		}
-		_ = json.Unmarshal([]byte(eventTypesJSON), &hook.EventTypes)
-		hooks = append(hooks, hook)
-	}
-	if err := rows.Err(); err != nil {
-		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to read webhooks"})
+	for _, row := range rows {
+		var eventTypes []string
+		_ = json.Unmarshal(row.EventTypes, &eventTypes)
+
+		hooks = append(hooks, WebhookSubscription{
+			ID:          formatUUID(row.ID),
+			EndpointURL: row.EndpointUrl,
+			EventTypes:  eventTypes,
+			IsActive:    row.IsActive,
+			CreatedAt:   row.CreatedAt.Time,
+		})
 	}
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: hooks})
@@ -553,15 +547,18 @@ func apiCreateWebhookHandler(c echo.Context) error {
 	}
 	eventTypesJSON, _ := json.Marshal(input.EventTypes)
 
-	var id string
-	var createdAt time.Time
-	if err := dbPool.QueryRow(c.Request().Context(), `
-INSERT INTO outbound_webhooks (user_id, endpoint_url, event_types, encrypted_signing_secret)
-VALUES ($1, $2, $3::jsonb, $4)
-RETURNING id::text, created_at
-`, user.ID, input.EndpointURL, string(eventTypesJSON), encryptedSecret).Scan(&id, &createdAt); err != nil {
+	row, err := queries.CreateOutboundWebhook(c.Request().Context(), db.CreateOutboundWebhookParams{
+		UserID:                  user.ID,
+		EndpointUrl:             input.EndpointURL,
+		EventTypes:              eventTypesJSON,
+		EncryptedSigningSecret: encryptedSecret,
+	})
+	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to create webhook"})
 	}
+
+	id := formatUUID(row.ID)
+	createdAt := row.CreatedAt.Time
 
 	writeAuditLog(c.Request().Context(), AuditEvent{
 		UserID:       user.ID,
@@ -589,23 +586,25 @@ func apiDeleteWebhookHandler(c echo.Context) error {
 	if user == nil {
 		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
 	}
-	id := c.Param("id")
-	tag, err := dbPool.Exec(c.Request().Context(), `
-DELETE FROM outbound_webhooks
-WHERE id = $1::uuid AND user_id = $2
-`, id, user.ID)
+	idStr := c.Param("id")
+	var id pgtype.UUID
+	if err := parseUUID(idStr, &id); err != nil {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid webhook ID"})
+	}
+
+	err := queries.DeleteOutboundWebhook(c.Request().Context(), db.DeleteOutboundWebhookParams{
+		ID:     id,
+		UserID: user.ID,
+	})
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to delete webhook"})
-	}
-	if tag.RowsAffected() == 0 {
-		return c.JSON(http.StatusNotFound, APIResponse{Success: false, Error: "Webhook not found"})
 	}
 
 	writeAuditLog(c.Request().Context(), AuditEvent{
 		UserID:       user.ID,
 		Action:       "webhook.delete",
 		ResourceType: "webhook",
-		ResourceID:   id,
+		ResourceID:   idStr,
 	})
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Webhook deleted"})
@@ -616,33 +615,42 @@ func apiWebhookDeliveriesHandler(c echo.Context) error {
 	if user == nil {
 		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
 	}
-	id := c.Param("id")
+	idStr := c.Param("id")
+	var id pgtype.UUID
+	if err := parseUUID(idStr, &id); err != nil {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid webhook ID"})
+	}
 
-	rows, err := dbPool.Query(c.Request().Context(), `
-SELECT wd.id::text, wd.webhook_id::text, wd.event_type, wd.status_code, wd.success, wd.response_body, wd.created_at
-FROM webhook_deliveries wd
-INNER JOIN outbound_webhooks ow ON wd.webhook_id = ow.id
-WHERE wd.webhook_id = $1::uuid AND ow.user_id = $2
-ORDER BY wd.created_at DESC
-LIMIT 100
-`, id, user.ID)
+	rows, err := queries.ListWebhookDeliveries(c.Request().Context(), db.ListWebhookDeliveriesParams{
+		WebhookID: id,
+		UserID:    user.ID,
+	})
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch webhook deliveries"})
 	}
-	defer rows.Close()
 
 	var deliveries []WebhookDelivery
-	for rows.Next() {
-		var d WebhookDelivery
-		var body *string
-		if err := rows.Scan(&d.ID, &d.WebhookID, &d.EventType, &d.StatusCode, &d.Success, &body, &d.CreatedAt); err != nil {
-			return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to scan webhook deliveries"})
+	for _, row := range rows {
+		var statusCode *int32
+		if row.StatusCode.Valid {
+			sc := row.StatusCode.Int32
+			statusCode = &sc
 		}
-		d.ResponseBody = body
-		deliveries = append(deliveries, d)
-	}
-	if err := rows.Err(); err != nil {
-		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to read webhook deliveries"})
+		var body *string
+		if row.ResponseBody.Valid {
+			b := row.ResponseBody.String
+			body = &b
+		}
+
+		deliveries = append(deliveries, WebhookDelivery{
+			ID:           formatUUID(row.ID),
+			WebhookID:    formatUUID(row.WebhookID),
+			EventType:    row.EventType,
+			StatusCode:   statusCode,
+			Success:      row.Success,
+			ResponseBody: body,
+			CreatedAt:    row.CreatedAt.Time,
+		})
 	}
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: deliveries})
@@ -733,68 +741,46 @@ func apiAdminAuditLogsHandler(c echo.Context) error {
 		limit = parsed
 	}
 
-	rows, err := dbPool.Query(c.Request().Context(), `
-SELECT id::text, user_id, action, resource_type, resource_id, metadata::text, created_at
-FROM audit_logs
-ORDER BY created_at DESC
-LIMIT $1
-`, limit)
+	rows, err := queries.ListAuditLogs(c.Request().Context(), int32(limit))
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch audit logs"})
 	}
-	defer rows.Close()
 
 	var logs []AuditLogEntry
-	for rows.Next() {
+	for _, row := range rows {
 		var entry AuditLogEntry
-		var userID *string
-		var resourceID *string
-		var metadataText string
-		var createdAt time.Time
-		if err := rows.Scan(&entry.ID, &userID, &entry.Action, &entry.ResourceType, &resourceID, &metadataText, &createdAt); err != nil {
-			return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to scan audit logs"})
+		entry.ID = formatUUID(row.ID)
+		if row.UserID.Valid {
+			uid := row.UserID.String
+			entry.UserID = &uid
 		}
-		entry.UserID = userID
-		entry.ResourceID = resourceID
-		entry.CreatedAt = createdAt.UTC().Format(time.RFC3339)
+		entry.Action = row.Action
+		entry.ResourceType = row.ResourceType
+		if row.ResourceID.Valid {
+			rid := row.ResourceID.String
+			entry.ResourceID = &rid
+		}
+		entry.CreatedAt = row.CreatedAt.Time.UTC().Format(time.RFC3339)
 		entry.Metadata = map[string]interface{}{}
-		_ = json.Unmarshal([]byte(metadataText), &entry.Metadata)
+		_ = json.Unmarshal(row.Metadata, &entry.Metadata)
 		logs = append(logs, entry)
-	}
-	if err := rows.Err(); err != nil {
-		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to read audit logs"})
 	}
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: logs})
 }
 
 func apiAdminUsageHandler(c echo.Context) error {
-	var userCount, taskCount, successCount, failureCount, missedCount, auditCount int64
-	if err := dbPool.QueryRow(c.Request().Context(), "SELECT COUNT(*) FROM users").Scan(&userCount); err != nil {
-		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to count users"})
-	}
-	if err := dbPool.QueryRow(c.Request().Context(), "SELECT COUNT(*) FROM tasks").Scan(&taskCount); err != nil {
-		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to count tasks"})
-	}
-	if err := dbPool.QueryRow(c.Request().Context(), "SELECT COUNT(*) FROM task_logs WHERE status = 'success'").Scan(&successCount); err != nil {
-		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to count success logs"})
-	}
-	if err := dbPool.QueryRow(c.Request().Context(), "SELECT COUNT(*) FROM task_logs WHERE status = 'failure'").Scan(&failureCount); err != nil {
-		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to count failure logs"})
-	}
-	if err := dbPool.QueryRow(c.Request().Context(), "SELECT COUNT(*) FROM task_logs WHERE status = 'missed'").Scan(&missedCount); err != nil {
-		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to count missed logs"})
-	}
-	if err := dbPool.QueryRow(c.Request().Context(), "SELECT COUNT(*) FROM audit_logs").Scan(&auditCount); err != nil {
-		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to count audit logs"})
+	metrics, err := queries.GetSystemUsageMetrics(c.Request().Context())
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch metrics"})
 	}
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: map[string]int64{
-		"users":            userCount,
-		"tasks":            taskCount,
-		"task_successes":   successCount,
-		"task_failures":    failureCount,
-		"task_missed":      missedCount,
-		"audit_log_events": auditCount,
+		"users":            metrics.UserCount,
+		"tasks":            metrics.TaskCount,
+		"task_successes":   metrics.SuccessCount,
+		"task_failures":    metrics.FailureCount,
+		"task_missed":      metrics.MissedCount,
+		"audit_log_events": metrics.AuditCount,
 	}})
 }

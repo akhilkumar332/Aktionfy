@@ -57,6 +57,21 @@ INSERT INTO task_logs (task_id, user_id, status, error_message, llm_response)
 VALUES ($1, $2, $3, $4, $5)
 RETURNING id;
 
+-- name: CreateAuditLog :exec
+INSERT INTO audit_logs (user_id, action, resource_type, resource_id, metadata)
+VALUES ($1, $2, $3, $4, $5);
+
+-- name: SetUserRoleByEmail :exec
+UPDATE users SET role = $1 WHERE email = $2;
+
+-- name: ExportUserTasks :many
+SELECT * FROM tasks WHERE user_id = $1;
+
+-- name: LinkTaskDependency :exec
+UPDATE tasks
+SET depends_on_task_id = $1, trigger_on_completion = $2
+WHERE id = $3 AND user_id = $4;
+
 -- name: UpdateTaskNextRun :exec
 UPDATE tasks SET status = $1, locked_by = NULL, next_run = $2 WHERE id = $3;
 
@@ -76,7 +91,10 @@ RETURNING failure_count;
 UPDATE tasks SET status = $1, locked_by = NULL WHERE id = $2 AND user_id = $3;
 
 -- name: UpdateTaskStatusAndFailureCount :exec
-UPDATE tasks SET status = $1, locked_by = NULL, failure_count = $2 WHERE id = $3 AND user_id = $4;
+UPDATE tasks SET status = $1, locked_by = NULL, failure_count = $2, retry_count = $3 WHERE id = $4 AND user_id = $5;
+
+-- name: UpdateTaskRetryCount :exec
+UPDATE tasks SET retry_count = $1 WHERE id = $2 AND user_id = $3;
 
 -- name: ClaimDueTasks :many
 SELECT * FROM fn_claim_due_tasks($1, $2);
@@ -177,6 +195,46 @@ INSERT INTO dlq_tasks (task_id, error_message) VALUES ($1, $2) RETURNING *;
 
 -- name: CreateTemplate :one
 INSERT INTO templates (name, description, config, is_public, workspace_id) VALUES ($1, $2, $3, $4, $5) RETURNING *;
+
+-- name: ListOutboundWebhooks :many
+SELECT id, endpoint_url, event_types, is_active, created_at
+FROM outbound_webhooks
+WHERE user_id = $1;
+
+-- name: CreateOutboundWebhook :one
+INSERT INTO outbound_webhooks (user_id, endpoint_url, event_types, encrypted_signing_secret)
+VALUES ($1, $2, $3, $4)
+RETURNING id, created_at;
+
+-- name: DeleteOutboundWebhook :exec
+DELETE FROM outbound_webhooks WHERE id = $1 AND user_id = $2;
+
+-- name: ListActiveOutboundWebhooks :many
+SELECT id, endpoint_url, event_types, encrypted_signing_secret
+FROM outbound_webhooks
+WHERE user_id = $1 AND is_active = TRUE;
+
+-- name: CreateWebhookDelivery :exec
+INSERT INTO webhook_deliveries (webhook_id, user_id, event_type, status_code, success, response_body)
+VALUES ($1, $2, $3, $4, $5, $6);
+
+-- name: ListWebhookDeliveries :many
+SELECT * FROM webhook_deliveries WHERE webhook_id = $1 AND user_id = $2 ORDER BY created_at DESC LIMIT 50;
+
+-- name: ListAuditLogs :many
+SELECT id, user_id, action, resource_type, resource_id, metadata, created_at
+FROM audit_logs
+ORDER BY created_at DESC
+LIMIT $1;
+
+-- name: GetSystemUsageMetrics :one
+SELECT 
+    (SELECT COUNT(*) FROM users) as user_count,
+    (SELECT COUNT(*) FROM tasks) as task_count,
+    (SELECT COUNT(*) FROM task_logs WHERE status = 'success') as success_count,
+    (SELECT COUNT(*) FROM task_logs WHERE status = 'failure') as failure_count,
+    (SELECT COUNT(*) FROM task_logs WHERE status = 'missed') as missed_count,
+    (SELECT COUNT(*) FROM audit_logs) as audit_count;
 
 -- name: CheckWorkspaceAccess :one
 SELECT EXISTS (

@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+
+	"github.com/jackc/pgx/v5/pgtype"
+	"schedule-mcp/db"
 )
 
 type AuditEvent struct {
@@ -38,10 +41,13 @@ func writeAuditLog(ctx context.Context, event AuditEvent) {
 		return
 	}
 
-	_, err = dbPool.Exec(ctx, `
-INSERT INTO audit_logs (user_id, action, resource_type, resource_id, metadata)
-VALUES (NULLIF($1, ''), $2, $3, NULLIF($4, ''), $5::jsonb)
-`, event.UserID, event.Action, event.ResourceType, event.ResourceID, string(payload))
+	err = queries.CreateAuditLog(ctx, db.CreateAuditLogParams{
+		UserID:       pgtype.Text{String: event.UserID, Valid: event.UserID != ""},
+		Action:       event.Action,
+		ResourceType: event.ResourceType,
+		ResourceID:   pgtype.Text{String: event.ResourceID, Valid: event.ResourceID != ""},
+		Metadata:     payload,
+	})
 	if err != nil {
 		log.Printf("Failed to write audit log for action %s: %v", event.Action, err)
 	}

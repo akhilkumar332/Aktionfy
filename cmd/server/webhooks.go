@@ -13,6 +13,9 @@ import (
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
+	"schedule-mcp/db"
 )
 
 type WebhookSubscription struct {
@@ -45,42 +48,34 @@ func handleSystemEvent(ctx context.Context, event PubSubEvent) {
 }
 
 func dispatchOutboundWebhooks(ctx context.Context, event PubSubEvent) {
-	if event.UserID == "" || dbPool == nil {
+	if event.UserID == "" || queries == nil {
 		return
 	}
 
-	rows, err := dbPool.Query(ctx, `
-SELECT id::text, endpoint_url, event_types::text, encrypted_signing_secret
-FROM outbound_webhooks
-WHERE user_id = $1 AND is_active = TRUE
-`, event.UserID)
+	rows, err := queries.ListActiveOutboundWebhooks(ctx, event.UserID)
 	if err != nil {
 		log.Printf("Failed to query outbound webhooks for user %s: %v", event.UserID, err)
 		return
 	}
-	defer rows.Close()
 
-	for rows.Next() {
-		var webhookID, endpointURL, eventTypesJSON string
-		var encryptedSecret []byte
-		if err := rows.Scan(&webhookID, &endpointURL, &eventTypesJSON, &encryptedSecret); err != nil {
-			log.Printf("Failed to scan outbound webhook row: %v", err)
-			continue
-		}
+	for _, row := range rows {
 		var eventTypes []string
-		if err := json.Unmarshal([]byte(eventTypesJSON), &eventTypes); err != nil {
-			log.Printf("Failed to decode webhook event types for %s: %v", webhookID, err)
+		if err := json.Unmarshal(row.EventTypes, &eventTypes); err != nil {
+			log.Printf("Failed to decode webhook event types for %s: %v", formatUUID(row.ID), err)
 			continue
 		}
 		if !webhookInterestedInEvent(eventTypes, event.EventType) {
 			continue
 		}
 
-		secret, err := Decrypt(encryptedSecret)
+		secret, err := Decrypt(row.EncryptedSigningSecret)
 		if err != nil {
-			log.Printf("Failed to decrypt webhook signing secret for %s: %v", webhookID, err)
+			log.Printf("Failed to decrypt webhook signing secret for %s: %v", formatUUID(row.ID), err)
 			continue
 		}
+
+		webhookID := formatUUID(row.ID)
+		endpointURL := row.EndpointUrl
 
 		workerWG.Add(1)
 		go func(webhookID, endpointURL string, secret []byte) {
@@ -154,13 +149,28 @@ func generateSigningSecret() (string, error) {
 }
 
 func recordWebhookDelivery(ctx context.Context, webhookID, userID, eventType string, statusCode *int32, success bool, responseBody string) {
-	if dbPool == nil {
+	if queries == nil {
 		return
 	}
-	_, err := dbPool.Exec(ctx, `
-INSERT INTO webhook_deliveries (webhook_id, user_id, event_type, status_code, success, response_body)
-VALUES ($1::uuid, $2, $3, $4, $5, $6)
-`, webhookID, userID, eventType, statusCode, success, responseBody)
+	var wid pgtype.UUID
+	if err := parseUUID(webhookID, &wid); err != nil {
+		log.Printf("Failed to parse webhook ID for delivery recording: %v", err)
+		return
+	}
+
+	var sc pgtype.Int4
+	if statusCode != nil {
+		sc = pgtype.Int4{Int32: *statusCode, Valid: true}
+	}
+
+	err := queries.CreateWebhookDelivery(ctx, db.CreateWebhookDeliveryParams{
+		WebhookID:    wid,
+		UserID:       userID,
+		EventType:    eventType,
+		StatusCode:   sc,
+		Success:      success,
+		ResponseBody: pgtype.Text{String: responseBody, Valid: responseBody != ""},
+	})
 	if err != nil {
 		log.Printf("Failed to record webhook delivery for %s: %v", webhookID, err)
 	}

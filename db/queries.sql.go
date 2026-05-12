@@ -126,6 +126,60 @@ func (q *Queries) CountUserTasks(ctx context.Context, userID string) (int64, err
 	return count, err
 }
 
+const createAuditLog = `-- name: CreateAuditLog :exec
+INSERT INTO audit_logs (user_id, action, resource_type, resource_id, metadata)
+VALUES ($1, $2, $3, $4, $5)
+`
+
+type CreateAuditLogParams struct {
+	UserID       pgtype.Text
+	Action       string
+	ResourceType string
+	ResourceID   pgtype.Text
+	Metadata     []byte
+}
+
+func (q *Queries) CreateAuditLog(ctx context.Context, arg CreateAuditLogParams) error {
+	_, err := q.db.Exec(ctx, createAuditLog,
+		arg.UserID,
+		arg.Action,
+		arg.ResourceType,
+		arg.ResourceID,
+		arg.Metadata,
+	)
+	return err
+}
+
+const createOutboundWebhook = `-- name: CreateOutboundWebhook :one
+INSERT INTO outbound_webhooks (user_id, endpoint_url, event_types, encrypted_signing_secret)
+VALUES ($1, $2, $3, $4)
+RETURNING id, created_at
+`
+
+type CreateOutboundWebhookParams struct {
+	UserID                 string
+	EndpointUrl            string
+	EventTypes             []byte
+	EncryptedSigningSecret []byte
+}
+
+type CreateOutboundWebhookRow struct {
+	ID        pgtype.UUID
+	CreatedAt pgtype.Timestamptz
+}
+
+func (q *Queries) CreateOutboundWebhook(ctx context.Context, arg CreateOutboundWebhookParams) (CreateOutboundWebhookRow, error) {
+	row := q.db.QueryRow(ctx, createOutboundWebhook,
+		arg.UserID,
+		arg.EndpointUrl,
+		arg.EventTypes,
+		arg.EncryptedSigningSecret,
+	)
+	var i CreateOutboundWebhookRow
+	err := row.Scan(&i.ID, &i.CreatedAt)
+	return i, err
+}
+
 const createTask = `-- name: CreateTask :one
 INSERT INTO tasks (user_id, name, trigger_type, trigger_config, agent_prompt, missed_task_policy, depends_on_task_id, next_run, requires_approval, encrypted_secrets, trigger_on_completion) 
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) 
@@ -302,6 +356,32 @@ func (q *Queries) CreateWebSession(ctx context.Context, arg CreateWebSessionPara
 	return id, err
 }
 
+const createWebhookDelivery = `-- name: CreateWebhookDelivery :exec
+INSERT INTO webhook_deliveries (webhook_id, user_id, event_type, status_code, success, response_body)
+VALUES ($1, $2, $3, $4, $5, $6)
+`
+
+type CreateWebhookDeliveryParams struct {
+	WebhookID    pgtype.UUID
+	UserID       string
+	EventType    string
+	StatusCode   pgtype.Int4
+	Success      bool
+	ResponseBody pgtype.Text
+}
+
+func (q *Queries) CreateWebhookDelivery(ctx context.Context, arg CreateWebhookDeliveryParams) error {
+	_, err := q.db.Exec(ctx, createWebhookDelivery,
+		arg.WebhookID,
+		arg.UserID,
+		arg.EventType,
+		arg.StatusCode,
+		arg.Success,
+		arg.ResponseBody,
+	)
+	return err
+}
+
 const createWebhookTrigger = `-- name: CreateWebhookTrigger :one
 INSERT INTO webhook_triggers (task_id, token) VALUES ($1, $2) RETURNING id, task_id, token, created_at
 `
@@ -344,6 +424,20 @@ func (q *Queries) CreateWorkspace(ctx context.Context, arg CreateWorkspaceParams
 	return i, err
 }
 
+const deleteOutboundWebhook = `-- name: DeleteOutboundWebhook :exec
+DELETE FROM outbound_webhooks WHERE id = $1 AND user_id = $2
+`
+
+type DeleteOutboundWebhookParams struct {
+	ID     pgtype.UUID
+	UserID string
+}
+
+func (q *Queries) DeleteOutboundWebhook(ctx context.Context, arg DeleteOutboundWebhookParams) error {
+	_, err := q.db.Exec(ctx, deleteOutboundWebhook, arg.ID, arg.UserID)
+	return err
+}
+
 const deleteTask = `-- name: DeleteTask :exec
 DELETE FROM tasks WHERE id = $1 AND user_id = $2
 `
@@ -379,6 +473,54 @@ DELETE FROM web_sessions WHERE id = $1
 func (q *Queries) DeleteWebSession(ctx context.Context, id pgtype.UUID) error {
 	_, err := q.db.Exec(ctx, deleteWebSession, id)
 	return err
+}
+
+const exportUserTasks = `-- name: ExportUserTasks :many
+SELECT id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates FROM tasks WHERE user_id = $1
+`
+
+func (q *Queries) ExportUserTasks(ctx context.Context, userID string) ([]Task, error) {
+	rows, err := q.db.Query(ctx, exportUserTasks, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Task
+	for rows.Next() {
+		var i Task
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Name,
+			&i.TriggerType,
+			&i.TriggerConfig,
+			&i.AgentPrompt,
+			&i.Status,
+			&i.LockedBy,
+			&i.NextRun,
+			&i.LastRun,
+			&i.FailureCount,
+			&i.MissedTaskPolicy,
+			&i.DependsOnTaskID,
+			&i.CreatedAt,
+			&i.RequiresApproval,
+			&i.EncryptedSecrets,
+			&i.LastApprovalStatus,
+			&i.TriggerOnCompletion,
+			&i.WorkspaceID,
+			&i.MaxRetries,
+			&i.RetryCount,
+			&i.BackoffStrategy,
+			&i.UiCoordinates,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getAuthInfoByEmail = `-- name: GetAuthInfoByEmail :one
@@ -529,6 +671,39 @@ func (q *Queries) GetSEOSettings(ctx context.Context) (SeoSetting, error) {
 		&i.Keywords,
 		&i.OgImage,
 		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getSystemUsageMetrics = `-- name: GetSystemUsageMetrics :one
+SELECT 
+    (SELECT COUNT(*) FROM users) as user_count,
+    (SELECT COUNT(*) FROM tasks) as task_count,
+    (SELECT COUNT(*) FROM task_logs WHERE status = 'success') as success_count,
+    (SELECT COUNT(*) FROM task_logs WHERE status = 'failure') as failure_count,
+    (SELECT COUNT(*) FROM task_logs WHERE status = 'missed') as missed_count,
+    (SELECT COUNT(*) FROM audit_logs) as audit_count
+`
+
+type GetSystemUsageMetricsRow struct {
+	UserCount    int64
+	TaskCount    int64
+	SuccessCount int64
+	FailureCount int64
+	MissedCount  int64
+	AuditCount   int64
+}
+
+func (q *Queries) GetSystemUsageMetrics(ctx context.Context) (GetSystemUsageMetricsRow, error) {
+	row := q.db.QueryRow(ctx, getSystemUsageMetrics)
+	var i GetSystemUsageMetricsRow
+	err := row.Scan(
+		&i.UserCount,
+		&i.TaskCount,
+		&i.SuccessCount,
+		&i.FailureCount,
+		&i.MissedCount,
+		&i.AuditCount,
 	)
 	return i, err
 }
@@ -786,6 +961,142 @@ func (q *Queries) IncrementTaskFailureCount(ctx context.Context, arg IncrementTa
 	return failure_count, err
 }
 
+const linkTaskDependency = `-- name: LinkTaskDependency :exec
+UPDATE tasks
+SET depends_on_task_id = $1, trigger_on_completion = $2
+WHERE id = $3 AND user_id = $4
+`
+
+type LinkTaskDependencyParams struct {
+	DependsOnTaskID     pgtype.UUID
+	TriggerOnCompletion pgtype.Bool
+	ID                  pgtype.UUID
+	UserID              string
+}
+
+func (q *Queries) LinkTaskDependency(ctx context.Context, arg LinkTaskDependencyParams) error {
+	_, err := q.db.Exec(ctx, linkTaskDependency,
+		arg.DependsOnTaskID,
+		arg.TriggerOnCompletion,
+		arg.ID,
+		arg.UserID,
+	)
+	return err
+}
+
+const listActiveOutboundWebhooks = `-- name: ListActiveOutboundWebhooks :many
+SELECT id, endpoint_url, event_types, encrypted_signing_secret
+FROM outbound_webhooks
+WHERE user_id = $1 AND is_active = TRUE
+`
+
+type ListActiveOutboundWebhooksRow struct {
+	ID                     pgtype.UUID
+	EndpointUrl            string
+	EventTypes             []byte
+	EncryptedSigningSecret []byte
+}
+
+func (q *Queries) ListActiveOutboundWebhooks(ctx context.Context, userID string) ([]ListActiveOutboundWebhooksRow, error) {
+	rows, err := q.db.Query(ctx, listActiveOutboundWebhooks, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListActiveOutboundWebhooksRow
+	for rows.Next() {
+		var i ListActiveOutboundWebhooksRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.EndpointUrl,
+			&i.EventTypes,
+			&i.EncryptedSigningSecret,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAuditLogs = `-- name: ListAuditLogs :many
+SELECT id, user_id, action, resource_type, resource_id, metadata, created_at
+FROM audit_logs
+ORDER BY created_at DESC
+LIMIT $1
+`
+
+func (q *Queries) ListAuditLogs(ctx context.Context, limit int32) ([]AuditLog, error) {
+	rows, err := q.db.Query(ctx, listAuditLogs, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AuditLog
+	for rows.Next() {
+		var i AuditLog
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Action,
+			&i.ResourceType,
+			&i.ResourceID,
+			&i.Metadata,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listOutboundWebhooks = `-- name: ListOutboundWebhooks :many
+SELECT id, endpoint_url, event_types, is_active, created_at
+FROM outbound_webhooks
+WHERE user_id = $1
+`
+
+type ListOutboundWebhooksRow struct {
+	ID          pgtype.UUID
+	EndpointUrl string
+	EventTypes  []byte
+	IsActive    bool
+	CreatedAt   pgtype.Timestamptz
+}
+
+func (q *Queries) ListOutboundWebhooks(ctx context.Context, userID string) ([]ListOutboundWebhooksRow, error) {
+	rows, err := q.db.Query(ctx, listOutboundWebhooks, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListOutboundWebhooksRow
+	for rows.Next() {
+		var i ListOutboundWebhooksRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.EndpointUrl,
+			&i.EventTypes,
+			&i.IsActive,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listUserSecrets = `-- name: ListUserSecrets :many
 SELECT id, name, created_at FROM user_secrets WHERE user_id = $1 ORDER BY name ASC
 `
@@ -902,6 +1213,44 @@ func (q *Queries) ListUsers(ctx context.Context) ([]ListUsersRow, error) {
 	return items, nil
 }
 
+const listWebhookDeliveries = `-- name: ListWebhookDeliveries :many
+SELECT id, webhook_id, user_id, event_type, status_code, success, response_body, created_at FROM webhook_deliveries WHERE webhook_id = $1 AND user_id = $2 ORDER BY created_at DESC LIMIT 50
+`
+
+type ListWebhookDeliveriesParams struct {
+	WebhookID pgtype.UUID
+	UserID    string
+}
+
+func (q *Queries) ListWebhookDeliveries(ctx context.Context, arg ListWebhookDeliveriesParams) ([]WebhookDelivery, error) {
+	rows, err := q.db.Query(ctx, listWebhookDeliveries, arg.WebhookID, arg.UserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []WebhookDelivery
+	for rows.Next() {
+		var i WebhookDelivery
+		if err := rows.Scan(
+			&i.ID,
+			&i.WebhookID,
+			&i.UserID,
+			&i.EventType,
+			&i.StatusCode,
+			&i.Success,
+			&i.ResponseBody,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const moveToDLQ = `-- name: MoveToDLQ :one
 INSERT INTO dlq_tasks (task_id, error_message) VALUES ($1, $2) RETURNING id, task_id, error_message, failed_at
 `
@@ -958,6 +1307,20 @@ UPDATE tasks SET status = 'active', locked_by = NULL WHERE locked_by = $1
 
 func (q *Queries) RevertProcessingTasks(ctx context.Context, lockedBy pgtype.Text) error {
 	_, err := q.db.Exec(ctx, revertProcessingTasks, lockedBy)
+	return err
+}
+
+const setUserRoleByEmail = `-- name: SetUserRoleByEmail :exec
+UPDATE users SET role = $1 WHERE email = $2
+`
+
+type SetUserRoleByEmailParams struct {
+	Role  pgtype.Text
+	Email pgtype.Text
+}
+
+func (q *Queries) SetUserRoleByEmail(ctx context.Context, arg SetUserRoleByEmailParams) error {
+	_, err := q.db.Exec(ctx, setUserRoleByEmail, arg.Role, arg.Email)
 	return err
 }
 
@@ -1043,6 +1406,21 @@ func (q *Queries) UpdateTaskNextRun(ctx context.Context, arg UpdateTaskNextRunPa
 	return err
 }
 
+const updateTaskRetryCount = `-- name: UpdateTaskRetryCount :exec
+UPDATE tasks SET retry_count = $1 WHERE id = $2 AND user_id = $3
+`
+
+type UpdateTaskRetryCountParams struct {
+	RetryCount pgtype.Int4
+	ID         pgtype.UUID
+	UserID     string
+}
+
+func (q *Queries) UpdateTaskRetryCount(ctx context.Context, arg UpdateTaskRetryCountParams) error {
+	_, err := q.db.Exec(ctx, updateTaskRetryCount, arg.RetryCount, arg.ID, arg.UserID)
+	return err
+}
+
 const updateTaskStatus = `-- name: UpdateTaskStatus :exec
 UPDATE tasks SET status = $1, locked_by = NULL WHERE id = $2 AND user_id = $3
 `
@@ -1059,12 +1437,13 @@ func (q *Queries) UpdateTaskStatus(ctx context.Context, arg UpdateTaskStatusPara
 }
 
 const updateTaskStatusAndFailureCount = `-- name: UpdateTaskStatusAndFailureCount :exec
-UPDATE tasks SET status = $1, locked_by = NULL, failure_count = $2 WHERE id = $3 AND user_id = $4
+UPDATE tasks SET status = $1, locked_by = NULL, failure_count = $2, retry_count = $3 WHERE id = $4 AND user_id = $5
 `
 
 type UpdateTaskStatusAndFailureCountParams struct {
 	Status       pgtype.Text
 	FailureCount pgtype.Int4
+	RetryCount   pgtype.Int4
 	ID           pgtype.UUID
 	UserID       string
 }
@@ -1073,6 +1452,7 @@ func (q *Queries) UpdateTaskStatusAndFailureCount(ctx context.Context, arg Updat
 	_, err := q.db.Exec(ctx, updateTaskStatusAndFailureCount,
 		arg.Status,
 		arg.FailureCount,
+		arg.RetryCount,
 		arg.ID,
 		arg.UserID,
 	)

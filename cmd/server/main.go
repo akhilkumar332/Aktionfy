@@ -265,7 +265,10 @@ func main() {
 	adminEmail := os.Getenv("ADMIN_EMAIL")
 	if adminEmail != "" {
 		log.Printf("Bootstrapping admin role for: %s", adminEmail)
-		_, err := dbPool.Exec(ctx, "UPDATE users SET role = 'admin' WHERE email = $1", adminEmail)
+		err := queries.SetUserRoleByEmail(ctx, db.SetUserRoleByEmailParams{
+			Role:  pgtype.Text{String: "admin", Valid: true},
+			Email: pgtype.Text{String: adminEmail, Valid: true},
+		})
 		if err != nil {
 			log.Printf("Failed to bootstrap admin: %v", err)
 		}

@@ -291,6 +291,7 @@ func handleClaimedTask(workerCtx context.Context, t db.Task) {
 			if err := queries.UpdateTaskStatusAndFailureCount(workerCtx, db.UpdateTaskStatusAndFailureCountParams{
 				Status:       pgtype.Text{String: StatusError, Valid: true},
 				FailureCount: pgtype.Int4{Int32: failureCount, Valid: true},
+				RetryCount:   pgtype.Int4{Int32: retryCount, Valid: true},
 				ID:           t.ID,
 				UserID:       t.UserID,
 			}); err != nil {
@@ -299,7 +300,7 @@ func handleClaimedTask(workerCtx context.Context, t db.Task) {
 			
 			// Move to DLQ
 			_, dlqErr := queries.MoveToDLQ(workerCtx, db.MoveToDLQParams{
-				TaskID:       pgtype.UUID{Bytes: t.ID.Bytes, Valid: true},
+				TaskID:       t.ID,
 				ErrorMessage: pgtype.Text{String: err.Error(), Valid: true},
 			})
 			if dlqErr != nil {
@@ -322,6 +323,7 @@ func handleClaimedTask(workerCtx context.Context, t db.Task) {
 			if err := queries.UpdateTaskStatusAndFailureCount(workerCtx, db.UpdateTaskStatusAndFailureCountParams{
 				Status:       pgtype.Text{String: StatusActive, Valid: true},
 				FailureCount: pgtype.Int4{Int32: failureCount, Valid: true},
+				RetryCount:   pgtype.Int4{Int32: retryCount, Valid: true},
 				ID:           t.ID,
 				UserID:       t.UserID,
 			}); err != nil {
