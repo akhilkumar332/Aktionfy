@@ -280,23 +280,60 @@ func handleClaimedTask(workerCtx context.Context, t db.Task) {
 			log.Printf("Error publishing task_executed event for %s (failure): %v", taskID, err)
 		}
 
-		if failureCount >= 3 {
-			log.Printf("Task %s failed 3 times, setting status to error.", taskID)
+		retryCount := t.RetryCount.Int32 + 1
+		maxRetries := t.MaxRetries.Int32
+		if maxRetries == 0 {
+			maxRetries = 3 // Fallback for old tasks
+		}
+
+		if retryCount > maxRetries {
+			log.Printf("Task %s exhausted retries (%d), moving to DLQ.", taskID, maxRetries)
 			if err := queries.UpdateTaskStatusAndFailureCount(workerCtx, db.UpdateTaskStatusAndFailureCountParams{
 				Status:       pgtype.Text{String: StatusError, Valid: true},
 				FailureCount: pgtype.Int4{Int32: failureCount, Valid: true},
 				ID:           t.ID,
+				UserID:       t.UserID,
 			}); err != nil {
 				log.Printf("Error updating status to error for task %s: %v", taskID, err)
 			}
+			
+			// Move to DLQ
+			_, dlqErr := queries.MoveToDLQ(workerCtx, db.MoveToDLQParams{
+				TaskID:       pgtype.UUID{Bytes: t.ID.Bytes, Valid: true},
+				ErrorMessage: pgtype.Text{String: err.Error(), Valid: true},
+			})
+			if dlqErr != nil {
+				log.Printf("Error moving task %s to DLQ: %v", taskID, dlqErr)
+			}
+
 			sendFailureEmail(workerCtx, t.UserID, taskID, t.Name)
 		} else {
+			// Calculate backoff
+			backoffMinutes := int(retryCount) * 2
+			if t.BackoffStrategy.String == "exponential" {
+				backoffMinutes = 1 << retryCount // 2^retryCount
+			}
+			nextRun := time.Now().UTC().Add(time.Duration(backoffMinutes) * time.Minute)
+
+			log.Printf("Task %s retry %d/%d scheduled for %v", taskID, retryCount, maxRetries, nextRun)
+
+			// Update task with new retry_count and next_run
+			// Assuming we should update failure_count as well and keep status Active
 			if err := queries.UpdateTaskStatusAndFailureCount(workerCtx, db.UpdateTaskStatusAndFailureCountParams{
 				Status:       pgtype.Text{String: StatusActive, Valid: true},
 				FailureCount: pgtype.Int4{Int32: failureCount, Valid: true},
 				ID:           t.ID,
+				UserID:       t.UserID,
 			}); err != nil {
 				log.Printf("Error updating failure count for task %s: %v", taskID, err)
+			}
+			// Update next run
+			if err := queries.UpdateTaskNextRun(workerCtx, db.UpdateTaskNextRunParams{
+				Status:  pgtype.Text{String: StatusActive, Valid: true},
+				NextRun: pgtype.Timestamptz{Time: nextRun, Valid: true},
+				ID:      t.ID,
+			}); err != nil {
+				log.Printf("Error updating next run for task %s: %v", taskID, err)
 			}
 		}
 		return

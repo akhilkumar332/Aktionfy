@@ -239,6 +239,10 @@ func main() {
 	api.POST("/billing/create-checkout-session", apiCreateCheckoutSession)
 	e.POST("/webhooks/stripe", apiStripeWebhook)
 
+	// Inbound Webhooks
+	v1 := e.Group("/api/v1")
+	v1.POST("/webhooks/inbound/:token", handleInboundWebhook)
+
 	// Catch-all handler for React SPA
 	e.GET("/*", func(c echo.Context) error {
 		path := c.Request().URL.Path
