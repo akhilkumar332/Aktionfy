@@ -146,6 +146,8 @@ func handleClaimedTask(workerCtx context.Context, t db.Task) {
 	isOnline := GlobalSessionManager.IsOnline(workerCtx, t.UserID)
 
 	taskID := formatUUID(t.ID)
+	executionID := fmt.Sprintf("%s-%d", taskID, time.Now().UTC().UnixNano())
+
 	userEmail, err := queries.GetUserEmail(workerCtx, t.UserID)
 	emailStr := ""
 	if err != nil {
@@ -167,8 +169,9 @@ func handleClaimedTask(workerCtx context.Context, t db.Task) {
 		}
 
 		evtPayload, _ := json.Marshal(map[string]interface{}{
-			"task_id":   taskID,
-			"task_name": t.Name,
+			"task_id":      taskID,
+			"task_name":    t.Name,
+			"execution_id": executionID,
 		})
 		if err := PublishEvent(workerCtx, PubSubEvent{
 			UserID:    t.UserID,
@@ -201,6 +204,7 @@ func handleClaimedTask(workerCtx context.Context, t db.Task) {
 			"task_name":      t.Name,
 			"user_email":     emailStr,
 			"error_message":  "user offline",
+			"execution_id":   executionID,
 		})
 		if err := PublishEvent(workerCtx, PubSubEvent{
 			UserID:    t.UserID,
@@ -238,7 +242,17 @@ func handleClaimedTask(workerCtx context.Context, t db.Task) {
 	}
 
 	if t.TaskType.String == "native_action" {
-		result, err := executeNativeJS(workerCtx, t.NativeCode.String, map[string]interface{}{"task_id": taskID})
+		inputMap := map[string]interface{}{"task_id": taskID, "execution_id": executionID}
+		inputJSON, _ := json.Marshal(inputMap)
+		queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{
+			TaskID:      t.ID,
+			ExecutionID: executionID,
+			WorkerID:    workerID,
+			StepName:    "Native Execution",
+			InputData:   inputJSON,
+		})
+
+		result, err := executeNativeJS(workerCtx, t.NativeCode.String, inputMap)
 		if err != nil {
 			log.Printf("Native execution failed for task %s: %v", taskID, err)
 			observeTaskOutcome("execution_failure")
@@ -261,6 +275,7 @@ func handleClaimedTask(workerCtx context.Context, t db.Task) {
 				"task_name":      t.Name,
 				"user_email":     emailStr,
 				"error_message":  err.Error(),
+				"execution_id":   executionID,
 			})
 			if err := PublishEvent(workerCtx, PubSubEvent{
 				UserID:    t.UserID,
@@ -269,6 +284,15 @@ func handleClaimedTask(workerCtx context.Context, t db.Task) {
 			}); err != nil {
 				log.Printf("Error publishing task_executed event for %s (failure): %v", taskID, err)
 			}
+
+			queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{
+				TaskID:       t.ID,
+				ExecutionID:  executionID,
+				WorkerID:     workerID,
+				StepName:     "Native Execution Failed",
+				IsError:      pgtype.Bool{Bool: true, Valid: true},
+				ErrorMessage: pgtype.Text{String: err.Error(), Valid: true},
+			})
 
 			retryCount := t.RetryCount.Int32 + 1
 			maxRetries := t.MaxRetries.Int32
@@ -332,6 +356,7 @@ func handleClaimedTask(workerCtx context.Context, t db.Task) {
 				"task_name":      t.Name,
 				"user_email":     emailStr,
 				"llm_response":   result,
+				"execution_id":   executionID,
 			})
 			if err := PublishEvent(workerCtx, PubSubEvent{
 				UserID:    t.UserID,
@@ -340,6 +365,14 @@ func handleClaimedTask(workerCtx context.Context, t db.Task) {
 			}); err != nil {
 				log.Printf("Error publishing task_executed event for %s (success): %v", taskID, err)
 			}
+
+			queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{
+				TaskID:      t.ID,
+				ExecutionID: executionID,
+				WorkerID:    workerID,
+				StepName:    "Native Execution Success",
+				OutputData:  []byte(result),
+			})
 
 			var config map[string]interface{}
 			if err := json.Unmarshal(t.TriggerConfig, &config); err == nil {
@@ -358,7 +391,14 @@ func handleClaimedTask(workerCtx context.Context, t db.Task) {
 		return
 	}
 
-	executionID := fmt.Sprintf("%s-%d", taskID, time.Now().UTC().UnixNano())
+	queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{
+		TaskID:      t.ID,
+		ExecutionID: executionID,
+		WorkerID:    workerID,
+		StepName:    "Prompt Resolution",
+		InputData:   []byte(t.AgentPrompt),
+	})
+
 	payloadBytes, _ := json.Marshal(map[string]interface{}{
 		"task_id":        taskID,
 		"prompt":         t.AgentPrompt,
@@ -373,6 +413,16 @@ func handleClaimedTask(workerCtx context.Context, t db.Task) {
 			err = fmt.Errorf("no active subscribers received the payload")
 		}
 		log.Printf("Failed to deliver task %s for user %s: %v", taskID, t.UserID, err)
+
+		queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{
+			TaskID:       t.ID,
+			ExecutionID:  executionID,
+			WorkerID:     workerID,
+			StepName:     "Redis Delivery Failed",
+			IsError:      pgtype.Bool{Bool: true, Valid: true},
+			ErrorMessage: pgtype.Text{String: err.Error(), Valid: true},
+		})
+
 		failureCount := t.FailureCount.Int32 + 1
 		logID, logErr := queries.CreateTaskLog(workerCtx, db.CreateTaskLogParams{
 			TaskID:       t.ID,

@@ -256,3 +256,12 @@ SELECT t.*, s.subscribed_at IS NOT NULL as is_subscribed
 FROM templates t
 LEFT JOIN user_template_subscriptions s ON t.id = s.template_id AND s.user_id = $1
 WHERE t.id = $2;
+
+-- name: ListPublicTemplates :many
+SELECT * FROM templates WHERE is_public = true ORDER BY created_at DESC;
+
+-- name: GetTemplateByIDRaw :one
+SELECT * FROM templates WHERE id = $1;
+
+-- name: CreateTemplateSubscription :exec
+INSERT INTO user_template_subscriptions (user_id, template_id) VALUES ($1, $2) ON CONFLICT DO NOTHING;

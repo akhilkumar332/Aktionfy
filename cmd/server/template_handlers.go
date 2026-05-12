@@ -57,3 +57,12 @@ func handleCreateTemplate(c echo.Context) error {
 
 	return c.JSON(http.StatusCreated, template)
 }
+
+func handleListPublicTemplates(c echo.Context) error {
+	templates, err := queries.ListPublicTemplates(c.Request().Context())
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to list public templates"})
+	}
+
+	return c.JSON(http.StatusOK, templates)
+}

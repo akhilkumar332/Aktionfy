@@ -356,6 +356,20 @@ func (q *Queries) CreateTemplate(ctx context.Context, arg CreateTemplateParams) 
 	return i, err
 }
 
+const createTemplateSubscription = `-- name: CreateTemplateSubscription :exec
+INSERT INTO user_template_subscriptions (user_id, template_id) VALUES ($1, $2) ON CONFLICT DO NOTHING
+`
+
+type CreateTemplateSubscriptionParams struct {
+	UserID     string
+	TemplateID pgtype.UUID
+}
+
+func (q *Queries) CreateTemplateSubscription(ctx context.Context, arg CreateTemplateSubscriptionParams) error {
+	_, err := q.db.Exec(ctx, createTemplateSubscription, arg.UserID, arg.TemplateID)
+	return err
+}
+
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (email, password_hash, api_key) 
 VALUES ($1, $2, $3) 
@@ -897,6 +911,28 @@ func (q *Queries) GetTaskLogs(ctx context.Context) ([]GetTaskLogsRow, error) {
 	return items, nil
 }
 
+const getTemplateByIDRaw = `-- name: GetTemplateByIDRaw :one
+SELECT id, name, description, config, is_public, workspace_id, created_at, price_id, is_premium, author_id FROM templates WHERE id = $1
+`
+
+func (q *Queries) GetTemplateByIDRaw(ctx context.Context, id pgtype.UUID) (Template, error) {
+	row := q.db.QueryRow(ctx, getTemplateByIDRaw, id)
+	var i Template
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.Config,
+		&i.IsPublic,
+		&i.WorkspaceID,
+		&i.CreatedAt,
+		&i.PriceID,
+		&i.IsPremium,
+		&i.AuthorID,
+	)
+	return i, err
+}
+
 const getTemplateWithSubscription = `-- name: GetTemplateWithSubscription :one
 SELECT t.id, t.name, t.description, t.config, t.is_public, t.workspace_id, t.created_at, t.price_id, t.is_premium, t.author_id, s.subscribed_at IS NOT NULL as is_subscribed
 FROM templates t
@@ -1194,6 +1230,41 @@ func (q *Queries) ListOutboundWebhooks(ctx context.Context, userID string) ([]Li
 			&i.EventTypes,
 			&i.IsActive,
 			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPublicTemplates = `-- name: ListPublicTemplates :many
+SELECT id, name, description, config, is_public, workspace_id, created_at, price_id, is_premium, author_id FROM templates WHERE is_public = true ORDER BY created_at DESC
+`
+
+func (q *Queries) ListPublicTemplates(ctx context.Context) ([]Template, error) {
+	rows, err := q.db.Query(ctx, listPublicTemplates)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Template
+	for rows.Next() {
+		var i Template
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.Config,
+			&i.IsPublic,
+			&i.WorkspaceID,
+			&i.CreatedAt,
+			&i.PriceID,
+			&i.IsPremium,
+			&i.AuthorID,
 		); err != nil {
 			return nil, err
 		}

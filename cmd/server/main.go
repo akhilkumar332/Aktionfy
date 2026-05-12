@@ -232,6 +232,7 @@ func main() {
 	admin.POST("/users/update", apiAdminUpdateUserHandler)
 	admin.GET("/audit-logs", apiAdminAuditLogsHandler)
 	admin.GET("/usage", apiAdminUsageHandler)
+	admin.GET("/insights", handleGetSystemInsights)
 	admin.GET("/seo", apiGetSEOHandler)
 	admin.POST("/seo", apiUpdateSEOHandler)
 
