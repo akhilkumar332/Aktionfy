@@ -309,7 +309,7 @@ INSERT INTO workspaces (name, owner_id) VALUES ($1, $2) RETURNING id, name, owne
 
 type CreateWorkspaceParams struct {
 	Name    string
-	OwnerID pgtype.UUID
+	OwnerID string
 }
 
 func (q *Queries) CreateWorkspace(ctx context.Context, arg CreateWorkspaceParams) (Workspace, error) {
@@ -723,7 +723,7 @@ LEFT JOIN workspace_members wm ON w.id = wm.workspace_id
 WHERE w.owner_id = $1 OR wm.user_id = $1
 `
 
-func (q *Queries) GetUserWorkspaces(ctx context.Context, ownerID pgtype.UUID) ([]Workspace, error) {
+func (q *Queries) GetUserWorkspaces(ctx context.Context, ownerID string) ([]Workspace, error) {
 	rows, err := q.db.Query(ctx, getUserWorkspaces, ownerID)
 	if err != nil {
 		return nil, err

@@ -136,12 +136,12 @@ type WebhookTrigger struct {
 type Workspace struct {
 	ID        pgtype.UUID
 	Name      string
-	OwnerID   pgtype.UUID
+	OwnerID   string
 	CreatedAt pgtype.Timestamptz
 }
 
 type WorkspaceMember struct {
 	WorkspaceID pgtype.UUID
-	UserID      pgtype.UUID
+	UserID      string
 	Role        pgtype.Text
 }
