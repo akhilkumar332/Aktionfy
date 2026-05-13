@@ -25,7 +25,7 @@ const Vault = () => {
     try {
       const res = await axios.get('/api/secrets');
       if (res.data.success) {
-        setSecrets(res.data.data);
+        setSecrets(res.data.data || []);
       }
     } catch {
       addToast('Failed to fetch secrets', 'error');

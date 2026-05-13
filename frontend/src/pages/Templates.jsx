@@ -12,7 +12,7 @@ const Templates = () => {
         axios.get('/api/v1/templates')
             .then(res => {
                 if (res.data.success) {
-                    setTemplates(res.data.data);
+                    setTemplates(res.data.data || []);
                 }
             })
             .catch(err => console.error(err))

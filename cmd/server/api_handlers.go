@@ -467,6 +467,9 @@ func apiListSecretsHandler(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch secrets"})
 	}
+	if rows == nil {
+		rows = []db.ListUserSecretsRow{}
+	}
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: rows})
 }

@@ -68,6 +68,9 @@ func handleListPublicTemplates(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to list public templates"})
 	}
+	if templates == nil {
+		templates = []db.Template{}
+	}
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: templates})
 }

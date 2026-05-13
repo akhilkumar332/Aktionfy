@@ -19,6 +19,9 @@ func apiListTasksHandler(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to list tasks"})
 	}
+	if tasks == nil {
+		tasks = []db.ListUserTasksRow{}
+	}
 	
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: tasks})
 }
@@ -158,6 +161,9 @@ func apiListTaskVersionsHandler(c echo.Context) error {
 	versions, err := queries.ListTaskVersions(c.Request().Context(), taskID)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to list versions"})
+	}
+	if versions == nil {
+		versions = []db.TaskVersion{}
 	}
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: versions})

@@ -141,28 +141,53 @@ func getUserID(c echo.Context) string {
 	return id
 }
 
-// NetHttpAuthMiddleware is a wrapper to use EchoAuthMiddleware logic for standard library handlers (SSE/Message)
+// NetHttpAuthMiddleware is a wrapper to use authentication logic for standard library handlers (SSE/Message).
+// It supports both X-API-Key header and session_id cookie.
 func NetHttpAuthMiddleware(next http.Handler, mcpServer *server.MCPServer) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userID := ""
+		userTier := ""
+
+		// 1. Try API Key Header
 		apiKey := r.Header.Get("X-API-Key")
-		if apiKey == "" {
-			http.Error(w, "Unauthorized: Missing X-API-Key", http.StatusUnauthorized)
+		if apiKey != "" {
+			u, err := queries.GetUserByAPIKey(r.Context(), apiKey)
+			if err == nil {
+				userID = u.ID
+				userTier = u.Tier.String
+			}
+		}
+
+		// 2. Try Session Cookie if API key failed
+		if userID == "" {
+			cookie, err := r.Cookie("session_id")
+			if err == nil && cookie.Value != "" {
+				var sessionID pgtype.UUID
+				if err := parseUUID(cookie.Value, &sessionID); err == nil {
+					u, err := queries.GetUserBySessionID(r.Context(), db.GetUserBySessionIDParams{
+						ID:        sessionID,
+						ExpiresAt: pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},
+					})
+					if err == nil {
+						userID = u.ID
+						userTier = u.Tier.String
+					}
+				}
+			}
+		}
+
+		if userID == "" {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 
-		u, err := queries.GetUserByAPIKey(r.Context(), apiKey)
-		if err != nil {
-			http.Error(w, "Unauthorized: Invalid API Key", http.StatusUnauthorized)
-			return
-		}
-
-		if !globalRateLimiter.Allow(r.Context(), u.ID) {
+		if !globalRateLimiter.Allow(r.Context(), userID) {
 			http.Error(w, "Too Many Requests", http.StatusTooManyRequests)
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), userIDKey, u.ID)
-		ctx = context.WithValue(ctx, userTierKey, u.Tier.String)
+		ctx := context.WithValue(r.Context(), userIDKey, userID)
+		ctx = context.WithValue(ctx, userTierKey, userTier)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

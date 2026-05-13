@@ -131,7 +131,7 @@ const Workspaces = () => {
     setLoading(true);
     try {
       const res = await axios.get('/api/v1/workspaces');
-      if (res.data.success) setWorkspaces(res.data.data);
+      if (res.data.success) setWorkspaces(res.data.data || []);
     } catch (err) {
       console.error('Failed to fetch workspaces', err);
     } finally {

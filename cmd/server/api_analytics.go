@@ -81,6 +81,9 @@ func handleGetWorkers(c echo.Context) error {
 	}
 
 	var data []workerInfo
+	if workers == nil {
+		data = []workerInfo{}
+	}
 	now := time.Now().UTC()
 	for _, w := range workers {
 		status := "offline"

@@ -16,7 +16,7 @@ const Workers = () => {
     try {
       const res = await axios.get('/api/admin/workers');
       if (res.data.success) {
-        setWorkers(res.data.data);
+        setWorkers(res.data.data || []);
       }
     } catch (err) {
       console.error('Failed to fetch workers', err);

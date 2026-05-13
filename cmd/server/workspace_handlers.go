@@ -18,6 +18,9 @@ func handleGetWorkspaces(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch workspaces"})
 	}
+	if workspaces == nil {
+		workspaces = []db.Workspace{}
+	}
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: workspaces})
 }
 
