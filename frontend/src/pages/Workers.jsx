@@ -14,18 +14,9 @@ const Workers = () => {
   const fetchWorkers = useCallback(async () => {
     setRefreshing(true);
     try {
-      const res = await axios.get('/api/admin/insights'); // We'll need a specific endpoint or use insights
+      const res = await axios.get('/api/admin/workers');
       if (res.data.success) {
-        // For now, we'll derive or use the insights data. 
-        // Backend actually needs a GetWorkers endpoint for full detail, 
-        // but we can start with the count from insights or mock for the design phase.
-        setWorkers([{
-          worker_id: 'node-alpha-1',
-          hostname: 'worker-01.prod.internal',
-          last_heartbeat: new Date().toISOString(),
-          status: 'online',
-          task_count: 5
-        }]);
+        setWorkers(res.data.data);
       }
     } catch {
       console.error('Failed to fetch workers');

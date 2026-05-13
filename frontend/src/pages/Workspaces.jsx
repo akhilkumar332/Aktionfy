@@ -123,28 +123,111 @@ const Workspaces = () => {
   const [workspaces, setWorkspaces] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newWorkspaceName, setNewWorkspaceName] = useState('');
+  const [creating, setCreating] = useState(false);
+
+  const fetchWorkspaces = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get('/api/v1/workspaces');
+      if (res.data.success) setWorkspaces(res.data.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    axios.get('/api/v1/workspaces')
-      .then(res => {
-        if (res.data.success) setWorkspaces(res.data.data);
-      })
-      .catch(err => console.error(err))
-      .finally(() => setLoading(false));
-  }, []);
+    fetchWorkspaces();
+  }, [fetchWorkspaces]);
+
+  const handleCreateWorkspace = async (e) => {
+    e.preventDefault();
+    if (!newWorkspaceName) return;
+    setCreating(true);
+    try {
+      const res = await axios.post('/api/v1/workspaces', { name: newWorkspaceName });
+      if (res.data.success) {
+        setNewWorkspaceName('');
+        setShowCreateForm(false);
+        fetchWorkspaces();
+      }
+    } catch (err) {
+      alert('Failed to create workspace');
+    } finally {
+      setCreating(false);
+    }
+  };
 
   return (
     <DashboardLayout>
-      <header className="mb-12">
-        <motion.h1 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-4xl font-black text-white tracking-tight mb-2"
+      <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <motion.h1 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-4xl font-black text-white tracking-tight mb-2"
+          >
+            Workspaces
+          </motion.h1>
+          <p className="text-slate-400 font-medium tracking-wide uppercase text-[10px] tracking-[0.2em]">Compute contexts and isolation</p>
+        </div>
+        <button 
+          onClick={() => setShowCreateForm(true)}
+          className="bg-accent-orange text-white px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-widest shadow-[0_10px_30px_rgba(217,119,6,0.3)] hover:scale-105 transition-transform flex items-center gap-2"
         >
-          Workspaces
-        </motion.h1>
-        <p className="text-slate-400 font-medium tracking-wide uppercase text-[10px] tracking-[0.2em]">Compute contexts and isolation</p>
+          <Plus size={16} /> New Workspace
+        </button>
       </header>
+
+      {/* Create Workspace Modal */}
+      <AnimatePresence>
+        {showCreateForm && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-6">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowCreateForm(false)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-zinc-900 border border-white/10 p-10 rounded-[2.5rem] shadow-2xl w-full max-w-lg relative z-10"
+            >
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="text-2xl font-black text-white uppercase tracking-tighter">New Workspace</h2>
+                <button onClick={() => setShowCreateForm(false)} className="text-slate-500 hover:text-white transition-colors">
+                  <X size={24} />
+                </button>
+              </div>
+              <form onSubmit={handleCreateWorkspace} className="space-y-6">
+                <div>
+                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3">Workspace Name</label>
+                  <input 
+                    type="text"
+                    value={newWorkspaceName}
+                    onChange={(e) => setNewWorkspaceName(e.target.value)}
+                    placeholder="e.g. Production Context"
+                    className="w-full bg-black/40 border border-white/5 rounded-2xl p-5 text-white font-mono text-sm focus:outline-none focus:border-accent-orange/50 transition-colors"
+                  />
+                </div>
+                <button 
+                  disabled={creating || !newWorkspaceName}
+                  className="w-full bg-accent-orange text-white py-5 rounded-2xl text-xs font-black uppercase tracking-widest shadow-[0_10px_30px_rgba(217,119,6,0.3)] hover:brightness-110 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                >
+                  {creating ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
+                  Create Workspace
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <div className="grid grid-cols-1 gap-6">
         {loading ? (

@@ -21,6 +21,34 @@ func handleGetWorkspaces(c echo.Context) error {
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: workspaces})
 }
 
+func handleCreateWorkspace(c echo.Context) error {
+	userID := getUserID(c)
+	if userID == "" {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
+
+	var input struct {
+		Name string `json:"name"`
+	}
+	if err := c.Bind(&input); err != nil {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid request body"})
+	}
+
+	if input.Name == "" {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Workspace name is required"})
+	}
+
+	workspace, err := queries.CreateWorkspace(c.Request().Context(), db.CreateWorkspaceParams{
+		Name:    input.Name,
+		OwnerID: userID,
+	})
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to create workspace"})
+	}
+
+	return c.JSON(http.StatusCreated, APIResponse{Success: true, Data: workspace})
+}
+
 func handleListWorkspaceEnvVars(c echo.Context) error {
 	workspaceIDStr := c.Param("id")
 	var workspaceID pgtype.UUID

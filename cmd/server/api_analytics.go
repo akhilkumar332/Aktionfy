@@ -2,6 +2,8 @@ package main
 
 import (
 	"net/http"
+	"time"
+
 	"github.com/labstack/echo/v4"
 	"schedule-mcp/db"
 )
@@ -58,6 +60,41 @@ func handleGetSystemInsights(c echo.Context) error {
 		"success_rate":   successRate,
 		"active_workers": workerCount,
 		"daily_tasks":    dailyTasks,
+	}
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: data})
+}
+
+func handleGetWorkers(c echo.Context) error {
+	ctx := c.Request().Context()
+	workers, err := queries.ListWorkerHeartbeats(ctx)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch workers"})
+	}
+
+	type workerInfo struct {
+		WorkerID      string    `json:"worker_id"`
+		Hostname      string    `json:"hostname"`
+		LastHeartbeat time.Time `json:"last_heartbeat"`
+		Status        string    `json:"status"`
+		TaskCount     int32     `json:"task_count"`
+	}
+
+	var data []workerInfo
+	now := time.Now().UTC()
+	for _, w := range workers {
+		status := "online"
+		if w.LastHeartbeat.Time.Before(now.Add(-2 * time.Minute)) {
+			status = "offline"
+		}
+
+		data = append(data, workerInfo{
+			WorkerID:      w.WorkerID,
+			Hostname:      w.Hostname.String,
+			LastHeartbeat: w.LastHeartbeat.Time,
+			Status:        status,
+			TaskCount:     w.TaskCount.Int32,
+		})
 	}
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: data})

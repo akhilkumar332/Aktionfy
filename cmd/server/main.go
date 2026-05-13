@@ -235,6 +235,7 @@ func main() {
 	admin.GET("/audit-logs", apiAdminAuditLogsHandler)
 	admin.GET("/usage", apiAdminUsageHandler)
 	admin.GET("/insights", handleGetSystemInsights)
+	admin.GET("/workers", handleGetWorkers)
 	admin.GET("/seo", apiGetSEOHandler)
 	admin.POST("/seo", apiUpdateSEOHandler)
 
@@ -246,9 +247,11 @@ func main() {
 	v1 := e.Group("/api/v1")
 	v1.POST("/webhooks/inbound/:token", handleInboundWebhook)
 	v1.GET("/workspaces", handleGetWorkspaces, EchoSessionMiddleware)
+	v1.POST("/workspaces", handleCreateWorkspace, EchoSessionMiddleware)
 	v1.GET("/workspaces/:id/env", handleListWorkspaceEnvVars, EchoSessionMiddleware)
 	v1.POST("/workspaces/:id/env", handleUpsertWorkspaceEnvVar, EchoSessionMiddleware)
 	v1.DELETE("/workspaces/:id/env/:name", handleDeleteWorkspaceEnvVar, EchoSessionMiddleware)
+	v1.GET("/templates", handleListPublicTemplates, EchoSessionMiddleware)
 	v1.POST("/templates", handleCreateTemplate, EchoSessionMiddleware)
 
 	// Catch-all handler for React SPA

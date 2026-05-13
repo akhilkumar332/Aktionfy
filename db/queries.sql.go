@@ -2060,6 +2060,35 @@ func (q *Queries) UpsertWorkerHeartbeat(ctx context.Context, arg UpsertWorkerHea
 	return err
 }
 
+const listWorkerHeartbeats = `-- name: ListWorkerHeartbeats :many
+SELECT worker_id, hostname, last_heartbeat, task_count FROM worker_heartbeats ORDER BY last_heartbeat DESC
+`
+
+func (q *Queries) ListWorkerHeartbeats(ctx context.Context) ([]WorkerHeartbeat, error) {
+	rows, err := q.db.Query(ctx, listWorkerHeartbeats)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []WorkerHeartbeat
+	for rows.Next() {
+		var i WorkerHeartbeat
+		if err := rows.Scan(
+			&i.WorkerID,
+			&i.Hostname,
+			&i.LastHeartbeat,
+			&i.TaskCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const upsertWorkspaceEnvVar = `-- name: UpsertWorkspaceEnvVar :one
 INSERT INTO workspace_env_vars (workspace_id, name, value)
 VALUES ($1, $2, $3)

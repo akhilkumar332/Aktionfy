@@ -276,6 +276,9 @@ ON CONFLICT (worker_id) DO UPDATE SET
 -- name: GetActiveWorkerCount :one
 SELECT COUNT(*) FROM worker_heartbeats WHERE last_heartbeat > NOW() - INTERVAL '2 minutes';
 
+-- name: ListWorkerHeartbeats :many
+SELECT * FROM worker_heartbeats ORDER BY last_heartbeat DESC;
+
 -- name: GetP99ExecutionLatency :one
 SELECT COALESCE(percentile_cont(0.99) WITHIN GROUP (ORDER BY duration_ms), 0)::float
 FROM execution_traces

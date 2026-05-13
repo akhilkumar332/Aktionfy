@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -668,6 +669,13 @@ func apiUpsertSecretHandler(c echo.Context) error {
 
 	if input.Name == "" || input.Value == "" {
 		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Name and value are required"})
+	}
+
+	// Basic validation: names should be alphanumeric or underscores
+	nameRegex := `^[a-zA-Z0-9_-]+$`
+	matched, _ := regexp.MatchString(nameRegex, input.Name)
+	if !matched {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid secret name. Use alphanumeric characters, dashes, or underscores."})
 	}
 
 	encrypted, err := Encrypt([]byte(input.Value))

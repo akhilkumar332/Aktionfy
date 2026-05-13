@@ -61,13 +61,13 @@ func handleCreateTemplate(c echo.Context) error {
 func handleListPublicTemplates(c echo.Context) error {
 	userID := getUserID(c)
 	if userID == "" {
-		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
 	}
 
 	templates, err := queries.ListPublicTemplates(c.Request().Context())
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to list public templates"})
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to list public templates"})
 	}
 
-	return c.JSON(http.StatusOK, templates)
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: templates})
 }
