@@ -21,6 +21,9 @@ LIMIT 100;
 -- name: ListUsers :many
 SELECT id, email, api_key, role, tier, created_at FROM users ORDER BY created_at DESC;
 
+-- name: GetUser :one
+SELECT id, email, api_key, role, tier, created_at FROM users WHERE id = $1;
+
 -- name: UpdateUserRole :exec
 UPDATE users SET role = $1 WHERE id = $2;
 

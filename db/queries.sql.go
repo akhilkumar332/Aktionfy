@@ -1170,6 +1170,24 @@ func (q *Queries) GetTemplateWithSubscription(ctx context.Context, arg GetTempla
 	return i, err
 }
 
+const getUser = `-- name: GetUser :one
+SELECT id, email, api_key, role, tier, created_at FROM users WHERE id = $1
+`
+
+func (q *Queries) GetUser(ctx context.Context, id string) (User, error) {
+	row := q.db.QueryRow(ctx, getUser, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.ApiKey,
+		&i.Role,
+		&i.Tier,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getUserByAPIKey = `-- name: GetUserByAPIKey :one
 SELECT id, tier FROM users WHERE api_key = $1
 `

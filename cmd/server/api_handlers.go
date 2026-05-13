@@ -330,6 +330,16 @@ func apiAdminUpdateUserHandler(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid request body"})
 	}
 
+	if input.UserID == "" {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "user_id is required"})
+	}
+
+	// Verify user exists
+	_, err := queries.GetUser(c.Request().Context(), input.UserID)
+	if err != nil {
+		return c.JSON(http.StatusNotFound, APIResponse{Success: false, Error: "User not found"})
+	}
+
 	if input.Role != "" {
 		err := queries.UpdateUserRole(c.Request().Context(), db.UpdateUserRoleParams{
 			Role: pgtype.Text{String: input.Role, Valid: true},

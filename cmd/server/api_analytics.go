@@ -83,9 +83,9 @@ func handleGetWorkers(c echo.Context) error {
 	var data []workerInfo
 	now := time.Now().UTC()
 	for _, w := range workers {
-		status := "online"
-		if w.LastHeartbeat.Time.Before(now.Add(-2 * time.Minute)) {
-			status = "offline"
+		status := "offline"
+		if w.LastHeartbeat.Valid && w.LastHeartbeat.Time.After(now.Add(-2 * time.Minute)) {
+			status = "online"
 		}
 
 		data = append(data, workerInfo{

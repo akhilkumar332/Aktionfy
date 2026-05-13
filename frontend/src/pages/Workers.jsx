@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
 import axios from 'axios';
-import { Cpu, ShieldCheck, Activity, Loader2, ArrowLeft, RefreshCw, Server } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Activity, Loader2, ArrowLeft, RefreshCw, Server } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
 const Workers = () => {
@@ -18,8 +18,8 @@ const Workers = () => {
       if (res.data.success) {
         setWorkers(res.data.data);
       }
-    } catch {
-      console.error('Failed to fetch workers');
+    } catch (err) {
+      console.error('Failed to fetch workers', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -27,9 +27,16 @@ const Workers = () => {
   }, []);
 
   useEffect(() => {
-    fetchWorkers();
+    let isMounted = true;
+    const loadData = async () => {
+      if (isMounted) await fetchWorkers();
+    };
+    loadData();
     const interval = setInterval(fetchWorkers, 30000);
-    return () => clearInterval(interval);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, [fetchWorkers]);
 
   return (

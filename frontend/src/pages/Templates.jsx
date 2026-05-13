@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
-import { Layout, Search, Filter, Play, Download, Loader2, Sparkles, Plus } from 'lucide-react';
+import { Layout, Search, Download, Loader2, Sparkles, Plus } from 'lucide-react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 

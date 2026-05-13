@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -257,9 +259,18 @@ func main() {
 	// Catch-all handler for React SPA
 	e.GET("/*", func(c echo.Context) error {
 		path := c.Request().URL.Path
-		// Check if file exists in dist, otherwise serve index.html
-		fpath := "frontend/dist" + path
-		if _, err := os.Stat(fpath); os.IsNotExist(err) || path == "/" {
+		if path == "/" {
+			return c.File("frontend/dist/index.html")
+		}
+
+		// Clean the path to prevent traversal
+		cleanPath := filepath.Clean(path)
+		if strings.Contains(cleanPath, "..") {
+			return c.File("frontend/dist/index.html")
+		}
+
+		fpath := filepath.Join("frontend/dist", cleanPath)
+		if info, err := os.Stat(fpath); err != nil || info.IsDir() {
 			return c.File("frontend/dist/index.html")
 		}
 		return c.File(fpath)

@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Globe, ChevronDown, Trash2, Plus, Loader2 } from 'lucide-react';
+import { Globe, ChevronDown, Trash2, Plus, Loader2, X } from 'lucide-react';
 
 const WorkspaceEnvSection = ({ workspaceId }) => {
   const [envs, setEnvs] = useState([]);
@@ -133,14 +133,19 @@ const Workspaces = () => {
       const res = await axios.get('/api/v1/workspaces');
       if (res.data.success) setWorkspaces(res.data.data);
     } catch (err) {
-      console.error(err);
+      console.error('Failed to fetch workspaces', err);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchWorkspaces();
+    let isMounted = true;
+    const load = async () => {
+      if (isMounted) await fetchWorkspaces();
+    };
+    load();
+    return () => { isMounted = false; };
   }, [fetchWorkspaces]);
 
   const handleCreateWorkspace = async (e) => {
@@ -155,6 +160,7 @@ const Workspaces = () => {
         fetchWorkspaces();
       }
     } catch (err) {
+      console.error('Failed to create workspace', err);
       alert('Failed to create workspace');
     } finally {
       setCreating(false);

@@ -85,7 +85,10 @@ func importUserTasks(ctx context.Context, userID string, tasks []TransferTask) (
 			return nil, fmt.Errorf("task %d: invalid schedule: %w", idx, err)
 		}
 
-		triggerConfigBytes, _ := json.Marshal(triggerConfig)
+		triggerConfigBytes, err := json.Marshal(triggerConfig)
+		if err != nil {
+			return nil, fmt.Errorf("task %d: failed to re-marshal trigger_config: %w", idx, err)
+		}
 		createdTask, err := queries.CreateTask(ctx, db.CreateTaskParams{
 			UserID:              userID,
 			Name:                task.Name,

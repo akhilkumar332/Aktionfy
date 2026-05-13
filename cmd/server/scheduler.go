@@ -120,7 +120,7 @@ func handleTaskClaimNotification(payload string) {
 	workerWG.Add(1)
 	go func() {
 		defer workerWG.Done()
-		workerCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		workerCtx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 		defer cancel()
 
 		var taskID pgtype.UUID
@@ -139,7 +139,7 @@ func handleTaskClaimNotification(payload string) {
 			return
 		}
 
-		handleClaimedTask(context.Background(), t)
+		handleClaimedTask(workerCtx, t)
 	}()
 }
 
