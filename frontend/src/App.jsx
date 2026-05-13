@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import Tasks from './pages/Tasks';
+import TaskHistory from './pages/TaskHistory';
 import Vault from './pages/Vault';
 import Webhooks from './pages/Webhooks';
 import Workspaces from './pages/Workspaces';
@@ -80,6 +81,15 @@ function App() {
             element={
               <ProtectedRoute roles={['user', 'staff', 'admin']}>
                 <Tasks />
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="/tasks/:id/history" 
+            element={
+              <ProtectedRoute roles={['user', 'staff', 'admin']}>
+                <TaskHistory />
               </ProtectedRoute>
             } 
           />

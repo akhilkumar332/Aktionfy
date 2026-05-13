@@ -1,10 +1,12 @@
 import { useEffect, useState, useCallback } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
 import axios from 'axios';
-import { Play, Pause, Trash2, CheckCircle2, ShieldAlert, Cpu, Link } from 'lucide-react';
+import { Play, Pause, Trash2, CheckCircle2, ShieldAlert, Cpu, Link, History } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 const Tasks = () => {
+  const navigate = useNavigate();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -128,6 +130,13 @@ const Tasks = () => {
                   </td>
                   <td className="px-8 py-5 text-right">
                      <div className="flex justify-end gap-3 opacity-50 group-hover:opacity-100 transition-opacity">
+                       <button 
+                         onClick={() => navigate(`/tasks/${task.id}/history`)} 
+                         className="p-2 bg-white/5 hover:bg-blue-500/20 text-blue-500 rounded-xl transition-all" 
+                         title="View History"
+                       >
+                         <History size={16} />
+                       </button>
                        {task.status === 'active' ? (
                          <button onClick={() => handleAction(task.id, 'pause')} className="p-2 bg-white/5 hover:bg-amber-500/20 text-amber-500 rounded-xl transition-all" title="Pause Task"><Pause size={16} /></button>
                        ) : (
