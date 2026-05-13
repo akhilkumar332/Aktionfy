@@ -171,7 +171,7 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 							StepName:    "Prompt Resolution",
 							InputData:   []byte(prompt),
 						})
-						finalPrompt, secretCount, chained, err := resolvePrompt(dbCtx, userID, prompt, t.DependsOnTaskID)
+						finalPrompt, secretCount, chained, err := resolvePrompt(dbCtx, userID, tid, prompt, t.DependsOnTaskID)
 						if err != nil {
 							log.Printf("Prompt resolution failed for task %s: %v", taskID, err)
 							queries.CreateExecutionTrace(dbCtx, db.CreateExecutionTraceParams{

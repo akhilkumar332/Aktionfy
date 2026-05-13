@@ -10,8 +10,9 @@ import (
 )
 
 var secretRegex = regexp.MustCompile(`\{\{secrets\.([a-zA-Z0-9_-]+)\}\}`)
+var envVarRegex = regexp.MustCompile(`\{\{env\.([a-zA-Z0-9_-]+)\}\}`)
 
-func resolvePrompt(ctx context.Context, userID string, rawPrompt string, parentTaskID pgtype.UUID) (string, int, bool, error) {
+func resolvePrompt(ctx context.Context, userID string, taskID pgtype.UUID, rawPrompt string, parentTaskID pgtype.UUID) (string, int, bool, error) {
 	resolved := rawPrompt
 	resolvedSecrets := make(map[string]string)
 	secretCount := 0
@@ -56,8 +57,29 @@ func resolvePrompt(ctx context.Context, userID string, rawPrompt string, parentT
 		return val
 	})
 
+	// 2. Resolve Environment Variables: {{env.KEY}}
+	envVars, err := queries.GetTaskWorkspaceEnvVars(ctx, taskID)
+	if err == nil {
+		envMap := make(map[string]string)
+		for _, ev := range envVars {
+			envMap[ev.Name] = ev.Value
+		}
+
+		resolved = envVarRegex.ReplaceAllStringFunc(resolved, func(match string) string {
+			submatches := envVarRegex.FindStringSubmatch(match)
+			if len(submatches) < 2 {
+				return match
+			}
+			key := submatches[1]
+			if val, ok := envMap[key]; ok {
+				return val
+			}
+			return match
+		})
+	}
+
 	chained := false
-	// 2. Resolve Chaining Context
+	// 3. Resolve Chaining Context
 	if parentTaskID.Valid {
 		parentOutput, err := queries.GetLatestTaskLogResponse(ctx, db.GetLatestTaskLogResponseParams{
 			TaskID: parentTaskID,
