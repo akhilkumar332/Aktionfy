@@ -117,8 +117,8 @@ WHERE status = 'processing' AND next_run < NOW() - INTERVAL '5 minutes';
 SELECT EXISTS(SELECT 1 FROM tasks WHERE id = $1 AND user_id = $2);
 
 -- name: CreateTask :one
-INSERT INTO tasks (user_id, name, trigger_type, trigger_config, agent_prompt, missed_task_policy, depends_on_task_id, next_run, requires_approval, encrypted_secrets, trigger_on_completion, workspace_id, task_type, native_code) 
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) 
+INSERT INTO tasks (user_id, name, trigger_type, trigger_config, agent_prompt, missed_task_policy, depends_on_task_id, next_run, requires_approval, encrypted_secrets, trigger_on_completion, workspace_id, task_type, native_code, branch_condition, is_bundle_root) 
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) 
 RETURNING *;
 
 -- name: ListUserTasks :many
@@ -265,6 +265,13 @@ RETURNING *;
 -- name: ListTaskTraces :many
 SELECT * FROM execution_traces WHERE task_id = $1 ORDER BY start_time DESC;
 
+-- name: GetTaskOutput :one
+SELECT output_data 
+FROM execution_traces 
+WHERE task_id = $1 
+ORDER BY start_time DESC 
+LIMIT 1;
+
 -- name: GetTemplateWithSubscription :one
 SELECT t.*, s.subscribed_at IS NOT NULL as is_subscribed
 FROM templates t
@@ -322,12 +329,12 @@ WHERE start_time > NOW() - INTERVAL '24 hours';
 INSERT INTO task_versions (
     task_id, name, trigger_type, trigger_config, agent_prompt, 
     missed_task_policy, depends_on_task_id, requires_approval, 
-    trigger_on_completion, task_type, native_code
+    trigger_on_completion, task_type, native_code, branch_condition, is_bundle_root
 ) 
 SELECT 
     t.id, t.name, t.trigger_type, t.trigger_config, t.agent_prompt, 
     t.missed_task_policy, t.depends_on_task_id, t.requires_approval, 
-    t.trigger_on_completion, t.task_type, t.native_code
+    t.trigger_on_completion, t.task_type, t.native_code, t.branch_condition, t.is_bundle_root
 FROM tasks t WHERE t.id = $1 AND t.user_id = $2
 RETURNING *;
 
@@ -349,7 +356,9 @@ SET
     requires_approval = v.requires_approval,
     trigger_on_completion = v.trigger_on_completion,
     task_type = v.task_type,
-    native_code = v.native_code
+    native_code = v.native_code,
+    branch_condition = v.branch_condition,
+    is_bundle_root = v.is_bundle_root
 FROM task_versions v
 WHERE tasks.id = $1 AND tasks.user_id = $2 AND v.id = $3 AND v.task_id = $1;
 

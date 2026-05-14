@@ -258,6 +258,8 @@ ALTER TABLE tasks ADD COLUMN max_retries INT DEFAULT 0;
 ALTER TABLE tasks ADD COLUMN retry_count INT DEFAULT 0;
 ALTER TABLE tasks ADD COLUMN backoff_strategy VARCHAR(50) DEFAULT 'linear';
 ALTER TABLE tasks ADD COLUMN ui_coordinates JSONB;
+ALTER TABLE tasks ADD COLUMN branch_condition JSONB;
+ALTER TABLE tasks ADD COLUMN is_bundle_root BOOLEAN DEFAULT FALSE;
 
 CREATE TABLE worker_heartbeats (
     worker_id TEXT PRIMARY KEY,
@@ -279,6 +281,8 @@ CREATE TABLE task_versions (
     trigger_on_completion BOOLEAN NOT NULL,
     task_type TEXT NOT NULL,
     native_code TEXT,
+    branch_condition JSONB,
+    is_bundle_root BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

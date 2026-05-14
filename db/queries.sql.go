@@ -48,7 +48,7 @@ func (q *Queries) CheckWorkspaceAccess(ctx context.Context, arg CheckWorkspaceAc
 }
 
 const claimDueTasks = `-- name: ClaimDueTasks :many
-SELECT id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, task_type, native_code, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates FROM fn_claim_due_tasks($1, $2)
+SELECT id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, task_type, native_code, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates, branch_condition, is_bundle_root FROM fn_claim_due_tasks($1, $2)
 `
 
 type ClaimDueTasksParams struct {
@@ -91,6 +91,8 @@ func (q *Queries) ClaimDueTasks(ctx context.Context, arg ClaimDueTasksParams) ([
 			&i.RetryCount,
 			&i.BackoffStrategy,
 			&i.UiCoordinates,
+			&i.BranchCondition,
+			&i.IsBundleRoot,
 		); err != nil {
 			return nil, err
 		}
@@ -229,9 +231,9 @@ func (q *Queries) CreateOutboundWebhook(ctx context.Context, arg CreateOutboundW
 }
 
 const createTask = `-- name: CreateTask :one
-INSERT INTO tasks (user_id, name, trigger_type, trigger_config, agent_prompt, missed_task_policy, depends_on_task_id, next_run, requires_approval, encrypted_secrets, trigger_on_completion, workspace_id, task_type, native_code) 
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) 
-RETURNING id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, task_type, native_code, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates
+INSERT INTO tasks (user_id, name, trigger_type, trigger_config, agent_prompt, missed_task_policy, depends_on_task_id, next_run, requires_approval, encrypted_secrets, trigger_on_completion, workspace_id, task_type, native_code, branch_condition, is_bundle_root) 
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) 
+RETURNING id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, task_type, native_code, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates, branch_condition, is_bundle_root
 `
 
 type CreateTaskParams struct {
@@ -249,6 +251,8 @@ type CreateTaskParams struct {
 	WorkspaceID         pgtype.UUID        `json:"workspace_id"`
 	TaskType            pgtype.Text        `json:"task_type"`
 	NativeCode          pgtype.Text        `json:"native_code"`
+	BranchCondition     []byte             `json:"branch_condition"`
+	IsBundleRoot        pgtype.Bool        `json:"is_bundle_root"`
 }
 
 func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error) {
@@ -267,6 +271,8 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		arg.WorkspaceID,
 		arg.TaskType,
 		arg.NativeCode,
+		arg.BranchCondition,
+		arg.IsBundleRoot,
 	)
 	var i Task
 	err := row.Scan(
@@ -295,6 +301,8 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		&i.RetryCount,
 		&i.BackoffStrategy,
 		&i.UiCoordinates,
+		&i.BranchCondition,
+		&i.IsBundleRoot,
 	)
 	return i, err
 }
@@ -330,14 +338,14 @@ const createTaskVersion = `-- name: CreateTaskVersion :one
 INSERT INTO task_versions (
     task_id, name, trigger_type, trigger_config, agent_prompt, 
     missed_task_policy, depends_on_task_id, requires_approval, 
-    trigger_on_completion, task_type, native_code
+    trigger_on_completion, task_type, native_code, branch_condition, is_bundle_root
 ) 
 SELECT 
     t.id, t.name, t.trigger_type, t.trigger_config, t.agent_prompt, 
     t.missed_task_policy, t.depends_on_task_id, t.requires_approval, 
-    t.trigger_on_completion, t.task_type, t.native_code
+    t.trigger_on_completion, t.task_type, t.native_code, t.branch_condition, t.is_bundle_root
 FROM tasks t WHERE t.id = $1 AND t.user_id = $2
-RETURNING id, task_id, name, trigger_type, trigger_config, agent_prompt, missed_task_policy, depends_on_task_id, requires_approval, trigger_on_completion, task_type, native_code, created_at
+RETURNING id, task_id, name, trigger_type, trigger_config, agent_prompt, missed_task_policy, depends_on_task_id, requires_approval, trigger_on_completion, task_type, native_code, branch_condition, is_bundle_root, created_at
 `
 
 type CreateTaskVersionParams struct {
@@ -361,6 +369,8 @@ func (q *Queries) CreateTaskVersion(ctx context.Context, arg CreateTaskVersionPa
 		&i.TriggerOnCompletion,
 		&i.TaskType,
 		&i.NativeCode,
+		&i.BranchCondition,
+		&i.IsBundleRoot,
 		&i.CreatedAt,
 	)
 	return i, err
@@ -604,7 +614,7 @@ func (q *Queries) DeleteWorkspaceEnvVar(ctx context.Context, arg DeleteWorkspace
 }
 
 const exportUserTasks = `-- name: ExportUserTasks :many
-SELECT id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, task_type, native_code, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates FROM tasks WHERE user_id = $1
+SELECT id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, task_type, native_code, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates, branch_condition, is_bundle_root FROM tasks WHERE user_id = $1
 `
 
 func (q *Queries) ExportUserTasks(ctx context.Context, userID string) ([]Task, error) {
@@ -642,6 +652,8 @@ func (q *Queries) ExportUserTasks(ctx context.Context, userID string) ([]Task, e
 			&i.RetryCount,
 			&i.BackoffStrategy,
 			&i.UiCoordinates,
+			&i.BranchCondition,
+			&i.IsBundleRoot,
 		); err != nil {
 			return nil, err
 		}
@@ -716,7 +728,7 @@ func (q *Queries) GetDailyExecutionTrends(ctx context.Context) ([]GetDailyExecut
 }
 
 const getDependentTasksToTrigger = `-- name: GetDependentTasksToTrigger :many
-SELECT t.id, t.user_id, t.name, t.trigger_type, t.trigger_config, t.agent_prompt, t.status, t.locked_by, t.next_run, t.last_run, t.failure_count, t.missed_task_policy, t.depends_on_task_id, t.created_at, t.requires_approval, t.encrypted_secrets, t.last_approval_status, t.trigger_on_completion, t.task_type, t.native_code, t.workspace_id, t.max_retries, t.retry_count, t.backoff_strategy, t.ui_coordinates FROM tasks t
+SELECT t.id, t.user_id, t.name, t.trigger_type, t.trigger_config, t.agent_prompt, t.status, t.locked_by, t.next_run, t.last_run, t.failure_count, t.missed_task_policy, t.depends_on_task_id, t.created_at, t.requires_approval, t.encrypted_secrets, t.last_approval_status, t.trigger_on_completion, t.task_type, t.native_code, t.workspace_id, t.max_retries, t.retry_count, t.backoff_strategy, t.ui_coordinates, t.branch_condition, t.is_bundle_root FROM tasks t
 INNER JOIN tasks parent ON t.depends_on_task_id = parent.id
 WHERE t.depends_on_task_id = $1 
   AND t.trigger_on_completion = TRUE 
@@ -759,6 +771,8 @@ func (q *Queries) GetDependentTasksToTrigger(ctx context.Context, dependsOnTaskI
 			&i.RetryCount,
 			&i.BackoffStrategy,
 			&i.UiCoordinates,
+			&i.BranchCondition,
+			&i.IsBundleRoot,
 		); err != nil {
 			return nil, err
 		}
@@ -771,7 +785,7 @@ func (q *Queries) GetDependentTasksToTrigger(ctx context.Context, dependsOnTaskI
 }
 
 const getDispatchableTaskByID = `-- name: GetDispatchableTaskByID :one
-SELECT id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, task_type, native_code, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates FROM tasks
+SELECT id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, task_type, native_code, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates, branch_condition, is_bundle_root FROM tasks
 WHERE id = $1
   AND user_id = $2
   AND status = 'processing'
@@ -813,6 +827,8 @@ func (q *Queries) GetDispatchableTaskByID(ctx context.Context, arg GetDispatchab
 		&i.RetryCount,
 		&i.BackoffStrategy,
 		&i.UiCoordinates,
+		&i.BranchCondition,
+		&i.IsBundleRoot,
 	)
 	return i, err
 }
@@ -919,7 +935,7 @@ func (q *Queries) GetSystemUsageMetrics(ctx context.Context) (GetSystemUsageMetr
 }
 
 const getTaskByID = `-- name: GetTaskByID :one
-SELECT id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, task_type, native_code, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates FROM tasks WHERE id = $1 AND user_id = $2
+SELECT id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, task_type, native_code, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates, branch_condition, is_bundle_root FROM tasks WHERE id = $1 AND user_id = $2
 `
 
 type GetTaskByIDParams struct {
@@ -956,12 +972,14 @@ func (q *Queries) GetTaskByID(ctx context.Context, arg GetTaskByIDParams) (Task,
 		&i.RetryCount,
 		&i.BackoffStrategy,
 		&i.UiCoordinates,
+		&i.BranchCondition,
+		&i.IsBundleRoot,
 	)
 	return i, err
 }
 
 const getTaskByWebhookToken = `-- name: GetTaskByWebhookToken :one
-SELECT t.id, t.user_id, t.name, t.trigger_type, t.trigger_config, t.agent_prompt, t.status, t.locked_by, t.next_run, t.last_run, t.failure_count, t.missed_task_policy, t.depends_on_task_id, t.created_at, t.requires_approval, t.encrypted_secrets, t.last_approval_status, t.trigger_on_completion, t.task_type, t.native_code, t.workspace_id, t.max_retries, t.retry_count, t.backoff_strategy, t.ui_coordinates FROM tasks t JOIN webhook_triggers w ON t.id = w.task_id WHERE w.token = $1
+SELECT t.id, t.user_id, t.name, t.trigger_type, t.trigger_config, t.agent_prompt, t.status, t.locked_by, t.next_run, t.last_run, t.failure_count, t.missed_task_policy, t.depends_on_task_id, t.created_at, t.requires_approval, t.encrypted_secrets, t.last_approval_status, t.trigger_on_completion, t.task_type, t.native_code, t.workspace_id, t.max_retries, t.retry_count, t.backoff_strategy, t.ui_coordinates, t.branch_condition, t.is_bundle_root FROM tasks t JOIN webhook_triggers w ON t.id = w.task_id WHERE w.token = $1
 `
 
 func (q *Queries) GetTaskByWebhookToken(ctx context.Context, token string) (Task, error) {
@@ -993,6 +1011,8 @@ func (q *Queries) GetTaskByWebhookToken(ctx context.Context, token string) (Task
 		&i.RetryCount,
 		&i.BackoffStrategy,
 		&i.UiCoordinates,
+		&i.BranchCondition,
+		&i.IsBundleRoot,
 	)
 	return i, err
 }
@@ -1048,8 +1068,23 @@ func (q *Queries) GetTaskLogs(ctx context.Context) ([]GetTaskLogsRow, error) {
 	return items, nil
 }
 
+const getTaskOutput = `-- name: GetTaskOutput :one
+SELECT output_data 
+FROM execution_traces 
+WHERE task_id = $1 
+ORDER BY start_time DESC 
+LIMIT 1
+`
+
+func (q *Queries) GetTaskOutput(ctx context.Context, taskID pgtype.UUID) ([]byte, error) {
+	row := q.db.QueryRow(ctx, getTaskOutput, taskID)
+	var output_data []byte
+	err := row.Scan(&output_data)
+	return output_data, err
+}
+
 const getTaskVersionByID = `-- name: GetTaskVersionByID :one
-SELECT id, task_id, name, trigger_type, trigger_config, agent_prompt, missed_task_policy, depends_on_task_id, requires_approval, trigger_on_completion, task_type, native_code, created_at FROM task_versions WHERE id = $1 AND task_id = $2
+SELECT id, task_id, name, trigger_type, trigger_config, agent_prompt, missed_task_policy, depends_on_task_id, requires_approval, trigger_on_completion, task_type, native_code, branch_condition, is_bundle_root, created_at FROM task_versions WHERE id = $1 AND task_id = $2
 `
 
 type GetTaskVersionByIDParams struct {
@@ -1073,6 +1108,8 @@ func (q *Queries) GetTaskVersionByID(ctx context.Context, arg GetTaskVersionByID
 		&i.TriggerOnCompletion,
 		&i.TaskType,
 		&i.NativeCode,
+		&i.BranchCondition,
+		&i.IsBundleRoot,
 		&i.CreatedAt,
 	)
 	return i, err
@@ -1546,7 +1583,7 @@ func (q *Queries) ListTaskTraces(ctx context.Context, taskID pgtype.UUID) ([]Exe
 }
 
 const listTaskVersions = `-- name: ListTaskVersions :many
-SELECT id, task_id, name, trigger_type, trigger_config, agent_prompt, missed_task_policy, depends_on_task_id, requires_approval, trigger_on_completion, task_type, native_code, created_at FROM task_versions WHERE task_id = $1 ORDER BY created_at DESC
+SELECT id, task_id, name, trigger_type, trigger_config, agent_prompt, missed_task_policy, depends_on_task_id, requires_approval, trigger_on_completion, task_type, native_code, branch_condition, is_bundle_root, created_at FROM task_versions WHERE task_id = $1 ORDER BY created_at DESC
 `
 
 func (q *Queries) ListTaskVersions(ctx context.Context, taskID pgtype.UUID) ([]TaskVersion, error) {
@@ -1571,6 +1608,8 @@ func (q *Queries) ListTaskVersions(ctx context.Context, taskID pgtype.UUID) ([]T
 			&i.TriggerOnCompletion,
 			&i.TaskType,
 			&i.NativeCode,
+			&i.BranchCondition,
+			&i.IsBundleRoot,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err
@@ -1615,7 +1654,7 @@ func (q *Queries) ListUserSecrets(ctx context.Context, userID string) ([]ListUse
 
 const listUserTasks = `-- name: ListUserTasks :many
 SELECT 
-    t.id, t.user_id, t.name, t.trigger_type, t.trigger_config, t.agent_prompt, t.status, t.locked_by, t.next_run, t.last_run, t.failure_count, t.missed_task_policy, t.depends_on_task_id, t.created_at, t.requires_approval, t.encrypted_secrets, t.last_approval_status, t.trigger_on_completion, t.task_type, t.native_code, t.workspace_id, t.max_retries, t.retry_count, t.backoff_strategy, t.ui_coordinates,
+    t.id, t.user_id, t.name, t.trigger_type, t.trigger_config, t.agent_prompt, t.status, t.locked_by, t.next_run, t.last_run, t.failure_count, t.missed_task_policy, t.depends_on_task_id, t.created_at, t.requires_approval, t.encrypted_secrets, t.last_approval_status, t.trigger_on_completion, t.task_type, t.native_code, t.workspace_id, t.max_retries, t.retry_count, t.backoff_strategy, t.ui_coordinates, t.branch_condition, t.is_bundle_root,
     (SELECT COUNT(*) FROM task_versions tv WHERE tv.task_id = t.id) as version_count
 FROM tasks t
 WHERE t.user_id = $1
@@ -1648,6 +1687,8 @@ type ListUserTasksRow struct {
 	RetryCount          pgtype.Int4        `json:"retry_count"`
 	BackoffStrategy     pgtype.Text        `json:"backoff_strategy"`
 	UiCoordinates       []byte             `json:"ui_coordinates"`
+	BranchCondition     []byte             `json:"branch_condition"`
+	IsBundleRoot        pgtype.Bool        `json:"is_bundle_root"`
 	VersionCount        int64              `json:"version_count"`
 }
 
@@ -1686,6 +1727,8 @@ func (q *Queries) ListUserTasks(ctx context.Context, userID string) ([]ListUserT
 			&i.RetryCount,
 			&i.BackoffStrategy,
 			&i.UiCoordinates,
+			&i.BranchCondition,
+			&i.IsBundleRoot,
 			&i.VersionCount,
 		); err != nil {
 			return nil, err
@@ -1901,7 +1944,9 @@ SET
     requires_approval = v.requires_approval,
     trigger_on_completion = v.trigger_on_completion,
     task_type = v.task_type,
-    native_code = v.native_code
+    native_code = v.native_code,
+    branch_condition = v.branch_condition,
+    is_bundle_root = v.is_bundle_root
 FROM task_versions v
 WHERE tasks.id = $1 AND tasks.user_id = $2 AND v.id = $3 AND v.task_id = $1
 `
@@ -1969,7 +2014,7 @@ SET agent_prompt = $1,
     missed_task_policy = $2,
     ui_coordinates = $3
 WHERE id = $4 AND user_id = $5
-RETURNING id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, task_type, native_code, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates
+RETURNING id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, task_type, native_code, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates, branch_condition, is_bundle_root
 `
 
 type UpdateTaskAgentPromptAndPolicyParams struct {
@@ -2015,6 +2060,8 @@ func (q *Queries) UpdateTaskAgentPromptAndPolicy(ctx context.Context, arg Update
 		&i.RetryCount,
 		&i.BackoffStrategy,
 		&i.UiCoordinates,
+		&i.BranchCondition,
+		&i.IsBundleRoot,
 	)
 	return i, err
 }

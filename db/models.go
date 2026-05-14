@@ -85,6 +85,8 @@ type Task struct {
 	RetryCount          pgtype.Int4        `json:"retry_count"`
 	BackoffStrategy     pgtype.Text        `json:"backoff_strategy"`
 	UiCoordinates       []byte             `json:"ui_coordinates"`
+	BranchCondition     []byte             `json:"branch_condition"`
+	IsBundleRoot        pgtype.Bool        `json:"is_bundle_root"`
 }
 
 type TaskLog struct {
@@ -110,6 +112,8 @@ type TaskVersion struct {
 	TriggerOnCompletion bool               `json:"trigger_on_completion"`
 	TaskType            string             `json:"task_type"`
 	NativeCode          pgtype.Text        `json:"native_code"`
+	BranchCondition     []byte             `json:"branch_condition"`
+	IsBundleRoot        pgtype.Bool        `json:"is_bundle_root"`
 	CreatedAt           pgtype.Timestamptz `json:"created_at"`
 }
 
