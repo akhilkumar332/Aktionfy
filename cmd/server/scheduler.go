@@ -570,6 +570,27 @@ func resolvePromptVariables(ctx context.Context, userID string, prompt string) s
 	})
 }
 
+func evaluateBranchCondition(condition []byte, parentOutput string) bool {
+	if len(condition) == 0 {
+		return true
+	}
+	var cond map[string]string
+	if err := json.Unmarshal(condition, &cond); err != nil {
+		log.Printf("Error unmarshaling branch condition: %v", err)
+		return true // Default to true if condition is malformed
+	}
+
+	op := cond["if"]
+	val := cond["value"]
+
+	switch op {
+	case "contains":
+		return strings.Contains(parentOutput, val)
+	default:
+		return true
+	}
+}
+
 // completeTask calls the PLpgSQL function to set the task back to active and update next_run
 func completeTask(ctx context.Context, taskID string, nextRun time.Time, status ...string) {
 	finalStatus := StatusActive
@@ -600,7 +621,16 @@ func completeTask(ctx context.Context, taskID string, nextRun time.Time, status 
 		return
 	}
 
+	// Fetch last output of the parent task
+	parentOutputBytes, _ := queries.GetTaskOutput(ctx, tid)
+	parentOutput := string(parentOutputBytes)
+
 	for _, t := range dependents {
+		if !evaluateBranchCondition(t.BranchCondition, parentOutput) {
+			log.Printf("Skipping dependent task %s: branch condition not met", formatUUID(t.ID))
+			continue
+		}
+
 		if err := queries.UpdateTaskNextRun(ctx, db.UpdateTaskNextRunParams{
 			Status:  pgtype.Text{String: StatusActive, Valid: true},
 			NextRun: pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},
