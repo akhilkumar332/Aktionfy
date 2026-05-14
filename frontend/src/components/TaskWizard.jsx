@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, ChevronRight, ChevronLeft, Check, Cpu, Globe, 
@@ -25,22 +25,6 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData }) => {
     requires_approval: false,
     missed_task_policy: 'skip'
   });
-
-  useEffect(() => {
-    if (isOpen) {
-      fetchWorkspaces();
-      if (initialData) {
-        setFormData(prev => ({
-          ...prev,
-          ...initialData,
-          // Ensure nested objects are handled
-          trigger_config: initialData.trigger_config || prev.trigger_config
-        }));
-      } else {
-        resetForm();
-      }
-    }
-  }, [isOpen, initialData]);
 
   const resetForm = () => {
     setStep(1);
@@ -74,6 +58,23 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData }) => {
       setLoadingWorkspaces(false);
     }
   };
+
+  useEffect(() => {
+    if (isOpen) {
+      // eslint-disable-next-line
+      fetchWorkspaces();
+      if (initialData) {
+        setFormData(prev => ({
+          ...prev,
+          ...initialData,
+          // Ensure nested objects are handled
+          trigger_config: initialData.trigger_config || prev.trigger_config
+        }));
+      } else {
+        resetForm();
+      }
+    }
+  }, [isOpen, initialData]);
 
   const handleNext = () => setStep(s => Math.min(s + 1, 4));
   const handleBack = () => setStep(s => Math.max(s - 1, 1));

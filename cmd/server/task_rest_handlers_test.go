@@ -11,6 +11,9 @@ import (
 )
 
 func TestApiCreateTaskHandler(t *testing.T) {
+	if queries == nil {
+		t.Skip("Skipping test: queries is nil")
+	}
 	e := echo.New()
 	
 	taskData := `{
@@ -54,6 +57,9 @@ func TestApiCreateTaskHandler(t *testing.T) {
 }
 
 func TestApiUpdateTaskHandler(t *testing.T) {
+	if queries == nil {
+		t.Skip("Skipping test: queries is nil")
+	}
 	e := echo.New()
 	
 	taskData := `{

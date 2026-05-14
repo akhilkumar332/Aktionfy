@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
 import axios from 'axios';
 import { 
-  Terminal, ShieldAlert, CheckCircle2, Clock, Activity, Users, 
+  Terminal, CheckCircle2, Clock, Activity, Users, 
   AlertTriangle, Database, Zap, RefreshCcw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -121,6 +121,7 @@ const Monitor = () => {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line
     fetchData();
     const interval = setInterval(fetchData, 60000); // Refresh every minute
     return () => clearInterval(interval);

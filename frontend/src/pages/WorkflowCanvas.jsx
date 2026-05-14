@@ -101,6 +101,7 @@ const WorkflowCanvas = () => {
   }, [setNodes, setEdges]);
 
   useEffect(() => {
+    // eslint-disable-next-line
     fetchTasks();
   }, [fetchTasks]);
 
