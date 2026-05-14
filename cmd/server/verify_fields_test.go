@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
-	"testing"
 	"schedule-mcp/db"
+	"testing"
 )
 
 func TestListUserTasksResultFields(t *testing.T) {

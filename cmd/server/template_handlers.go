@@ -220,13 +220,13 @@ func handleIncrementTemplateUses(c echo.Context) error {
 	if userID == "" {
 		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
 	}
-	
+
 	templateIDStr := c.Param("id")
 	var templateID pgtype.UUID
 	if err := parseUUID(templateIDStr, &templateID); err != nil {
 		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid template ID"})
 	}
-	
+
 	uses, err := queries.IncrementTemplateUses(c.Request().Context(), templateID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -234,6 +234,6 @@ func handleIncrementTemplateUses(c echo.Context) error {
 		}
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to increment uses"})
 	}
-	
+
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: map[string]int32{"uses_count": uses.Int32}})
 }

@@ -22,27 +22,10 @@ const WorkflowCanvas = () => {
   const [saving, setSaving] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [tasks, setTasks] = useState([]);
   
   const sseRef = useRef(null);
 
-  const fetchTasks = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await axios.get('/api/tasks');
-      if (res.data.success) {
-        const tasksData = res.data.data || [];
-        setTasks(tasksData);
-        mapTasksToFlow(tasksData);
-      }
-    } catch (err) {
-      console.error('Failed to fetch tasks', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [setNodes, setEdges]);
-
-  const mapTasksToFlow = (tasksList) => {
+  const mapTasksToFlow = useCallback((tasksList) => {
     // Map tasks to nodes
     const newNodes = tasksList.map((task, index) => {
       let position = { x: index * 250, y: 100 };
@@ -116,7 +99,70 @@ const WorkflowCanvas = () => {
 
     setNodes(newNodes);
     setEdges(newEdges);
-  };
+  }, [setNodes, setEdges]);
+
+  const fetchTasks = useCallback(async () => {
+    try {
+      const res = await axios.get('/api/tasks');
+      if (res.data.success) {
+        const tasksData = res.data.data || [];
+        mapTasksToFlow(tasksData);
+      }
+    } catch (err) {
+      console.error('Failed to fetch tasks', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [mapTasksToFlow]);
+
+  const updateTaskStatusLocally = useCallback((taskId, status) => {
+    setNodes(prev => prev.map(node => {
+        if (node.id === taskId) {
+            const updatedTask = { ...node.data.task, status };
+            const isProcessing = status === 'processing';
+            return {
+                ...node,
+                data: {
+                    ...node.data,
+                    task: updatedTask,
+                    label: (
+                        <div className={`flex flex-col items-center gap-1 transition-all duration-500 ${isProcessing ? 'scale-110' : ''}`}>
+                          <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">{updatedTask.trigger_type}</div>
+                          <div className="font-bold text-white text-xs">{updatedTask.name}</div>
+                          <div className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${
+                            updatedTask.status === 'active' ? 'bg-emerald-500/20 text-emerald-400' : 
+                            updatedTask.status === 'processing' ? 'bg-amber-500/20 text-amber-400 animate-pulse' :
+                            'bg-slate-500/20 text-slate-400'
+                          }`}>
+                            {updatedTask.status}
+                          </div>
+                          {isProcessing && (
+                            <div className="absolute -inset-4 bg-amber-500/10 rounded-[1.5rem] -z-10 animate-ping duration-[2000ms]" />
+                          )}
+                        </div>
+                    )
+                },
+                style: {
+                    ...node.style,
+                    background: isProcessing ? 'rgba(217, 119, 6, 0.15)' : 'rgba(15, 23, 42, 0.8)',
+                    border: isProcessing ? '2px solid rgba(217, 119, 6, 0.5)' : '1px solid rgba(255, 255, 255, 0.1)',
+                    boxShadow: isProcessing ? '0 0 20px rgba(217, 119, 6, 0.3)' : 'none',
+                }
+            };
+        }
+        return node;
+    }));
+
+    setEdges(prev => prev.map(edge => {
+        if (edge.target === taskId || edge.source === taskId) {
+            return {
+                ...edge,
+                animated: edge.animated || status === 'processing'
+            };
+        }
+        return edge;
+    }));
+  }, [setNodes, setEdges]);
 
   useEffect(() => {
     fetchTasks();
@@ -152,15 +198,7 @@ const WorkflowCanvas = () => {
     return () => {
       if (sseRef.current) sseRef.current.close();
     };
-  }, [fetchTasks]);
-
-  const updateTaskStatusLocally = (taskId, status) => {
-    setTasks(prev => {
-      const updated = prev.map(t => t.id === taskId ? { ...t, status } : t);
-      mapTasksToFlow(updated);
-      return updated;
-    });
-  };
+  }, [fetchTasks, updateTaskStatusLocally]);
 
   const onConnect = useCallback(async (params) => {
     const { source, target } = params;

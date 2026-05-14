@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/DashboardLayout';
 import { Layout, Search, Download, Loader2, Sparkles, Plus } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -11,6 +12,7 @@ const Templates = () => {
     const [search, setSearch] = useState('');
     const [isWizardOpen, setIsWizardOpen] = useState(false);
     const [selectedTemplate, setSelectedTemplate] = useState(null);
+    const navigate = useNavigate();
     
     const fetchTemplates = async (query = '') => {
         setLoading(true);
@@ -49,7 +51,7 @@ const Templates = () => {
                 });
                 if (res.data.success) {
                     // Redirect to canvas to see the new workflow
-                    window.location.href = '/canvas';
+                    navigate('/canvas');
                 }
             } catch (err) {
                 console.error('Failed to deploy blueprint bundle', err);

@@ -28,14 +28,14 @@
   - [x] Step 3: Implement Live Pulse
   - [x] Step 4: Commit changes
 
-- [ ] **Task 5: Marketplace - Multi-Task Blueprints**
-  - [ ] Step 1: Update templates schema to support multiple tasks
-  - [ ] Step 2: Update Templates.jsx to handle bundles
-  - [ ] Step 3: Implement Batch Creation API in Go
-  - [ ] Step 4: Commit changes
+- [x] **Task 5: Marketplace - Multi-Task Blueprints**
+  - [x] Step 1: Update templates schema to support multiple tasks
+  - [x] Step 2: Update Templates.jsx to handle bundles
+  - [x] Step 3: Implement Batch Creation API in Go
+  - [x] Step 4: Commit changes
 
-- [ ] **Task 6: Final Verification and Cleanup**
-  - [ ] Step 1: Run all backend tests
-  - [ ] Step 2: Run frontend build
-  - [ ] Step 3: Perform manual end-to-end test
-  - [ ] Step 4: Linting check
+- [x] **Task 6: Final Verification and Cleanup**
+  - [x] Step 1: Run all backend tests
+  - [x] Step 2: Run frontend build
+  - [x] Step 3: Perform manual end-to-end test
+  - [x] Step 4: Linting check

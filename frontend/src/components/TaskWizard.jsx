@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, ChevronRight, ChevronLeft, Check, Cpu, Globe, 
@@ -52,8 +52,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
     setError(null);
   };
 
-  const fetchWorkspaces = async () => {
-    setLoadingWorkspaces(true);
+  const fetchWorkspaces = useCallback(async () => {
     try {
       const res = await axios.get('/api/v1/workspaces');
       if (res.data.success) {
@@ -67,10 +66,9 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
     } finally {
       setLoadingWorkspaces(false);
     }
-  };
+  }, []);
 
-  const fetchUserTasks = async () => {
-    setLoadingTasks(true);
+  const fetchUserTasks = useCallback(async () => {
     try {
       const res = await axios.get('/api/v1/tasks');
       if (res.data.success) {
@@ -85,14 +83,26 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
     } finally {
       setLoadingTasks(false);
     }
-  };
+  }, [initialData]);
 
   useEffect(() => {
     if (isOpen) {
-      // eslint-disable-next-line
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       fetchWorkspaces();
+    }
+  }, [isOpen, fetchWorkspaces]);
+
+  useEffect(() => {
+    if (isOpen) {
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       fetchUserTasks();
+    }
+  }, [isOpen, fetchUserTasks]);
+
+  useEffect(() => {
+    if (isOpen) {
       if (initialData) {
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         setFormData(prev => ({
           ...prev,
           ...initialData,
@@ -101,6 +111,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
           branch_condition: initialData.branch_condition || prev.branch_condition
         }));
       } else {
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         resetForm();
       }
     }

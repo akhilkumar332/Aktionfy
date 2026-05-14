@@ -95,7 +95,7 @@ func TestResolvePromptVariables(t *testing.T) {
 	t.Run("Multiple variables", func(t *testing.T) {
 		task1ID := "550e8400-e29b-41d4-a716-446655440001"
 		task2ID := "550e8400-e29b-41d4-a716-446655440002"
-		
+
 		outputs := map[string]string{
 			task1ID: "Output 1",
 			task2ID: "Output 2",

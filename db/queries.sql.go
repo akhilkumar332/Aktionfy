@@ -2018,17 +2018,23 @@ const updateTaskAgentPromptAndPolicy = `-- name: UpdateTaskAgentPromptAndPolicy 
 UPDATE tasks
 SET agent_prompt = $1, 
     missed_task_policy = $2,
-    ui_coordinates = $3
-WHERE id = $4 AND user_id = $5
+    ui_coordinates = $3,
+    depends_on_task_id = $4,
+    trigger_on_completion = $5,
+    branch_condition = $6
+WHERE id = $7 AND user_id = $8
 RETURNING id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, task_type, native_code, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates, branch_condition, is_bundle_root
 `
 
 type UpdateTaskAgentPromptAndPolicyParams struct {
-	AgentPrompt      string      `json:"agent_prompt"`
-	MissedTaskPolicy pgtype.Text `json:"missed_task_policy"`
-	UiCoordinates    []byte      `json:"ui_coordinates"`
-	ID               pgtype.UUID `json:"id"`
-	UserID           string      `json:"user_id"`
+	AgentPrompt         string      `json:"agent_prompt"`
+	MissedTaskPolicy    pgtype.Text `json:"missed_task_policy"`
+	UiCoordinates       []byte      `json:"ui_coordinates"`
+	DependsOnTaskID     pgtype.UUID `json:"depends_on_task_id"`
+	TriggerOnCompletion pgtype.Bool `json:"trigger_on_completion"`
+	BranchCondition     []byte      `json:"branch_condition"`
+	ID                  pgtype.UUID `json:"id"`
+	UserID              string      `json:"user_id"`
 }
 
 func (q *Queries) UpdateTaskAgentPromptAndPolicy(ctx context.Context, arg UpdateTaskAgentPromptAndPolicyParams) (Task, error) {
@@ -2036,6 +2042,9 @@ func (q *Queries) UpdateTaskAgentPromptAndPolicy(ctx context.Context, arg Update
 		arg.AgentPrompt,
 		arg.MissedTaskPolicy,
 		arg.UiCoordinates,
+		arg.DependsOnTaskID,
+		arg.TriggerOnCompletion,
+		arg.BranchCondition,
 		arg.ID,
 		arg.UserID,
 	)

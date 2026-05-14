@@ -15,7 +15,7 @@ func TestApiCreateTaskHandler(t *testing.T) {
 		t.Skip("Skipping test: queries is nil")
 	}
 	e := echo.New()
-	
+
 	taskData := `{
 		"name": "Test Task",
 		"trigger_type": "cron",
@@ -26,18 +26,18 @@ func TestApiCreateTaskHandler(t *testing.T) {
 		"requires_approval": true,
 		"missed_task_policy": "skip"
 	}`
-	
+
 	req := httptest.NewRequest(http.MethodPost, "/api/tasks", strings.NewReader(taskData))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
-	
+
 	// Set user ID in context
 	c.Set(string(userIDKey), "user-123")
 
 	// This should fail to compile initially because apiCreateTaskHandler is not defined
 	err := apiCreateTaskHandler(c)
-	
+
 	if err != nil {
 		t.Fatalf("apiCreateTaskHandler returned error: %v", err)
 	}
@@ -61,25 +61,25 @@ func TestApiUpdateTaskHandler(t *testing.T) {
 		t.Skip("Skipping test: queries is nil")
 	}
 	e := echo.New()
-	
+
 	taskData := `{
 		"agent_prompt": "Updated Prompt",
 		"missed_task_policy": "retry",
 		"ui_coordinates": {"x": 100, "y": 200}
 	}`
-	
+
 	req := httptest.NewRequest(http.MethodPatch, "/api/tasks/550e8400-e29b-41d4-a716-446655440000", strings.NewReader(taskData))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetParamNames("id")
 	c.SetParamValues("550e8400-e29b-41d4-a716-446655440000")
-	
+
 	// Set user ID in context
 	c.Set(string(userIDKey), "user-123")
 
 	err := apiUpdateTaskHandler(c)
-	
+
 	if err != nil {
 		t.Fatalf("apiUpdateTaskHandler returned error: %v", err)
 	}
@@ -103,18 +103,18 @@ func TestApiRestoreTaskVersionHandler(t *testing.T) {
 		t.Skip("Skipping test: queries is nil")
 	}
 	e := echo.New()
-	
+
 	req := httptest.NewRequest(http.MethodPost, "/api/tasks/550e8400-e29b-41d4-a716-446655440000/restore/550e8400-e29b-41d4-a716-446655440001", nil)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetParamNames("id", "version_id")
 	c.SetParamValues("550e8400-e29b-41d4-a716-446655440000", "550e8400-e29b-41d4-a716-446655440001")
-	
+
 	// Set user ID in context
 	c.Set(string(userIDKey), "user-123")
 
 	err := apiRestoreTaskVersionHandler(c)
-	
+
 	if err != nil {
 		t.Fatalf("apiRestoreTaskVersionHandler returned error: %v", err)
 	}

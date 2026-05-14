@@ -206,12 +206,22 @@ func apiUpdateTaskHandler(c echo.Context) error {
 		log.Printf("Warning: Failed to create task version snapshot for %s: %v", taskIDStr, err)
 	}
 
+	var dependsOnTaskID pgtype.UUID
+	if req.DependsOnTaskID != "" {
+		if err := parseUUID(req.DependsOnTaskID, &dependsOnTaskID); err != nil {
+			return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid dependency task ID"})
+		}
+	}
+
 	_, err = queries.UpdateTaskAgentPromptAndPolicy(c.Request().Context(), db.UpdateTaskAgentPromptAndPolicyParams{
-		AgentPrompt:      req.AgentPrompt,
-		MissedTaskPolicy: pgtype.Text{String: req.MissedTaskPolicy, Valid: true},
-		UiCoordinates:    req.UICoordinates,
-		ID:               taskID,
-		UserID:           userID,
+		AgentPrompt:         req.AgentPrompt,
+		MissedTaskPolicy:    pgtype.Text{String: req.MissedTaskPolicy, Valid: true},
+		UiCoordinates:       req.UICoordinates,
+		DependsOnTaskID:     dependsOnTaskID,
+		TriggerOnCompletion: pgtype.Bool{Bool: req.TriggerOnCompletion, Valid: true},
+		BranchCondition:     req.BranchCondition,
+		ID:                  taskID,
+		UserID:              userID,
 	})
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to update task"})
