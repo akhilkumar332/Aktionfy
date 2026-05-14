@@ -1070,14 +1070,20 @@ func (q *Queries) GetTaskLogs(ctx context.Context) ([]GetTaskLogsRow, error) {
 
 const getTaskOutput = `-- name: GetTaskOutput :one
 SELECT output_data 
-FROM execution_traces 
-WHERE task_id = $1 
-ORDER BY start_time DESC 
+FROM execution_traces e
+JOIN tasks t ON e.task_id = t.id
+WHERE e.task_id = $1 AND t.user_id = $2
+ORDER BY e.start_time DESC 
 LIMIT 1
 `
 
-func (q *Queries) GetTaskOutput(ctx context.Context, taskID pgtype.UUID) ([]byte, error) {
-	row := q.db.QueryRow(ctx, getTaskOutput, taskID)
+type GetTaskOutputParams struct {
+	TaskID pgtype.UUID `json:"task_id"`
+	UserID string      `json:"user_id"`
+}
+
+func (q *Queries) GetTaskOutput(ctx context.Context, arg GetTaskOutputParams) ([]byte, error) {
+	row := q.db.QueryRow(ctx, getTaskOutput, arg.TaskID, arg.UserID)
 	var output_data []byte
 	err := row.Scan(&output_data)
 	return output_data, err

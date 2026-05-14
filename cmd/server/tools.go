@@ -26,6 +26,8 @@ func registerTools(s *server.MCPServer) {
 		mcp.WithString("depends_on_task_id", mcp.Description("Optional UUID of a task this task depends on")),
 		mcp.WithObject("secrets", mcp.Description("Optional secrets to be stored securely (e.g. API keys)")),
 		mcp.WithBoolean("requires_approval", mcp.Description("If true, the task will require manual approval before each execution")),
+		mcp.WithObject("branch_condition", mcp.Description("Optional branch condition for dependent tasks (e.g. {\"if\": \"contains\", \"value\": \"success\"})")),
+		mcp.WithBoolean("is_bundle_root", mcp.Description("If true, this task is the root of a workflow bundle")),
 	)
 
 	s.AddTool(createTaskTool, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -99,6 +101,16 @@ func registerTools(s *server.MCPServer) {
 			requiresApproval = ra
 		}
 
+		var branchCondition []byte
+		if bc, ok := args["branch_condition"].(map[string]interface{}); ok {
+			branchCondition, _ = json.Marshal(bc)
+		}
+
+		isBundleRoot := false
+		if ibr, ok := args["is_bundle_root"].(bool); ok {
+			isBundleRoot = ibr
+		}
+
 		var encryptedSecrets []byte
 		if secrets, ok := args["secrets"].(map[string]interface{}); ok && len(secrets) > 0 {
 			secretsBytes, err := json.Marshal(secrets)
@@ -149,6 +161,8 @@ func registerTools(s *server.MCPServer) {
 			NextRun:          pgtype.Timestamptz{Time: nextRun, Valid: true},
 			RequiresApproval: pgtype.Bool{Bool: requiresApproval, Valid: true},
 			EncryptedSecrets: encryptedSecrets,
+			BranchCondition:  branchCondition,
+			IsBundleRoot:     pgtype.Bool{Bool: isBundleRoot, Valid: true},
 		})
 
 		if err != nil {

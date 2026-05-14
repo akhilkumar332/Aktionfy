@@ -2,15 +2,19 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, ChevronRight, ChevronLeft, Check, Cpu, Globe, 
-  Terminal, Calendar, Zap, Shield, Loader2, Info
+  Terminal, Calendar, Zap, Shield, Loader2, Info,
+  Link2, GitBranch
 } from 'lucide-react';
 import axios from 'axios';
 
 const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData }) => {
   const [step, setStep] = useState(1);
   const [workspaces, setWorkspaces] = useState([]);
+  const [userTasks, setUserTasks] = useState([]);
   const [loadingWorkspaces, setLoadingWorkspaces] = useState(false);
+  const [loadingTasks, setLoadingTasks] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [showVariableSelector, setShowVariableSelector] = useState(false);
   const [error, setError] = useState(null);
 
   // Form State
@@ -23,7 +27,10 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData }) => {
     trigger_type: 'cron', // 'cron', 'interval', 'webhook'
     trigger_config: { cron: '0 * * * *' }, // Default to hourly
     requires_approval: false,
-    missed_task_policy: 'skip'
+    missed_task_policy: 'skip',
+    depends_on_task_id: '',
+    trigger_on_completion: false,
+    branch_condition: { if: 'contains', value: '' }
   });
 
   const resetForm = () => {
@@ -37,7 +44,10 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData }) => {
       trigger_type: 'cron',
       trigger_config: { cron: '0 * * * *' },
       requires_approval: false,
-      missed_task_policy: 'skip'
+      missed_task_policy: 'skip',
+      depends_on_task_id: '',
+      trigger_on_completion: false,
+      branch_condition: { if: 'contains', value: '' }
     });
     setError(null);
   };
@@ -59,16 +69,36 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData }) => {
     }
   };
 
+  const fetchUserTasks = async () => {
+    setLoadingTasks(true);
+    try {
+      const res = await axios.get('/api/v1/tasks');
+      if (res.data.success) {
+        // Filter out the current task if we're editing
+        const filteredTasks = initialData 
+          ? (res.data.data || []).filter(t => t.id !== initialData.id)
+          : (res.data.data || []);
+        setUserTasks(filteredTasks);
+      }
+    } catch (err) {
+      console.error('Failed to fetch tasks', err);
+    } finally {
+      setLoadingTasks(false);
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
       // eslint-disable-next-line
       fetchWorkspaces();
+      fetchUserTasks();
       if (initialData) {
         setFormData(prev => ({
           ...prev,
           ...initialData,
           // Ensure nested objects are handled
-          trigger_config: initialData.trigger_config || prev.trigger_config
+          trigger_config: initialData.trigger_config || prev.trigger_config,
+          branch_condition: initialData.branch_condition || prev.branch_condition
         }));
       } else {
         resetForm();
@@ -76,7 +106,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData }) => {
     }
   }, [isOpen, initialData]);
 
-  const handleNext = () => setStep(s => Math.min(s + 1, 4));
+  const handleNext = () => setStep(s => Math.min(s + 1, 5));
   const handleBack = () => setStep(s => Math.max(s - 1, 1));
 
   const updateFormData = (field, value) => {
@@ -97,7 +127,10 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData }) => {
         trigger_type: formData.trigger_type,
         trigger_config: formData.trigger_config,
         requires_approval: formData.requires_approval,
-        missed_task_policy: formData.missed_task_policy
+        missed_task_policy: formData.missed_task_policy,
+        depends_on_task_id: formData.depends_on_task_id || null,
+        trigger_on_completion: formData.trigger_on_completion,
+        branch_condition: formData.branch_condition
       };
 
       const res = await axios.post('/api/v1/tasks', payload);
@@ -117,8 +150,9 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData }) => {
   const steps = [
     { id: 1, name: 'Identity', icon: Globe },
     { id: 2, name: 'Config', icon: Cpu },
-    { id: 3, name: 'Trigger', icon: Calendar },
-    { id: 4, name: 'Review', icon: Check }
+    { id: 3, name: 'Logic', icon: GitBranch },
+    { id: 4, name: 'Trigger', icon: Calendar },
+    { id: 5, name: 'Review', icon: Check }
   ];
 
   if (!isOpen) return null;
@@ -234,6 +268,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData }) => {
                 exit={{ opacity: 0, x: -20 }}
                 className="space-y-8"
               >
+                {/* ... existing Step 2 code ... */}
                 <div className="space-y-4">
                   <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Task Execution Mode</label>
                   <div className="grid grid-cols-2 gap-4">
@@ -261,9 +296,56 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData }) => {
                 </div>
 
                 <div className="space-y-4">
-                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
-                    {formData.task_type === 'mcp_sampling' ? 'Agent Prompt' : 'Native Code'}
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+                      {formData.task_type === 'mcp_sampling' ? 'Agent Prompt' : 'Native Code'}
+                    </label>
+                    <div className="relative">
+                      <button 
+                        onClick={() => setShowVariableSelector(!showVariableSelector)}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-[10px] font-black text-slate-400 uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all"
+                      >
+                        <Link2 size={12} />
+                        Insert Variable
+                      </button>
+                      
+                      <AnimatePresence>
+                        {showVariableSelector && (
+                          <motion.div 
+                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                            className="absolute right-0 mt-2 w-64 bg-zinc-800 border border-white/10 rounded-xl shadow-2xl z-20 overflow-hidden"
+                          >
+                            <div className="p-3 border-b border-white/5 bg-white/5">
+                              <div className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Available Parent Data</div>
+                            </div>
+                            <div className="max-h-48 overflow-y-auto custom-scrollbar">
+                              {userTasks.length > 0 ? (
+                                userTasks.map(t => (
+                                  <button 
+                                    key={t.id}
+                                    onClick={() => {
+                                      const variable = `{{task.${t.id}.output}}`;
+                                      const field = formData.task_type === 'mcp_sampling' ? 'agent_prompt' : 'native_code';
+                                      updateFormData(field, formData[field] + variable);
+                                      setShowVariableSelector(false);
+                                    }}
+                                    className="w-full px-4 py-3 text-left hover:bg-white/5 transition-colors border-b border-white/5 last:border-0"
+                                  >
+                                    <div className="text-[10px] font-bold text-white truncate">{t.name}</div>
+                                    <div className="text-[8px] font-mono text-slate-500 truncate">ID: {t.id.substring(0, 8)}...</div>
+                                  </button>
+                                ))
+                              ) : (
+                                <div className="p-4 text-[10px] text-slate-500 text-center italic">No tasks available</div>
+                              )}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
                   <textarea 
                     value={formData.task_type === 'mcp_sampling' ? formData.agent_prompt : formData.native_code}
                     onChange={(e) => updateFormData(formData.task_type === 'mcp_sampling' ? 'agent_prompt' : 'native_code', e.target.value)}
@@ -283,6 +365,96 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData }) => {
             {step === 3 && (
               <motion.div 
                 key="step3"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-8"
+              >
+                <div className="space-y-4">
+                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Parent Dependency</label>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-tight">Select a task that this task depends on.</p>
+                  
+                  {loadingTasks ? (
+                    <div className="flex items-center gap-3 text-slate-500 py-4">
+                      <Loader2 size={16} className="animate-spin" />
+                      <span className="text-xs font-bold uppercase tracking-widest">Loading Tasks...</span>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-3">
+                      <select 
+                        value={formData.depends_on_task_id || ''}
+                        onChange={(e) => updateFormData('depends_on_task_id', e.target.value)}
+                        className="w-full bg-black/40 border border-white/5 rounded-2xl p-5 text-white font-mono text-sm focus:outline-none focus:border-accent-orange/50 transition-colors appearance-none cursor-pointer"
+                      >
+                        <option value="">None (Standalone Task)</option>
+                        {userTasks.map(t => (
+                          <option key={t.id} value={t.id}>{t.name} ({t.id.substring(0, 8)}...)</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+
+                {formData.depends_on_task_id && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="space-y-6"
+                  >
+                    <div className="flex items-center justify-between p-6 bg-black/20 rounded-[2rem] border border-white/5">
+                      <div className="flex items-center gap-4">
+                        <div className={`p-3 rounded-xl ${formData.trigger_on_completion ? 'bg-accent-orange text-white' : 'bg-white/5 text-slate-500'}`}>
+                          <Zap size={20} />
+                        </div>
+                        <div>
+                          <div className="text-xs font-black text-white uppercase tracking-widest">Trigger on Completion</div>
+                          <div className="text-[9px] text-slate-500 uppercase tracking-tighter">Automatically run when parent task finishes</div>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => updateFormData('trigger_on_completion', !formData.trigger_on_completion)}
+                        className={`w-12 h-6 rounded-full transition-colors relative ${formData.trigger_on_completion ? 'bg-accent-orange' : 'bg-white/10'}`}
+                      >
+                        <motion.div 
+                          animate={{ x: formData.trigger_on_completion ? 26 : 4 }}
+                          className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-lg"
+                        />
+                      </button>
+                    </div>
+
+                    <div className="space-y-4 p-6 bg-black/20 rounded-[2rem] border border-white/5">
+                      <div className="flex items-center gap-4 mb-2">
+                        <div className="p-3 bg-white/5 rounded-xl text-slate-500">
+                          <GitBranch size={20} />
+                        </div>
+                        <div>
+                          <div className="text-xs font-black text-white uppercase tracking-widest">Branch Condition</div>
+                          <div className="text-[9px] text-slate-500 uppercase tracking-tighter">Conditional execution based on parent output</div>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-4 ml-14">
+                        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">
+                          Only run if parent output contains:
+                        </div>
+                        
+                        <input 
+                          type="text"
+                          value={formData.branch_condition.value}
+                          onChange={(e) => updateFormData('branch_condition', { ...formData.branch_condition, value: e.target.value })}
+                          placeholder="e.g. 'error', 'success' (leave empty for always)"
+                          className="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white font-mono text-xs focus:outline-none focus:border-accent-orange/50 transition-colors"
+                        />
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </motion.div>
+            )}
+
+            {step === 4 && (
+              <motion.div 
+                key="step4"
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
@@ -387,9 +559,9 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData }) => {
               </motion.div>
             )}
 
-            {step === 4 && (
+            {step === 5 && (
               <motion.div 
-                key="step4"
+                key="step5"
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
@@ -418,6 +590,14 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData }) => {
                           {formData.requires_approval ? 'Required' : 'Optional'}
                         </div>
                       </div>
+                      {formData.depends_on_task_id && (
+                        <div>
+                          <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Parent Task</div>
+                          <div className="text-white font-bold truncate">
+                            {userTasks.find(t => t.id === formData.depends_on_task_id)?.name || 'Unknown'}
+                          </div>
+                        </div>
+                      )}
                    </div>
 
                    <div className="pt-6 border-t border-white/5">
@@ -450,7 +630,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData }) => {
           </button>
           
           <div className="flex gap-4">
-             {step < 4 ? (
+             {step < 5 ? (
                <button 
                  onClick={handleNext}
                  disabled={!formData.name || (step === 1 && !formData.workspace_id)}

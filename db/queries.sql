@@ -267,9 +267,10 @@ SELECT * FROM execution_traces WHERE task_id = $1 ORDER BY start_time DESC;
 
 -- name: GetTaskOutput :one
 SELECT output_data 
-FROM execution_traces 
-WHERE task_id = $1 
-ORDER BY start_time DESC 
+FROM execution_traces e
+JOIN tasks t ON e.task_id = t.id
+WHERE e.task_id = $1 AND t.user_id = $2
+ORDER BY e.start_time DESC 
 LIMIT 1;
 
 -- name: GetTemplateWithSubscription :one

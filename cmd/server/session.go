@@ -344,7 +344,7 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 
 						// Iteration 2: Advance the task status
 						if triggerType == TriggerDate {
-							completeTask(dbCtx, taskID, time.Now().UTC(), StatusCompleted)
+							completeTask(dbCtx, userID, taskID, time.Now().UTC(), StatusCompleted)
 							return
 						}
 
@@ -374,7 +374,7 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 							return
 						}
 
-						completeTask(dbCtx, taskID, newNextRun)
+						completeTask(dbCtx, userID, taskID, newNextRun)
 					}(msg.Payload)
 				}
 			}

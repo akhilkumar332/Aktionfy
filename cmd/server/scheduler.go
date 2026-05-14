@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -14,6 +15,8 @@ import (
 	"github.com/robfig/cron/v3"
 	"schedule-mcp/db"
 )
+
+var promptVarRegex = regexp.MustCompile(`\{\{task\.([0-9a-fA-F-]{36})\.output\}\}`)
 
 // runScheduler queries the DB every 10 seconds for due tasks
 func runScheduler(ctx context.Context) {
@@ -230,7 +233,7 @@ func handleClaimedTask(workerCtx context.Context, t db.Task) {
 		var config map[string]interface{}
 		if err := json.Unmarshal(t.TriggerConfig, &config); err == nil {
 			if newNextRun, calcErr := calculateNextRun(t.TriggerType.String, config, time.Now().UTC()); calcErr == nil {
-				completeTask(workerCtx, taskID, newNextRun)
+				completeTask(workerCtx, t.UserID, taskID, newNextRun)
 				return
 			}
 		}
@@ -379,7 +382,7 @@ func handleClaimedTask(workerCtx context.Context, t db.Task) {
 			var config map[string]interface{}
 			if err := json.Unmarshal(t.TriggerConfig, &config); err == nil {
 				if newNextRun, calcErr := calculateNextRun(t.TriggerType.String, config, time.Now().UTC()); calcErr == nil {
-					completeTask(workerCtx, taskID, newNextRun)
+					completeTask(workerCtx, t.UserID, taskID, newNextRun)
 					return
 				}
 			}
@@ -548,9 +551,8 @@ func handleClaimedTask(workerCtx context.Context, t db.Task) {
 }
 
 func resolvePromptVariables(ctx context.Context, userID string, prompt string) string {
-	re := regexp.MustCompile(`\{\{task\.([0-9a-fA-F-]{36})\.output\}\}`)
-	return re.ReplaceAllStringFunc(prompt, func(match string) string {
-		submatch := re.FindStringSubmatch(match)
+	return promptVarRegex.ReplaceAllStringFunc(prompt, func(match string) string {
+		submatch := promptVarRegex.FindStringSubmatch(match)
 		if len(submatch) < 2 {
 			return match
 		}
@@ -561,9 +563,12 @@ func resolvePromptVariables(ctx context.Context, userID string, prompt string) s
 		}
 
 		// Ensure ownership and fetch output
-		output, err := queries.GetTaskOutput(ctx, tid)
+		output, err := queries.GetTaskOutput(ctx, db.GetTaskOutputParams{
+			TaskID: tid,
+			UserID: userID,
+		})
 		if err != nil {
-			log.Printf("Error fetching output for task %s: %v", taskIDStr, err)
+			log.Printf("Error fetching output for task %s (user %s): %v", taskIDStr, userID, err)
 			return match
 		}
 		return string(output)
@@ -592,7 +597,7 @@ func evaluateBranchCondition(condition []byte, parentOutput string) bool {
 }
 
 // completeTask calls the PLpgSQL function to set the task back to active and update next_run
-func completeTask(ctx context.Context, taskID string, nextRun time.Time, status ...string) {
+func completeTask(ctx context.Context, userID string, taskID string, nextRun time.Time, status ...string) {
 	finalStatus := StatusActive
 	if len(status) > 0 {
 		finalStatus = status[0]
@@ -622,7 +627,10 @@ func completeTask(ctx context.Context, taskID string, nextRun time.Time, status 
 	}
 
 	// Fetch last output of the parent task
-	parentOutputBytes, _ := queries.GetTaskOutput(ctx, tid)
+	parentOutputBytes, _ := queries.GetTaskOutput(ctx, db.GetTaskOutputParams{
+		TaskID: tid,
+		UserID: userID,
+	})
 	parentOutput := string(parentOutputBytes)
 
 	for _, t := range dependents {
