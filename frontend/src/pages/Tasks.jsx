@@ -1,14 +1,16 @@
 import { useEffect, useState, useCallback } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
+import TaskWizard from '../components/TaskWizard';
 import axios from 'axios';
-import { Play, Pause, Trash2, CheckCircle2, ShieldAlert, Cpu, Link, History, Globe } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Play, Pause, Trash2, CheckCircle2, ShieldAlert, Cpu, Link, History, Globe, Plus } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
 const Tasks = () => {
   const navigate = useNavigate();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
 
   const fetchTasks = useCallback(async () => {
     try {
@@ -47,16 +49,34 @@ const Tasks = () => {
 
   return (
     <DashboardLayout>
-      <header className="mb-12">
-        <motion.h1 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-4xl font-black text-white tracking-tight mb-2"
+      <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <motion.h1 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-4xl font-black text-white tracking-tight mb-2"
+          >
+            Task Management
+          </motion.h1>
+          <p className="text-slate-400 font-medium tracking-wide uppercase text-[10px] tracking-[0.2em]">Active schedules and dependencies</p>
+        </div>
+        <button 
+          onClick={() => setIsWizardOpen(true)}
+          className="bg-accent-orange text-white px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-widest shadow-[0_10px_30px_rgba(217,119,6,0.3)] hover:scale-105 transition-transform flex items-center gap-2"
         >
-          Task Management
-        </motion.h1>
-        <p className="text-slate-400 font-medium tracking-wide uppercase text-[10px] tracking-[0.2em]">Active schedules and dependencies</p>
+          <Plus size={16} /> New Task
+        </button>
       </header>
+
+      <AnimatePresence>
+        {isWizardOpen && (
+          <TaskWizard 
+            isOpen={isWizardOpen} 
+            onClose={() => setIsWizardOpen(false)} 
+            onTaskCreated={() => fetchTasks()} 
+          />
+        )}
+      </AnimatePresence>
 
       <div className="bg-black/60 rounded-[2.5rem] border border-white/10 shadow-[0_40px_100px_rgba(0,0,0,0.5)] overflow-hidden backdrop-blur-3xl">
         <div className="overflow-x-auto min-h-[400px]">

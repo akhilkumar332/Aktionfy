@@ -210,6 +210,7 @@ func main() {
 	api.GET("/dashboard", apiDashboardHandler)
 	api.POST("/rotate-api-key", apiRotateAPIKeyHandler)
 	api.GET("/tasks", apiListTasksHandler)
+	api.POST("/tasks", apiCreateTaskHandler)
 	api.GET("/tasks/export", apiExportTasksHandler)
 	api.POST("/tasks/import", apiImportTasksHandler)
 	api.POST("/tasks/:id/pause", apiPauseTaskHandler)
@@ -255,6 +256,10 @@ func main() {
 	v1.DELETE("/workspaces/:id/env/:name", handleDeleteWorkspaceEnvVar, EchoSessionMiddleware)
 	v1.GET("/templates", handleListPublicTemplates, EchoSessionMiddleware)
 	v1.POST("/templates", handleCreateTemplate, EchoSessionMiddleware)
+
+	// Task routes for frontend TaskWizard
+	v1.GET("/tasks", apiListTasksHandler, csrfMiddleware, EchoSessionMiddleware)
+	v1.POST("/tasks", apiCreateTaskHandler, csrfMiddleware, EchoSessionMiddleware)
 
 	// Catch-all handler for React SPA
 	e.GET("/*", func(c echo.Context) error {

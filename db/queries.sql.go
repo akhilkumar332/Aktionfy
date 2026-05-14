@@ -229,8 +229,8 @@ func (q *Queries) CreateOutboundWebhook(ctx context.Context, arg CreateOutboundW
 }
 
 const createTask = `-- name: CreateTask :one
-INSERT INTO tasks (user_id, name, trigger_type, trigger_config, agent_prompt, missed_task_policy, depends_on_task_id, next_run, requires_approval, encrypted_secrets, trigger_on_completion) 
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) 
+INSERT INTO tasks (user_id, name, trigger_type, trigger_config, agent_prompt, missed_task_policy, depends_on_task_id, next_run, requires_approval, encrypted_secrets, trigger_on_completion, workspace_id, task_type, native_code) 
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) 
 RETURNING id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, task_type, native_code, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates
 `
 
@@ -246,6 +246,9 @@ type CreateTaskParams struct {
 	RequiresApproval    pgtype.Bool
 	EncryptedSecrets    []byte
 	TriggerOnCompletion pgtype.Bool
+	WorkspaceID         pgtype.UUID
+	TaskType            pgtype.Text
+	NativeCode          pgtype.Text
 }
 
 func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error) {
@@ -261,6 +264,9 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		arg.RequiresApproval,
 		arg.EncryptedSecrets,
 		arg.TriggerOnCompletion,
+		arg.WorkspaceID,
+		arg.TaskType,
+		arg.NativeCode,
 	)
 	var i Task
 	err := row.Scan(
