@@ -49,7 +49,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData }) => {
       if (res.data.success) {
         setWorkspaces(res.data.data || []);
         if (res.data.data?.length > 0) {
-          setFormData(prev => ({ ...prev, workspace_id: res.data.data[0].id }));
+          setFormData(prev => ({ ...prev, workspace_id: prev.workspace_id || res.data.data[0].id }));
         }
       }
     } catch (err) {

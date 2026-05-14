@@ -2,9 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"schedule-mcp/db"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/labstack/echo/v4"
 )
@@ -92,6 +94,9 @@ func handleIncrementTemplateUses(c echo.Context) error {
 	
 	uses, err := queries.IncrementTemplateUses(c.Request().Context(), templateID)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return c.JSON(http.StatusNotFound, APIResponse{Success: false, Error: "Template not found"})
+		}
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to increment uses"})
 	}
 	
