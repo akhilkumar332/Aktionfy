@@ -87,15 +87,19 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
 
   useEffect(() => {
     if (isOpen) {
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      fetchWorkspaces();
+      const loadWorkspaces = async () => {
+        await fetchWorkspaces();
+      };
+      loadWorkspaces();
     }
   }, [isOpen, fetchWorkspaces]);
 
   useEffect(() => {
     if (isOpen) {
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      fetchUserTasks();
+      const loadUserTasks = async () => {
+        await fetchUserTasks();
+      };
+      loadUserTasks();
     }
   }, [isOpen, fetchUserTasks]);
 
@@ -103,16 +107,22 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
     if (isOpen) {
       if (initialData) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        setFormData(prev => ({
-          ...prev,
-          ...initialData,
-          // Ensure nested objects are handled
-          trigger_config: initialData.trigger_config || prev.trigger_config,
-          branch_condition: initialData.branch_condition || prev.branch_condition
-        }));
+        const updateFormData = async () => {
+          setFormData(prev => ({
+            ...prev,
+            ...initialData,
+            // Ensure nested objects are handled
+            trigger_config: initialData.trigger_config || prev.trigger_config,
+            branch_condition: initialData.branch_condition || prev.branch_condition
+          }));
+        };
+        updateFormData();
       } else {
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        resetForm();
+        const performReset = async () => {
+          resetForm();
+        };
+        performReset();
       }
     }
   }, [isOpen, initialData]);
