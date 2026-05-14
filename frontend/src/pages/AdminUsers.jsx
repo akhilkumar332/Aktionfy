@@ -7,10 +7,11 @@ import { motion } from 'framer-motion';
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (query = '') => {
     try {
-      const res = await axios.get('/api/admin/users');
+      const res = await axios.get(`/api/admin/users?search=${encodeURIComponent(query)}`);
       if (res.data.success) {
         setUsers(res.data.data || []);
       }
@@ -22,11 +23,11 @@ const AdminUsers = () => {
   };
 
   useEffect(() => {
-    const init = async () => {
-      await fetchUsers();
-    };
-    init();
-  }, []);
+    const timer = setTimeout(() => {
+      fetchUsers(search);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const handleUpdate = async (userId, role, tier) => {
     try {
@@ -51,6 +52,8 @@ const AdminUsers = () => {
               <input 
                 type="text" 
                 placeholder="Search Identity..." 
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 className="bg-white/5 border border-white/10 rounded-2xl pl-12 pr-6 py-3 text-sm text-white outline-none focus:border-accent-orange/50 transition-all w-64 backdrop-blur-xl"
               />
            </div>
@@ -102,7 +105,7 @@ const AdminUsers = () => {
                   </td>
                   <td className="px-6 py-6">
                     <code className="text-[10px] bg-black/40 px-3 py-1.5 rounded-lg text-emerald-500 font-mono border border-white/5 shadow-inner">
-                      {u.api_key.substring(0, 8)}...{u.api_key.substring(u.api_key.length - 4)}
+                      {u.api_key}
                     </code>
                   </td>
                   <td className="px-6 py-6 text-center">

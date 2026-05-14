@@ -7,17 +7,28 @@ import axios from 'axios';
 const Templates = () => {
     const [templates, setTemplates] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState('');
     
+    const fetchTemplates = async (query = '') => {
+        setLoading(true);
+        try {
+            const res = await axios.get(`/api/v1/templates?search=${encodeURIComponent(query)}`);
+            if (res.data.success) {
+                setTemplates(res.data.data || []);
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        axios.get('/api/v1/templates')
-            .then(res => {
-                if (res.data.success) {
-                    setTemplates(res.data.data || []);
-                }
-            })
-            .catch(err => console.error(err))
-            .finally(() => setLoading(false));
-    }, []);
+        const timer = setTimeout(() => {
+            fetchTemplates(search);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [search]);
 
     return (
         <DashboardLayout>
@@ -38,6 +49,8 @@ const Templates = () => {
                         <input 
                             type="text" 
                             placeholder="Search blueprints..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
                             className="bg-white/5 border border-white/10 rounded-2xl pl-12 pr-6 py-4 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-accent-orange/50 transition-all w-full md:w-64"
                         />
                     </div>

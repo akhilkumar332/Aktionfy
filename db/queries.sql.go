@@ -1467,11 +1467,13 @@ func (q *Queries) ListOutboundWebhooks(ctx context.Context, userID string) ([]Li
 }
 
 const listPublicTemplates = `-- name: ListPublicTemplates :many
-SELECT id, name, description, config, is_public, workspace_id, created_at, price_id, is_premium, author_id FROM templates WHERE is_public = true ORDER BY created_at DESC
+SELECT id, name, description, config, is_public, workspace_id, created_at, price_id, is_premium, author_id FROM templates 
+WHERE is_public = true AND (name ILIKE $1 OR description ILIKE $1)
+ORDER BY created_at DESC
 `
 
-func (q *Queries) ListPublicTemplates(ctx context.Context) ([]Template, error) {
-	rows, err := q.db.Query(ctx, listPublicTemplates)
+func (q *Queries) ListPublicTemplates(ctx context.Context, name string) ([]Template, error) {
+	rows, err := q.db.Query(ctx, listPublicTemplates, name)
 	if err != nil {
 		return nil, err
 	}
@@ -1692,7 +1694,10 @@ func (q *Queries) ListUserTasks(ctx context.Context, userID string) ([]ListUserT
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, email, api_key, role, tier, created_at FROM users ORDER BY created_at DESC
+SELECT id, email, api_key, role, tier, created_at 
+FROM users 
+WHERE email ILIKE $1 OR role ILIKE $1 OR tier ILIKE $1
+ORDER BY created_at DESC
 `
 
 type ListUsersRow struct {
@@ -1704,8 +1709,8 @@ type ListUsersRow struct {
 	CreatedAt pgtype.Timestamptz
 }
 
-func (q *Queries) ListUsers(ctx context.Context) ([]ListUsersRow, error) {
-	rows, err := q.db.Query(ctx, listUsers)
+func (q *Queries) ListUsers(ctx context.Context, email pgtype.Text) ([]ListUsersRow, error) {
+	rows, err := q.db.Query(ctx, listUsers, email)
 	if err != nil {
 		return nil, err
 	}

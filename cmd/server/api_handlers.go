@@ -298,17 +298,24 @@ func apiMonitorHandler(c echo.Context) error {
 }
 
 func apiAdminUsersHandler(c echo.Context) error {
-	rows, err := queries.ListUsers(c.Request().Context())
+	search := c.QueryParam("search")
+	searchParam := "%" + search + "%"
+
+	rows, err := queries.ListUsers(c.Request().Context(), pgtype.Text{String: searchParam, Valid: true})
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch users"})
 	}
 
 	var users []User
 	for _, u := range rows {
+		maskedKey := u.ApiKey
+		if len(maskedKey) > 8 {
+			maskedKey = maskedKey[:4] + "...." + maskedKey[len(maskedKey)-4:]
+		}
 		users = append(users, User{
 			ID:        u.ID,
 			Email:     u.Email.String,
-			APIKey:    u.ApiKey,
+			APIKey:    maskedKey,
 			Role:      u.Role.String,
 			Tier:      u.Tier.String,
 			CreatedAt: u.CreatedAt.Time,

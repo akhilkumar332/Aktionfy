@@ -19,7 +19,10 @@ ORDER BY l.execution_time DESC
 LIMIT 100;
 
 -- name: ListUsers :many
-SELECT id, email, api_key, role, tier, created_at FROM users ORDER BY created_at DESC;
+SELECT id, email, api_key, role, tier, created_at 
+FROM users 
+WHERE email ILIKE $1 OR role ILIKE $1 OR tier ILIKE $1
+ORDER BY created_at DESC;
 
 -- name: GetUser :one
 SELECT id, email, api_key, role, tier, created_at FROM users WHERE id = $1;
@@ -269,7 +272,9 @@ LEFT JOIN user_template_subscriptions s ON t.id = s.template_id AND s.user_id = 
 WHERE t.id = $2;
 
 -- name: ListPublicTemplates :many
-SELECT * FROM templates WHERE is_public = true ORDER BY created_at DESC;
+SELECT * FROM templates 
+WHERE is_public = true AND (name ILIKE $1 OR description ILIKE $1)
+ORDER BY created_at DESC;
 
 -- name: GetTemplateByIDRaw :one
 SELECT * FROM templates WHERE id = $1;

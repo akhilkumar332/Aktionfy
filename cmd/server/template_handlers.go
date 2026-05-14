@@ -64,7 +64,10 @@ func handleListPublicTemplates(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
 	}
 
-	templates, err := queries.ListPublicTemplates(c.Request().Context())
+	search := c.QueryParam("search")
+	searchParam := "%" + search + "%"
+
+	templates, err := queries.ListPublicTemplates(c.Request().Context(), searchParam)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to list public templates"})
 	}
