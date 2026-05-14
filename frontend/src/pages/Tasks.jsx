@@ -100,12 +100,15 @@ const Tasks = () => {
                        <div>
                           <div className="flex items-center gap-2">
                             <div className="text-white font-bold">{task.name}</div>
-                            {task.version_count > 1 && (
+                            {task.version_count > 0 && (
                               <span className="text-[9px] font-black bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded-md uppercase tracking-tighter" title={`${task.version_count} versions available`}>
                                 v{task.version_count}
                               </span>
                             )}
-                            {task.agent_prompt.includes('{{env.') && (
+                            <span className="text-[10px] text-slate-500 font-mono">
+                              {task.agent_prompt ? (task.agent_prompt.includes('SELECT') ? 'SQL' : 'PROMPT') : 'N/A'}
+                            </span>
+                            {task.agent_prompt?.includes('{{env.') && (
                               <Globe size={10} className="text-emerald-500" title="Uses Workspace Environment Variables" />
                             )}
                           </div>
