@@ -41,7 +41,15 @@ CREATE TABLE tasks (
     last_approval_status VARCHAR(20), -- 'pending', 'approved', 'denied'
     trigger_on_completion BOOLEAN DEFAULT FALSE,
     task_type TEXT DEFAULT 'mcp_sampling' CHECK (task_type IN ('mcp_sampling', 'native_action')),
-    native_code TEXT
+    native_code TEXT,
+    workspace_id UUID, -- Managed via Workspaces Table
+    max_retries INT DEFAULT 0,
+    retry_count INT DEFAULT 0,
+    backoff_strategy VARCHAR(50) DEFAULT 'linear',
+    ui_coordinates JSONB,
+    branch_condition JSONB,
+    is_bundle_root BOOLEAN DEFAULT FALSE,
+    loop_condition JSONB
 );
 
 -- Index for high-speed polling
@@ -251,16 +259,6 @@ CREATE TABLE dlq_tasks (
     error_message TEXT,
     failed_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
-
--- Update Tasks
-ALTER TABLE tasks ADD COLUMN workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE;
-ALTER TABLE tasks ADD COLUMN max_retries INT DEFAULT 0;
-ALTER TABLE tasks ADD COLUMN retry_count INT DEFAULT 0;
-ALTER TABLE tasks ADD COLUMN backoff_strategy VARCHAR(50) DEFAULT 'linear';
-ALTER TABLE tasks ADD COLUMN ui_coordinates JSONB;
-ALTER TABLE tasks ADD COLUMN branch_condition JSONB;
-ALTER TABLE tasks ADD COLUMN is_bundle_root BOOLEAN DEFAULT FALSE;
-ALTER TABLE tasks ADD COLUMN loop_condition JSONB; -- e.g. {"state_path": "count", "op": "lt", "value": 5}
 
 CREATE TABLE worker_heartbeats (
     worker_id TEXT PRIMARY KEY,

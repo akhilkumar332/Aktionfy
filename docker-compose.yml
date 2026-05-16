@@ -22,7 +22,7 @@ services:
       - "6379:6379"
 
   jaeger:
-    image: jaegertracing/jaeger:2.0
+    image: jaegertracing/jaeger:2.0.0
     environment:
       - COLLECTOR_ZIPKIN_HOST_PORT=:9411
     ports:
