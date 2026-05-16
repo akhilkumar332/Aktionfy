@@ -1,1 +1,1 @@
-ALTER TABLE templates ADD COLUMN uses_count INT DEFAULT 0;
+ALTER TABLE templates ADD COLUMN IF NOT EXISTS uses_count INT DEFAULT 0;

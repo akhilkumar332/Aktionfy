@@ -114,6 +114,7 @@ type TaskVersion struct {
 	TaskType            string             `json:"task_type"`
 	NativeCode          pgtype.Text        `json:"native_code"`
 	BranchCondition     []byte             `json:"branch_condition"`
+	LoopCondition       []byte             `json:"loop_condition"`
 	IsBundleRoot        pgtype.Bool        `json:"is_bundle_root"`
 	CreatedAt           pgtype.Timestamptz `json:"created_at"`
 }

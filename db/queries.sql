@@ -125,8 +125,8 @@ WHERE status = 'processing' AND next_run < NOW() - INTERVAL '5 minutes';
 SELECT EXISTS(SELECT 1 FROM tasks WHERE id = $1 AND user_id = $2);
 
 -- name: CreateTask :one
-INSERT INTO tasks (user_id, name, trigger_type, trigger_config, agent_prompt, missed_task_policy, depends_on_task_id, next_run, requires_approval, encrypted_secrets, trigger_on_completion, workspace_id, task_type, native_code, branch_condition, is_bundle_root) 
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) 
+INSERT INTO tasks (user_id, name, trigger_type, trigger_config, agent_prompt, missed_task_policy, depends_on_task_id, next_run, requires_approval, encrypted_secrets, trigger_on_completion, workspace_id, task_type, native_code, branch_condition, is_bundle_root, loop_condition) 
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) 
 RETURNING *;
 
 -- name: ListUserTasks :many
@@ -197,8 +197,9 @@ SET agent_prompt = $1,
     ui_coordinates = $3,
     depends_on_task_id = $4,
     trigger_on_completion = $5,
-    branch_condition = $6
-WHERE id = $7 AND user_id = $8
+    branch_condition = $6,
+    loop_condition = $7
+WHERE id = $8 AND user_id = $9
 RETURNING *;
 
 -- name: CreateWorkspace :one
@@ -351,12 +352,12 @@ WHERE start_time > NOW() - INTERVAL '24 hours';
 INSERT INTO task_versions (
     task_id, name, trigger_type, trigger_config, agent_prompt, 
     missed_task_policy, depends_on_task_id, requires_approval, 
-    trigger_on_completion, task_type, native_code, branch_condition, is_bundle_root
+    trigger_on_completion, task_type, native_code, branch_condition, is_bundle_root, loop_condition
 ) 
 SELECT 
     t.id, t.name, t.trigger_type, t.trigger_config, t.agent_prompt, 
     t.missed_task_policy, t.depends_on_task_id, t.requires_approval, 
-    t.trigger_on_completion, t.task_type, t.native_code, t.branch_condition, t.is_bundle_root
+    t.trigger_on_completion, t.task_type, t.native_code, t.branch_condition, t.is_bundle_root, t.loop_condition
 FROM tasks t WHERE t.id = $1 AND t.user_id = $2
 RETURNING *;
 
@@ -380,6 +381,7 @@ SET
     task_type = v.task_type,
     native_code = v.native_code,
     branch_condition = v.branch_condition,
+    loop_condition = v.loop_condition,
     is_bundle_root = v.is_bundle_root
 FROM task_versions v
 WHERE tasks.id = $1 AND tasks.user_id = $2 AND v.id = $3 AND v.task_id = $1;

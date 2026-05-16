@@ -392,14 +392,14 @@ const createTaskVersion = `-- name: CreateTaskVersion :one
 INSERT INTO task_versions (
     task_id, name, trigger_type, trigger_config, agent_prompt, 
     missed_task_policy, depends_on_task_id, requires_approval, 
-    trigger_on_completion, task_type, native_code, branch_condition, is_bundle_root
+    trigger_on_completion, task_type, native_code, branch_condition, is_bundle_root, loop_condition
 ) 
 SELECT 
     t.id, t.name, t.trigger_type, t.trigger_config, t.agent_prompt, 
     t.missed_task_policy, t.depends_on_task_id, t.requires_approval, 
-    t.trigger_on_completion, t.task_type, t.native_code, t.branch_condition, t.is_bundle_root
+    t.trigger_on_completion, t.task_type, t.native_code, t.branch_condition, t.is_bundle_root, t.loop_condition
 FROM tasks t WHERE t.id = $1 AND t.user_id = $2
-RETURNING id, task_id, name, trigger_type, trigger_config, agent_prompt, missed_task_policy, depends_on_task_id, requires_approval, trigger_on_completion, task_type, native_code, branch_condition, is_bundle_root, created_at
+RETURNING id, task_id, name, trigger_type, trigger_config, agent_prompt, missed_task_policy, depends_on_task_id, requires_approval, trigger_on_completion, task_type, native_code, branch_condition, loop_condition, is_bundle_root, created_at
 `
 
 type CreateTaskVersionParams struct {
@@ -424,6 +424,7 @@ func (q *Queries) CreateTaskVersion(ctx context.Context, arg CreateTaskVersionPa
 		&i.TaskType,
 		&i.NativeCode,
 		&i.BranchCondition,
+		&i.LoopCondition,
 		&i.IsBundleRoot,
 		&i.CreatedAt,
 	)
@@ -1160,7 +1161,7 @@ func (q *Queries) GetTaskOutput(ctx context.Context, arg GetTaskOutputParams) ([
 }
 
 const getTaskVersionByID = `-- name: GetTaskVersionByID :one
-SELECT id, task_id, name, trigger_type, trigger_config, agent_prompt, missed_task_policy, depends_on_task_id, requires_approval, trigger_on_completion, task_type, native_code, branch_condition, is_bundle_root, created_at FROM task_versions WHERE id = $1 AND task_id = $2
+SELECT id, task_id, name, trigger_type, trigger_config, agent_prompt, missed_task_policy, depends_on_task_id, requires_approval, trigger_on_completion, task_type, native_code, branch_condition, loop_condition, is_bundle_root, created_at FROM task_versions WHERE id = $1 AND task_id = $2
 `
 
 type GetTaskVersionByIDParams struct {
@@ -1185,6 +1186,7 @@ func (q *Queries) GetTaskVersionByID(ctx context.Context, arg GetTaskVersionByID
 		&i.TaskType,
 		&i.NativeCode,
 		&i.BranchCondition,
+		&i.LoopCondition,
 		&i.IsBundleRoot,
 		&i.CreatedAt,
 	)
@@ -1603,40 +1605,6 @@ func (q *Queries) ListExecutionTracesByExecutionID(ctx context.Context, arg List
 	return items, nil
 }
 
-const listTaskExecutionIDs = `-- name: ListTaskExecutionIDs :many
-SELECT DISTINCT execution_id, MAX(start_time) as last_activity
-FROM execution_traces
-WHERE task_id = $1
-GROUP BY execution_id
-ORDER BY last_activity DESC
-LIMIT 20
-`
-
-type ListTaskExecutionIDsRow struct {
-	ExecutionID  string             `json:"execution_id"`
-	LastActivity pgtype.Timestamptz `json:"last_activity"`
-}
-
-func (q *Queries) ListTaskExecutionIDs(ctx context.Context, taskID pgtype.UUID) ([]ListTaskExecutionIDsRow, error) {
-	rows, err := q.db.Query(ctx, listTaskExecutionIDs, taskID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListTaskExecutionIDsRow
-	for rows.Next() {
-		var i ListTaskExecutionIDsRow
-		if err := rows.Scan(&i.ExecutionID, &i.LastActivity); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const listOutboundWebhooks = `-- name: ListOutboundWebhooks :many
 SELECT id, endpoint_url, event_types, is_active, created_at
 FROM outbound_webhooks
@@ -1715,8 +1683,42 @@ func (q *Queries) ListPublicTemplates(ctx context.Context, name string) ([]Templ
 	return items, nil
 }
 
+const listTaskExecutionIDs = `-- name: ListTaskExecutionIDs :many
+SELECT DISTINCT execution_id, MAX(start_time) as last_activity
+FROM execution_traces
+WHERE task_id = $1
+GROUP BY execution_id
+ORDER BY last_activity DESC
+LIMIT 20
+`
+
+type ListTaskExecutionIDsRow struct {
+	ExecutionID  string      `json:"execution_id"`
+	LastActivity interface{} `json:"last_activity"`
+}
+
+func (q *Queries) ListTaskExecutionIDs(ctx context.Context, taskID pgtype.UUID) ([]ListTaskExecutionIDsRow, error) {
+	rows, err := q.db.Query(ctx, listTaskExecutionIDs, taskID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListTaskExecutionIDsRow
+	for rows.Next() {
+		var i ListTaskExecutionIDsRow
+		if err := rows.Scan(&i.ExecutionID, &i.LastActivity); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listTaskVersions = `-- name: ListTaskVersions :many
-SELECT id, task_id, name, trigger_type, trigger_config, agent_prompt, missed_task_policy, depends_on_task_id, requires_approval, trigger_on_completion, task_type, native_code, branch_condition, is_bundle_root, created_at FROM task_versions WHERE task_id = $1 ORDER BY created_at DESC
+SELECT id, task_id, name, trigger_type, trigger_config, agent_prompt, missed_task_policy, depends_on_task_id, requires_approval, trigger_on_completion, task_type, native_code, branch_condition, loop_condition, is_bundle_root, created_at FROM task_versions WHERE task_id = $1 ORDER BY created_at DESC
 `
 
 func (q *Queries) ListTaskVersions(ctx context.Context, taskID pgtype.UUID) ([]TaskVersion, error) {
@@ -1742,6 +1744,7 @@ func (q *Queries) ListTaskVersions(ctx context.Context, taskID pgtype.UUID) ([]T
 			&i.TaskType,
 			&i.NativeCode,
 			&i.BranchCondition,
+			&i.LoopCondition,
 			&i.IsBundleRoot,
 			&i.CreatedAt,
 		); err != nil {
@@ -2081,6 +2084,7 @@ SET
     task_type = v.task_type,
     native_code = v.native_code,
     branch_condition = v.branch_condition,
+    loop_condition = v.loop_condition,
     is_bundle_root = v.is_bundle_root
 FROM task_versions v
 WHERE tasks.id = $1 AND tasks.user_id = $2 AND v.id = $3 AND v.task_id = $1
@@ -2150,8 +2154,9 @@ SET agent_prompt = $1,
     ui_coordinates = $3,
     depends_on_task_id = $4,
     trigger_on_completion = $5,
-    branch_condition = $6
-WHERE id = $7 AND user_id = $8
+    branch_condition = $6,
+    loop_condition = $7
+WHERE id = $8 AND user_id = $9
 RETURNING id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, task_type, native_code, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates, branch_condition, is_bundle_root, loop_condition
 `
 
