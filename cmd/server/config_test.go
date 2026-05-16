@@ -56,7 +56,7 @@ func TestRuntimeConfigTrustedOriginsIncludesBaseURLHost(t *testing.T) {
 	origins := cfg.csrfTrustedOrigins()
 	found := false
 	for _, origin := range origins {
-		if origin == "app.example.com" {
+		if origin == "https://app.example.com" {
 			found = true
 			break
 		}

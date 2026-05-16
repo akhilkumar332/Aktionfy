@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/hex"
 	"fmt"
-	"log"
 	"net"
 	"net/url"
 	"os"
@@ -101,6 +100,7 @@ func (c runtimeConfig) secureCookies() bool {
 
 func (c runtimeConfig) csrfTrustedOrigins() []string {
 	// gorilla/csrf TrustedOrigins should be scheme://host[:port]
+	
 	origins := []string{
 		"http://localhost:8080",
 		"https://localhost:8080",
@@ -108,9 +108,19 @@ func (c runtimeConfig) csrfTrustedOrigins() []string {
 		"https://127.0.0.1:8080",
 		"http://localhost",
 		"https://localhost",
+		"http://127.0.0.1",
+		"https://127.0.0.1",
 	}
 
-	// In local dev, automatically trust all local network interfaces
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	// Common dev ports (Vite, etc.)
+	devPorts := []string{port, "5173", "3000", "3001"}
+
+	// Automatically trust all local network interfaces in dev
 	if c.LocalDev {
 		addrs, err := net.InterfaceAddrs()
 		if err == nil {
@@ -120,13 +130,34 @@ func (c runtimeConfig) csrfTrustedOrigins() []string {
 						ip := ipnet.IP.String()
 						origins = append(origins, "http://"+ip)
 						origins = append(origins, "https://"+ip)
-						origins = append(origins, "http://"+ip+":8080")
-						origins = append(origins, "https://"+ip+":8080")
+						for _, p := range devPorts {
+							origins = append(origins, "http://"+ip+":"+p)
+							origins = append(origins, "https://"+ip+":"+p)
+						}
 					}
 				}
 			}
-		} else {
-			log.Printf("Warning: failed to fetch local network interfaces for CSRF trust: %v", err)
+		}
+
+		// Always trust localhost/127.0.0.1 with dev ports
+		for _, p := range devPorts {
+			origins = append(origins, "http://localhost:"+p)
+			origins = append(origins, "https://localhost:"+p)
+			origins = append(origins, "http://127.0.0.1:"+p)
+			origins = append(origins, "https://127.0.0.1:"+p)
+			origins = append(origins, "http://[::1]:"+p)
+			origins = append(origins, "https://[::1]:"+p)
+		}
+
+		// Hardcode common local network ranges
+		commonIPs := []string{"192.168.0.26", "192.168.1.1", "10.0.0.1", "172.17.0.1", "172.18.0.1"}
+		for _, ip := range commonIPs {
+			origins = append(origins, "http://"+ip)
+			origins = append(origins, "https://"+ip)
+			for _, p := range devPorts {
+				origins = append(origins, "http://"+ip+":"+p)
+				origins = append(origins, "https://"+ip+":"+p)
+			}
 		}
 	}
 
@@ -134,14 +165,18 @@ func (c runtimeConfig) csrfTrustedOrigins() []string {
 	if extra := os.Getenv("CSRF_TRUSTED_ORIGINS"); extra != "" {
 		for _, o := range strings.Split(extra, ",") {
 			o = strings.TrimSpace(o)
-			if o != "" {
-				// If no scheme, add both http and https
-				if !strings.Contains(o, "://") {
-					origins = append(origins, "http://"+o)
-					origins = append(origins, "https://"+o)
-				} else {
-					origins = append(origins, o)
+			if o == "" {
+				continue
+			}
+			if !strings.Contains(o, "://") {
+				origins = append(origins, "http://"+o)
+				origins = append(origins, "https://"+o)
+				if !strings.Contains(o, ":") {
+					origins = append(origins, "http://"+o+":"+port)
+					origins = append(origins, "https://"+o+":"+port)
 				}
+			} else {
+				origins = append(origins, o)
 			}
 		}
 	}
@@ -149,10 +184,9 @@ func (c runtimeConfig) csrfTrustedOrigins() []string {
 	if c.BaseURL != "" {
 		parsed, err := url.Parse(c.BaseURL)
 		if err == nil && parsed.Host != "" {
-			// Always add the BaseURL as-is
-			origins = append(origins, c.BaseURL)
+			cleanBase := strings.TrimSuffix(c.BaseURL, "/")
+			origins = append(origins, cleanBase)
 
-			// Also add variants
 			hostWithPort := parsed.Host
 			hostOnly := parsed.Hostname()
 
@@ -160,14 +194,20 @@ func (c runtimeConfig) csrfTrustedOrigins() []string {
 			origins = append(origins, "https://"+hostWithPort)
 			origins = append(origins, "http://"+hostOnly)
 			origins = append(origins, "https://"+hostOnly)
+			
+			if c.LocalDev {
+				origins = append(origins, "http://"+hostOnly+":"+port)
+				origins = append(origins, "https://"+hostOnly+":"+port)
+			}
 		}
 	}
 
-	// Deduplicate
+	// Deduplicate and clean
 	unique := make(map[string]bool)
 	var result []string
 	for _, o := range origins {
-		if !unique[o] {
+		o = strings.ToLower(strings.TrimSpace(strings.TrimSuffix(o, "/")))
+		if o != "" && !unique[o] {
 			unique[o] = true
 			result = append(result, o)
 		}
