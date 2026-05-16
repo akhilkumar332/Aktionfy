@@ -105,12 +105,15 @@ func (c runtimeConfig) csrfTrustedOrigins() []string {
 	if err != nil || parsed.Host == "" {
 		return origins
 	}
-	for _, origin := range origins {
-		if origin == parsed.Host {
-			return origins
-		}
+
+	// Always add the host part of BaseURL
+	hostOnly := parsed.Hostname()
+	origins = append(origins, hostOnly)
+	if parsed.Port() != "" {
+		origins = append(origins, parsed.Host)
 	}
-	return append(origins, parsed.Host)
+
+	return origins
 }
 
 func envBool(name string, fallback bool) bool {
