@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"strconv"
-	"strings"
 	"time"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -67,6 +67,20 @@ func (sm *SessionManager) IsOnline(ctx context.Context, userID string) bool {
 // Heartbeat Loop - Keeps the session active in Redis while the SSE connection is open
 // Also subscribes to Pub/Sub to listen for remote task triggers
 func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, mcpServer *server.MCPServer) {
+	// Check per-user connection limit (max 5 connections)
+	connCountKey := fmt.Sprintf("conn_count:%s", userID)
+	count, _ := sm.redisClient.Incr(ctx, connCountKey).Result()
+	sm.redisClient.Expire(ctx, connCountKey, 1*time.Minute)
+	
+	defer func() {
+		sm.redisClient.Decr(context.Background(), connCountKey)
+	}()
+
+	if count > 10 {
+		log.Printf("User %s exceeded connection limit (%d). Rejecting SSE.", userID, count)
+		return
+	}
+
 	ticker := time.NewTicker(15 * time.Second)
 	defer ticker.Stop()
 	activeSSEConnections.Inc()
@@ -111,6 +125,8 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 					return
 				case <-ticker.C:
 					sm.AddUser(ctx, userID)
+					// Refresh connection count expiry
+					sm.redisClient.Expire(ctx, connCountKey, 1*time.Minute)
 				case msg, ok := <-ch:
 					if !ok {
 						log.Printf("Redis channel closed for user %s. Re-subscribing...", userID)
@@ -146,18 +162,29 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 						taskID, _ := taskData["task_id"].(string)
 						prompt, _ := taskData["prompt"].(string)
 						executionID, _ := taskData["execution_id"].(string)
+						
+						span.SetAttributes(
+							attribute.String("task_id", taskID),
+							attribute.String("execution_id", executionID),
+							attribute.String("user_id", userID),
+						)
 						triggerType, _ := taskData["trigger_type"].(string)
 						triggerConfigStr, _ := taskData["trigger_config"].(string)
 						triggerPayload, _ := taskData["trigger_payload"].(map[string]interface{})
 
 						if taskID == "" || prompt == "" || executionID == "" || triggerType == "" || triggerConfigStr == "" {
+							err := fmt.Errorf("incomplete Pub/Sub payload")
 							log.Printf("Incomplete Pub/Sub payload for user %s: %+v", userID, taskData)
+							span.RecordError(err)
+							span.SetStatus(codes.Error, err.Error())
 							return
 						}
 
 						var tid pgtype.UUID
 						if err := parseUUID(taskID, &tid); err != nil {
 							log.Printf("Invalid task ID received via Pub/Sub for user %s: %s", userID, taskID)
+							span.RecordError(err)
+							span.SetStatus(codes.Error, "invalid task uuid")
 							return
 						}
 
@@ -390,22 +417,19 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 
 						// Phase 12.3: Evaluate loop condition
 						if len(t.LoopCondition) > 0 {
-							var loopCond map[string]interface{}
-							if err := json.Unmarshal(t.LoopCondition, &loopCond); err == nil {
-								// Fetch state for evaluation
-								sBytes, _ := queries.GetWorkflowState(dbCtx, db.GetWorkflowStateParams{
-									TaskID:      tid,
-									ExecutionID: executionID,
-								})
-								var stateMap map[string]interface{}
-								json.Unmarshal(sBytes, &stateMap)
+							// Fetch state for evaluation
+							sBytes, _ := queries.GetWorkflowState(dbCtx, db.GetWorkflowStateParams{
+								TaskID:      tid,
+								ExecutionID: executionID,
+							})
+							var stateMap map[string]interface{}
+							json.Unmarshal(sBytes, &stateMap)
 
-								if evaluateWorkflowLoop(loopCond, stateMap) {
-									log.Printf("Loop condition met for task %s, triggering next iteration.", taskID)
-									// Trigger immediate re-run by setting next_run to now and status to active
-									completeTask(dbCtx, userID, taskID, time.Now().UTC(), StatusActive)
-									return
-								}
+							if evaluateWorkflowLoop(t.LoopCondition, stateMap) {
+								log.Printf("Loop condition met for task %s, triggering next iteration.", taskID)
+								// Trigger immediate re-run by setting next_run to now and status to active
+								completeTask(dbCtx, userID, taskID, time.Now().UTC(), StatusActive)
+								return
 							}
 						}
 
@@ -454,56 +478,5 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 		default:
 			// Continue to outer loop to re-subscribe
 		}
-	}
-}
-
-// evaluateWorkflowLoop compares the loop configuration against the current workflow state
-func evaluateWorkflowLoop(loopCond map[string]interface{}, state map[string]interface{}) bool {
-	enabled, ok := loopCond["enabled"].(bool)
-	if !ok || !enabled {
-		return false
-	}
-
-	variable, _ := loopCond["variable"].(string)
-	operator, _ := loopCond["operator"].(string)
-	targetValue := loopCond["value"]
-
-	stateValue, ok := state[variable]
-	if !ok {
-		return false
-	}
-
-	return compareValues(stateValue, targetValue, operator)
-}
-
-// compareValues handles type-agnostic comparison for workflow conditions
-func compareValues(actual interface{}, target interface{}, operator string) bool {
-	sActual := fmt.Sprintf("%v", actual)
-	sTarget := fmt.Sprintf("%v", target)
-
-	switch operator {
-	case "equals", "==":
-		return sActual == sTarget
-	case "not_equals", "!=":
-		return sActual != sTarget
-	case "contains":
-		return strings.Contains(sActual, sTarget)
-	case "greater_than", ">":
-		fActual, errA := strconv.ParseFloat(sActual, 64)
-		fTarget, errT := strconv.ParseFloat(sTarget, 64)
-		if errA == nil && errT == nil {
-			return fActual > fTarget
-		}
-		return sActual > sTarget
-	case "less_than", "<":
-		fActual, errA := strconv.ParseFloat(sActual, 64)
-		fTarget, errT := strconv.ParseFloat(sTarget, 64)
-		if errA == nil && errT == nil {
-			return fActual < fTarget
-		}
-		return sActual < sTarget
-	default:
-		log.Printf("Unknown comparison operator: %s", operator)
-		return false
 	}
 }

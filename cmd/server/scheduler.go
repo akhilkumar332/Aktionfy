@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -628,30 +629,61 @@ func resolvePromptVariables(ctx context.Context, userID string, prompt string, t
 	return resolved
 }
 
-func evaluateLoopCondition(loopConfig []byte, lastOutput string) bool {
+func evaluateWorkflowLoop(loopConfig []byte, state map[string]interface{}) bool {
 	if len(loopConfig) == 0 {
 		return false
 	}
-	var config map[string]interface{}
-	if err := json.Unmarshal(loopConfig, &config); err != nil {
+	var loopCond map[string]interface{}
+	if err := json.Unmarshal(loopConfig, &loopCond); err != nil {
 		log.Printf("Error unmarshaling loop config: %v", err)
 		return false
 	}
 
-	enabled, _ := config["enabled"].(bool)
-	if !enabled {
+	enabled, ok := loopCond["enabled"].(bool)
+	if !ok || !enabled {
 		return false
 	}
 
-	condition, _ := config["condition"].(string)
-	value, _ := config["value"].(string)
+	variable, _ := loopCond["variable"].(string)
+	operator, _ := loopCond["operator"].(string)
+	targetValue := loopCond["value"]
 
-	switch condition {
+	stateValue, ok := state[variable]
+	if !ok {
+		return false
+	}
+
+	return compareValues(stateValue, targetValue, operator)
+}
+
+// compareValues handles type-agnostic comparison for workflow conditions
+func compareValues(actual interface{}, target interface{}, operator string) bool {
+	sActual := fmt.Sprintf("%v", actual)
+	sTarget := fmt.Sprintf("%v", target)
+
+	switch operator {
+	case "equals", "==":
+		return sActual == sTarget
+	case "not_equals", "!=":
+		return sActual != sTarget
 	case "contains":
-		return strings.Contains(lastOutput, value)
-	case "not_contains":
-		return !strings.Contains(lastOutput, value)
+		return strings.Contains(sActual, sTarget)
+	case "greater_than", ">":
+		fActual, errA := strconv.ParseFloat(sActual, 64)
+		fTarget, errT := strconv.ParseFloat(sTarget, 64)
+		if errA == nil && errT == nil {
+			return fActual > fTarget
+		}
+		return sActual > sTarget
+	case "less_than", "<":
+		fActual, errA := strconv.ParseFloat(sActual, 64)
+		fTarget, errT := strconv.ParseFloat(sTarget, 64)
+		if errA == nil && errT == nil {
+			return fActual < fTarget
+		}
+		return sActual < sTarget
 	default:
+		log.Printf("Unknown comparison operator: %s", operator)
 		return false
 	}
 }

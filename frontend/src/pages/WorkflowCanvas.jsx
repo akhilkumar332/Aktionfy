@@ -31,6 +31,7 @@ const WorkflowCanvas = () => {
   const [currentTraceIndex, setCurrentTraceIndex] = useState(-1);
   const [isPlaying, setIsPlaying] = useState(false);
   const playbackTimerRef = useRef(null);
+  const reconnectTimeoutRef = useRef(null);
   
   const sseRef = useRef(null);
 
@@ -291,7 +292,8 @@ const WorkflowCanvas = () => {
       sse.onerror = () => {
         console.warn("SSE Connection lost. Reconnecting in 5s...");
         sse.close();
-        setTimeout(setupSSE, 5000);
+        // Store timeout in ref so it can be cleared
+        reconnectTimeoutRef.current = setTimeout(setupSSE, 5000);
       };
     };
 
@@ -299,6 +301,7 @@ const WorkflowCanvas = () => {
 
     return () => {
       if (sseRef.current) sseRef.current.close();
+      if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
     };
   }, [fetchTasks, updateTaskStatusLocally]);
 
@@ -587,7 +590,7 @@ const WorkflowCanvas = () => {
                                <div className="flex items-center justify-between pt-2 border-t border-white/5">
                                  <div className="text-[8px] font-black uppercase text-slate-500">Duration</div>
                                  <div className="text-[10px] font-mono text-white">
-                                   {((new Date(traces[currentTraceIndex].completed_at) - new Date(traces[currentTraceIndex].started_at)) / 1000).toFixed(2)}s
+                                   {((new Date(traces[currentTraceIndex].end_time) - new Date(traces[currentTraceIndex].start_time)) / 1000).toFixed(2)}s
                                  </div>
                                </div>
                              </div>
