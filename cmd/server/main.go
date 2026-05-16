@@ -219,6 +219,7 @@ func main() {
 		csrf.TrustedOrigins(cfg.csrfTrustedOrigins()),
 		csrf.ErrorHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			log.Printf("CSRF Failure for %s %s: %v", r.Method, r.URL.Path, csrf.FailureReason(r))
+			log.Printf("CSRF Debug - Origin: %q, Referer: %q, Host: %q", r.Header.Get("Origin"), r.Header.Get("Referer"), r.Host)
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusForbidden)
 			json.NewEncoder(w).Encode(APIResponse{

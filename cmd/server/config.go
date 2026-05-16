@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 )
 
 const defaultCSRFKey = "01234567890123456789012345678901"
@@ -97,7 +98,32 @@ func (c runtimeConfig) secureCookies() bool {
 }
 
 func (c runtimeConfig) csrfTrustedOrigins() []string {
-	origins := []string{"localhost:8080", "127.0.0.1:8080"}
+	// gorilla/csrf TrustedOrigins should be scheme://host[:port]
+	origins := []string{
+		"http://localhost:8080",
+		"https://localhost:8080",
+		"http://127.0.0.1:8080",
+		"https://127.0.0.1:8080",
+		"http://localhost",
+		"https://localhost",
+	}
+
+	// Add from environment variable
+	if extra := os.Getenv("CSRF_TRUSTED_ORIGINS"); extra != "" {
+		for _, o := range strings.Split(extra, ",") {
+			o = strings.TrimSpace(o)
+			if o != "" {
+				// If no scheme, add both http and https
+				if !strings.Contains(o, "://") {
+					origins = append(origins, "http://"+o)
+					origins = append(origins, "https://"+o)
+				} else {
+					origins = append(origins, o)
+				}
+			}
+		}
+	}
+
 	if c.BaseURL == "" {
 		return origins
 	}
@@ -106,11 +132,20 @@ func (c runtimeConfig) csrfTrustedOrigins() []string {
 		return origins
 	}
 
-	// Always add the host part of BaseURL
+	// Always add the BaseURL as-is
+	origins = append(origins, c.BaseURL)
+
+	// Also add variants if it's missing scheme or has different scheme
 	hostOnly := parsed.Hostname()
-	origins = append(origins, hostOnly)
-	if parsed.Port() != "" {
-		origins = append(origins, parsed.Host)
+	hostWithPort := parsed.Host
+
+	if !strings.HasPrefix(c.BaseURL, "http://") {
+		origins = append(origins, "http://"+hostWithPort)
+		origins = append(origins, "http://"+hostOnly)
+	}
+	if !strings.HasPrefix(c.BaseURL, "https://") {
+		origins = append(origins, "https://"+hostWithPort)
+		origins = append(origins, "https://"+hostOnly)
 	}
 
 	return origins
