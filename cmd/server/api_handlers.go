@@ -135,7 +135,8 @@ func apiLogoutHandler(c echo.Context) error {
 	user := getUserFromEcho(c)
 	cookie, err := c.Cookie("session_id")
 	if err == nil && cookie.Value != "" {
-		if sessID, err := mustParseUUID(c, cookie.Value); err == nil {
+		var sessID pgtype.UUID
+		if err := parseUUID(cookie.Value, &sessID); err == nil {
 			_ = queries.DeleteWebSession(c.Request().Context(), sessID)
 		}
 	}

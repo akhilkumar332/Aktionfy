@@ -54,8 +54,7 @@ func parseUUID(src string, dst *pgtype.UUID) error {
 func mustParseUUID(c echo.Context, src string) (pgtype.UUID, error) {
 	var id pgtype.UUID
 	if err := parseUUID(src, &id); err != nil {
-		c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid ID format"})
-		return id, err
+		return id, c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid ID format"})
 	}
 	return id, nil
 }

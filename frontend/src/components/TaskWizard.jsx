@@ -106,7 +106,6 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
   useEffect(() => {
     if (isOpen) {
       if (initialData) {
-        // eslint-disable-next-line react-hooks/exhaustive-deps
         const updateFormData = async () => {
           setFormData(prev => ({
             ...prev,
@@ -118,14 +117,13 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
         };
         updateFormData();
       } else {
-        // eslint-disable-next-line react-hooks/exhaustive-deps
         const performReset = async () => {
           resetForm();
         };
         performReset();
       }
     }
-  }, [isOpen, initialData]);
+  }, [isOpen, initialData, fetchWorkspaces, fetchUserTasks]);
 
   const handleNext = () => setStep(s => Math.min(s + 1, 5));
   const handleBack = () => setStep(s => Math.max(s - 1, 1));

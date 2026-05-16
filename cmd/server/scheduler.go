@@ -247,7 +247,11 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 	}
 
 	if t.TaskType.String == "native_action" {
-		inputMap := map[string]interface{}{"task_id": taskID, "execution_id": executionID}
+		inputMap := map[string]interface{}{
+			"task_id":      taskID,
+			"execution_id": executionID,
+			"payload":      triggerPayload,
+		}
 		inputJSON, _ := json.Marshal(inputMap)
 		queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{
 			TaskID:      t.ID,

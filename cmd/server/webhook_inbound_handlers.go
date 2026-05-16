@@ -32,11 +32,9 @@ func handleInboundWebhook(c echo.Context) error {
 	}
 
 	// Parse webhook body if it exists
-	var payload map[string]interface{}
+	payload := make(map[string]interface{})
 	if c.Request().Header.Get("Content-Type") == "application/json" {
 		if err := c.Bind(&payload); err != nil {
-			// Log error but continue with empty payload? 
-			// Or return error? Let's be permissive but log.
 			log.Printf("Error binding webhook payload for task %s: %v", taskID, err)
 		}
 	}

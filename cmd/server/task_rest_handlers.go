@@ -339,6 +339,17 @@ func apiRestoreTaskVersionHandler(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Restore failed"})
 	}
 
+	// Audit Log
+	writeAuditLog(c.Request().Context(), AuditEvent{
+		UserID:       userID,
+		Action:       "task.restore_version",
+		ResourceType: "task",
+		ResourceID:   taskIDStr,
+		Metadata: map[string]interface{}{
+			"version_id": versionIDStr,
+		},
+	})
+
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Task restored successfully"})
 }
 
@@ -381,6 +392,17 @@ func apiLinkTaskHandler(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to link tasks"})
 	}
+
+	// Audit Log
+	writeAuditLog(c.Request().Context(), AuditEvent{
+		UserID:       userID,
+		Action:       "task.link",
+		ResourceType: "task",
+		ResourceID:   taskIDStr,
+		Metadata: map[string]interface{}{
+			"depends_on": req.DependsOnTaskID,
+		},
+	})
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Tasks linked successfully"})
 }
