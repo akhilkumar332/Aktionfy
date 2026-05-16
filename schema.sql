@@ -82,6 +82,11 @@ CREATE TABLE audit_logs (
 CREATE INDEX idx_audit_logs_created_at ON audit_logs (created_at DESC);
 CREATE INDEX idx_audit_logs_user_id ON audit_logs (user_id);
 
+-- Phase 12: Advanced Engine Indexes
+CREATE INDEX IF NOT EXISTS idx_execution_traces_task_id_exec_id ON execution_traces (task_id, execution_id);
+CREATE INDEX IF NOT EXISTS idx_workflow_state_task_id_exec_id ON workflow_state (task_id, execution_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_workspace_id ON tasks (workspace_id);
+
 CREATE TABLE outbound_webhooks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,

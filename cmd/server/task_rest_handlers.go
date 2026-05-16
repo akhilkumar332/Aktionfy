@@ -24,6 +24,8 @@ type CreateTaskRequest struct {
 	DependsOnTaskID     string          `json:"depends_on_task_id"`
 	TriggerOnCompletion bool            `json:"trigger_on_completion"`
 	BranchCondition     json.RawMessage `json:"branch_condition"`
+	LoopCondition       json.RawMessage `json:"loop_condition"`
+	IsBundleRoot        bool            `json:"is_bundle_root"`
 }
 
 func apiCreateTaskHandler(c echo.Context) error {
@@ -75,6 +77,8 @@ func apiCreateTaskHandler(c echo.Context) error {
 		DependsOnTaskID:     dependsOnTaskID,
 		TriggerOnCompletion: pgtype.Bool{Bool: req.TriggerOnCompletion, Valid: true},
 		BranchCondition:     req.BranchCondition,
+		LoopCondition:       req.LoopCondition,
+		IsBundleRoot:        pgtype.Bool{Bool: req.IsBundleRoot, Valid: true},
 		NextRun:             pgtype.Timestamptz{Time: time.Now(), Valid: true},
 	}
 
@@ -215,6 +219,7 @@ type UpdateTaskRequest struct {
 	DependsOnTaskID     string          `json:"depends_on_task_id"`
 	TriggerOnCompletion bool            `json:"trigger_on_completion"`
 	BranchCondition     json.RawMessage `json:"branch_condition"`
+	LoopCondition       json.RawMessage `json:"loop_condition"`
 }
 
 func apiUpdateTaskHandler(c echo.Context) error {
@@ -257,6 +262,7 @@ func apiUpdateTaskHandler(c echo.Context) error {
 		DependsOnTaskID:     dependsOnTaskID,
 		TriggerOnCompletion: pgtype.Bool{Bool: req.TriggerOnCompletion, Valid: true},
 		BranchCondition:     req.BranchCondition,
+		LoopCondition:       req.LoopCondition,
 		ID:                  taskID,
 		UserID:              userID,
 	})
