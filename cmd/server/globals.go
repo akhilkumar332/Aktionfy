@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/labstack/echo/v4"
 	"github.com/redis/go-redis/v9"
+	"net/http"
 	"schedule-mcp/db"
 	"strings"
 	"sync"
@@ -47,4 +49,13 @@ func parseUUID(src string, dst *pgtype.UUID) error {
 	copy(dst.Bytes[:], data)
 	dst.Valid = true
 	return nil
+}
+
+func mustParseUUID(c echo.Context, src string) (pgtype.UUID, error) {
+	var id pgtype.UUID
+	if err := parseUUID(src, &id); err != nil {
+		c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid ID format"})
+		return id, err
+	}
+	return id, nil
 }
