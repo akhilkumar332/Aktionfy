@@ -92,6 +92,33 @@ func initTracer(ctx context.Context) func(context.Context) error {
 	}
 }
 
+func runSettingsPoller(ctx context.Context) {
+	ticker := time.NewTicker(60 * time.Second)
+	defer ticker.Stop()
+	
+	for {
+		// Do an initial sync immediately
+		syncSettings(ctx)
+		
+		select {
+		case <-ticker.C:
+			syncSettings(ctx)
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+func syncSettings(ctx context.Context) {
+	var js, reaper, poll int
+	err := dbPool.QueryRow(ctx, "SELECT js_timeout_ms, reaper_stuck_threshold_minutes, scheduler_poll_interval_seconds FROM system_settings WHERE id = 1").Scan(&js, &reaper, &poll)
+	if err != nil {
+		log.Printf("Error syncing system settings: %v", err)
+		return
+	}
+	CurrentSystemSettings.Update(js, reaper, poll)
+}
+
 func main() {
 	hostname, _ := os.Hostname()
 	workerID = fmt.Sprintf("%s-%d", hostname, time.Now().UTC().UnixNano())
@@ -467,6 +494,8 @@ func main() {
 	go runScheduler(ctx)
 	go runReaper(ctx)
 	go runWorkerHeartbeat(ctx)
+	// Start Background Settings Poller
+	go runSettingsPoller(ctx)
 
 	// Bootstrap Admin
 	adminEmail := os.Getenv("ADMIN_EMAIL")

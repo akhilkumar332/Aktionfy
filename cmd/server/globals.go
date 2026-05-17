@@ -12,7 +12,47 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 )
+
+type GlobalSystemSettings struct {
+	JSTimeoutMS              int
+	ReaperThresholdMinutes   int
+	SchedulerPollIntervalSec int
+	mu                       sync.RWMutex
+}
+
+var CurrentSystemSettings = &GlobalSystemSettings{
+	JSTimeoutMS:              5000,
+	ReaperThresholdMinutes:   5,
+	SchedulerPollIntervalSec: 30,
+}
+
+func (s *GlobalSystemSettings) GetJSTimeout() time.Duration {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return time.Duration(s.JSTimeoutMS) * time.Millisecond
+}
+
+func (s *GlobalSystemSettings) GetReaperThreshold() time.Duration {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return time.Duration(s.ReaperThresholdMinutes) * time.Minute
+}
+
+func (s *GlobalSystemSettings) GetSchedulerPollInterval() time.Duration {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return time.Duration(s.SchedulerPollIntervalSec) * time.Second
+}
+
+func (s *GlobalSystemSettings) Update(js int, reaper int, poll int) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.JSTimeoutMS = js
+	s.ReaperThresholdMinutes = reaper
+	s.SchedulerPollIntervalSec = poll
+}
 
 var (
 	dbPool            *pgxpool.Pool
