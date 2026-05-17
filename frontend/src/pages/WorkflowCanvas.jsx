@@ -23,6 +23,16 @@ const nodeTypes = {
   decision: DecisionNode,
 };
 
+const decodeBase64 = (str) => {
+  try {
+    return decodeURIComponent(atob(str).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+  } catch {
+    return atob(str); // Fallback to atob if it's not a valid UTF-8 sequence
+  }
+};
+
 const WorkflowCanvas = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -62,7 +72,7 @@ const WorkflowCanvas = () => {
       if (task.ui_coordinates) {
         try {
           if (typeof task.ui_coordinates === 'string') {
-            position = JSON.parse(atob(task.ui_coordinates));
+            position = JSON.parse(decodeBase64(task.ui_coordinates));
           } else {
             position = task.ui_coordinates;
           }
@@ -128,7 +138,7 @@ const WorkflowCanvas = () => {
           } else {
             const strCond = String(rawCond);
             try {
-              const decoded = atob(strCond);
+              const decoded = decodeBase64(strCond);
               if (decoded.startsWith('{') || decoded.startsWith('[')) {
                 branchCond = JSON.parse(decoded);
               }

@@ -120,10 +120,12 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 		if err != nil {
 			log.Printf("Failed to subscribe to Redis for user %s: %v. Retrying in %v...", userID, err, backoff)
 			pubsub.Close()
+			timer := time.NewTimer(backoff)
 			select {
 			case <-ctx.Done():
+				timer.Stop()
 				return
-			case <-time.After(backoff):
+			case <-timer.C:
 				if backoff < 30*time.Second {
 					backoff *= 2
 				}

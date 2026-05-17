@@ -48,10 +48,12 @@ func listenForTaskQueued(ctx context.Context, dbURL string) {
 		err := processTaskQueue(ctx, dbURL)
 		if err != nil {
 			log.Printf("Task queue listener error: %v. Retrying in %v...", err, backoff)
+			timer := time.NewTimer(backoff)
 			select {
 			case <-ctx.Done():
+				timer.Stop()
 				return
-			case <-time.After(backoff):
+			case <-timer.C:
 			}
 			if backoff < 30*time.Second {
 				backoff *= 2
@@ -127,10 +129,12 @@ func runScheduler(ctx context.Context) {
 		}
 
 		pollInterval := CurrentSystemSettings.GetSchedulerPollInterval()
+		timer := time.NewTimer(pollInterval)
 		select {
-		case <-time.After(pollInterval):
+		case <-timer.C:
 			// Loop again
 		case <-ctx.Done():
+			timer.Stop()
 			return
 		}
 	}
@@ -158,10 +162,12 @@ func listenForTaskClaims(ctx context.Context, dbURL string) {
 		conn, err := pgx.Connect(ctx, dbURL)
 		if err != nil {
 			log.Printf("Failed to connect task claim listener: %v. Retrying in %v...", err, backoff)
+			timer := time.NewTimer(backoff)
 			select {
 			case <-ctx.Done():
+				timer.Stop()
 				return
-			case <-time.After(backoff):
+			case <-timer.C:
 			}
 			if backoff < 30*time.Second {
 				backoff *= 2
@@ -173,10 +179,12 @@ func listenForTaskClaims(ctx context.Context, dbURL string) {
 		if err != nil {
 			log.Printf("Failed to LISTEN for task claims: %v", err)
 			conn.Close(context.Background())
+			timer := time.NewTimer(backoff)
 			select {
 			case <-ctx.Done():
+				timer.Stop()
 				return
-			case <-time.After(backoff):
+			case <-timer.C:
 			}
 			if backoff < 30*time.Second {
 				backoff *= 2
@@ -197,12 +205,12 @@ func listenForTaskClaims(ctx context.Context, dbURL string) {
 				log.Printf("Task claim listener disconnected: %v", err)
 				break
 			}
-			handleTaskClaimNotification(notification.Payload)
+			handleTaskClaimNotification(ctx, notification.Payload)
 		}
 	}
 }
 
-func handleTaskClaimNotification(payload string) {
+func handleTaskClaimNotification(ctx context.Context, payload string) {
 	var notice taskClaimNotification
 	if err := json.Unmarshal([]byte(payload), &notice); err != nil {
 		log.Printf("Invalid task claim notification payload: %v", err)
@@ -221,7 +229,7 @@ func handleTaskClaimNotification(payload string) {
 				log.Printf("Panic recovered in task claim worker: %v", r)
 			}
 		}()
-		workerCtx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+		workerCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
 		defer cancel()
 
 		var taskID pgtype.UUID

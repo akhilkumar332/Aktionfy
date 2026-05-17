@@ -17,7 +17,17 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
   const [showVariableSelector, setShowVariableSelector] = useState(false);
   const [error, setError] = useState(null);
 
-  const parseJSONField = (field, defaultValue) => {
+  const decodeBase64 = (str) => {
+    try {
+      return decodeURIComponent(atob(str).split('').map(function(c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+    } catch {
+      return atob(str);
+    }
+  };
+
+  const parseJSONField = useCallback((field, defaultValue) => {
     if (!field) return defaultValue;
     if (typeof field === 'object') return field;
     
@@ -25,7 +35,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
     
     // Try Base64 (common for Go []byte fields)
     try {
-      const decoded = atob(strField);
+      const decoded = decodeBase64(strField);
       if (decoded.startsWith('{') || decoded.startsWith('[')) {
         return JSON.parse(decoded);
       }
@@ -39,7 +49,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
     } catch {
       return defaultValue;
     }
-  };
+  }, []);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -147,7 +157,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
         resetForm();
       }
     }
-  }, [isOpen, initialData, fetchWorkspaces, fetchUserTasks]);
+  }, [isOpen, initialData, fetchWorkspaces, fetchUserTasks, parseJSONField]);
 
   const handleNext = () => setStep(s => Math.min(s + 1, 5));
   const handleBack = () => setStep(s => Math.max(s - 1, 1));

@@ -6,6 +6,16 @@ import { motion } from 'framer-motion';
 import axios from 'axios';
 import TaskWizard from '../components/TaskWizard';
 
+const decodeBase64 = (str) => {
+    try {
+        return decodeURIComponent(atob(str).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+    } catch {
+        return atob(str);
+    }
+};
+
 const Templates = () => {
     const [templates, setTemplates] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -45,7 +55,7 @@ const Templates = () => {
                 if (e instanceof SyntaxError) {
                     try {
                         // Attempt to Base64 decode if direct JSON parsing fails
-                        config = JSON.parse(atob(template.config));
+                        config = JSON.parse(decodeBase64(template.config));
                     } catch (e2) {
                         console.error("Failed to parse template config as JSON or Base64 encoded JSON:", template.config, e2);
                         // Optionally, handle the error further, e.g., by setting config to null or default

@@ -540,6 +540,11 @@ func main() {
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer shutdownCancel()
 
+	// Gracefully shutdown the Echo server
+	if err := e.Shutdown(shutdownCtx); err != nil {
+		log.Printf("Server forced to shutdown: %v", err)
+	}
+
 	done := make(chan struct{})
 	go func() {
 		defer func() {

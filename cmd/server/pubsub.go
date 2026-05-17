@@ -58,10 +58,12 @@ func SubscribeToEvents(ctx context.Context, onEvent func(context.Context, PubSub
 			pubsub.Close()
 			log.Printf("Redis system_events channel closed. Retrying in 5s...")
 
+			timer := time.NewTimer(5 * time.Second)
 			select {
 			case <-ctx.Done():
+				timer.Stop()
 				return
-			case <-time.After(5 * time.Second):
+			case <-timer.C:
 				// retry
 			}
 		}
