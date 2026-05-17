@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import ReactFlow, { 
   addEdge, 
   Background, 
@@ -10,7 +11,6 @@ import ReactFlow, {
 } from 'reactflow';
 import dagre from 'dagre';
 import 'reactflow/dist/style.css';
-import DashboardLayout from '../components/DashboardLayout';
 import TaskWizard from '../components/TaskWizard';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
@@ -123,31 +123,36 @@ const WorkflowCanvas = () => {
         data: { 
           task,
           label: isRouter ? undefined : (
-            <div className={`flex flex-col items-center gap-1 transition-all duration-500 ${isProcessing ? 'scale-110' : ''}`}>
-              <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">{task.trigger_type}</div>
-              <div className="font-bold text-white text-xs">{task.name}</div>
-              <div className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${
-                task.status === 'active' ? 'bg-emerald-500/20 text-emerald-400' : 
-                task.status === 'processing' ? 'bg-amber-500/20 text-amber-400 animate-pulse' :
-                'bg-slate-500/20 text-slate-400'
+            <div className={`flex flex-col items-center gap-2 transition-all duration-500 ${isProcessing ? 'scale-110' : ''}`}>
+              <div className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-500 opacity-60">{task.trigger_type}</div>
+              <div className="font-black text-white text-xs tracking-tight uppercase">{task.name}</div>
+              <div className={`flex items-center gap-2 text-[8px] font-black uppercase px-3 py-1 rounded-full border transition-all ${
+                task.status === 'active' ? 'bg-emerald-500/5 text-emerald-400 border-emerald-500/20' : 
+                task.status === 'processing' ? 'bg-brand-primary/10 text-brand-primary border-brand-primary/20 animate-pulse' :
+                'bg-white/5 text-slate-500 border-white/5'
               }`}>
+                <div className={`w-1 h-1 rounded-full ${
+                  task.status === 'active' ? 'bg-emerald-500' : 
+                  task.status === 'processing' ? 'bg-brand-primary animate-ping' :
+                  'bg-slate-700'
+                }`} />
                 {task.status}
               </div>
               {isProcessing && (
-                <div className="absolute -inset-4 bg-amber-500/10 rounded-[1.5rem] -z-10 animate-ping duration-[2000ms]" />
+                <div className="absolute -inset-4 bg-brand-primary/5 rounded-[2rem] -z-10 animate-ping duration-[3000ms]" />
               )}
             </div>
           )
         },
         style: isRouter ? { transition: 'all 0.5s ease-in-out' } : {
-          background: isProcessing ? 'rgba(217, 119, 6, 0.15)' : 'rgba(15, 23, 42, 0.8)',
+          background: isProcessing ? 'rgba(217, 119, 6, 0.05)' : 'rgba(10, 10, 10, 0.8)',
           color: '#fff',
-          border: isProcessing ? '2px solid rgba(217, 119, 6, 0.5)' : '1px solid rgba(255, 255, 255, 0.1)',
-          borderRadius: '1rem',
-          padding: '1rem',
-          width: 180,
-          backdropFilter: 'blur(12px)',
-          boxShadow: isProcessing ? '0 0 20px rgba(217, 119, 6, 0.3)' : 'none',
+          border: isProcessing ? '2px solid rgba(217, 119, 6, 0.4)' : '1px solid rgba(255, 255, 255, 0.05)',
+          borderRadius: '2rem',
+          padding: '1.5rem',
+          width: 200,
+          backdropFilter: 'blur(16px)',
+          boxShadow: isProcessing ? '0 0 40px rgba(217, 119, 6, 0.2)' : '0 10px 30px rgba(0,0,0,0.3)',
           transition: 'all 0.5s ease-in-out'
         },
       };
@@ -160,7 +165,7 @@ const WorkflowCanvas = () => {
         const sourceTask = tasksList.find(t => t.id === task.depends_on_task_id);
         const isRouterSource = sourceTask?.task_type === 'decision_router' || sourceTask?.task_type === 'swarm_router';
         
-        let label = task.trigger_on_completion ? 'triggers' : 'depends';
+        let label = task.trigger_on_completion ? 'cascade' : 'sync';
         let branchCond = null;
         
         if (task.branch_condition) {
@@ -185,10 +190,12 @@ const WorkflowCanvas = () => {
         }
 
         if (isRouterSource) {
-          label = branchCond?.key || branchCond?.value || 'branch';
+          label = branchCond?.key || branchCond?.value || 'route';
         } else if (branchCond?.value) {
           label = `if: ${branchCond.value}`;
         }
+
+        const edgeColor = isRouterSource ? '#818cf8' : (task.trigger_on_completion ? '#d97706' : '#3b82f6');
 
         return {
           id: `e-${task.depends_on_task_id}-${task.id}`,
@@ -197,14 +204,14 @@ const WorkflowCanvas = () => {
           type: 'smoothstep',
           animated: task.trigger_on_completion || task.status === 'processing' || isRouterSource,
           label: label,
-          labelStyle: { fill: isRouterSource ? '#818cf8' : '#94a3b8', fontWeight: 800, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em' },
-          labelBgStyle: { fill: 'rgba(15, 23, 42, 0.8)', fillOpacity: 0.8 },
-          labelBgPadding: [4, 2],
-          labelBgBorderRadius: 4,
-          style: { stroke: isRouterSource ? '#6366f1' : (task.trigger_on_completion ? '#f59e0b' : '#3b82f6'), strokeWidth: isRouterSource ? 3 : 2 },
+          labelStyle: { fill: edgeColor, fontWeight: 900, fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.2em' },
+          labelBgStyle: { fill: 'rgba(5, 5, 5, 0.9)', fillOpacity: 0.9 },
+          labelBgPadding: [6, 4],
+          labelBgBorderRadius: 8,
+          style: { stroke: edgeColor, strokeWidth: isRouterSource ? 3 : 2, opacity: 0.6 },
           markerEnd: {
             type: MarkerType.ArrowClosed,
-            color: isRouterSource ? '#6366f1' : (task.trigger_on_completion ? '#f59e0b' : '#3b82f6'),
+            color: edgeColor,
           },
         };
       });
@@ -352,10 +359,10 @@ const WorkflowCanvas = () => {
           ...node,
           style: {
             ...node.style,
-            border: isActive ? '3px solid #f59e0b' : '1px solid rgba(255, 255, 255, 0.1)',
-            boxShadow: isActive ? '0 0 25px rgba(245, 158, 11, 0.4)' : 'none',
+            border: isActive ? '3px solid #d97706' : '1px solid rgba(255, 255, 255, 0.05)',
+            boxShadow: isActive ? '0 0 50px rgba(217, 119, 6, 0.4)' : 'none',
             transform: isActive ? 'scale(1.05)' : 'scale(1)',
-            transition: 'all 0.5s ease-in-out'
+            transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
           }
         };
       }));
@@ -370,8 +377,9 @@ const WorkflowCanvas = () => {
           animated: isActive || edge.animated,
           style: {
             ...edge.style,
-            stroke: isActive ? '#f59e0b' : (edge.style?.stroke || '#3b82f6'),
+            stroke: isActive ? '#d97706' : (edge.style?.stroke || '#3b82f6'),
             strokeWidth: isActive ? 4 : (edge.style?.strokeWidth || 2),
+            opacity: isActive ? 1 : 0.4
           }
         };
       }));
@@ -397,27 +405,32 @@ const WorkflowCanvas = () => {
                     ...node.data,
                     task: updatedTask,
                     label: (
-                        <div className={`flex flex-col items-center gap-1 transition-all duration-500 ${isProcessing ? 'scale-110' : ''}`}>
-                          <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">{updatedTask.trigger_type}</div>
-                          <div className="font-bold text-white text-xs">{updatedTask.name}</div>
-                          <div className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${
-                            updatedTask.status === 'active' ? 'bg-emerald-500/20 text-emerald-400' : 
-                            updatedTask.status === 'processing' ? 'bg-amber-500/20 text-amber-400 animate-pulse' :
-                            'bg-slate-500/20 text-slate-400'
+                        <div className={`flex flex-col items-center gap-2 transition-all duration-500 ${isProcessing ? 'scale-110' : ''}`}>
+                          <div className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-500 opacity-60">{updatedTask.trigger_type}</div>
+                          <div className="font-black text-white text-xs tracking-tight uppercase">{updatedTask.name}</div>
+                          <div className={`flex items-center gap-2 text-[8px] font-black uppercase px-3 py-1 rounded-full border transition-all ${
+                            updatedTask.status === 'active' ? 'bg-emerald-500/5 text-emerald-400 border-emerald-500/20' : 
+                            updatedTask.status === 'processing' ? 'bg-brand-primary/10 text-brand-primary border-brand-primary/20 animate-pulse' :
+                            'bg-white/5 text-slate-500 border-white/5'
                           }`}>
+                            <div className={`w-1 h-1 rounded-full ${
+                              updatedTask.status === 'active' ? 'bg-emerald-500' : 
+                              updatedTask.status === 'processing' ? 'bg-brand-primary animate-ping' :
+                              'bg-slate-700'
+                            }`} />
                             {updatedTask.status}
                           </div>
                           {isProcessing && (
-                            <div className="absolute -inset-4 bg-amber-500/10 rounded-[1.5rem] -z-10 animate-ping duration-[2000ms]" />
+                            <div className="absolute -inset-4 bg-brand-primary/5 rounded-[2rem] -z-10 animate-ping duration-[3000ms]" />
                           )}
                         </div>
                     )
                 },
                 style: {
                     ...node.style,
-                    background: isProcessing ? 'rgba(217, 119, 6, 0.15)' : 'rgba(15, 23, 42, 0.8)',
-                    border: isProcessing ? '2px solid rgba(217, 119, 6, 0.5)' : '1px solid rgba(255, 255, 255, 0.1)',
-                    boxShadow: isProcessing ? '0 0 20px rgba(217, 119, 6, 0.3)' : 'none',
+                    background: isProcessing ? 'rgba(217, 119, 6, 0.05)' : 'rgba(10, 10, 10, 0.8)',
+                    border: isProcessing ? '2px solid rgba(217, 119, 6, 0.4)' : '1px solid rgba(255, 255, 255, 0.05)',
+                    boxShadow: isProcessing ? '0 0 40px rgba(217, 119, 6, 0.2)' : '0 10px 30px rgba(0,0,0,0.3)',
                     transition: 'all 0.5s ease-in-out'
                 }
             };
@@ -481,7 +494,7 @@ const WorkflowCanvas = () => {
     dagreGraph.setGraph({ rankdir: 'LR' });
 
     nodes.forEach((node) => {
-      dagreGraph.setNode(node.id, { width: 180, height: 100 });
+      dagreGraph.setNode(node.id, { width: 200, height: 120 });
     });
 
     edges.forEach((edge) => {
@@ -495,12 +508,12 @@ const WorkflowCanvas = () => {
       return {
         ...node,
         position: {
-          x: nodeWithPosition.x - 180 / 2,
-          y: nodeWithPosition.y - 100 / 2,
+          x: nodeWithPosition.x - 200 / 2,
+          y: nodeWithPosition.y - 120 / 2,
         },
         style: {
           ...node.style,
-          transition: 'all 0.5s ease-in-out'
+          transition: 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)'
         }
       };
     });
@@ -516,7 +529,7 @@ const WorkflowCanvas = () => {
         trigger_on_completion: true
       });
       if (res.data.success) {
-        setEdges((eds) => addEdge({ ...params, type: 'smoothstep', animated: true, style: { stroke: '#f59e0b' } }, eds));
+        setEdges((eds) => addEdge({ ...params, type: 'smoothstep', animated: true, style: { stroke: '#d97706' } }, eds));
         // Refresh tasks to get updated dependency state
         fetchTasks();
       }
@@ -596,59 +609,81 @@ const WorkflowCanvas = () => {
   };
 
   return (
-    <DashboardLayout>
-      <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+    <div className="h-screen w-full flex flex-col bg-obsidian-950 text-white overflow-hidden selection:bg-brand-primary">
+      <header className="px-10 py-8 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-obsidian-900/50 backdrop-blur-3xl border-b border-white/5 z-20">
         <div>
           <motion.h1 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-4xl font-black text-white tracking-tight mb-2 flex items-center gap-4"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="text-3xl font-black text-white tracking-tighter flex items-center gap-4"
           >
-            <Layers className="text-accent-orange" size={32} />
+            <div className="p-2 bg-brand-primary/10 rounded-xl border border-brand-primary/20">
+               <Layers className="text-brand-primary" size={24} />
+            </div>
             Workflow Canvas
           </motion.h1>
-          <p className="text-slate-400 font-medium tracking-wide uppercase text-[10px] tracking-[0.2em]">Visual orchestration and flow design</p>
+          <div className="flex items-center gap-3 mt-1 ml-14">
+             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+             <p className="text-slate-500 font-black uppercase text-[9px] tracking-[0.2em]">Neural Interconnect Active</p>
+          </div>
         </div>
-        <div className="flex gap-4">
+        <div className="flex gap-3">
           <button 
             onClick={fetchTasks}
             disabled={loading}
-            className="p-4 bg-white/5 text-white rounded-2xl border border-white/10 hover:bg-white/10 transition-colors disabled:opacity-50"
-            title="Refresh Tasks"
+            className="p-4 bg-white/5 text-slate-400 rounded-2xl border border-white/5 hover:bg-white/10 hover:text-white transition-all disabled:opacity-50"
+            title="Sync Core"
           >
-            <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+            <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
           </button>
           <button 
             onClick={onLayout}
-            className="bg-white/5 text-white px-6 py-4 rounded-2xl text-xs font-black uppercase tracking-widest border border-white/10 hover:bg-white/10 transition-all flex items-center gap-2"
+            className="bg-white/5 text-slate-300 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] border border-white/5 hover:bg-white/10 hover:text-white transition-all flex items-center gap-3"
           >
-            <Activity size={16} className="text-indigo-400" />
-            Auto-Layout
+            <Activity size={14} className="text-brand-secondary" />
+            Auto-Sync
           </button>
           <button 
             onClick={saveLayout}
             disabled={saving || loading || nodes.length === 0}
-            className="bg-accent-orange text-white px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-widest shadow-[0_10px_30px_rgba(217,119,6,0.3)] hover:scale-105 transition-transform flex items-center gap-2 disabled:opacity-50"
+            className="shimmer-button bg-brand-primary text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-[0_20px_50px_rgba(217,119,6,0.3)] hover:brightness-110 active:scale-95 transition-all flex items-center gap-3 disabled:opacity-50"
           >
             {saving ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
-            Save Layout
+            Commit Layout
           </button>
+          <Link 
+            to="/dashboard"
+            className="p-4 bg-white/5 text-slate-400 rounded-2xl border border-white/5 hover:bg-white/10 hover:text-white transition-all"
+          >
+            <X size={18} />
+          </Link>
         </div>
       </header>
 
-      <div className="relative h-[calc(100vh-300px)] w-full bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden shadow-[0_40px_100px_rgba(0,0,0,0.5)]">
+      <div className="flex-1 relative bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-repeat opacity-[0.03] pointer-events-none absolute inset-0"></div>
+
+      <div className="flex-1 relative">
         {loading && nodes.length === 0 ? (
-          <div className="h-full w-full flex items-center justify-center">
-             <div className="flex flex-col items-center gap-4">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-orange"></div>
-                <div className="text-slate-500 font-black uppercase tracking-widest text-[10px]">Loading Workspace...</div>
+          <div className="h-full w-full flex items-center justify-center bg-obsidian-950">
+             <div className="flex flex-col items-center gap-6">
+                <div className="w-16 h-16 border-2 border-brand-primary/20 border-t-brand-primary rounded-full animate-spin"></div>
+                <div className="text-slate-500 font-black uppercase tracking-[0.3em] text-[10px] animate-pulse">Initializing Virtual Workspace...</div>
              </div>
           </div>
         ) : nodes.length === 0 ? (
-          <div className="h-full w-full flex items-center justify-center">
-             <div className="text-center">
-                <Layers size={48} className="text-slate-700 mx-auto mb-4" />
-                <div className="text-slate-500 font-black uppercase tracking-widest text-xs">No tasks found in this workspace</div>
+          <div className="h-full w-full flex items-center justify-center bg-obsidian-950">
+             <div className="text-center max-w-sm">
+                <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-8 border border-white/5">
+                   <Layers size={40} className="text-slate-700" />
+                </div>
+                <h2 className="text-xl font-black text-white uppercase tracking-widest mb-4">Neural Void</h2>
+                <p className="text-slate-500 text-xs font-bold uppercase tracking-widest leading-relaxed">No orchestration streams identified in this environment.</p>
+                <button 
+                  onClick={() => setIsSidebarOpen(true)}
+                  className="mt-8 px-10 py-5 bg-brand-primary text-white rounded-[2rem] font-black uppercase text-[10px] tracking-[0.2em] shadow-2xl"
+                >
+                  Fire First Orchestration
+                </button>
              </div>
           </div>
         ) : (
@@ -665,17 +700,17 @@ const WorkflowCanvas = () => {
             colorMode="dark"
             fitView
           >
-            <Controls />
+            <Controls className="!bg-obsidian-900 !border-white/10 !rounded-xl !shadow-2xl" />
             <MiniMap 
               style={{
-                backgroundColor: 'rgba(15, 23, 42, 0.8)',
-                borderRadius: '1rem',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
+                backgroundColor: 'rgba(5, 5, 5, 0.9)',
+                borderRadius: '2rem',
+                border: '1px solid rgba(255, 255, 255, 0.05)',
               }}
-              maskColor="rgba(0, 0, 0, 0.1)"
-              nodeColor="rgba(217, 119, 6, 0.5)"
+              maskColor="rgba(0, 0, 0, 0.3)"
+              nodeColor="rgba(217, 119, 6, 0.3)"
             />
-            <Background variant="dots" gap={12} size={1} color="rgba(255, 255, 255, 0.1)" />
+            <Background variant="dots" gap={20} size={1} color="rgba(255, 255, 255, 0.05)" />
           </ReactFlow>
         )}
 
@@ -687,7 +722,7 @@ const WorkflowCanvas = () => {
           onRouted={fetchTasks}
         />
 
-        {/* Sidebar for editing */}
+        {/* Unified Inspector/Wizard Sidebar */}
         <AnimatePresence>
           {isSidebarOpen && (
             <>
@@ -696,38 +731,38 @@ const WorkflowCanvas = () => {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setIsSidebarOpen(false)}
-                className="absolute inset-0 bg-black/40 backdrop-blur-sm z-40"
+                className="absolute inset-0 bg-black/80 backdrop-blur-md z-40"
               />
               <motion.div 
                 initial={{ x: '100%' }}
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
                 transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className="absolute right-0 top-0 h-full w-full max-w-md bg-zinc-900 border-l border-white/10 z-50 shadow-2xl flex flex-col"
+                className="absolute right-0 top-0 h-full w-full max-w-xl bg-obsidian-900 border-l border-white/5 z-50 shadow-[0_0_100px_rgba(0,0,0,0.8)] flex flex-col"
               >
-                <div className="p-6 border-b border-white/5 flex items-center justify-between">
+                <div className="p-10 border-b border-white/5 flex items-center justify-between bg-white/[0.01]">
                   <div>
-                    <h3 className="text-lg font-black text-white uppercase tracking-tighter">Task Inspector</h3>
-                    <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Configuration & Logic</p>
+                    <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Neural Inspector</h3>
+                    <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.3em] mt-1">Core Logic & Telemetry</p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <button 
                       onClick={() => setPlaybackMode(!playbackMode)}
-                      className={`p-2 rounded-xl transition-all ${playbackMode ? 'bg-accent-orange text-white shadow-lg shadow-orange-500/20' : 'hover:bg-white/5 text-slate-500'}`}
-                      title={playbackMode ? "Exit Playback" : "Visual Playback"}
+                      className={`p-4 rounded-2xl transition-all border ${playbackMode ? 'bg-brand-primary border-brand-primary text-white shadow-2xl shadow-orange-500/20' : 'bg-white/5 border-white/10 text-slate-500'}`}
+                      title="Toggle Simulation"
                     >
                       <Activity size={20} />
                     </button>
                     <button 
-                      onClick={() => handleDeleteTask(selectedTask.id)}
-                      className="p-2 hover:bg-red-500/10 rounded-xl text-red-500 transition-colors"
-                      title="Delete Task"
+                      onClick={() => handleDeleteTask(selectedTask?.id)}
+                      className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-500 hover:bg-red-500/20 transition-all"
+                      title="Terminate Node"
                     >
                       <Trash2 size={20} />
                     </button>
                     <button 
                       onClick={() => setIsSidebarOpen(false)}
-                      className="p-2 hover:bg-white/5 rounded-xl text-slate-500 hover:text-white transition-colors"
+                      className="p-4 bg-white/5 border border-white/10 rounded-2xl text-slate-500 hover:text-white transition-all"
                     >
                       <X size={20} />
                     </button>
@@ -736,101 +771,111 @@ const WorkflowCanvas = () => {
                 
                 <div className="flex-1 overflow-y-auto relative custom-scrollbar">
                    {playbackMode ? (
-                     <div className="p-6 space-y-8">
+                     <div className="p-10 space-y-10">
                        <div className="space-y-4">
-                         <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Select Execution</label>
+                         <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-2">Historical Lifecycles</label>
                          <select 
                            value={selectedExecutionId}
                            onChange={(e) => setSelectedExecutionId(e.target.value)}
-                           className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-accent-orange"
+                           className="w-full bg-black/40 border border-white/5 rounded-[2rem] p-6 text-sm text-white focus:outline-none focus:border-brand-primary/50 shadow-inner appearance-none font-mono"
                          >
                            {executions.map(ex => (
-                             <option key={ex.id} value={ex.id} className="bg-zinc-900">
-                               {new Date(ex.started_at).toLocaleString()} ({ex.status})
+                             <option key={ex.id} value={ex.id} className="bg-obsidian-900">
+                               {new Date(ex.started_at).toLocaleTimeString()} :: {ex.status.toUpperCase()}
                              </option>
                            ))}
                          </select>
                        </div>
 
                        {traces.length > 0 ? (
-                         <div className="space-y-6">
-                           <div className="bg-white/5 border border-white/10 rounded-[1.5rem] p-6 space-y-6">
+                         <div className="space-y-10">
+                           <div className="bg-white/[0.02] border border-white/5 rounded-[3rem] p-10 space-y-10 relative overflow-hidden">
                              <div className="flex items-center justify-between">
-                               <div className="text-[10px] font-black uppercase tracking-widest text-accent-orange">Playback Controls</div>
-                               <div className="text-[10px] font-black text-slate-500">{currentTraceIndex + 1} / {traces.length}</div>
+                               <div className="text-[10px] font-black uppercase tracking-[0.3em] text-brand-primary">Telemetry Deck</div>
+                               <div className="text-[10px] font-black font-mono text-slate-500 opacity-60">FRM_{currentTraceIndex + 1} // TOTAL_{traces.length}</div>
                              </div>
                              
-                             <div className="flex items-center justify-center gap-4">
+                             <div className="flex items-center justify-center gap-6">
                                <button 
                                  onClick={() => setCurrentTraceIndex(prev => Math.max(0, prev - 1))}
-                                 className="p-3 bg-white/5 rounded-full text-white hover:bg-white/10 transition-colors"
+                                 className="p-4 bg-white/5 rounded-2xl text-white hover:bg-white/10 transition-colors border border-white/5"
                                >
-                                 <Rewind size={20} />
+                                 <Rewind size={24} />
                                </button>
                                <button 
                                  onClick={() => setIsPlaying(!isPlaying)}
-                                 className="p-5 bg-accent-orange rounded-full text-white hover:scale-110 transition-transform shadow-lg shadow-orange-500/20"
+                                 className="p-8 bg-brand-primary rounded-[2.5rem] text-white hover:scale-110 transition-transform shadow-[0_20px_60px_rgba(217,119,6,0.3)] active:scale-95"
                                >
-                                 {isPlaying ? <Pause size={24} /> : <Play size={24} />}
+                                 {isPlaying ? <Pause size={32} /> : <Play size={32} className="translate-x-1" />}
                                </button>
                                <button 
                                  onClick={() => setCurrentTraceIndex(prev => Math.min(traces.length - 1, prev + 1))}
-                                 className="p-3 bg-white/5 rounded-full text-white hover:bg-white/10 transition-colors"
+                                 className="p-4 bg-white/5 rounded-2xl text-white hover:bg-white/10 transition-colors border border-white/5"
                                >
-                                 <FastForward size={20} />
+                                 <FastForward size={24} />
                                </button>
                              </div>
 
-                             <div className="space-y-2">
+                             <div className="space-y-4">
                                <input 
                                  type="range" 
                                  min="0" 
                                  max={Math.max(0, traces.length - 1)} 
                                  value={currentTraceIndex}
                                  onChange={(e) => setCurrentTraceIndex(parseInt(e.target.value))}
-                                 className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-accent-orange"
+                                 className="w-full h-1 bg-white/5 rounded-full appearance-none cursor-pointer accent-brand-primary"
                                />
                              </div>
                            </div>
 
-                           <div className="space-y-4">
-                             <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">Step Details</div>
-                             <div className="bg-white/5 border border-white/10 rounded-[1.5rem] p-6 space-y-4">
+                           <div className="space-y-6">
+                             <div className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-2">Neural Frame Details</div>
+                             <div className="bg-white/[0.02] border border-white/5 rounded-[3rem] p-10 space-y-10">
                                <div>
-                                 <div className="text-[8px] font-black uppercase text-slate-500 mb-1">Step Name</div>
-                                 <div className="text-sm font-bold text-white">{traces[currentTraceIndex].step_name}</div>
+                                 <div className="text-[9px] font-black uppercase text-slate-600 tracking-widest mb-2">Step Designation</div>
+                                 <div className="text-xl font-black text-white tracking-tight italic">{traces[currentTraceIndex].step_name}</div>
                                </div>
-                               <div>
-                                 <div className="text-[8px] font-black uppercase text-slate-500 mb-1">Input</div>
-                                 <pre className="text-[10px] bg-black/40 p-3 rounded-lg text-emerald-400 overflow-x-auto">
-                                   {traces[currentTraceIndex].input_data ? 
-                                     (typeof safeParseJSON(traces[currentTraceIndex].input_data) === 'object' ? 
-                                       JSON.stringify(safeParseJSON(traces[currentTraceIndex].input_data), null, 2) : 
-                                       traces[currentTraceIndex].input_data) : 'null'}
-                                 </pre>
+                               <div className="grid grid-cols-1 gap-8">
+                                 <div>
+                                   <div className="flex items-center gap-3 mb-3">
+                                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]"></div>
+                                      <div className="text-[9px] font-black uppercase text-slate-600 tracking-widest">Inbound Payload</div>
+                                   </div>
+                                   <pre className="text-[11px] bg-black/40 p-6 rounded-[2rem] text-emerald-400/80 overflow-x-auto border border-white/5 shadow-inner custom-scrollbar max-h-48 font-mono">
+                                     {traces[currentTraceIndex].input_data ? 
+                                       (typeof safeParseJSON(traces[currentTraceIndex].input_data) === 'object' ? 
+                                         JSON.stringify(safeParseJSON(traces[currentTraceIndex].input_data), null, 2) : 
+                                         traces[currentTraceIndex].input_data) : 'NULL'}
+                                   </pre>
+                                 </div>
+                                 <div>
+                                   <div className="flex items-center gap-3 mb-3">
+                                      <div className="w-1.5 h-1.5 rounded-full bg-brand-primary shadow-[0_0_10px_#d97706]"></div>
+                                      <div className="text-[9px] font-black uppercase text-slate-600 tracking-widest">Outbound Result</div>
+                                   </div>
+                                   <pre className="text-[11px] bg-black/40 p-6 rounded-[2rem] text-brand-primary/80 overflow-x-auto border border-white/5 shadow-inner custom-scrollbar max-h-64 font-mono">
+                                     {traces[currentTraceIndex].output_data ? 
+                                       (typeof safeParseJSON(traces[currentTraceIndex].output_data) === 'object' ? 
+                                         JSON.stringify(safeParseJSON(traces[currentTraceIndex].output_data), null, 2) : 
+                                         traces[currentTraceIndex].output_data) : 'NULL'}
+                                   </pre>
+                                 </div>
                                </div>
-                               <div>
-                                 <div className="text-[8px] font-black uppercase text-slate-500 mb-1">Output</div>
-                                 <pre className="text-[10px] bg-black/40 p-3 rounded-lg text-amber-400 overflow-x-auto">
-                                   {traces[currentTraceIndex].output_data ? 
-                                     (typeof safeParseJSON(traces[currentTraceIndex].output_data) === 'object' ? 
-                                       JSON.stringify(safeParseJSON(traces[currentTraceIndex].output_data), null, 2) : 
-                                       traces[currentTraceIndex].output_data) : 'null'}
-                                 </pre>
-                               </div>
-                               <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                                 <div className="text-[8px] font-black uppercase text-slate-500">Duration</div>
-                                 <div className="text-[10px] font-mono text-white">
-                                   {((new Date(traces[currentTraceIndex].end_time) - new Date(traces[currentTraceIndex].start_time)) / 1000).toFixed(2)}s
+                               <div className="flex items-center justify-between pt-8 border-t border-white/5">
+                                 <div className="text-[9px] font-black uppercase text-slate-600 tracking-widest">Temporal Duration</div>
+                                 <div className="text-xs font-black text-white font-mono bg-white/5 px-4 py-2 rounded-xl border border-white/5">
+                                   {((new Date(traces[currentTraceIndex].end_time) - new Date(traces[currentTraceIndex].start_time)) / 1000).toFixed(3)}s
                                  </div>
                                </div>
                              </div>
                            </div>
                          </div>
                        ) : (
-                         <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
-                           <Activity size={32} className="text-slate-700 animate-pulse" />
-                           <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">No traces available for this execution</div>
+                         <div className="flex flex-col items-center justify-center py-24 text-center space-y-6">
+                           <div className="w-20 h-20 bg-white/[0.02] border border-white/5 rounded-full flex items-center justify-center">
+                              <Activity size={32} className="text-slate-700 animate-pulse" />
+                           </div>
+                           <div className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-600 max-w-xs leading-relaxed">No telemetry data recorded for this execution cycle.</div>
                          </div>
                        )}
                      </div>
@@ -843,6 +888,7 @@ const WorkflowCanvas = () => {
                           fetchTasks();
                           setIsSidebarOpen(false);
                         }}
+                        isInline={true}
                      />
                    )}
                 </div>
@@ -863,7 +909,7 @@ const WorkflowCanvas = () => {
           )}
         </AnimatePresence>
       </div>
-    </DashboardLayout>
+    </div>
   );
 };
 

@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, ChevronRight, ChevronLeft, Check, Cpu, Globe, 
-  Terminal, Calendar, Zap, Shield, Loader2, Info,
-  Link2, GitBranch, Users, Plus, Trash2
+  Terminal, Calendar, Zap, Shield, Loader2,
+  Link2, GitBranch, Users, Plus, Trash2, Command, Sparkles, Activity
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -12,7 +12,6 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
   const [workspaces, setWorkspaces] = useState([]);
   const [userTasks, setUserTasks] = useState([]);
   const [loadingWorkspaces, setLoadingWorkspaces] = useState(false);
-  const [loadingTasks, setLoadingTasks] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showVariableSelector, setShowVariableSelector] = useState(false);
   const [error, setError] = useState(null);
@@ -70,10 +69,15 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
     missed_task_policy: 'skip',
     depends_on_task_id: '',
     trigger_on_completion: false,
-    branch_condition: { if: 'contains', value: '', key: '' }
+    branch_condition: { if: 'contains', value: '', key: '' },
+    swarm_config: {
+      consensus_mode: 'voting',
+      supervisor_prompt: 'You are the Executive Director. Read the council\'s debate and choose the best path.',
+      council: [{ name: 'Agent 1', prompt: 'Analyze this data.' }]
+    }
   });
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setStep(1);
     setFormData({
       name: '',
@@ -95,9 +99,10 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
       }
     });
     setError(null);
-  };
+  }, []);
 
   const fetchWorkspaces = useCallback(async () => {
+    setLoadingWorkspaces(true);
     try {
       const res = await axios.get('/api/v1/workspaces');
       if (res.data.success) {
@@ -125,45 +130,37 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
       }
     } catch (err) {
       console.error('Failed to fetch tasks', err);
-    } finally {
-      setLoadingTasks(false);
     }
   }, [initialData]);
 
   useEffect(() => {
     if (isOpen) {
-      const loadWorkspaces = async () => {
+      const init = async () => {
         await fetchWorkspaces();
-      };
-      loadWorkspaces();
-    }
-  }, [isOpen, fetchWorkspaces]);
-
-  useEffect(() => {
-    if (isOpen) {
-      const loadUserTasks = async () => {
         await fetchUserTasks();
       };
-      loadUserTasks();
+      init();
     }
-  }, [isOpen, fetchUserTasks]);
+  }, [isOpen, fetchWorkspaces, fetchUserTasks]);
 
   useEffect(() => {
     if (isOpen) {
-      if (initialData) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setFormData(prev => ({
-          ...prev,
-          ...initialData,
-          trigger_config: parseJSONField(initialData.trigger_config, prev.trigger_config),
-          branch_condition: parseJSONField(initialData.branch_condition, prev.branch_condition),
-          swarm_config: parseJSONField(initialData.swarm_config, prev.swarm_config)
-        }));
-      } else {
-        resetForm();
-      }
+      const applyInitialData = async () => {
+        if (initialData) {
+          setFormData(prev => ({
+            ...prev,
+            ...initialData,
+            trigger_config: parseJSONField(initialData.trigger_config, prev.trigger_config),
+            branch_condition: parseJSONField(initialData.branch_condition, prev.branch_condition),
+            swarm_config: parseJSONField(initialData.swarm_config, prev.swarm_config)
+          }));
+        } else {
+          resetForm();
+        }
+      };
+      applyInitialData();
     }
-  }, [isOpen, initialData, fetchWorkspaces, fetchUserTasks, parseJSONField]);
+  }, [isOpen, initialData, resetForm, parseJSONField]);
 
   const handleNext = () => setStep(s => Math.min(s + 1, 5));
   const handleBack = () => setStep(s => Math.max(s - 1, 1));
@@ -214,107 +211,107 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
   };
 
   const steps = [
-    { id: 1, name: 'Identity', icon: Globe },
-    { id: 2, name: 'Config', icon: Cpu },
-    { id: 3, name: 'Logic', icon: GitBranch },
-    { id: 4, name: 'Trigger', icon: Calendar },
-    { id: 5, name: 'Review', icon: Check }
+    { id: 1, name: 'Identity', icon: Command },
+    { id: 2, name: 'Architecture', icon: Cpu },
+    { id: 3, name: 'Workflow', icon: GitBranch },
+    { id: 4, name: 'Trigger', icon: Zap },
+    { id: 5, name: 'Launch', icon: Sparkles }
   ];
 
   if (!isOpen) return null;
 
   const content = (
     <motion.div 
-      initial={isInline ? { opacity: 0, x: 20 } : { opacity: 0, scale: 0.9, y: 20 }}
+      initial={isInline ? { opacity: 0, x: 20 } : { opacity: 0, scale: 0.95, y: 20 }}
       animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
-      exit={isInline ? { opacity: 0, x: 20 } : { opacity: 0, scale: 0.9, y: 20 }}
-      className={`${isInline ? 'h-full w-full flex flex-col' : 'bg-zinc-900 border border-white/10 rounded-[2.5rem] shadow-2xl w-full max-w-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]'}`}
+      exit={isInline ? { opacity: 0, x: 20 } : { opacity: 0, scale: 0.95, y: 20 }}
+      className={`${isInline ? 'h-full w-full flex flex-col' : 'bg-obsidian-900 border border-white/5 rounded-[3rem] shadow-[0_40px_100px_rgba(0,0,0,0.8)] w-full max-w-3xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]'}`}
     >
+      {/* Background Decor */}
+      <div className="absolute top-0 right-0 w-64 h-64 bg-brand-primary/5 blur-[100px] pointer-events-none -z-0"></div>
+
       {/* Header */}
       {!isInline && (
-        <div className="p-8 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+        <div className="p-10 border-b border-white/5 flex items-center justify-between bg-white/[0.01] relative z-10">
           <div>
-            <h2 className="text-2xl font-black text-white uppercase tracking-tighter">
-              {initialData?.id ? 'Edit Task' : 'New Task Wizard'}
+            <h2 className="text-3xl font-black text-white tracking-tighter">
+              {initialData?.id ? 'Edit Orchestration' : 'Orchestration Wizard'}
             </h2>
-            <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em] mt-1">Configure your automated workflow</p>
+            <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.3em] mt-2">Design Neural Task Flow</p>
           </div>
-          <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors p-2 hover:bg-white/5 rounded-xl">
+          <button onClick={onClose} className="text-slate-500 hover:text-white transition-all p-3 bg-white/5 rounded-2xl border border-white/10">
             <X size={24} />
           </button>
         </div>
       )}
 
-      {/* Progress Bar */}
-      <div className={`flex ${isInline ? 'px-6 py-4' : 'px-8 py-4'} bg-black/20 gap-2`}>
+      {/* Progress Stepper - Horizontal */}
+      <div className={`flex ${isInline ? 'px-10 py-6' : 'px-10 py-8'} bg-black/40 gap-4 relative z-10`}>
         {steps.map((s) => (
-          <div key={s.id} className="flex-1 flex flex-col gap-2">
-            <div className={`h-1 rounded-full transition-all duration-500 ${step >= s.id ? 'bg-accent-orange shadow-[0_0_10px_rgba(217,119,6,0.5)]' : 'bg-white/10'}`} />
-            <div className="flex items-center gap-2 px-1">
-              <s.icon size={10} className={step >= s.id ? 'text-accent-orange' : 'text-slate-600'} />
-              <span className={`text-[8px] font-black uppercase tracking-widest ${step >= s.id ? 'text-white' : 'text-slate-600'} ${isInline ? 'hidden sm:inline' : ''}`}>
-                {s.name}
-              </span>
+          <div key={s.id} className="flex-1 space-y-3">
+            <div className="flex items-center gap-3">
+               <div className={`w-8 h-8 rounded-xl flex items-center justify-center border transition-all duration-500 ${step >= s.id ? 'bg-brand-primary border-brand-primary text-white shadow-[0_0_20px_rgba(217,119,6,0.3)]' : 'bg-white/5 border-white/10 text-slate-600'}`}>
+                  <s.icon size={16} />
+               </div>
+               <span className={`text-[10px] font-black uppercase tracking-widest ${step >= s.id ? 'text-white' : 'text-slate-600'} hidden md:inline`}>
+                 {s.name}
+               </span>
             </div>
+            <div className={`h-1 rounded-full transition-all duration-700 ${step >= s.id ? 'bg-brand-primary' : 'bg-white/5'}`} />
           </div>
         ))}
       </div>
 
-      {/* Content */}
-      <div className={`flex-1 overflow-y-auto ${isInline ? 'p-6' : 'p-8'} custom-scrollbar`}>
+      {/* Content Area */}
+      <div className={`flex-1 overflow-y-auto ${isInline ? 'p-10' : 'p-10'} custom-scrollbar relative z-10`}>
         <AnimatePresence mode="wait">
           {step === 1 && (
             <motion.div 
               key="step1"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="space-y-8"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-10"
             >
               <div className="space-y-4">
-                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Task Name</label>
+                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] ml-2">Neural Identity (Name)</label>
                 <input 
                   type="text"
                   value={formData.name}
                   onChange={(e) => updateFormData('name', e.target.value)}
-                  placeholder="e.g. Daily Analytics Report"
-                  className="w-full bg-black/40 border border-white/5 rounded-2xl p-5 text-white font-mono text-sm focus:outline-none focus:border-accent-orange/50 transition-colors"
+                  placeholder="e.g. CORE_LOG_ANALYZER_v1"
+                  className="w-full bg-black/40 border border-white/5 rounded-[2rem] p-6 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner"
                   autoFocus
                 />
               </div>
 
-              <div className="space-y-4">
-                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Workspace Context</label>
+              <div className="space-y-6">
+                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] ml-2">Operational Workspace</label>
                 {loadingWorkspaces ? (
-                  <div className="flex items-center gap-3 text-slate-500 py-4">
-                    <Loader2 size={16} className="animate-spin" />
-                    <span className="text-xs font-bold uppercase tracking-widest">Loading Workspaces...</span>
+                  <div className="flex flex-col items-center gap-4 py-12">
+                    <div className="w-10 h-10 border-2 border-brand-primary/20 border-t-brand-primary rounded-full animate-spin"></div>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest animate-pulse">Syncing Workspaces...</span>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {workspaces.map(w => (
                       <div 
                         key={w.id}
                         onClick={() => updateFormData('workspace_id', w.id)}
-                        className={`p-5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between group ${formData.workspace_id === w.id ? 'bg-accent-orange/10 border-accent-orange/50' : 'bg-black/20 border-white/5 hover:border-white/20'}`}
+                        className={`p-6 rounded-[2rem] border transition-all cursor-pointer flex items-center justify-between group relative overflow-hidden ${formData.workspace_id === w.id ? 'bg-brand-primary/10 border-brand-primary/40 shadow-2xl' : 'bg-white/5 border-white/10 hover:border-white/20'}`}
                       >
-                        <div className="flex items-center gap-4">
-                          <div className={`p-3 rounded-xl ${formData.workspace_id === w.id ? 'bg-accent-orange text-white' : 'bg-white/5 text-slate-500'}`}>
-                            <Globe size={18} />
+                        <div className="flex items-center gap-4 relative z-10">
+                          <div className={`p-3 rounded-2xl ${formData.workspace_id === w.id ? 'bg-brand-primary text-white' : 'bg-white/5 text-slate-500 group-hover:text-white'} transition-colors`}>
+                            <Globe size={20} />
                           </div>
                           <div>
-                            <div className="text-sm font-bold text-white uppercase tracking-tight">{w.name}</div>
-                            <div className="text-[10px] text-slate-500 font-mono">ID: {w.id ? w.id.substring(0, 8) : 'N/A'}...</div>
+                            <div className="text-sm font-black text-white tracking-tight">{w.name}</div>
+                            <div className="text-[9px] text-slate-500 font-mono tracking-tighter opacity-60">REF: {w.id?.substring(0, 13)}</div>
                           </div>
                         </div>
-                        {formData.workspace_id === w.id && <Check size={20} className="text-accent-orange" />}
+                        {formData.workspace_id === w.id && <Check size={20} className="text-brand-primary relative z-10" />}
                       </div>
                     ))}
-                    {workspaces.length === 0 && (
-                      <div className="p-8 border border-dashed border-white/10 rounded-2xl text-center">
-                        <p className="text-xs text-slate-500 font-medium">No workspaces found. You might need to create one first.</p>
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
@@ -324,73 +321,49 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
           {step === 2 && (
             <motion.div 
               key="step2"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="space-y-8"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-10"
             >
-              <div className="space-y-4">
-                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Task Execution Mode</label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <button 
-                    onClick={() => updateFormData('task_type', 'mcp_sampling')}
-                    className={`p-5 rounded-2xl border transition-all flex flex-col items-center gap-3 text-center ${formData.task_type === 'mcp_sampling' ? 'bg-accent-orange/10 border-accent-orange/50' : 'bg-black/20 border-white/5 hover:border-white/20'}`}
-                  >
-                    <Cpu size={24} className={formData.task_type === 'mcp_sampling' ? 'text-accent-orange' : 'text-slate-500'} />
-                    <div>
-                      <div className="text-[10px] font-black text-white uppercase tracking-widest mb-1">Sampling</div>
-                      <div className="text-[8px] text-slate-500 uppercase tracking-tighter leading-tight">AI Actions</div>
-                    </div>
-                  </button>
-                  <button 
-                    onClick={() => updateFormData('task_type', 'native_action')}
-                    className={`p-5 rounded-2xl border transition-all flex flex-col items-center gap-3 text-center ${formData.task_type === 'native_action' ? 'bg-blue-500/10 border-blue-500/50' : 'bg-black/20 border-white/5 hover:border-white/20'}`}
-                  >
-                    <Terminal size={24} className={formData.task_type === 'native_action' ? 'text-blue-400' : 'text-slate-500'} />
-                    <div>
-                      <div className="text-[10px] font-black text-white uppercase tracking-widest mb-1">Native</div>
-                      <div className="text-[8px] text-slate-500 uppercase tracking-tighter leading-tight">JS Exec</div>
-                    </div>
-                  </button>
-                  <button 
-                    onClick={() => updateFormData('task_type', 'decision_router')}
-                    className={`p-5 rounded-2xl border transition-all flex flex-col items-center gap-3 text-center ${formData.task_type === 'decision_router' ? 'bg-indigo-500/10 border-indigo-500/50' : 'bg-black/20 border-white/5 hover:border-white/20'}`}
-                  >
-                    <GitBranch size={24} className={formData.task_type === 'decision_router' ? 'text-indigo-400' : 'text-slate-500'} />
-                    <div>
-                      <div className="text-[10px] font-black text-white uppercase tracking-widest mb-1">Router</div>
-                      <div className="text-[8px] text-slate-500 uppercase tracking-tighter leading-tight">Branching</div>
-                    </div>
-                  </button>
-                  <button 
-                    onClick={() => updateFormData('task_type', 'swarm_router')}
-                    className={`p-5 rounded-2xl border transition-all flex flex-col items-center gap-3 text-center ${formData.task_type === 'swarm_router' ? 'bg-purple-500/10 border-purple-500/50' : 'bg-black/20 border-white/5 hover:border-white/20'}`}
-                  >
-                    <Users size={24} className={formData.task_type === 'swarm_router' ? 'text-purple-400' : 'text-slate-500'} />
-                    <div>
-                      <div className="text-[10px] font-black text-white uppercase tracking-widest mb-1">Swarm</div>
-                      <div className="text-[8px] text-slate-500 uppercase tracking-tighter leading-tight">Council</div>
-                    </div>
-                  </button>
+              <div className="space-y-6">
+                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] ml-2">Compute Architecture</label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  {[
+                    { id: 'mcp_sampling', icon: Cpu, label: 'LLM Node', desc: 'AI Reasoning', color: 'brand-primary' },
+                    { id: 'native_action', icon: Terminal, label: 'Sandbox', desc: 'JS Execution', color: 'blue-500' },
+                    { id: 'decision_router', icon: GitBranch, label: 'Router', desc: 'Branching', color: 'indigo-500' },
+                    { id: 'swarm_router', icon: Users, label: 'Swarm', desc: 'Agent Council', color: 'purple-500' }
+                  ].map((type) => (
+                    <button 
+                      key={type.id}
+                      onClick={() => updateFormData('task_type', type.id)}
+                      className={`p-6 rounded-[2rem] border transition-all flex flex-col items-center gap-4 text-center group relative overflow-hidden ${formData.task_type === type.id ? `bg-${type.color}/10 border-${type.color}/50 shadow-2xl` : 'bg-white/5 border-white/10 hover:border-white/20'}`}
+                    >
+                      <type.icon size={28} className={formData.task_type === type.id ? `text-${type.color}` : 'text-slate-600 group-hover:text-slate-400'} />
+                      <div>
+                        <div className="text-[10px] font-black text-white uppercase tracking-widest mb-1">{type.label}</div>
+                        <div className="text-[8px] text-slate-500 font-bold uppercase tracking-tighter opacity-60 leading-tight">{type.desc}</div>
+                      </div>
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
-                    {formData.task_type === 'swarm_router' ? 'Council Configuration' : 
-                     formData.task_type === 'mcp_sampling' ? 'Agent Prompt' : 
-                     formData.task_type === 'decision_router' ? 'Routing Logic' : 'Native Code'}
+              <div className="space-y-6">
+                <div className="flex items-center justify-between ml-2">
+                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">
+                    {formData.task_type === 'swarm_router' ? 'Consensus Protocol' : 'Logic definition'}
                   </label>
                   
                   {formData.task_type !== 'swarm_router' && (
                     <div className="relative">
                       <button 
                         onClick={() => setShowVariableSelector(!showVariableSelector)}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-[10px] font-black text-slate-400 uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all"
+                        className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black text-slate-400 uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all"
                       >
-                        <Link2 size={12} />
-                        Insert Variable
+                        <Link2 size={14} className="text-brand-primary" />
+                        Variables
                       </button>
                       
                       <AnimatePresence>
@@ -399,30 +372,30 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
                             initial={{ opacity: 0, y: 10, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                            className="absolute right-0 mt-2 w-64 bg-zinc-800 border border-white/10 rounded-xl shadow-2xl z-20 overflow-hidden"
+                            className="absolute right-0 mt-3 w-72 bg-obsidian-900 border border-white/10 rounded-3xl shadow-[0_30px_60px_rgba(0,0,0,0.8)] z-30 overflow-hidden"
                           >
-                            <div className="p-3 border-b border-white/5 bg-white/5">
-                              <div className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Available Parent Data</div>
+                            <div className="p-4 border-b border-white/5 bg-white/5">
+                              <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Neural Link Registry</div>
                             </div>
-                            <div className="max-h-48 overflow-y-auto custom-scrollbar">
+                            <div className="max-h-64 overflow-y-auto custom-scrollbar">
                               {userTasks.length > 0 ? (
                                 userTasks.map(t => (
                                   <button 
                                     key={t.id}
                                     onClick={() => {
                                       const variable = `{{task.${t.id}.output}}`;
-                                      const field = formData.task_type === 'mcp_sampling' ? 'agent_prompt' : 'native_code';
+                                      const field = formData.task_type === 'mcp_sampling' || formData.task_type === 'decision_router' ? 'agent_prompt' : 'native_code';
                                       updateFormData(field, formData[field] + variable);
                                       setShowVariableSelector(false);
                                     }}
-                                    className="w-full px-4 py-3 text-left hover:bg-white/5 transition-colors border-b border-white/5 last:border-0"
+                                    className="w-full px-5 py-4 text-left hover:bg-white/5 transition-colors border-b border-white/5 last:border-0 group"
                                   >
-                                    <div className="text-[10px] font-bold text-white truncate">{t.name}</div>
-                                    <div className="text-[8px] font-mono text-slate-500 truncate">ID: {t.id.substring(0, 8)}...</div>
+                                    <div className="text-[11px] font-black text-white group-hover:text-brand-primary transition-colors">{t.name}</div>
+                                    <div className="text-[8px] font-mono text-slate-600 mt-1 uppercase tracking-tighter opacity-60">ID: {t.id.substring(0, 13)}</div>
                                   </button>
                                 ))
                               ) : (
-                                <div className="p-4 text-[10px] text-slate-500 text-center italic">No tasks available</div>
+                                <div className="p-8 text-[10px] text-slate-600 text-center font-bold uppercase tracking-widest opacity-50">Empty Registry</div>
                               )}
                             </div>
                           </motion.div>
@@ -433,60 +406,65 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
                 </div>
 
                 {formData.task_type === 'swarm_router' ? (
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-2 gap-3">
-                      <button 
-                        onClick={() => updateFormData('swarm_config', { ...formData.swarm_config, consensus_mode: 'voting' })}
-                        className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 text-center ${formData.swarm_config.consensus_mode === 'voting' ? 'bg-purple-500/10 border-purple-500/50' : 'bg-black/20 border-white/5 hover:border-white/20'}`}
-                      >
-                        <Check size={20} className={formData.swarm_config.consensus_mode === 'voting' ? 'text-purple-400' : 'text-slate-500'} />
-                        <div>
-                          <div className="text-[10px] font-black text-white uppercase tracking-widest">Voting</div>
-                          <div className="text-[8px] text-slate-500 uppercase tracking-tighter">Majority Wins</div>
-                        </div>
-                      </button>
-                      <button 
-                        onClick={() => updateFormData('swarm_config', { ...formData.swarm_config, consensus_mode: 'supervisor' })}
-                        className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 text-center ${formData.swarm_config.consensus_mode === 'supervisor' ? 'bg-indigo-500/10 border-indigo-500/50' : 'bg-black/20 border-white/5 hover:border-white/20'}`}
-                      >
-                        <Shield size={20} className={formData.swarm_config.consensus_mode === 'supervisor' ? 'text-indigo-400' : 'text-slate-500'} />
-                        <div>
-                          <div className="text-[10px] font-black text-white uppercase tracking-widest">Supervisor</div>
-                          <div className="text-[8px] text-slate-500 uppercase tracking-tighter">Human/AI Arbiter</div>
-                        </div>
-                      </button>
+                  <div className="space-y-8 bg-black/40 border border-white/5 p-8 rounded-[2.5rem]">
+                    <div className="grid grid-cols-2 gap-4">
+                      {[
+                        { id: 'voting', label: 'Democratic', sub: 'Majority Wins', icon: Check, color: 'purple-500' },
+                        { id: 'supervisor', label: 'Hierarchical', sub: 'Supervisor Arbiter', icon: Shield, color: 'indigo-500' }
+                      ].map((mode) => (
+                        <button 
+                          key={mode.id}
+                          onClick={() => updateFormData('swarm_config', { ...formData.swarm_config, consensus_mode: mode.id })}
+                          className={`p-6 rounded-[2rem] border transition-all flex flex-col items-center gap-3 text-center ${formData.swarm_config.consensus_mode === mode.id ? `bg-${mode.color}/10 border-${mode.color}/50 shadow-2xl` : 'bg-white/5 border-white/10 hover:border-white/20'}`}
+                        >
+                          <mode.icon size={24} className={formData.swarm_config.consensus_mode === mode.id ? `text-${mode.color}` : 'text-slate-600'} />
+                          <div>
+                            <div className="text-[10px] font-black text-white uppercase tracking-widest">{mode.label}</div>
+                            <div className="text-[8px] text-slate-500 font-bold uppercase tracking-tighter">{mode.sub}</div>
+                          </div>
+                        </button>
+                      ))}
                     </div>
 
                     {formData.swarm_config.consensus_mode === 'supervisor' && (
-                      <div className="space-y-2">
-                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Supervisor Persona</label>
+                      <div className="space-y-4">
+                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-2">Supervisor Persona</label>
                         <textarea 
                           value={formData.swarm_config.supervisor_prompt}
                           onChange={(e) => updateFormData('swarm_config', { ...formData.swarm_config, supervisor_prompt: e.target.value })}
-                          className="w-full bg-black/40 border border-white/5 rounded-2xl p-4 text-white text-sm focus:outline-none focus:border-purple-500/50 transition-colors h-24 resize-none"
+                          className="w-full bg-black/60 border border-white/5 rounded-[1.5rem] p-5 text-white text-sm focus:outline-none focus:border-purple-500/50 transition-all h-28 resize-none shadow-inner"
                         />
                       </div>
                     )}
 
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">The Council</label>
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between ml-2">
+                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Agent Council</label>
                         <button 
                           onClick={() => {
                             const newCouncil = [...formData.swarm_config.council, { name: `Agent ${formData.swarm_config.council.length + 1}`, prompt: '' }];
                             updateFormData('swarm_config', { ...formData.swarm_config, council: newCouncil });
                           }}
-                          className="flex items-center gap-2 px-3 py-1.5 bg-purple-500/10 border border-purple-500/20 rounded-lg text-[9px] font-black text-purple-400 uppercase tracking-widest hover:bg-purple-500/20 transition-all"
+                          className="flex items-center gap-2 px-4 py-2 bg-purple-500/10 border border-purple-500/20 rounded-xl text-[9px] font-black text-purple-400 uppercase tracking-widest hover:bg-purple-500/20 transition-all"
                         >
-                          <Plus size={12} />
-                          Add Agent
+                          <Plus size={14} />
+                          Enlist Agent
                         </button>
                       </div>
 
-                      <div className="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                      <div className="space-y-4 max-h-64 overflow-y-auto pr-4 custom-scrollbar">
                         {formData.swarm_config.council.map((agent, idx) => (
-                          <div key={idx} className="p-4 bg-black/40 border border-white/5 rounded-2xl space-y-3 relative group">
+                          <motion.div 
+                            key={idx} 
+                            layout
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            className="p-6 bg-white/[0.02] border border-white/5 rounded-[2rem] space-y-4 relative group"
+                          >
                             <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-500 text-[10px] font-black font-mono">
+                                0{idx + 1}
+                              </div>
                               <input 
                                 value={agent.name}
                                 onChange={(e) => {
@@ -495,14 +473,14 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
                                   updateFormData('swarm_config', { ...formData.swarm_config, council: newCouncil });
                                 }}
                                 className="bg-transparent text-[11px] font-black text-white uppercase tracking-widest focus:outline-none w-full"
-                                placeholder="Agent Name..."
+                                placeholder="Neural Designation..."
                               />
                               <button 
                                 onClick={() => {
                                   const newCouncil = formData.swarm_config.council.filter((_, i) => i !== idx);
                                   updateFormData('swarm_config', { ...formData.swarm_config, council: newCouncil });
                                 }}
-                                className="p-1.5 text-slate-500 hover:text-red-400 transition-colors"
+                                className="p-2 text-slate-600 hover:text-red-400 transition-colors bg-white/5 rounded-lg opacity-0 group-hover:opacity-100"
                               >
                                 <Trash2 size={14} />
                               </button>
@@ -514,35 +492,38 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
                                 newCouncil[idx].prompt = e.target.value;
                                 updateFormData('swarm_config', { ...formData.swarm_config, council: newCouncil });
                               }}
-                              placeholder="Describe this agent's specialty..."
-                              className="w-full bg-black/20 border border-white/5 rounded-xl p-3 text-xs text-slate-300 focus:outline-none focus:border-purple-500/30 transition-colors h-20 resize-none"
+                              placeholder="Define specialized intelligence..."
+                              className="w-full bg-black/40 border border-white/5 rounded-[1.5rem] p-4 text-xs text-slate-300 focus:outline-none focus:border-purple-500/30 transition-all h-24 resize-none"
                             />
-                          </div>
+                          </motion.div>
                         ))}
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <>
+                  <div className="space-y-4 relative group">
+                    <div className="absolute top-4 right-4 text-brand-primary opacity-20 group-focus-within:opacity-100 transition-opacity">
+                       <Zap size={24} className="animate-pulse" />
+                    </div>
                     <textarea 
                       value={formData.task_type === 'native_action' ? formData.native_code : formData.agent_prompt}
                       onChange={(e) => updateFormData(formData.task_type === 'native_action' ? 'native_code' : 'agent_prompt', e.target.value)}
                       placeholder={
-                        formData.task_type === 'mcp_sampling' ? "Describe what the AI should do..." : 
-                        formData.task_type === 'decision_router' ? "Define the criteria for branching. E.g. 'Categorize the sentiment of the text into: positive, negative, or neutral'..." : 
-                        "// Write your action code here..."
+                        formData.task_type === 'mcp_sampling' ? "Establish AI Mission Objectives..." : 
+                        formData.task_type === 'decision_router' ? "Define Neural Routing Criteria..." : 
+                        "// Initialize Custom Subroutine..."
                       }
-                      className="w-full bg-black/40 border border-white/5 rounded-2xl p-5 text-white font-mono text-sm focus:outline-none focus:border-accent-orange/50 transition-colors h-48 resize-none"
+                      className="w-full bg-black/40 border border-white/5 rounded-[2.5rem] p-8 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all h-64 resize-none shadow-inner custom-scrollbar"
                     />
-                    <div className="flex items-center gap-2 text-slate-500">
-                      <Info size={12} />
-                      <span className="text-[9px] font-medium uppercase tracking-wider italic">
-                        {formData.task_type === 'mcp_sampling' ? 'The LLM will use this as instructions for every run.' : 
-                         formData.task_type === 'decision_router' ? 'This node will analyze input and pick the best outbound branch.' : 
-                         'This code runs in a sandboxed V8 environment.'}
+                    <div className="flex items-center gap-3 text-slate-500 ml-4">
+                      <div className="w-1.5 h-1.5 rounded-full bg-brand-primary opacity-50"></div>
+                      <span className="text-[10px] font-black uppercase tracking-widest opacity-60">
+                        {formData.task_type === 'mcp_sampling' ? 'Continuous Intelligence Feedback enabled.' : 
+                         formData.task_type === 'decision_router' ? 'Multi-path high-availability routing.' : 
+                         'Sandboxed kernel execution.'}
                       </span>
                     </div>
-                  </>
+                  </div>
                 )}
               </div>
             </motion.div>
@@ -551,205 +532,223 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
           {step === 3 && (
             <motion.div 
               key="step3"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="space-y-8"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-12"
             >
-              <div className="space-y-4">
-                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Parent Dependency</label>
-                <p className="text-[10px] text-slate-500 uppercase tracking-tight">Select a task that this task depends on.</p>
-                
-                {loadingTasks ? (
-                  <div className="flex items-center gap-3 text-slate-500 py-4">
-                    <Loader2 size={16} className="animate-spin" />
-                    <span className="text-xs font-bold uppercase tracking-widest">Loading Tasks...</span>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 gap-3">
-                    <select 
-                      value={formData.depends_on_task_id || ''}
-                      onChange={(e) => updateFormData('depends_on_task_id', e.target.value)}
-                      className="w-full bg-black/40 border border-white/5 rounded-2xl p-5 text-white font-mono text-sm focus:outline-none focus:border-accent-orange/50 transition-colors appearance-none cursor-pointer"
-                    >
-                      <option value="">None (Standalone Task)</option>
-                      {userTasks.map(t => (
-                        <option key={t.id} value={t.id}>{t.name} ({t.id.substring(0, 8)}...)</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
+              <div className="space-y-6">
+                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] ml-2">Neural Linkage (Dependency)</label>
+                <div className="relative group">
+                   <div className="absolute left-6 top-1/2 -translate-y-1/2 text-brand-primary z-10 opacity-50 group-focus-within:opacity-100 transition-opacity">
+                      <Link2 size={20} />
+                   </div>
+                   <select 
+                    value={formData.depends_on_task_id || ''}
+                    onChange={(e) => updateFormData('depends_on_task_id', e.target.value)}
+                    className="w-full bg-black/40 border border-white/5 rounded-[2rem] pl-16 pr-8 py-6 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all appearance-none cursor-pointer shadow-inner"
+                  >
+                    <option value="" className="bg-obsidian-900">Standalone (No Neural Link)</option>
+                    {userTasks.map(t => (
+                      <option key={t.id} value={t.id} className="bg-obsidian-900">{t.name} (REF: {t.id.substring(0, 8)})</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              {formData.depends_on_task_id && (
-                <motion.div 
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  className="space-y-6"
-                >
-                  <div className="flex items-center justify-between p-6 bg-black/20 rounded-[2rem] border border-white/5">
-                    <div className="flex items-center gap-4">
-                      <div className={`p-3 rounded-xl ${formData.trigger_on_completion ? 'bg-accent-orange text-white' : 'bg-white/5 text-slate-500'}`}>
-                        <Zap size={20} />
+              <AnimatePresence>
+                {formData.depends_on_task_id && (
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="space-y-8"
+                  >
+                    <div className="flex items-center justify-between p-8 bg-white/[0.01] rounded-[2.5rem] border border-white/5 group hover:border-brand-primary/20 transition-all">
+                      <div className="flex items-center gap-6">
+                        <div className={`p-4 rounded-2xl transition-all duration-500 ${formData.trigger_on_completion ? 'bg-brand-primary text-white shadow-2xl' : 'bg-white/5 text-slate-600'}`}>
+                          <Zap size={24} className={formData.trigger_on_completion ? 'animate-pulse' : ''} />
+                        </div>
+                        <div>
+                          <div className="text-xs font-black text-white uppercase tracking-widest">Sequential Cascade</div>
+                          <div className="text-[10px] text-slate-500 font-bold uppercase tracking-tight opacity-60 mt-1">Automatic execution post-parent lifecycle</div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="text-xs font-black text-white uppercase tracking-widest">Trigger on Completion</div>
-                        <div className="text-[9px] text-slate-500 uppercase tracking-tighter">Automatically run when parent task finishes</div>
-                      </div>
+                      <button 
+                        onClick={() => updateFormData('trigger_on_completion', !formData.trigger_on_completion)}
+                        className={`w-14 h-8 rounded-full transition-all duration-500 relative ${formData.trigger_on_completion ? 'bg-brand-primary shadow-[0_0_20px_rgba(217,119,6,0.4)]' : 'bg-white/5 border border-white/10'}`}
+                      >
+                        <motion.div 
+                          layout
+                          animate={{ x: formData.trigger_on_completion ? 28 : 4 }}
+                          className="absolute top-1 w-6 h-6 bg-white rounded-full shadow-lg"
+                        />
+                      </button>
                     </div>
-                    <button 
-                      onClick={() => updateFormData('trigger_on_completion', !formData.trigger_on_completion)}
-                      className={`w-12 h-6 rounded-full transition-colors relative ${formData.trigger_on_completion ? 'bg-accent-orange' : 'bg-white/10'}`}
-                    >
-                      <motion.div 
-                        animate={{ x: formData.trigger_on_completion ? 26 : 4 }}
-                        className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-lg"
-                      />
-                    </button>
-                  </div>
 
-                  <div className="space-y-4 p-6 bg-black/20 rounded-[2rem] border border-white/5">
-                    <div className="flex items-center gap-4 mb-2">
-                      <div className="p-3 bg-white/5 rounded-xl text-slate-500">
-                        <GitBranch size={20} />
+                    <div className="p-8 bg-white/[0.01] rounded-[2.5rem] border border-white/5 space-y-8 group hover:border-brand-secondary/20 transition-all">
+                      <div className="flex items-center gap-6">
+                        <div className="p-4 bg-white/5 rounded-2xl text-slate-400 group-hover:text-brand-secondary transition-colors">
+                          <GitBranch size={24} />
+                        </div>
+                        <div>
+                          <div className="text-xs font-black text-white uppercase tracking-widest">Logic Filtering</div>
+                          <div className="text-[10px] text-slate-500 font-bold uppercase tracking-tight opacity-60 mt-1">Conditional evaluation of upstream payload</div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="text-xs font-black text-white uppercase tracking-widest">Branch Condition</div>
-                        <div className="text-[9px] text-slate-500 uppercase tracking-tighter">Conditional execution based on parent output</div>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-4 ml-14">
-                      {(() => {
-                        const parent = userTasks.find(t => t.id === formData.depends_on_task_id);
-                        const isRouter = parent?.task_type === 'decision_router' || parent?.task_type === 'swarm_router';
-                        
-                        return (
-                          <>
-                            <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">
-                              {isRouter ? 'Route Key (must match router output):' : 'Only run if parent output contains:'}
+                      
+                      <div className="ml-16 space-y-4">
+                        {(() => {
+                          const parent = userTasks.find(t => t.id === formData.depends_on_task_id);
+                          const isRouter = parent?.task_type === 'decision_router' || parent?.task_type === 'swarm_router';
+                          
+                          return (
+                            <div className="space-y-4">
+                              <label className="block text-[9px] font-black text-slate-600 uppercase tracking-widest ml-1">
+                                {isRouter ? 'Protocol Route Key' : 'Payload Contents Pattern'}
+                              </label>
+                              
+                              <input 
+                                type="text"
+                                value={isRouter ? (formData.branch_condition.key || '') : (formData.branch_condition.value || '')}
+                                onChange={(e) => {
+                                  const newCond = { ...formData.branch_condition };
+                                  if (isRouter) newCond.key = e.target.value;
+                                  else newCond.value = e.target.value;
+                                  updateFormData('branch_condition', newCond);
+                                }}
+                                placeholder={isRouter ? "MATCH: 'path_alpha', 'error_red'..." : "CONTAINS: 'urgent', 'sync_fail'..."}
+                                className="w-full bg-black/40 border border-white/5 rounded-2xl p-5 text-white font-mono text-xs focus:outline-none focus:border-brand-secondary/50 transition-all shadow-inner"
+                              />
                             </div>
-                            
-                            <input 
-                              type="text"
-                              value={isRouter ? (formData.branch_condition.key || '') : (formData.branch_condition.value || '')}
-                              onChange={(e) => {
-                                const newCond = { ...formData.branch_condition };
-                                if (isRouter) newCond.key = e.target.value;
-                                else newCond.value = e.target.value;
-                                updateFormData('branch_condition', newCond);
-                              }}
-                              placeholder={isRouter ? "e.g. 'positive', 'alert', 'path_a'" : "e.g. 'error', 'success'"}
-                              className="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white font-mono text-xs focus:outline-none focus:border-accent-orange/50 transition-colors"
-                            />
-                          </>
-                        );
-                      })()}
+                          );
+                        })()}
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           )}
 
           {step === 4 && (
             <motion.div 
               key="step4"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="space-y-8"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-12"
             >
-              <div className="space-y-4">
-                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Trigger Strategy</label>
-                <div className="grid grid-cols-3 gap-3">
-                  {['cron', 'interval', 'webhook'].map(type => (
+              <div className="space-y-6">
+                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] ml-2">Initiation Vector (Trigger)</label>
+                <div className="grid grid-cols-3 gap-4">
+                  {[
+                    { id: 'cron', label: 'Temporal', sub: 'Cron Stream', icon: Calendar },
+                    { id: 'interval', label: 'Frequency', sub: 'Pulse Mode', icon: Activity },
+                    { id: 'webhook', label: 'Event', sub: 'Neural Hook', icon: Zap }
+                  ].map(type => (
                     <button 
-                      key={type}
+                      key={type.id}
                       onClick={() => {
-                        const defaultConfig = type === 'cron' ? { cron: '0 * * * *' } : type === 'interval' ? { minutes: 10 } : { manual: true };
-                        setFormData(prev => ({ ...prev, trigger_type: type, trigger_config: defaultConfig }));
+                        const defaultConfig = type.id === 'cron' ? { cron: '0 * * * *' } : type.id === 'interval' ? { minutes: 10 } : { manual: true };
+                        setFormData(prev => ({ ...prev, trigger_type: type.id, trigger_config: defaultConfig }));
                       }}
-                      className={`p-4 rounded-xl border transition-all text-[10px] font-black uppercase tracking-widest ${formData.trigger_type === type ? 'bg-white/10 border-white/40 text-white' : 'bg-black/20 border-white/5 text-slate-500 hover:border-white/20'}`}
+                      className={`p-6 rounded-[2rem] border transition-all flex flex-col items-center gap-3 text-center ${formData.trigger_type === type.id ? 'bg-white/5 border-brand-primary shadow-2xl text-white' : 'bg-white/[0.01] border-white/5 text-slate-600 hover:border-white/20'}`}
                     >
-                      {type}
+                      <type.icon size={24} className={formData.trigger_type === type.id ? 'text-brand-primary animate-pulse' : 'opacity-40'} />
+                      <div>
+                        <div className="text-[10px] font-black uppercase tracking-widest">{type.label}</div>
+                        <div className="text-[8px] font-bold uppercase tracking-tighter opacity-50">{type.sub}</div>
+                      </div>
                     </button>
                   ))}
                 </div>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-10">
                 {formData.trigger_type === 'cron' && (
                   <div className="space-y-4">
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Cron Expression</label>
+                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] ml-2">Temporal Coordinates (Cron)</label>
                     <input 
                       type="text"
                       value={formData.trigger_config.cron}
                       onChange={(e) => updateFormData('trigger_config', { cron: e.target.value })}
                       placeholder="* * * * *"
-                      className="w-full bg-black/40 border border-white/5 rounded-2xl p-5 text-white font-mono text-sm focus:outline-none focus:border-accent-orange/50 transition-colors"
+                      className="w-full bg-black/40 border border-white/5 rounded-[2rem] p-6 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner"
                     />
-                    <div className="p-4 bg-blue-500/5 border border-blue-500/20 rounded-xl">
-                      <p className="text-[10px] text-blue-400 font-medium">Standard 5-field cron expression supported (Min, Hour, Day, Month, Weekday).</p>
+                    <div className="p-5 bg-brand-secondary/5 border border-brand-secondary/10 rounded-[1.5rem] ml-2">
+                      <p className="text-[9px] text-brand-secondary/80 font-black uppercase tracking-[0.1em]">Protocol: Standard 5-field UNIX expression supported.</p>
                     </div>
                   </div>
                 )}
 
                 {formData.trigger_type === 'interval' && (
                   <div className="space-y-4">
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Interval (Minutes)</label>
+                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] ml-2">Neural Pulse Frequency (Minutes)</label>
                     <input 
                       type="number"
                       value={formData.trigger_config.minutes}
                       onChange={(e) => updateFormData('trigger_config', { minutes: parseInt(e.target.value) })}
                       placeholder="10"
-                      className="w-full bg-black/40 border border-white/5 rounded-2xl p-5 text-white font-mono text-sm focus:outline-none focus:border-accent-orange/50 transition-colors"
+                      className="w-full bg-black/40 border border-white/5 rounded-[2rem] p-6 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner"
                     />
                   </div>
                 )}
 
                 {formData.trigger_type === 'webhook' && (
-                  <div className="p-8 border border-dashed border-white/10 rounded-2xl text-center space-y-4">
-                    <Zap size={32} className="mx-auto text-amber-500" />
-                    <div>
-                      <p className="text-xs text-white font-bold uppercase tracking-wider">Inbound Webhook</p>
-                      <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-tight">Task will trigger via a unique URL generated after creation.</p>
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="p-10 border border-dashed border-white/10 rounded-[3rem] text-center space-y-6 bg-white/[0.01]"
+                  >
+                    <div className="relative w-fit mx-auto">
+                       <Zap size={48} className="text-brand-primary" />
+                       <div className="absolute inset-0 bg-brand-primary blur-2xl opacity-20 animate-pulse"></div>
                     </div>
-                  </div>
+                    <div>
+                      <p className="text-sm text-white font-black uppercase tracking-widest">Listener Protocol Initialized</p>
+                      <p className="text-[10px] text-slate-600 mt-2 uppercase tracking-widest font-bold max-w-xs mx-auto leading-relaxed">Unique endpoint signature will be generated upon orchestration launch.</p>
+                    </div>
+                  </motion.div>
                 )}
 
-                <div className="pt-6 border-t border-white/5 space-y-6">
-                  <div className="flex items-center justify-between p-6 bg-black/20 rounded-[2rem] border border-white/5">
-                    <div className="flex items-center gap-4">
-                      <div className={`p-3 rounded-xl ${formData.requires_approval ? 'bg-amber-500 text-white' : 'bg-white/5 text-slate-500'}`}>
-                        <Shield size={20} />
+                <div className="pt-10 border-t border-white/5 space-y-8">
+                  <div className="flex items-center justify-between p-8 bg-white/[0.01] rounded-[2.5rem] border border-white/5 group hover:border-amber-500/20 transition-all">
+                    <div className="flex items-center gap-6">
+                      <div className={`p-4 rounded-2xl transition-all duration-500 ${formData.requires_approval ? 'bg-amber-500 text-white shadow-2xl' : 'bg-white/5 text-slate-600'}`}>
+                        <Shield size={24} />
                       </div>
                       <div>
-                        <div className="text-xs font-black text-white uppercase tracking-widest">Manual Approval</div>
-                        <div className="text-[9px] text-slate-500 uppercase tracking-tighter">Require confirmation before each run</div>
+                        <div className="text-xs font-black text-white uppercase tracking-widest">Supervised Launch</div>
+                        <div className="text-[10px] text-slate-500 font-bold uppercase tracking-tight opacity-60 mt-1">Manual node authorization required before firing</div>
                       </div>
                     </div>
                     <button 
                       onClick={() => updateFormData('requires_approval', !formData.requires_approval)}
-                      className={`w-12 h-6 rounded-full transition-colors relative ${formData.requires_approval ? 'bg-amber-500' : 'bg-white/10'}`}
+                      className={`w-14 h-8 rounded-full transition-all duration-500 relative ${formData.requires_approval ? 'bg-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.4)]' : 'bg-white/5 border border-white/10'}`}
                     >
                       <motion.div 
-                        animate={{ x: formData.requires_approval ? 26 : 4 }}
-                        className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-lg"
+                        layout
+                        animate={{ x: formData.requires_approval ? 28 : 4 }}
+                        className="absolute top-1 w-6 h-6 bg-white rounded-full shadow-lg"
                       />
                     </button>
                   </div>
 
-                  <div className="space-y-4">
-                     <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Missed Task Policy</label>
+                  <div className="space-y-6">
+                     <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] ml-2">Failure Mitigation (Missed Policy)</label>
                      <div className="flex gap-4">
-                        {['skip', 'run_immediately'].map(policy => (
+                        {[
+                          { id: 'skip', label: 'Bypass', desc: 'Silence Missed' },
+                          { id: 'run_immediately', label: 'Recovery', desc: 'Auto-Catchup' }
+                        ].map(policy => (
                           <button 
-                            key={policy}
-                            onClick={() => updateFormData('missed_task_policy', policy)}
-                            className={`flex-1 py-4 rounded-xl border transition-all text-[9px] font-black uppercase tracking-widest ${formData.missed_task_policy === policy ? 'bg-white/10 border-white/40 text-white' : 'bg-black/20 border-white/5 text-slate-500'}`}
+                            key={policy.id}
+                            onClick={() => updateFormData('missed_task_policy', policy.id)}
+                            className={`flex-1 p-6 rounded-[2rem] border transition-all text-center group ${formData.missed_task_policy === policy.id ? 'bg-white/5 border-white/40 text-white shadow-2xl' : 'bg-white/[0.01] border-white/5 text-slate-600 hover:border-white/20'}`}
                           >
-                            {policy.replace('_', ' ')}
+                            <div className="text-[10px] font-black uppercase tracking-widest mb-1">{policy.label}</div>
+                            <div className="text-[8px] font-bold uppercase tracking-tighter opacity-50">{policy.desc}</div>
                           </button>
                         ))}
                      </div>
@@ -762,79 +761,66 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
           {step === 5 && (
             <motion.div 
               key="step5"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="space-y-8"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-10"
             >
-              <div className="bg-black/40 border border-white/10 rounded-3xl p-8 space-y-6">
-                 <div className="grid grid-cols-2 gap-8">
-                    <div>
-                      <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Task Name</div>
-                      <div className="text-white font-bold">{formData.name || 'Untitled Task'}</div>
+              <div className="bg-black/40 border border-white/10 rounded-[3rem] p-10 space-y-10 relative overflow-hidden">
+                 <div className="absolute top-0 right-0 w-48 h-48 bg-brand-primary/5 blur-[80px] pointer-events-none"></div>
+
+                 <div className="grid grid-cols-2 md:grid-cols-3 gap-10 relative z-10">
+                    <div className="space-y-2">
+                      <div className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Orchestration ID</div>
+                      <div className="text-white font-black text-lg tracking-tight truncate">{formData.name || 'UNNAMED_CORE'}</div>
                     </div>
-                    <div>
-                      <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Mode</div>
-                      <div className="text-white font-bold flex items-center gap-2">
-                         {formData.task_type === 'mcp_sampling' ? <Cpu size={14} className="text-accent-orange" /> : 
-                          formData.task_type === 'decision_router' ? <GitBranch size={14} className="text-indigo-400" /> : 
-                          formData.task_type === 'swarm_router' ? <Users size={14} className="text-purple-400" /> : 
-                          <Terminal size={14} className="text-blue-400" />}
-                         {formData.task_type === 'mcp_sampling' ? 'LLM' : 
-                          formData.task_type === 'decision_router' ? 'Router' : 
-                          formData.task_type === 'swarm_router' ? 'Swarm' : 'Native'}
+                    <div className="space-y-2">
+                      <div className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Compute Core</div>
+                      <div className="text-brand-primary font-black text-lg tracking-tight flex items-center gap-2">
+                         {formData.task_type === 'mcp_sampling' ? 'LLM_SAMPLER' : 
+                          formData.task_type === 'decision_router' ? 'NEURAL_ROUTER' : 
+                          formData.task_type === 'swarm_router' ? 'AGENT_SWARM' : 'SANDBOX_KERNEL'}
                       </div>
                     </div>
-                    <div>
-                      <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Trigger</div>
-                      <div className="text-white font-bold uppercase tracking-widest text-[10px]">{formData.trigger_type}</div>
+                    <div className="space-y-2">
+                      <div className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Vector</div>
+                      <div className="text-white font-black text-lg tracking-tight uppercase">{formData.trigger_type}</div>
                     </div>
-                    <div>
-                      <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Detail</div>
-                      <div className="text-white font-bold text-[10px] uppercase tracking-widest">
-                        {formData.task_type === 'swarm_router' ? `${formData.swarm_config.council.length} Agents` : 
-                         formData.requires_approval ? 'Approval Required' : 'Auto-run'}
-                      </div>
-                    </div>
-                    {formData.depends_on_task_id && (
-                      <div>
-                        <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Parent Task</div>
-                        <div className="text-white font-bold truncate">
-                          {userTasks.find(t => t.id === formData.depends_on_task_id)?.name || 'Unknown'}
-                        </div>
-                      </div>
-                    )}
                  </div>
 
-                 <div className="pt-6 border-t border-white/5">
-                    <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-4">Payload Preview</div>
-                    <div className="bg-black/60 rounded-2xl p-6 font-mono text-[10px] text-slate-400 overflow-hidden text-ellipsis max-h-32">
+                 <div className="pt-10 border-t border-white/5 relative z-10">
+                    <div className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-6">Payload Manifest</div>
+                    <div className="bg-obsidian-950/80 rounded-3xl p-8 font-mono text-[11px] text-emerald-500/80 border border-white/5 shadow-inner max-h-48 overflow-y-auto custom-scrollbar">
                        {formData.task_type === 'swarm_router' ? 
-                         `Swarm (${formData.swarm_config.consensus_mode}): ${formData.swarm_config.council.map(a => a.name).join(', ')}` : 
+                         `SWARM_INIT (MODE: ${formData.swarm_config.consensus_mode.toUpperCase()}) :: MEMBERS: [${formData.swarm_config.council.map(a => a.name.toUpperCase()).join(', ')}]` : 
                          (formData.task_type === 'native_action' ? formData.native_code : formData.agent_prompt)}
                     </div>
                  </div>
               </div>
 
               {error && (
-                <div className="p-4 bg-red-500/10 border border-red-500/50 rounded-2xl flex items-center gap-3 text-red-400">
-                  <Shield size={16} />
-                  <span className="text-xs font-bold uppercase tracking-tight">{error}</span>
-                </div>
+                <motion.div 
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="p-6 bg-red-500/10 border border-red-500/20 rounded-[2rem] flex items-center gap-4 text-red-400"
+                >
+                  <Shield size={20} className="shrink-0" />
+                  <span className="text-[10px] font-black uppercase tracking-[0.1em]">{error}</span>
+                </motion.div>
               )}
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Footer */}
-      <div className={`${isInline ? 'p-6' : 'p-8'} border-t border-white/5 flex items-center justify-between bg-white/[0.01]`}>
+      {/* Controller Footer */}
+      <div className={`${isInline ? 'p-10' : 'p-10'} border-t border-white/5 flex items-center justify-between bg-white/[0.01] relative z-10`}>
         <button 
           onClick={handleBack}
           disabled={step === 1 || submitting}
-          className="flex items-center gap-2 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] hover:text-white transition-colors disabled:opacity-0"
+          className="flex items-center gap-3 text-[10px] font-black text-slate-600 uppercase tracking-[0.3em] hover:text-white transition-all disabled:opacity-0 group"
         >
-          <ChevronLeft size={14} /> Back
+          <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> Back
         </button>
         
         <div className="flex gap-4">
@@ -842,18 +828,18 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
              <button 
                onClick={handleNext}
                disabled={!formData.name || (step === 1 && !formData.workspace_id)}
-               className="bg-white text-black px-10 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-30 flex items-center gap-2"
+               className="bg-white text-obsidian-950 px-12 py-5 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.3em] shadow-[0_20px_40px_rgba(255,255,255,0.1)] hover:scale-105 active:scale-95 transition-all disabled:opacity-20 flex items-center gap-3 group"
              >
-               {isInline ? 'Next' : 'Continue'} <ChevronRight size={14} />
+               {isInline ? 'Next Phase' : 'Continue'} <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
              </button>
            ) : (
              <button 
                onClick={handleSubmit}
                disabled={submitting}
-               className="bg-accent-orange text-white px-10 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-[0_10px_30px_rgba(217,119,6,0.3)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50"
+               className="shimmer-button bg-brand-primary text-white px-14 py-5 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.3em] shadow-[0_20px_50px_rgba(217,119,6,0.4)] hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
              >
-               {submitting ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-               {initialData?.id ? 'Update' : 'Launch'}
+               {submitting ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+               {initialData?.id ? 'Synchronize' : 'Fire Orchestration'}
              </button>
            )}
         </div>
@@ -870,7 +856,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="absolute inset-0 bg-black/80 backdrop-blur-md"
+        className="absolute inset-0 bg-black/90 backdrop-blur-2xl"
       />
       {content}
     </div>
