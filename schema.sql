@@ -328,3 +328,7 @@ CREATE TABLE IF NOT EXISTS system_settings (
 INSERT INTO system_settings (id, worker_prune_days)
 VALUES (1, 7)
 ON CONFLICT DO NOTHING;
+
+-- Performance & Integrity Indexes
+CREATE INDEX IF NOT EXISTS idx_worker_heartbeats_last_heartbeat ON worker_heartbeats (last_heartbeat);
+CREATE INDEX IF NOT EXISTS idx_dlq_tasks_task_id ON dlq_tasks (task_id);

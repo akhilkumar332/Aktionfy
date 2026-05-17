@@ -401,6 +401,23 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 				log.Printf("Trace error for task %s: %v", taskID, err)
 			}
 
+			// Evaluate loop condition for native actions
+			if len(t.LoopCondition) > 0 {
+				// Fetch state for evaluation (state was updated by executeNativeJS)
+				sBytes, _ := queries.GetWorkflowState(workerCtx, db.GetWorkflowStateParams{
+					TaskID:      t.ID,
+					ExecutionID: executionID,
+				})
+				var stateMap map[string]interface{}
+				json.Unmarshal(sBytes, &stateMap)
+
+				if evaluateWorkflowLoop(t.LoopCondition, stateMap) {
+					log.Printf("Loop condition met for native task %s, triggering next iteration.", taskID)
+					completeTask(workerCtx, t.UserID, taskID, time.Now().UTC(), StatusActive)
+					return
+				}
+			}
+
 			var config map[string]interface{}
 			if err := json.Unmarshal(t.TriggerConfig, &config); err == nil {
 				if newNextRun, calcErr := calculateNextRun(t.TriggerType.String, config, time.Now().UTC()); calcErr == nil {
