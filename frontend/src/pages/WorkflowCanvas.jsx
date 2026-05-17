@@ -18,6 +18,7 @@ import { Save, RefreshCw, Layers, X, Trash2, Play, Pause, FastForward, Rewind, A
 import DecisionNode from '../components/DecisionNode';
 import ManualRouteModal from '../components/ManualRouteModal';
 import GlobalPlaybackBar from '../components/GlobalPlaybackBar';
+import { useSSE } from '../hooks/useSSE';
 
 const nodeTypes = {
   decision: DecisionNode,
@@ -77,7 +78,6 @@ const WorkflowCanvas = () => {
   const [globalTime, setGlobalTime] = useState(0);
   const [totalDuration, setTotalDuration] = useState(0);
   const playbackTimerRef = useRef(null);
-  const reconnectTimeoutRef = useRef(null);
 
   // Optimized task lookup map
   const taskMap = useMemo(() => {
@@ -87,7 +87,6 @@ const WorkflowCanvas = () => {
     }, {});
   }, [rawTasks]);
   
-  const sseRef = useRef(null);
   const isMountedRef = useRef(true);
 
   useEffect(() => {
@@ -145,14 +144,14 @@ const WorkflowCanvas = () => {
           )
         },
         style: isRouter ? { transition: 'all 0.5s ease-in-out' } : {
-          background: isProcessing ? 'rgba(217, 119, 6, 0.05)' : 'rgba(10, 10, 10, 0.8)',
+          background: isProcessing ? 'rgba(217,119,6,0.05)' : 'rgba(10, 10, 10, 0.8)',
           color: '#fff',
-          border: isProcessing ? '2px solid rgba(217, 119, 6, 0.4)' : '1px solid rgba(255, 255, 255, 0.05)',
+          border: isProcessing ? '2px solid rgba(217,119,6,0.4)' : '1px solid rgba(255, 255, 255, 0.05)',
           borderRadius: '2rem',
           padding: '1.5rem',
           width: 200,
           backdropFilter: 'blur(16px)',
-          boxShadow: isProcessing ? '0 0 40px rgba(217, 119, 6, 0.2)' : '0 10px 30px rgba(0,0,0,0.3)',
+          boxShadow: isProcessing ? '0 0 40px rgba(217,119,6,0.2)' : '0 10px 30px rgba(0,0,0,0.3)',
           transition: 'all 0.5s ease-in-out'
         },
       };
@@ -449,44 +448,23 @@ const WorkflowCanvas = () => {
     }));
   }, [setNodes, setEdges]);
 
+  useSSE(useCallback((event) => {
+    if (event.event_type === 'task_status_changed') {
+      try {
+        const payload = typeof event.payload === 'string' ? JSON.parse(event.payload) : event.payload;
+        updateTaskStatusLocally(payload.task_id, payload.status);
+      } catch (err) {
+        console.error("Failed to parse task status change", err);
+      }
+    }
+  }, [updateTaskStatusLocally]));
+
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchTasks();
-
-    // SSE Setup
-    const setupSSE = () => {
-      if (sseRef.current) sseRef.current.close();
-      
-      const sse = new EventSource('/api/v1/events');
-      sseRef.current = sse;
-
-      sse.onmessage = (e) => {
-        try {
-          const event = JSON.parse(e.data);
-          if (event.event_type === 'task_status_changed') {
-            const payload = JSON.parse(event.payload);
-            updateTaskStatusLocally(payload.task_id, payload.status);
-          }
-        } catch (err) {
-          console.error("Failed to parse SSE event", err);
-        }
-      };
-
-      sse.onerror = () => {
-        console.warn("SSE Connection lost. Reconnecting in 5s...");
-        sse.close();
-        // Store timeout in ref so it can be cleared
-        reconnectTimeoutRef.current = setTimeout(setupSSE, 5000);
-      };
+    const init = async () => {
+      await fetchTasks();
     };
-
-    setupSSE();
-
-    return () => {
-      if (sseRef.current) sseRef.current.close();
-      if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
-    };
-  }, [fetchTasks, updateTaskStatusLocally]);
+    init();
+  }, [fetchTasks]);
 
   const onLayout = useCallback(() => {
     const dagreGraph = new dagre.graphlib.Graph();

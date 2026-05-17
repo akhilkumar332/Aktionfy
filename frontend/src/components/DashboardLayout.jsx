@@ -13,11 +13,15 @@ const SidebarContent = ({ user, location, setIsSidebarOpen, handleLogout }) => (
     <div className="p-8 border-b border-white/5 flex items-center justify-between">
       <Link to="/" className="flex items-center gap-3 group">
         <div className="bg-brand-primary/10 p-2 rounded-xl border border-brand-primary/20 group-hover:scale-110 transition-transform">
-          <img src="/logo-icon.svg" className="w-8 h-8" alt="Logo" />
+          <img src="/logo-icon.svg" className="w-8 h-8" alt="Aktionfy Logo" />
         </div>
         <span className="font-black text-xl tracking-tighter text-white">Aktionfy</span>
       </Link>
-      <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden p-2 text-slate-500 hover:text-white">
+      <button 
+        onClick={() => setIsSidebarOpen(false)} 
+        className="lg:hidden p-2 text-slate-500 hover:text-white"
+        aria-label="Close sidebar"
+      >
         <X size={20} />
       </button>
     </div>
@@ -146,10 +150,14 @@ const DashboardLayout = ({ children }) => {
         {/* Mobile Header */}
         <header className="lg:hidden flex items-center justify-between px-6 py-4 bg-obsidian-900/50 backdrop-blur-xl border-b border-white/5 sticky top-0 z-40">
           <div className="flex items-center gap-3">
-             <img src="/logo-icon.svg" className="w-8 h-8" alt="Logo" />
+             <img src="/logo-icon.svg" className="w-8 h-8" alt="Aktionfy Logo" />
              <span className="font-black text-lg tracking-tighter">Aktionfy</span>
           </div>
-          <button onClick={() => setIsSidebarOpen(true)} className="p-3 bg-white/5 rounded-2xl border border-white/10 text-white">
+          <button 
+            onClick={() => setIsSidebarOpen(true)} 
+            className="p-3 bg-white/5 rounded-2xl border border-white/10 text-white"
+            aria-label="Open sidebar"
+          >
             <Menu size={20} />
           </button>
         </header>

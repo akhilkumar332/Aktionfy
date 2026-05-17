@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -19,7 +18,7 @@ func apiEventsHandler(c echo.Context) error {
 	c.Response().Header().Set(echo.HeaderConnection, "keep-alive")
 
 	ctx := c.Request().Context()
-	pubsub := RedisClient.Subscribe(ctx, "system_events")
+	pubsub := RedisClient.Subscribe(ctx, fmt.Sprintf("user:events:%s", userID))
 	defer pubsub.Close()
 
 	ch := pubsub.Channel()
@@ -29,14 +28,9 @@ func apiEventsHandler(c echo.Context) error {
 		case <-ctx.Done():
 			return nil
 		case msg := <-ch:
-			var event PubSubEvent
-			if err := json.Unmarshal([]byte(msg.Payload), &event); err != nil {
-				continue
-			}
-			if event.UserID == userID {
-				fmt.Fprintf(c.Response(), "data: %s\n\n", msg.Payload)
-				c.Response().Flush()
-			}
+			// No filtering needed here anymore as we subscribe to user-specific channel
+			fmt.Fprintf(c.Response(), "data: %s\n\n", msg.Payload)
+			c.Response().Flush()
 		}
 	}
 }

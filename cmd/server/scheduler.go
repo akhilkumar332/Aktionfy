@@ -1109,6 +1109,19 @@ func extractRawText(res interface{}) string {
 		return ""
 	}
 
+	// 1. Try direct type assertion for MCP CreateMessageResult
+	if msgRes, ok := res.(*mcp.CreateMessageResult); ok {
+		if tc, ok := msgRes.Content.(mcp.TextContent); ok {
+			return tc.Text
+		}
+		// Also check for pointer variant
+		if tc, ok := msgRes.Content.(*mcp.TextContent); ok {
+			return tc.Text
+		}
+		return ""
+	}
+
+	// 2. Fallback to generic map processing if assertion failed
 	resBytes, err := json.Marshal(res)
 	if err != nil {
 		return ""
@@ -1148,8 +1161,8 @@ func parseLLMChoice(res interface{}) string {
 		return respObj.Choice
 	}
 
-	// Try fuzzy matching if JSON is wrapped in markdown
-	re := regexp.MustCompile(`\{.*"choice".*\}`)
+	// Try fuzzy matching if JSON is wrapped in markdown or other text
+	re := regexp.MustCompile(`\{.*"choice"\s*:\s*".*".*\}`)
 	match := re.FindString(responseText)
 	if match != "" {
 		if err := json.Unmarshal([]byte(match), &respObj); err == nil {

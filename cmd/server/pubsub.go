@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"time"
 
@@ -27,7 +28,12 @@ func PublishEvent(ctx context.Context, event PubSubEvent) error {
 	if err != nil {
 		return err
 	}
-	return RedisClient.Publish(ctx, "system_events", data).Err()
+	
+	// Publish to global channel for internal node sync (e.g., reaper)
+	RedisClient.Publish(ctx, "sys:events", data)
+	
+	// Publish to user-specific channel for dashboard SSE streams
+	return RedisClient.Publish(ctx, fmt.Sprintf("user:events:%s", event.UserID), data).Err()
 }
 
 func SubscribeToEvents(ctx context.Context, onEvent func(context.Context, PubSubEvent)) {
@@ -36,8 +42,8 @@ func SubscribeToEvents(ctx context.Context, onEvent func(context.Context, PubSub
 		case <-ctx.Done():
 			return
 		default:
-			pubsub := RedisClient.Subscribe(ctx, "system_events")
-			log.Printf("Subscribed to Redis system_events")
+			pubsub := RedisClient.Subscribe(ctx, "sys:events")
+			log.Printf("Subscribed to global Redis events (sys:events)")
 
 			ch := pubsub.Channel()
 			for msg := range ch {

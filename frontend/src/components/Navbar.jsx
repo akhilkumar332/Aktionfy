@@ -91,6 +91,7 @@ const Navbar = () => {
           <button
             className="md:hidden text-white p-3 bg-white/5 rounded-2xl border border-white/10 transition-colors"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
           >
             {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -109,10 +110,14 @@ const Navbar = () => {
           >
             <div className="flex justify-between items-center mb-20">
                <div className="flex items-center gap-3">
-                  <img src="/logo-icon.svg" className="w-10 h-10" alt="Logo" />
+                  <img src="/logo-icon.svg" className="w-10 h-10" alt="Aktionfy Logo" />
                   <span className="font-black text-2xl tracking-tighter">Aktionfy</span>
                </div>
-               <button onClick={() => setIsMobileMenuOpen(false)} className="p-3 bg-white/5 rounded-2xl">
+               <button 
+                 onClick={() => setIsMobileMenuOpen(false)} 
+                 className="p-3 bg-white/5 rounded-2xl"
+                 aria-label="Close menu"
+               >
                   <X size={24} />
                </button>
             </div>
