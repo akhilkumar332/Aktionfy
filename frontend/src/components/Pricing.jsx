@@ -1,4 +1,4 @@
-import { Check, Zap, Rocket, Shield } from 'lucide-react';
+import { Check, Zap, Rocket, Shield, Crown, Command } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -27,7 +27,7 @@ const Pricing = () => {
     {
       name: 'Sandbox',
       price: '$0',
-      description: 'Ideal for rapid prototyping and individual discovery.',
+      description: 'Ideal for rapid prototyping and individual neural discovery.',
       icon: Zap,
       features: [
         '2 concurrent task streams',
@@ -35,7 +35,7 @@ const Pricing = () => {
         '100 historical logs',
         'Community access',
       ],
-      cta: user ? (user.tier === 'free' ? 'Active Plan' : 'Standard') : 'Start Free',
+      cta: user ? (user.tier === 'free' ? 'Active Protocol' : 'Baseline') : 'Start Free',
       active: user?.tier === 'free',
       highlight: false,
     },
@@ -52,7 +52,7 @@ const Pricing = () => {
         'Direct engineer support',
         'Multi-region replication',
       ],
-      cta: user?.tier === 'pro' ? 'Active Plan' : 'Scale to Pro',
+      cta: user?.tier === 'pro' ? 'Active Protocol' : 'Authorize Pro',
       active: user?.tier === 'pro',
       highlight: true,
       onClick: handleUpgrade,
@@ -69,30 +69,35 @@ const Pricing = () => {
         '99.99% uptime SLA',
         'On-premise deployment',
       ],
-      cta: 'Contact Engineering',
+      cta: 'Contact Logistics',
       active: false,
       highlight: false,
     },
   ];
 
   return (
-    <section id="pricing" className="py-40 bg-ai-black relative overflow-hidden">
+    <section id="pricing" className="py-40 bg-obsidian-950 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full pointer-events-none opacity-20">
+         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-brand-primary/5 rounded-full blur-[140px]"></div>
+      </div>
       
       <div className="container mx-auto px-6 relative z-10">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="max-w-4xl mx-auto text-center mb-24"
+          transition={{ duration: 0.8 }}
+          className="max-w-5xl mx-auto text-center mb-32"
         >
-          <span className="text-accent-orange font-bold text-xs uppercase tracking-[0.4em] mb-6 inline-block text-glow">Monetization</span>
-          <h2 className="text-5xl md:text-7xl font-bold text-white mb-8 tracking-tighter">
-            Built for <span className="text-accent-orange">Scale.</span>
+          <div className="inline-flex items-center gap-3 py-2 px-6 mb-8 text-[10px] font-black tracking-[0.4em] text-brand-primary uppercase bg-white/[0.03] border border-white/10 rounded-full backdrop-blur-xl">
+             Monetization Protocol
+          </div>
+          <h2 className="text-5xl md:text-8xl font-black text-white mb-10 tracking-tighter leading-[0.9]">
+            Built for <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-primary to-amber-200">Scale.</span>
           </h2>
-          <p className="text-xl text-slate-400 font-medium max-w-xl mx-auto">
-            Choose the infrastructure that powers your next billion-dollar AI company.
+          <p className="text-xl md:text-2xl text-slate-500 font-bold max-w-2xl mx-auto leading-relaxed tracking-tight">
+            Provision the infrastructure required to power your next billion-dollar neural application.
           </p>
         </motion.div>
 
@@ -104,37 +109,46 @@ const Pricing = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: idx * 0.1, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-              className={`group relative p-10 rounded-[2.5rem] border transition-all duration-500 flex flex-col ${
+              className={`group relative p-12 rounded-[4rem] border transition-all duration-700 flex flex-col overflow-hidden shadow-2xl ${
                 plan.highlight
-                  ? 'border-accent-orange bg-white/[0.03] shadow-[0_0_80px_rgba(217,119,6,0.15)] z-10'
+                  ? 'border-brand-primary/50 bg-white/[0.03] shadow-[0_40px_100px_rgba(0,0,0,0.8)] z-10 scale-105'
                   : 'border-white/5 bg-white/[0.01] hover:bg-white/[0.03]'
               }`}
             >
+              {/* Highlight Glow */}
               {plan.highlight && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-accent-orange text-white text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest shadow-2xl z-20">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-brand-primary/5 blur-[80px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+              )}
+
+              {plan.highlight && (
+                <div className="absolute top-6 right-10 flex items-center gap-2 px-3 py-1 bg-brand-primary text-white text-[8px] font-black uppercase tracking-widest rounded-full shadow-2xl z-20">
                   Recommended
                 </div>
               )}
 
-              <div className="mb-10 flex-1">
-                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-8 bg-black/40 border border-white/5 group-hover:scale-110 transition-transform duration-500 ${
-                  plan.highlight ? 'text-accent-orange shadow-[0_0_30px_rgba(217,119,6,0.2)]' : 'text-slate-400'
+              <div className="mb-12 flex-1">
+                <div className={`w-20 h-20 rounded-[2rem] flex items-center justify-center mb-10 bg-black/40 border border-white/5 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-2xl ${
+                  plan.highlight ? 'text-brand-primary shadow-[0_0_40px_rgba(217,119,6,0.3)]' : 'text-slate-600'
                 }`}>
-                  <plan.icon size={32} />
+                  <plan.icon size={36} />
                 </div>
                 
-                <h3 className="text-3xl font-bold text-white mb-3 tracking-tight">{plan.name}</h3>
-                <div className="flex items-baseline gap-2 mb-6">
-                  <span className="text-5xl font-bold text-white tracking-tighter">{plan.price}</span>
-                  {plan.period && <span className="text-slate-500 font-bold text-sm tracking-widest uppercase">{plan.period}</span>}
+                <h3 className="text-3xl font-black text-white mb-4 tracking-tighter uppercase">{plan.name}</h3>
+                <div className="flex items-baseline gap-3 mb-8">
+                  <span className="text-6xl font-black text-white tracking-tighter">{plan.price}</span>
+                  {plan.period && <span className="text-slate-600 font-black text-sm tracking-widest uppercase">{plan.period}</span>}
                 </div>
-                <p className="text-slate-500 text-sm font-medium leading-relaxed mb-10">{plan.description}</p>
+                <p className="text-slate-500 text-sm font-medium leading-relaxed mb-12 opacity-80 group-hover:opacity-100 transition-opacity">
+                  {plan.description}
+                </p>
                 
-                <ul className="space-y-5">
+                <ul className="space-y-6">
                   {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-4 text-sm font-medium text-slate-400 group-hover:text-slate-300 transition-colors">
-                      <Check size={18} className="text-accent-orange mt-0.5 flex-shrink-0" />
-                      {feature}
+                    <li key={feature} className="flex items-start gap-4 text-sm font-bold text-slate-400 group-hover:text-slate-200 transition-colors">
+                      <div className="p-1 bg-brand-primary/10 rounded-lg mt-0.5">
+                         <Check size={14} className="text-brand-primary" strokeWidth={4} />
+                      </div>
+                      <span className="tracking-tight">{feature}</span>
                     </li>
                   ))}
                 </ul>
@@ -143,14 +157,15 @@ const Pricing = () => {
               <button
                 disabled={plan.active}
                 onClick={plan.onClick}
-                className={`w-full py-5 rounded-2xl font-black text-sm uppercase tracking-widest transition-all active:scale-95 mt-auto shadow-2xl ${
+                className={`w-full py-6 rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] transition-all active:scale-[0.98] mt-auto shadow-2xl border flex items-center justify-center gap-3 overflow-hidden group/btn ${
                   plan.active
-                    ? 'bg-white/5 text-slate-600 cursor-not-allowed border border-white/5'
+                    ? 'bg-white/5 text-slate-600 cursor-not-allowed border-white/5'
                     : plan.highlight
-                    ? 'bg-accent-orange text-white hover:bg-amber-700 shadow-orange-900/20'
-                    : 'bg-white text-ink-900 hover:bg-slate-100'
+                    ? 'shimmer-button bg-brand-primary text-white border-brand-primary hover:brightness-110 shadow-orange-950/40'
+                    : 'bg-white text-obsidian-950 border-white hover:brightness-90 shadow-white/5'
                 }`}
               >
+                {plan.active ? <Shield size={14} /> : (plan.highlight ? <Crown size={14} /> : <Command size={14} />)}
                 {plan.cta}
               </button>
             </motion.div>

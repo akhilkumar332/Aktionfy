@@ -1,100 +1,109 @@
 import { Link } from 'react-router-dom';
-import { Terminal, ArrowRight, ShieldCheck, Sparkles } from 'lucide-react';
+import { Terminal, ArrowRight, ShieldCheck, Sparkles, Command, Activity } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Scene3D from './Scene3D';
 
 const Hero = () => {
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-ai-black pt-20">
-      {/* Dynamic Grid Background */}
-      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 pointer-events-none"></div>
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-ai-black to-ai-black"></div>
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-obsidian-950 pt-20">
+      {/* Neural Network Background Decor */}
+      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none"></div>
+      <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-brand-primary/5 via-transparent to-obsidian-950"></div>
       
+      {/* Side Glows */}
+      <div className="absolute top-1/4 -left-64 w-[800px] h-[800px] bg-brand-primary/10 rounded-full blur-[160px] pointer-events-none animate-pulse duration-[10s]"></div>
+      <div className="absolute bottom-1/4 -right-64 w-[800px] h-[800px] bg-brand-secondary/5 rounded-full blur-[160px] pointer-events-none animate-pulse duration-[8s] delay-1000"></div>
+
       <div className="container mx-auto px-6 relative z-20">
         <div className="flex flex-col items-center text-center">
           
-          {/* AI Badge */}
+          {/* AI Badge - Staggered Entry */}
           <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="inline-flex items-center gap-2 py-2 px-5 mb-12 text-[10px] font-bold tracking-[0.2em] text-accent-orange uppercase bg-white/5 border border-white/10 rounded-full backdrop-blur-md glow-text"
+            initial={{ opacity: 0, scale: 0.8, filter: 'blur(10px)' }}
+            animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+            transition={{ duration: 1, ease: 'easeOut' }}
+            className="inline-flex items-center gap-3 py-2.5 px-6 mb-12 text-[10px] font-black tracking-[0.4em] text-brand-primary uppercase bg-white/[0.03] border border-white/10 rounded-full backdrop-blur-xl shadow-2xl"
           >
-            <Sparkles size={14} />
-            The Future of Persistent AI
+            <div className="relative">
+               <Sparkles size={14} className="animate-pulse" />
+               <div className="absolute inset-0 bg-brand-primary blur-md opacity-50 animate-pulse"></div>
+            </div>
+            The Neural Backbone of Autonomous AI
           </motion.div>
 
-          {/* Epic Headline */}
+          {/* Epic Headline - High-Impact Typography */}
           <motion.h1 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-            className="mb-8 text-7xl md:text-9xl font-bold font-sans text-white tracking-tighter leading-[0.85] max-w-6xl"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+            className="mb-10 text-7xl md:text-[10rem] font-black text-white tracking-tighter leading-[0.8] max-w-7xl"
           >
-            Orchestrate <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-orange to-amber-200">Intelligence.</span>
+            Automate <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-primary via-white to-brand-secondary animate-gradient-x">Everything.</span>
           </motion.h1>
 
           {/* Visionary Subheadline */}
           <motion.p 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.4, duration: 1 }}
-            className="mb-14 text-xl md:text-2xl text-slate-400 font-medium leading-relaxed max-w-3xl text-balance"
+            transition={{ delay: 0.5, duration: 1.5 }}
+            className="mb-16 text-xl md:text-3xl text-slate-500 font-bold leading-relaxed max-w-4xl text-balance tracking-tight"
           >
-            A high-performance state engine for Model Context Protocol. <br />
-            Durable scheduling, cross-node consistency, and autonomous AI workflows.
+            A world-class state machine for Model Context Protocol. <br className="hidden md:block" />
+            <span className="text-slate-300">Durable scheduling. High-fidelity observability. Autonomous swarm logic.</span>
           </motion.p>
 
           {/* Premium CTAs */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6, duration: 0.8 }}
-            className="flex flex-wrap justify-center gap-6 mb-24"
+            transition={{ delay: 0.8, duration: 1 }}
+            className="flex flex-col sm:flex-row justify-center gap-6 mb-32"
           >
             <Link 
               to="/signup" 
-              className="group relative px-12 py-5 text-ink-900 font-bold bg-white rounded-2xl hover:bg-slate-100 transition-all shadow-[0_0_40px_rgba(255,255,255,0.15)] flex items-center gap-3 active:scale-95 overflow-hidden"
+              className="shimmer-button group relative px-14 py-6 text-white font-black uppercase tracking-[0.2em] text-xs bg-brand-primary rounded-[2rem] hover:brightness-110 transition-all shadow-[0_20px_60px_rgba(217,119,6,0.4)] flex items-center gap-4 active:scale-95 overflow-hidden"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-              Launch Engine <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+              Initialize Node <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
             </Link>
             <a 
               href="#installation" 
-              className="px-12 py-5 text-white font-bold bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all flex items-center gap-3 backdrop-blur-xl active:scale-95 shadow-2xl"
+              className="px-14 py-6 text-slate-400 font-black uppercase tracking-[0.2em] text-xs bg-white/5 border border-white/10 rounded-[2rem] hover:bg-white/10 hover:text-white transition-all flex items-center gap-4 backdrop-blur-xl active:scale-95 shadow-2xl"
             >
-              <Terminal size={20} className="text-accent-orange" /> Developer Guide
+              <Terminal size={18} className="text-brand-primary" /> Integration Guide
             </a>
           </motion.div>
         </div>
 
-        {/* Floating 3D Component */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full -z-10 opacity-60">
+        {/* Immersive 3D/Visual Component */}
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 1, duration: 2 }}
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full -z-10 opacity-40 pointer-events-none"
+        >
            <Scene3D />
-        </div>
+        </motion.div>
       </div>
 
-      {/* Trust & Scale Row */}
-      <div className="absolute bottom-10 left-0 right-0 z-30">
+      {/* Real-time Telemetry Bar */}
+      <div className="absolute bottom-12 left-0 right-0 z-30">
         <div className="container mx-auto px-6">
-          <div className="flex flex-wrap justify-center items-center gap-12 md:gap-24 opacity-30 grayscale hover:opacity-100 transition-all duration-700">
-             <div className="flex items-center gap-3 font-bold text-xs tracking-widest text-white uppercase">
-               <ShieldCheck size={18} className="text-accent-orange" /> ACID State
+          <div className="flex flex-wrap justify-center items-center gap-12 md:gap-24">
+             <div className="flex items-center gap-4 text-[10px] font-black tracking-[0.3em] text-slate-600 uppercase group hover:text-white transition-colors">
+               <ShieldCheck size={16} className="text-brand-primary group-hover:animate-pulse" /> Distributed Consensus
              </div>
-             <div className="flex items-center gap-3 font-bold text-xs tracking-widest text-white uppercase">
-               <img src="/logo-icon.svg" className="w-5 h-5 text-accent-orange" alt="Aktionfy Logo" /> Real-Time SSE
+             <div className="h-4 w-px bg-white/5 hidden md:block"></div>
+             <div className="flex items-center gap-4 text-[10px] font-black tracking-[0.3em] text-slate-600 uppercase group hover:text-white transition-colors">
+                <Command size={16} className="text-brand-primary group-hover:rotate-90 transition-transform" /> Model Agnostic
              </div>
-             <div className="flex items-center gap-3 font-bold text-xs tracking-widest text-white uppercase">
-               <Sparkles size={18} className="text-accent-orange" /> Model Agnostic
+             <div className="h-4 w-px bg-white/5 hidden md:block"></div>
+             <div className="flex items-center gap-4 text-[10px] font-black tracking-[0.3em] text-slate-600 uppercase group hover:text-white transition-colors">
+               <Activity size={16} className="text-brand-primary group-hover:scale-125 transition-transform" /> Real-time Telemetry
              </div>
           </div>
         </div>
       </div>
-
-      {/* Side Glows */}
-      <div className="absolute top-1/4 -left-64 w-[600px] h-[600px] bg-accent-orange/10 rounded-full blur-[160px] pointer-events-none"></div>
-      <div className="absolute bottom-1/4 -right-64 w-[600px] h-[600px] bg-accent-orange/5 rounded-full blur-[160px] pointer-events-none"></div>
     </section>
   );
 };

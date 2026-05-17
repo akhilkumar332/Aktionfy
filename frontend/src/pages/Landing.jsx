@@ -8,12 +8,12 @@ import Footer from '../components/Footer';
 
 const Landing = () => {
   useEffect(() => {
-    document.body.classList.add('dark-theme');
-    return () => document.body.classList.remove('dark-theme');
+    // Premium entry scroll-to-top
+    window.scrollTo(0, 0);
   }, []);
 
   return (
-    <div className="min-h-screen selection:bg-accent-orange selection:text-white bg-ai-black">
+    <div className="text-white selection:bg-brand-primary selection:text-white bg-obsidian-950 font-sans overflow-x-hidden">
       <Navbar />
       <main>
         <Hero />

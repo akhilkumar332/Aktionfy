@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Terminal, Copy, Check, ExternalLink, Layout, Boxes } from 'lucide-react';
+import { Terminal, Copy, Check, ExternalLink, Layout, Boxes, Command, ChevronRight, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Installation = () => {
@@ -13,18 +13,18 @@ const Installation = () => {
 
   const steps = [
     {
-      title: 'Initialize Workspace',
-      description: 'Sign up for a professional account and generate your cryptographically secure API key.',
+      title: 'Provision Workspace',
+      description: 'Initialize a secure neural sector and generate your cryptographically signed access key.',
       icon: Layout,
     },
     {
-      title: 'Install CLI Client',
-      description: 'Run the global installer with a single command to deploy the MCP bridge to your local machine.',
+      title: 'Deploy CLI Bridge',
+      description: 'Execute the global installer to deploy the Model Context Protocol bridge to your environment.',
       icon: Terminal,
     },
     {
-      title: 'Bridge the Session',
-      description: 'Add the Aktionfy engine to your local configuration via the Model Context Protocol bridge.',
+      title: 'Authorize Session',
+      description: 'Link the Aktionfy engine to your local configuration using the secure protocol handshaking.',
       icon: Boxes,
     }
   ];
@@ -36,110 +36,142 @@ const Installation = () => {
       "command": "aktionfy",
       "args": ["run"],
       "env": {
-        "X-API-KEY": "YOUR_ENCRYPTED_KEY"
+        "X-API-KEY": "NEURAL_ACCESS_TOKEN"
       }
     }
   }
 }`;
 
   return (
-    <section id="installation" className="py-40 bg-ai-black overflow-hidden relative">
-      <div className="absolute inset-0 bg-gradient-to-b from-ai-black via-ai-grey to-ai-black"></div>
+    <section id="installation" className="py-40 bg-obsidian-950 overflow-hidden relative">
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/[0.01] to-transparent"></div>
       
       <div className="container mx-auto px-6 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-32 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
           <motion.div
             initial={{ opacity: 0, x: -50 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
           >
-            <span className="text-accent-orange font-bold text-xs uppercase tracking-[0.4em] mb-6 inline-block text-glow">Setup Guide</span>
-            <h2 className="text-5xl md:text-7xl font-bold text-white mb-10 tracking-tighter">
-              Deployment in <span className="text-accent-orange italic underline decoration-white/10 underline-offset-[12px]">Seconds.</span>
+            <div className="inline-flex items-center gap-3 py-2 px-6 mb-8 text-[10px] font-black tracking-[0.4em] text-brand-primary uppercase bg-white/[0.03] border border-white/10 rounded-full backdrop-blur-xl">
+               Integration Protocol
+            </div>
+            <h2 className="text-5xl md:text-8xl font-black text-white mb-10 tracking-tighter leading-[0.9]">
+              Deployment in <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-primary to-amber-200 italic">Seconds.</span>
             </h2>
-            <p className="text-xl text-slate-400 font-medium mb-16 leading-relaxed max-w-xl">
-              Engineered for seamless integration with Claude Desktop, Cursor, and custom MCP clients.
+            <p className="text-xl md:text-2xl text-slate-500 font-bold mb-16 leading-relaxed max-w-xl tracking-tight">
+              Optimized for high-frequency synchronization with Claude Desktop, Cursor, and custom neural clients.
             </p>
 
-            <div className="space-y-12">
+            <div className="space-y-10">
               {steps.map((step, idx) => (
                 <motion.div 
                   key={idx}
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ delay: idx * 0.2, duration: 0.5 }}
+                  transition={{ delay: idx * 0.1, duration: 0.5 }}
                   className="flex gap-8 group"
                 >
-                  <div className="flex-shrink-0 w-14 h-14 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center shadow-2xl group-hover:bg-accent-orange group-hover:text-white transition-all duration-500">
-                    <step.icon size={28} />
+                  <div className="flex-shrink-0 relative">
+                     <div className="absolute inset-0 bg-brand-primary/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                     <div className="w-16 h-16 bg-obsidian-900 border border-white/5 rounded-[1.5rem] flex items-center justify-center shadow-2xl group-hover:border-brand-primary/30 transition-all duration-500 relative z-10 text-slate-500 group-hover:text-brand-primary">
+                        <step.icon size={28} />
+                     </div>
                   </div>
                   <div>
-                    <h4 className="text-xl font-bold text-white mb-3 tracking-tight">{step.title}</h4>
-                    <p className="text-slate-500 font-medium leading-relaxed max-w-sm">{step.description}</p>
-                    {step.title === 'Install CLI Client' && (
-                       <div className="mt-4 bg-black/40 border border-white/5 rounded-xl p-4 flex items-center justify-between group/cmd">
-                          <code className="text-emerald-400 text-xs">{installCommand}</code>
-                          <button onClick={() => handleCopy(installCommand, 'install')} className="text-slate-600 hover:text-white">
-                             {copied === 'install' ? <Check size={14} /> : <Copy size={14} />}
+                    <h4 className="text-xl font-black text-white mb-3 tracking-tight uppercase">{step.title}</h4>
+                    <p className="text-slate-500 font-medium leading-relaxed max-w-sm opacity-80 group-hover:opacity-100 transition-opacity">{step.description}</p>
+                    {step.title === 'Deploy CLI Bridge' && (
+                       <motion.div 
+                         initial={{ opacity: 0, y: 10 }}
+                         whileInView={{ opacity: 1, y: 0 }}
+                         className="mt-6 bg-black/60 border border-white/5 rounded-2xl p-5 flex items-center justify-between group/cmd shadow-inner"
+                       >
+                          <code className="text-emerald-400 font-mono text-xs tracking-wider">{installCommand}</code>
+                          <button onClick={() => handleCopy(installCommand, 'install')} className="p-2 bg-white/5 border border-white/10 rounded-lg text-slate-600 hover:text-white transition-all">
+                             {copied === 'install' ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
                           </button>
-                       </div>
+                       </motion.div>
                     )}
                   </div>
                 </motion.div>
               ))}
             </div>
 
-            <div className="mt-16 flex flex-wrap gap-8 items-center">
+            <div className="mt-20 flex flex-wrap gap-10 items-center">
               <a 
                 href="/docs/quickstart" 
-                className="group inline-flex items-center gap-2 text-sm font-bold text-accent-orange hover:text-white transition-colors"
+                className="group inline-flex items-center gap-3 text-xs font-black text-brand-primary uppercase tracking-[0.2em] hover:text-white transition-all"
               >
-                Detailed Docs <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                Protocol Documentation <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
               </a>
-              <div className="h-1 w-1 rounded-full bg-slate-800"></div>
+              <div className="h-4 w-px bg-white/5"></div>
               <a 
                 href="https://modelcontextprotocol.io" 
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-white transition-colors"
+                className="inline-flex items-center gap-3 text-xs font-black text-slate-600 uppercase tracking-[0.2em] hover:text-white transition-all"
               >
-                Protocol Spec <ExternalLink size={14} />
+                Official Spec <ExternalLink size={14} />
               </a>
             </div>
           </motion.div>
 
           <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
+            initial={{ opacity: 0, scale: 0.95 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
+            transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
             className="relative"
           >
-            <div className="absolute inset-0 bg-accent-orange/10 blur-[120px] rounded-full animate-pulse"></div>
-            <div className="relative bg-black/60 backdrop-blur-3xl rounded-[3rem] border border-white/10 shadow-[0_40px_100px_rgba(0,0,0,0.8)] overflow-hidden">
-              <div className="flex items-center justify-between px-10 py-6 border-b border-white/5 bg-white/5">
-                <div className="flex gap-2">
-                  <div className="w-3 h-3 rounded-full bg-red-500/20"></div>
-                  <div className="w-3 h-3 rounded-full bg-amber-500/20"></div>
-                  <div className="w-3 h-3 rounded-full bg-emerald-500/20"></div>
+            {/* Terminal Container */}
+            <div className="absolute inset-0 bg-brand-primary/5 blur-[120px] rounded-full animate-pulse"></div>
+            <div className="relative bg-obsidian-900/80 backdrop-blur-3xl rounded-[3.5rem] border border-white/5 shadow-[0_40px_100px_rgba(0,0,0,0.8)] overflow-hidden">
+              <div className="flex items-center justify-between px-10 py-8 border-b border-white/5 bg-white/[0.02]">
+                <div className="flex gap-2.5">
+                  <div className="w-3 h-3 rounded-full bg-red-500/20 border border-red-500/20"></div>
+                  <div className="w-3 h-3 rounded-full bg-amber-500/20 border border-amber-500/20"></div>
+                  <div className="w-3 h-3 rounded-full bg-emerald-500/20 border border-emerald-500/20"></div>
                 </div>
-                <button 
-                  onClick={() => handleCopy(configSnippet, 'config')}
-                  className="flex items-center gap-2 text-[10px] font-bold text-slate-500 hover:text-white uppercase tracking-widest transition-colors"
-                >
-                  {copied === 'config' ? (
-                    <><Check size={14} className="text-emerald-500" /> Copied!</>
-                  ) : (
-                    <><Copy size={14} /> Copy Config</>
-                  )}
-                </button>
+                <div className="flex items-center gap-4">
+                   <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-lg border border-white/5">
+                      <Command size={10} className="text-slate-600" />
+                      <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">mcp_config.json</span>
+                   </div>
+                   <button 
+                    onClick={() => handleCopy(configSnippet, 'config')}
+                    className="p-2.5 bg-brand-primary/10 border border-brand-primary/20 rounded-xl text-brand-primary hover:bg-brand-primary hover:text-white transition-all shadow-xl"
+                  >
+                    {copied === 'config' ? <Check size={18} /> : <Copy size={18} />}
+                  </button>
+                </div>
               </div>
-              <div className="p-10 font-mono text-sm leading-relaxed overflow-x-auto min-h-[300px] flex items-center">
-                <pre className="text-emerald-400/90 w-full">
-                  {configSnippet}
+              
+              <div className="p-12 font-mono text-sm leading-relaxed overflow-x-auto min-h-[400px] flex items-center bg-black/40 shadow-inner">
+                <pre className="text-emerald-400/80 w-full tracking-wide">
+                  <span className="text-slate-600">{"{"}</span> <br />
+                  <span className="text-purple-400">  "mcpServers"</span>: <span className="text-slate-600">{"{"}</span> <br />
+                  <span className="text-purple-400">    "aktionfy"</span>: <span className="text-slate-600">{"{"}</span> <br />
+                  <span className="text-brand-primary">      "command"</span>: <span className="text-emerald-500">"aktionfy"</span>, <br />
+                  <span className="text-brand-primary">      "args"</span>: <span className="text-slate-600">[</span><span className="text-emerald-500">"run"</span><span className="text-slate-600">]</span>, <br />
+                  <span className="text-brand-primary">      "env"</span>: <span className="text-slate-600">{"{"}</span> <br />
+                  <span className="text-blue-400">        "X-API-KEY"</span>: <span className="text-emerald-500">"NEURAL_TOKEN"</span> <br />
+                  <span className="text-slate-600">      {"}"}</span> <br />
+                  <span className="text-slate-600">    {"}"}</span> <br />
+                  <span className="text-slate-600">  {"}"}</span> <br />
+                  <span className="text-slate-600">{"}"}</span>
                 </pre>
+              </div>
+
+              <div className="px-10 py-6 bg-brand-primary/5 border-t border-white/5 flex items-center justify-between">
+                 <div className="flex items-center gap-3">
+                    <Zap size={14} className="text-brand-primary animate-pulse" />
+                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">Neural Sync Enabled</span>
+                 </div>
+                 <span className="text-[9px] font-mono text-slate-700">AES_256_GCM_ENCRYPTED</span>
               </div>
             </div>
           </motion.div>
@@ -148,11 +180,5 @@ const Installation = () => {
     </section>
   );
 };
-
-const ArrowRight = ({ size, className }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M5 12h14M12 5l7 7-7 7" />
-  </svg>
-);
 
 export default Installation;
