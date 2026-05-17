@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import DashboardLayout from '../components/DashboardLayout';
+
 import axios from 'axios';
 import { Webhook, Trash2, Plus, ShieldCheck, Zap, Bell, Loader2, X, Activity, RefreshCw, Command } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -72,7 +72,7 @@ const Webhooks = () => {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Outbound Hooks</h1>
@@ -246,7 +246,7 @@ const Webhooks = () => {
           ))}
         </AnimatePresence>
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

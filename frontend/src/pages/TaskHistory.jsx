@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import DashboardLayout from '../components/DashboardLayout';
+
 import axios from 'axios';
 import { History, ArrowLeft, RefreshCw, Clock, CheckCircle2, AlertCircle, Command, GitBranch, Terminal } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -47,7 +47,7 @@ const TaskHistory = () => {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <header className="mb-12 flex flex-col md:flex-row md:items-center justify-between gap-8">
         <div>
           <button 
@@ -185,7 +185,7 @@ const TaskHistory = () => {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

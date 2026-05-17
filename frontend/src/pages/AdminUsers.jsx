@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import DashboardLayout from '../components/DashboardLayout';
+
 import axios from 'axios';
 import { UserCog, UserCircle, Search, RefreshCw, ChevronDown, MoreHorizontal } from 'lucide-react';
 
@@ -42,7 +42,7 @@ const AdminUsers = () => {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Identity Nexus</h1>
@@ -168,7 +168,7 @@ const AdminUsers = () => {
           </table>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

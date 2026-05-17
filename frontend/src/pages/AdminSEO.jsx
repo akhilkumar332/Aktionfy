@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import DashboardLayout from '../components/DashboardLayout';
+
 import axios from 'axios';
 import { Search, Globe, RefreshCw, AlertCircle, CheckCircle2, Layout, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -46,7 +46,7 @@ const AdminSEO = () => {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <header className="mb-12 flex flex-col md:flex-row md:items-center justify-between gap-8">
         <div>
           <motion.div 
@@ -172,7 +172,7 @@ const AdminSEO = () => {
           )}
         </AnimatePresence>
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

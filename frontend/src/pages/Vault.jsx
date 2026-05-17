@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import DashboardLayout from '../components/DashboardLayout';
+
 import axios from 'axios';
 import { Key, Trash2, Plus, ShieldCheck, Zap, Bell, Loader2, X, RefreshCw, Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -72,7 +72,7 @@ const Vault = () => {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Secret Vault</h1>
@@ -251,7 +251,7 @@ const Vault = () => {
           ))}
         </AnimatePresence>
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

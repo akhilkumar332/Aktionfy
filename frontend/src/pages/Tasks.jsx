@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import DashboardLayout from '../components/DashboardLayout';
+
 import TaskWizard from '../components/TaskWizard';
 import axios from 'axios';
 import { 
@@ -55,7 +55,7 @@ const Tasks = () => {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Neural Streams</h1>
@@ -184,7 +184,7 @@ const Tasks = () => {
           </table>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

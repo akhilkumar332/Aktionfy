@@ -5,16 +5,28 @@ import Scene3D from './Scene3D';
 
 const Hero = () => {
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-obsidian-950 pt-20">
-      {/* Neural Network Background Decor */}
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-obsidian-950">
+      {/* Neural Network Background Decor - Moved outside container */}
       <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none"></div>
       <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-brand-primary/5 via-transparent to-obsidian-950"></div>
       
-      {/* Side Glows */}
-      <div className="absolute top-1/4 -left-64 w-[800px] h-[800px] bg-brand-primary/10 rounded-full blur-[160px] pointer-events-none animate-pulse duration-[10s]"></div>
-      <div className="absolute bottom-1/4 -right-64 w-[800px] h-[800px] bg-brand-secondary/5 rounded-full blur-[160px] pointer-events-none animate-pulse duration-[8s] delay-1000"></div>
+      {/* Side Glows - Moved outside container */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 -left-64 w-[800px] h-[800px] bg-brand-primary/10 rounded-full blur-[160px] animate-pulse duration-[10s]"></div>
+        <div className="absolute bottom-1/4 -right-64 w-[800px] h-[800px] bg-brand-secondary/5 rounded-full blur-[160px] animate-pulse duration-[8s] delay-1000"></div>
+      </div>
 
-      <div className="container mx-auto px-6 relative z-20">
+      {/* Immersive 3D/Visual Component - Moved outside container */}
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 1, duration: 2 }}
+        className="absolute inset-0 -z-10 opacity-40 pointer-events-none"
+      >
+         <Scene3D />
+      </motion.div>
+
+      <div className="container mx-auto px-6 relative z-20 pt-20">
         <div className="flex flex-col items-center text-center">
           
           {/* AI Badge - Staggered Entry */}

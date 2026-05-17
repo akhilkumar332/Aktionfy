@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import DashboardLayout from '../components/DashboardLayout';
+
 import axios from 'axios';
 import { Activity, RefreshCw, Server, Clock, Command } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -38,7 +38,7 @@ const Workers = () => {
   }, [fetchWorkers]);
 
   return (
-    <DashboardLayout>
+    <>
       <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Reaper Registry</h1>
@@ -151,7 +151,7 @@ const Workers = () => {
           )}
         </AnimatePresence>
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

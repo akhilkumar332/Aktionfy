@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import DashboardLayout from '../components/DashboardLayout';
+
 import { Layout, Search, Download, Sparkles, Zap, RefreshCw } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import axios from 'axios';
@@ -99,7 +99,7 @@ const Templates = () => {
     };
 
     return (
-        <DashboardLayout>
+        <>
             <TaskWizard 
                 isOpen={isWizardOpen} 
                 onClose={() => setIsWizardOpen(false)} 
@@ -193,7 +193,7 @@ const Templates = () => {
                 </div>
               )}
             </AnimatePresence>
-        </DashboardLayout>
+        </>
     );
 };
 

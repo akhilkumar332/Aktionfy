@@ -82,9 +82,8 @@ const ParticleField = ({ count = 2000 }) => {
 
 const Scene3D = () => {
   return (
-    <div className="w-full h-[600px] lg:h-[850px] relative pointer-events-none md:pointer-events-auto overflow-visible">
-      <Canvas camera={{ position: [0, 0, 8], fov: 45 }}>
-        <color attach="background" args={['#050505']} />
+    <div className="w-full h-full absolute inset-0 pointer-events-none md:pointer-events-auto overflow-visible">
+      <Canvas camera={{ position: [0, 0, 8], fov: 45 }} dpr={[1, 2]}>
         <fog attach="fog" args={['#050505', 5, 20]} />
         
         <ambientLight intensity={0.2} />
@@ -93,7 +92,6 @@ const Scene3D = () => {
         
         <NeuralCore />
         <ParticleField />
-        
       </Canvas>
     </div>
   );

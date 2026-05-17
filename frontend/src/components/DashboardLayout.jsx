@@ -22,7 +22,7 @@ const SidebarItem = ({ icon: Icon, label, path, isActive, onClick, roles, userRo
       }`}
     >
       <Icon size={18} className={isActive ? 'text-brand-primary' : 'text-zinc-500 group-hover:text-zinc-300'} />
-      <span>{label}</span>
+      <span className="truncate">{label}</span>
       {isActive && (
         <motion.div 
           layoutId="sidebar-active"
@@ -105,12 +105,12 @@ const Sidebar = ({ mobile = false, user, location, setIsSidebarOpen, handleLogou
 
     <div className="p-4 border-t border-zinc-800 space-y-4 bg-zinc-900/20">
       <div className="flex items-center gap-3 px-3 py-2">
-        <div className="w-8 h-8 rounded-full bg-brand-primary/20 border border-brand-primary/30 flex items-center justify-center text-brand-primary font-bold text-xs">
+        <div className="w-8 h-8 rounded-full bg-brand-primary/20 border border-brand-primary/30 flex items-center justify-center text-brand-primary font-bold text-xs shrink-0">
           {user?.email?.[0].toUpperCase()}
         </div>
         <div className="flex flex-col min-w-0">
           <span className="text-sm font-bold text-white truncate">{user?.email}</span>
-          <span className="text-[10px] text-zinc-500 uppercase font-black tracking-tight">{user?.role} • {user?.tier}</span>
+          <span className="text-[10px] text-zinc-500 uppercase font-black tracking-tight truncate">{user?.role} • {user?.tier}</span>
         </div>
       </div>
       <button
@@ -118,7 +118,7 @@ const Sidebar = ({ mobile = false, user, location, setIsSidebarOpen, handleLogou
         className="flex items-center gap-3 w-full px-3 py-2 text-zinc-500 hover:text-red-400 hover:bg-red-950/20 rounded-md transition-all text-sm font-medium"
       >
         <LogOut size={16} />
-        Sign Out
+        <span>Sign Out</span>
       </button>
     </div>
   </div>
@@ -135,10 +135,12 @@ const DashboardLayout = ({ children }) => {
     navigate('/');
   };
 
+  const isFullBleed = location.pathname === '/canvas';
+
   return (
     <div className="flex min-h-screen bg-zinc-950 text-zinc-100 font-sans">
-      {/* Desktop Sidebar */}
-      <aside className="hidden lg:block fixed left-0 top-0 bottom-0 z-50">
+      {/* Desktop Sidebar - Absolute/Fixed to prevent layout shift during animation */}
+      <aside className="hidden lg:block fixed left-0 top-0 bottom-0 w-64 z-50">
         <Sidebar user={user} location={location} setIsSidebarOpen={setIsSidebarOpen} handleLogout={handleLogout} />
       </aside>
 
@@ -167,37 +169,39 @@ const DashboardLayout = ({ children }) => {
       </AnimatePresence>
 
       {/* Main Content Area */}
-      <div className="flex-1 lg:ml-64 flex flex-col min-w-0">
-        {/* Header Action Bar */}
-        <header className="h-16 border-b border-zinc-800 bg-zinc-950/50 backdrop-blur-md sticky top-0 z-40 px-6 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button 
-              onClick={() => setIsSidebarOpen(true)} 
-              className="lg:hidden p-2 text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-800 rounded-md"
-              aria-label="Open sidebar"
-            >
-              <Menu size={20} />
-            </button>
-            <div className="flex items-center gap-2 text-sm font-medium">
-               <span className="text-zinc-500">Root</span>
-               <ChevronRight size={14} className="text-zinc-700" />
-               <span className="text-zinc-200 capitalize">{location.pathname.split('/').pop().replace(/-/g, ' ')}</span>
+      <div className={`flex-1 lg:pl-64 flex flex-col min-w-0 min-h-screen`}>
+        {/* Header Action Bar - Hide on full bleed if page has its own */}
+        {!isFullBleed && (
+          <header className="h-16 border-b border-zinc-800 bg-zinc-950/50 backdrop-blur-md sticky top-0 z-40 px-6 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => setIsSidebarOpen(true)} 
+                className="lg:hidden p-2 text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-800 rounded-md"
+                aria-label="Open sidebar"
+              >
+                <Menu size={20} />
+              </button>
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <span className="text-zinc-500">Root</span>
+                <ChevronRight size={14} className="text-zinc-700" />
+                <span className="text-zinc-200 capitalize">{location.pathname.split('/').pop().replace(/-/g, ' ')}</span>
+              </div>
             </div>
-          </div>
 
-          <div className="flex items-center gap-4">
-             <div className="hidden md:flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-md px-3 py-1.5 text-[11px] text-zinc-500 font-bold uppercase tracking-widest">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
-                System Active
-             </div>
-             <button className="p-2 text-zinc-500 hover:text-white bg-zinc-900 border border-zinc-800 rounded-md transition-all">
-                <Search size={18} />
-             </button>
-          </div>
-        </header>
+            <div className="flex items-center gap-4">
+              <div className="hidden md:flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-md px-3 py-1.5 text-[11px] text-zinc-500 font-bold uppercase tracking-widest">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                  System Active
+              </div>
+              <button className="p-2 text-zinc-500 hover:text-white bg-zinc-900 border border-zinc-800 rounded-md transition-all">
+                  <Search size={18} />
+              </button>
+            </div>
+          </header>
+        )}
 
-        <main className="flex-1 p-6 md:p-10 lg:p-12 overflow-x-hidden relative">
-          <div className="max-w-7xl mx-auto">
+        <main className={`flex-1 overflow-x-hidden relative ${isFullBleed ? '' : 'p-6 md:p-10 lg:p-12'}`}>
+          <div className={isFullBleed ? 'h-full' : 'max-w-7xl mx-auto'}>
             {children}
           </div>
         </main>

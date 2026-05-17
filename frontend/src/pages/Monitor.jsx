@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import DashboardLayout from '../components/DashboardLayout';
+
 import axios from 'axios';
 import { 
   Terminal, CheckCircle2, Clock, Activity, Users, 
@@ -123,7 +123,7 @@ const Monitor = () => {
   }, [fetchData]);
 
   return (
-    <DashboardLayout>
+    <>
       <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">System Monitor</h1>
@@ -200,7 +200,7 @@ const Monitor = () => {
           </motion.div>
         )}
       </AnimatePresence>
-    </DashboardLayout>
+    </>
   );
 };
 

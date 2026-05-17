@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import DashboardLayout from '../components/DashboardLayout';
+
 import axios from 'axios';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
@@ -50,7 +50,7 @@ const Insights = () => {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <header className="mb-12 flex flex-col md:flex-row md:items-center justify-between gap-8">
         <div>
           <motion.div 
@@ -275,7 +275,7 @@ const Insights = () => {
           </motion.div>
         )}
       </AnimatePresence>
-    </DashboardLayout>
+    </>
   );
 };
 
