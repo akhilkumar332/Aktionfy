@@ -78,12 +78,18 @@ func (sm *SessionManager) IsOnline(ctx context.Context, userID string) bool {
 // Heartbeat Loop - Keeps the session active in Redis while the SSE connection is open
 // Also subscribes to Pub/Sub to listen for remote task triggers
 func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, mcpServer *server.MCPServer) {
-	// Check per-user connection limit (max 5 connections)
+	if sm.redisClient == nil {
+		log.Printf("Redis client not initialized in SessionManager")
+		return
+	}
+
+	// Check per-user connection limit (max 10 connections)
 	connCountKey := fmt.Sprintf("conn_count:%s", userID)
 	count, _ := sm.redisClient.Incr(ctx, connCountKey).Result()
 	sm.redisClient.Expire(ctx, connCountKey, 1*time.Minute)
 
 	defer func() {
+		// Use a background context for cleanup to ensure it runs even if parent is cancelled
 		sm.redisClient.Decr(context.Background(), connCountKey)
 	}()
 

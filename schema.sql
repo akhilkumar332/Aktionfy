@@ -287,7 +287,8 @@ CREATE TABLE task_versions (
     branch_condition JSONB,
     loop_condition JSONB,
     is_bundle_root BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    swarm_config JSONB
 );
 
 CREATE INDEX idx_task_versions_task_id ON task_versions (task_id);

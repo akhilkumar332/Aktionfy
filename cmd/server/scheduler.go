@@ -244,6 +244,11 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 			}); err != nil {
 				log.Printf("Error updating next run for missed task %s: %v", taskID, err)
 			}
+			// Clear lock so it can be picked up immediately if needed
+			queries.UpdateTaskStatus(workerCtx, db.UpdateTaskStatusParams{
+				Status: pgtype.Text{String: StatusActive, Valid: true},
+				ID:     t.ID,
+			})
 			return
 		}
 
