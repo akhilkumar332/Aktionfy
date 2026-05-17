@@ -80,8 +80,8 @@ func handleGetTrends(c echo.Context) error {
 		log.Printf("Trends: failed to fetch current tasks: %v", err)
 	}
 	prevTasks, err := queries.GetCountTracesBetween(ctx, db.GetCountTracesBetweenParams{
-		StartTime: pgtype.Timestamptz{Time: sixtyDaysAgo, Valid: true},
-		EndTime:   pgtype.Timestamptz{Time: thirtyDaysAgo, Valid: true},
+		StartTime:   pgtype.Timestamptz{Time: sixtyDaysAgo, Valid: true},
+		StartTime_2: pgtype.Timestamptz{Time: thirtyDaysAgo, Valid: true},
 	})
 	if err != nil {
 		log.Printf("Trends: failed to fetch prev tasks: %v", err)
@@ -94,8 +94,8 @@ func handleGetTrends(c echo.Context) error {
 		currentSuccess = 100.0
 	}
 	prevSuccess, err := queries.GetSuccessRateBetween(ctx, db.GetSuccessRateBetweenParams{
-		StartTime: pgtype.Timestamptz{Time: sixtyDaysAgo, Valid: true},
-		EndTime:   pgtype.Timestamptz{Time: thirtyDaysAgo, Valid: true},
+		StartTime:   pgtype.Timestamptz{Time: sixtyDaysAgo, Valid: true},
+		StartTime_2: pgtype.Timestamptz{Time: thirtyDaysAgo, Valid: true},
 	})
 	if err != nil {
 		log.Printf("Trends: failed to fetch prev success: %v", err)
