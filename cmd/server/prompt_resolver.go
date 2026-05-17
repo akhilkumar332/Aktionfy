@@ -24,12 +24,10 @@ func resolvePrompt(ctx context.Context, userID string, taskID pgtype.UUID, execu
 	// Find all unique secret names first
 	matches := secretRegex.FindAllStringSubmatch(resolved, -1)
 	if len(matches) > 0 {
-		secretNames := make([]string, 0)
 		uniqueNames := make(map[string]bool)
 		for _, m := range matches {
 			if len(m) >= 2 && !uniqueNames[m[1]] {
 				uniqueNames[m[1]] = true
-				secretNames = append(secretNames, m[1])
 			}
 		}
 
