@@ -1,9 +1,12 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import DashboardLayout from '../components/DashboardLayout';
 import axios from 'axios';
-import { Crown, ListChecks, Key, RefreshCw, Copy, Check, ShieldCheck, Zap, ArrowRight, Bell, ShieldAlert } from 'lucide-react';
+import { 
+  Crown, Key, RefreshCw, Copy, Check, 
+  ShieldCheck, Zap, ArrowRight, Bell, ShieldAlert, 
+  Terminal, Cpu, Globe, Server, Activity, ArrowUpRight
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSSE } from '../hooks/useSSE';
 
@@ -42,7 +45,6 @@ const Dashboard = () => {
   }, [fetchData]);
 
   useSSE(useCallback((event) => {
-    // Dashboard received SSE event
     if (event.event_type === 'task_executed') {
       try {
         const payload = typeof event.payload === 'string' ? JSON.parse(event.payload) : event.payload;
@@ -65,7 +67,6 @@ const Dashboard = () => {
       try {
         const payload = typeof event.payload === 'string' ? JSON.parse(event.payload) : event.payload;
         setPendingApprovals(prev => {
-          // Avoid duplicates
           if (prev.find(a => a.task_id === payload.task_id)) return prev;
           return [...prev, payload];
         });
@@ -106,14 +107,13 @@ const Dashboard = () => {
 
   const handleRotate = async () => {
     if (!confirm('Are you sure you want to rotate your API key? The current key will stop working immediately.')) return;
-    
     setRotating(true);
     try {
       await axios.post('/api/v1/rotate-api-key');
       await checkAuth();
-      alert('API Key rotated successfully');
+      addToast('API Key rotated successfully');
     } catch {
-      alert('Failed to rotate API Key');
+      addToast('Failed to rotate API Key', 'error');
     } finally {
       setRotating(false);
     }
@@ -126,192 +126,303 @@ const Dashboard = () => {
         window.location.assign(res.data.data.url);
       }
     } catch {
-      alert('Failed to initiate upgrade');
+      addToast('Failed to initiate upgrade', 'error');
     }
   };
 
   return (
-    <DashboardLayout>
-      <header className="mb-12">
-        <motion.h1 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-4xl font-black text-white tracking-tight mb-2"
+    <div className="space-y-12">
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-8">
+        <div>
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="flex items-center gap-3 mb-4"
+          >
+             <div className="w-8 h-8 bg-brand-primary/10 border border-brand-primary/20 rounded-lg flex items-center justify-center">
+                <Activity size={16} className="text-brand-primary" />
+             </div>
+             <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Operational Environment</span>
+          </motion.div>
+          <motion.h1 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-5xl font-black text-white tracking-tighter"
+          >
+            Command Hub.
+          </motion.h1>
+        </div>
+
+        <motion.div 
+           initial={{ opacity: 0 }}
+           animate={{ opacity: 1 }}
+           transition={{ delay: 0.3 }}
+           className="flex items-center gap-6 bg-white/5 border border-white/10 px-8 py-4 rounded-3xl backdrop-blur-xl"
         >
-          Control Center
-        </motion.h1>
-        <p className="text-slate-400 font-medium tracking-wide uppercase text-[10px] tracking-[0.2em]">Operational Status: <span className="text-emerald-500">Nominal</span></p>
+           <div className="flex flex-col">
+              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Global Status</span>
+              <span className="text-xs font-bold text-emerald-400 flex items-center gap-2">
+                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_#10b981]"></div>
+                 All Systems Nominal
+              </span>
+           </div>
+           <div className="h-8 w-px bg-white/10"></div>
+           <div className="flex flex-col">
+              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Active Latency</span>
+              <span className="text-xs font-bold text-white font-mono">14ms</span>
+           </div>
+        </motion.div>
       </header>
 
       {/* Pending Approvals Section */}
       <AnimatePresence>
         {pendingApprovals.length > 0 && (
-          <motion.div 
+          <motion.section 
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="mb-12 overflow-hidden"
+            className="overflow-hidden"
           >
-            <h2 className="text-xl font-black text-white uppercase tracking-widest mb-6 flex items-center gap-3">
-              <ShieldAlert className="text-red-500 animate-pulse" size={20} />
-              Manual Intervention Required
-            </h2>
-            <div className="flex flex-col gap-4">
-              {pendingApprovals.map((approval) => (
-                <motion.div 
-                  key={approval.task_id}
-                  layout
-                  initial={{ x: -20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  className="bg-red-500/5 border border-red-500/20 p-8 rounded-[2rem] flex flex-col md:flex-row items-center justify-between gap-6 backdrop-blur-xl"
-                >
-                  <div>
-                    <h4 className="text-white font-bold text-lg mb-1">{approval.task_name}</h4>
-                    <p className="text-slate-500 text-xs font-mono">ID: {approval.task_id}</p>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <button 
-                      onClick={() => handleDeny(approval.task_id)}
-                      className="px-8 py-4 rounded-xl text-xs font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
-                    >
-                      Deny
-                    </button>
-                    <button 
-                      onClick={() => handleApprove(approval.task_id)}
-                      className="bg-red-500 text-white px-10 py-4 rounded-xl text-xs font-black uppercase tracking-widest shadow-[0_10px_30px_rgba(239,68,68,0.3)] hover:scale-105 transition-transform"
-                    >
-                      Approve Execution
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
+            <div className="bg-red-500/5 border border-red-500/10 rounded-[3rem] p-10 backdrop-blur-3xl relative overflow-hidden">
+               <div className="absolute top-0 right-0 w-64 h-64 bg-red-500/5 blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+               
+               <h2 className="text-xl font-black text-white uppercase tracking-widest mb-10 flex items-center gap-3">
+                 <ShieldAlert className="text-red-500 animate-pulse" size={24} />
+                 Manual Resolution Required
+               </h2>
+
+               <div className="grid grid-cols-1 gap-4">
+                 {pendingApprovals.map((approval) => (
+                   <motion.div 
+                     key={approval.task_id}
+                     layout
+                     initial={{ x: -20, opacity: 0 }}
+                     animate={{ x: 0, opacity: 1 }}
+                     className="bg-black/40 border border-white/5 p-8 rounded-[2rem] flex flex-col md:flex-row items-center justify-between gap-8 transition-all hover:border-red-500/30 group"
+                   >
+                     <div className="flex items-center gap-6">
+                        <div className="w-14 h-14 rounded-2xl bg-red-500/10 flex items-center justify-center text-red-500 border border-red-500/20 group-hover:scale-110 transition-transform">
+                           <Terminal size={24} />
+                        </div>
+                        <div>
+                          <h4 className="text-white font-bold text-lg mb-1">{approval.task_name}</h4>
+                          <p className="text-slate-500 text-[10px] font-mono uppercase tracking-widest">Execution-ID: {approval.execution_id?.slice(0, 13)}</p>
+                        </div>
+                     </div>
+                     <div className="flex items-center gap-4 w-full md:w-auto">
+                       <button 
+                         onClick={() => handleDeny(approval.task_id)}
+                         className="flex-1 md:flex-none px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-white border border-white/5 transition-all"
+                       >
+                         Abort
+                       </button>
+                       <button 
+                         onClick={() => handleApprove(approval.task_id)}
+                         className="flex-1 md:flex-none bg-red-500 text-white px-10 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-[0_10px_40px_rgba(239,68,68,0.2)] hover:brightness-110 active:scale-95 transition-all"
+                       >
+                         Authorize Execution
+                       </button>
+                     </div>
+                   </motion.div>
+                 ))}
+               </div>
             </div>
-          </motion.div>
+          </motion.section>
         )}
       </AnimatePresence>
 
-      {new URLSearchParams(window.location.search).get('payment') === 'success' && (
-        <div className="bg-emerald-500/10 text-emerald-400 p-6 rounded-3xl border border-emerald-500/20 mb-12 font-bold flex items-center gap-4 shadow-[0_0_50px_rgba(16,185,129,0.1)]">
-          <ShieldCheck size={24} />
-          Payment successful! Your neural capacity has been upgraded to PRO.
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-        {/* Tier Card */}
-        <div className="bg-white/5 p-10 rounded-[2.5rem] border border-white/10 shadow-2xl flex flex-col group hover:bg-white/[0.08] transition-all duration-500 backdrop-blur-xl">
-          <div className="flex items-center gap-4 mb-8">
-            <div className="bg-accent-orange/10 p-3 rounded-2xl text-accent-orange group-hover:scale-110 transition-transform">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {/* Tier Intelligence Card */}
+        <div className="glass-card p-10 rounded-[3rem] flex flex-col group relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-brand-primary/5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none group-hover:scale-150 transition-transform duration-700"></div>
+          
+          <div className="flex items-center gap-4 mb-10">
+            <div className="bg-brand-primary/10 p-3 rounded-2xl text-brand-primary border border-brand-primary/20 group-hover:rotate-12 transition-transform">
               <Crown size={24} />
             </div>
-            <h3 className="font-bold text-slate-300 uppercase tracking-widest text-xs">Node Tier</h3>
+            <h3 className="font-black text-slate-500 uppercase tracking-[0.2em] text-[10px]">Node Privilege</h3>
           </div>
-          <div className="text-4xl font-black text-white uppercase tracking-tighter mb-4 glow-text">
-            {user?.tier}
+          
+          <div className="flex items-baseline gap-2 mb-4">
+             <span className="text-5xl font-black text-white uppercase tracking-tighter glow-text">{user?.tier}</span>
+             <span className="w-2 h-2 rounded-full bg-brand-primary shadow-[0_0_10px_#d97706]"></span>
           </div>
-          <p className="text-slate-500 text-sm font-medium flex-1">
-            {user?.tier === 'free' ? 'Legacy throughput: 2 concurrent streams.' : 'High-capacity throughput: 50 concurrent streams.'}
+
+          <p className="text-slate-400 text-sm font-medium leading-relaxed flex-1">
+            {user?.tier === 'free' 
+              ? 'Standard throughput. 2 concurrent neural streams active.' 
+              : 'Unrestricted throughput. Up to 50 concurrent neural streams enabled.'}
           </p>
+
           {user?.tier === 'free' && (
             <button 
               onClick={handleUpgrade}
-              className="mt-8 text-xs font-black text-accent-orange uppercase tracking-[0.2em] hover:text-white transition-colors text-left flex items-center gap-2"
+              className="mt-10 shimmer-button w-full bg-brand-primary text-white py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-2xl flex items-center justify-center gap-3 transition-all active:scale-95"
             >
-              Upgrade Neural Capacity <ArrowRight size={14} />
+              Elevate Node Tier <Zap size={14} />
             </button>
           )}
         </div>
 
-        {/* Task Stats Card */}
-        <Link to="/tasks" className="bg-white/5 p-10 rounded-[2.5rem] border border-white/10 shadow-2xl flex flex-col group hover:bg-white/[0.08] transition-all duration-500 backdrop-blur-xl cursor-pointer">
-          <div className="flex items-center gap-4 mb-8">
-            <div className="bg-blue-500/10 p-3 rounded-2xl text-blue-400 group-hover:scale-110 transition-transform">
-              <ListChecks size={24} />
+        {/* Neural Streams Card */}
+        <Link to="/tasks" className="glass-card p-10 rounded-[3rem] flex flex-col group relative overflow-hidden transition-all hover:border-brand-primary/30">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none group-hover:scale-150 transition-transform duration-700"></div>
+          
+          <div className="flex items-center gap-4 mb-10">
+            <div className="bg-blue-500/10 p-3 rounded-2xl text-blue-400 border border-blue-500/20 group-hover:-rotate-12 transition-transform">
+              <Activity size={24} />
             </div>
-            <h3 className="font-bold text-slate-300 uppercase tracking-widest text-xs">Active Streams</h3>
+            <h3 className="font-black text-slate-500 uppercase tracking-[0.2em] text-[10px]">Neural Streams</h3>
           </div>
-          <div className="text-5xl font-black text-white mb-4 tracking-tighter">
-            {taskCount}
+
+          <div className="flex items-baseline gap-2 mb-4">
+             <span className="text-6xl font-black text-white tracking-tighter">{taskCount}</span>
+             <span className="text-slate-500 font-bold uppercase text-xs tracking-widest">Active</span>
           </div>
-          <p className="text-slate-500 text-sm font-medium flex-1">
-            Durable schedules currently active across your global node network.
+
+          <p className="text-slate-400 text-sm font-medium leading-relaxed mb-10">
+            Persistent orchestration threads currently executing across the distributed reaper network.
           </p>
+
+          <div className="mt-auto flex items-center justify-between text-blue-400">
+             <span className="text-[10px] font-black uppercase tracking-widest group-hover:translate-x-2 transition-transform">Orchestrate Now</span>
+             <ArrowRight size={18} className="group-hover:translate-x-2 transition-transform" />
+          </div>
         </Link>
 
-        {/* Identity Card */}
-        <div className="bg-white/5 p-10 rounded-[2.5rem] border border-white/10 shadow-2xl flex flex-col group hover:bg-white/[0.08] transition-all duration-500 backdrop-blur-xl">
-          <div className="flex items-center gap-4 mb-8">
-            <div className="bg-emerald-500/10 p-3 rounded-2xl text-emerald-400 group-hover:scale-110 transition-transform">
-              <Zap size={24} />
+        {/* Reaper Network Card */}
+        <div className="glass-card p-10 rounded-[3rem] flex flex-col group relative overflow-hidden">
+           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none group-hover:scale-150 transition-transform duration-700"></div>
+          
+          <div className="flex items-center gap-4 mb-10">
+            <div className="bg-emerald-500/10 p-3 rounded-2xl text-emerald-400 border border-emerald-500/20 group-hover:scale-110 transition-transform">
+              <Server size={24} />
             </div>
-            <h3 className="font-bold text-slate-300 uppercase tracking-widest text-xs">System Uptime</h3>
+            <h3 className="font-black text-slate-500 uppercase tracking-[0.2em] text-[10px]">Infrastructure</h3>
           </div>
-          <div className="text-4xl font-black text-white mb-4 tracking-tighter">
-            99.99<span className="text-slate-600">%</span>
+
+          <div className="flex items-baseline gap-2 mb-4">
+             <span className="text-5xl font-black text-white tracking-tighter italic">Reaper</span>
+             <span className="text-emerald-500 font-black uppercase text-[10px] tracking-widest px-2 py-0.5 bg-emerald-500/10 rounded-lg">Online</span>
           </div>
-          <p className="text-slate-500 text-sm font-medium flex-1">
-            Guaranteed low-latency delivery through our distributed reaper network.
+
+          <p className="text-slate-400 text-sm font-medium leading-relaxed flex-1">
+            Edge-compute nodes optimized for high-frequency task delivery and state synchronization.
           </p>
+
+          <div className="mt-10 flex gap-2">
+             <div className="flex-1 bg-white/5 rounded-2xl p-4 border border-white/5">
+                <span className="block text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Health</span>
+                <span className="text-xs font-bold text-white uppercase tracking-tighter">Peak</span>
+             </div>
+             <div className="flex-1 bg-white/5 rounded-2xl p-4 border border-white/5">
+                <span className="block text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Uptime</span>
+                <span className="text-xs font-bold text-white uppercase tracking-tighter">99.99%</span>
+             </div>
+          </div>
         </div>
 
-        {/* API Key Card */}
-        <div className="bg-white/5 p-10 rounded-[3rem] border border-white/10 shadow-2xl md:col-span-2 lg:col-span-3 flex flex-col backdrop-blur-2xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-accent-orange/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2"></div>
+        {/* API Identity Command Card */}
+        <div className="glass-card p-10 rounded-[3.5rem] md:col-span-2 lg:col-span-3 flex flex-col relative overflow-hidden">
+          <div className="absolute top-1/2 right-0 w-96 h-96 bg-brand-primary/5 blur-[120px] rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
           
-          <div className="flex items-center gap-4 mb-10 relative z-10">
-            <div className="bg-white/5 p-3 rounded-2xl text-slate-400">
-              <Key size={24} />
+          <div className="flex items-center justify-between mb-12 relative z-10">
+            <div className="flex items-center gap-4">
+              <div className="bg-white/5 p-3 rounded-2xl text-slate-400 border border-white/10">
+                <Key size={24} />
+              </div>
+              <div>
+                <h3 className="font-black text-white uppercase tracking-[0.2em] text-xs">Neural Access Key</h3>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Private Authentication Token</p>
+              </div>
             </div>
-            <h3 className="font-bold text-slate-300 uppercase tracking-widest text-xs">Neural Access Key</h3>
-          </div>
-
-          <div className="flex flex-col md:flex-row gap-6 items-stretch md:items-center relative z-10">
-            <div className="flex-1 bg-black/60 text-emerald-400 p-6 rounded-[1.5rem] font-mono text-sm break-all flex items-center justify-between border border-white/5 shadow-inner">
-              <code className="tracking-widest">{user?.api_key}</code>
-              <button onClick={handleCopy} className="ml-6 p-2 hover:bg-white/5 rounded-xl transition-all">
-                {copied ? <Check className="w-5 h-5 text-emerald-500" /> : <Copy className="w-5 h-5" />}
-              </button>
-            </div>
+            
             <button 
               onClick={handleRotate}
               disabled={rotating}
-              className="bg-red-500/10 text-red-400 px-10 py-6 rounded-2xl font-black text-xs uppercase tracking-[0.2em] border border-red-500/20 hover:bg-red-500/20 transition-all flex items-center gap-3 justify-center shadow-xl active:scale-95"
+              className="hidden md:flex bg-red-500/10 text-red-400 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] border border-red-500/20 hover:bg-red-500/20 transition-all items-center gap-3 shadow-xl active:scale-95"
             >
               <RefreshCw className={`w-4 h-4 ${rotating ? 'animate-spin' : ''}`} />
-              Rotate Key
+              Rotate Token
+            </button>
+          </div>
+
+          <div className="flex flex-col md:flex-row gap-6 items-stretch md:items-center relative z-10">
+            <div className="flex-1 bg-obsidian-950/80 text-emerald-400 p-8 rounded-[2rem] font-mono text-sm break-all flex items-center justify-between border border-white/5 shadow-inner backdrop-blur-3xl group">
+              <code className="tracking-[0.2em] opacity-80 group-hover:opacity-100 transition-opacity">{user?.api_key}</code>
+              <button onClick={handleCopy} className="ml-8 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl hover:bg-emerald-500/20 transition-all text-emerald-500 shadow-2xl">
+                {copied ? <Check size={20} /> : <Copy size={20} />}
+              </button>
+            </div>
+            
+            <button 
+              onClick={handleRotate}
+              disabled={rotating}
+              className="md:hidden bg-red-500/10 text-red-400 px-8 py-6 rounded-[2rem] font-black text-[10px] uppercase tracking-[0.2em] border border-red-500/20 hover:bg-red-500/20 transition-all flex items-center justify-center gap-3 shadow-xl active:scale-95"
+            >
+              <RefreshCw className={`w-4 h-4 ${rotating ? 'animate-spin' : ''}`} />
+              Rotate Token
             </button>
           </div>
           
-          <div className="mt-8 flex items-center gap-2 text-[10px] font-bold text-slate-600 uppercase tracking-widest relative z-10">
-             <ShieldCheck size={12} className="text-red-900" /> Key rotation will instantly terminate all existing client connections.
+          <div className="mt-8 flex items-center gap-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest relative z-10 bg-white/[0.02] w-fit px-4 py-2 rounded-lg border border-white/5">
+             <ShieldCheck size={14} className="text-red-900" /> 
+             <span>Security Alert: Rotation will instantly terminate all active client integrations.</span>
           </div>
         </div>
       </div>
 
+      {/* Quick Navigation Terminal */}
+      <section className="grid grid-cols-1 md:grid-cols-4 gap-4">
+         {[
+           { label: 'Intelligence', sub: 'Templates', icon: Cpu, path: '/templates' },
+           { label: 'Geography', sub: 'Workspaces', icon: Globe, path: '/workspaces' },
+           { label: 'Logistics', sub: 'Integrations', icon: Zap, path: '/webhooks' },
+           { label: 'Security', sub: 'Vault', icon: Key, path: '/vault' },
+         ].map((nav, i) => (
+           <Link key={i} to={nav.path} className="glass-card p-6 rounded-[2rem] group hover:bg-white/[0.08] transition-all flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                 <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-500 group-hover:text-brand-primary transition-colors">
+                    <nav.icon size={20} />
+                 </div>
+                 <div>
+                    <span className="block text-[8px] font-black text-slate-600 uppercase tracking-widest mb-0.5">{nav.label}</span>
+                    <span className="block text-sm font-black text-white tracking-tight">{nav.sub}</span>
+                 </div>
+              </div>
+              <ArrowUpRight size={18} className="text-slate-700 group-hover:text-white group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+           </Link>
+         ))}
+      </section>
+
       {/* Real-time Toast Notifications */}
-      <div className="fixed bottom-8 right-8 z-[100] flex flex-col gap-3 pointer-events-none">
+      <div className="fixed bottom-10 right-10 z-[100] flex flex-col gap-4 pointer-events-none">
         <AnimatePresence>
           {toasts.map((toast) => (
             <motion.div
               key={toast.id}
-              initial={{ opacity: 0, x: 50, scale: 0.9 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 20, scale: 0.9 }}
-              className={`pointer-events-auto px-6 py-4 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border flex items-center gap-4 backdrop-blur-2xl min-w-[300px] ${
+              initial={{ opacity: 0, x: 50, scale: 0.9, filter: 'blur(10px)' }}
+              animate={{ opacity: 1, x: 0, scale: 1, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, x: 20, scale: 0.9, filter: 'blur(10px)' }}
+              className={`pointer-events-auto px-8 py-5 rounded-[2rem] shadow-[0_30px_60px_rgba(0,0,0,0.6)] border flex items-center gap-5 backdrop-blur-3xl min-w-[350px] ${
                 toast.type === 'success' 
                   ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
                   : 'bg-red-500/10 border-red-500/20 text-red-400'
               }`}
             >
-              <div className={`p-2 rounded-xl ${toast.type === 'success' ? 'bg-emerald-500/20' : 'bg-red-500/20'}`}>
-                {toast.type === 'success' ? <Zap size={16} /> : <Bell size={16} />}
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${toast.type === 'success' ? 'bg-emerald-500/20' : 'bg-red-500/20'}`}>
+                {toast.type === 'success' ? <Zap size={18} /> : <Bell size={18} />}
               </div>
-              <span className="text-xs font-black uppercase tracking-widest">{toast.message}</span>
+              <div>
+                <span className="block text-[10px] font-black uppercase tracking-[0.2em] opacity-50 mb-0.5">{toast.type === 'success' ? 'Protocol Success' : 'Terminal Alert'}</span>
+                <span className="block text-xs font-bold uppercase tracking-widest leading-tight">{toast.message}</span>
+              </div>
             </motion.div>
           ))}
         </AnimatePresence>
       </div>
-    </DashboardLayout>
+    </div>
   );
 };
 

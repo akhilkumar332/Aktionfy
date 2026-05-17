@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { UserPlus, ArrowRight } from 'lucide-react';
+import { UserPlus, ArrowRight, Command } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Signup = () => {
@@ -23,72 +23,84 @@ const Signup = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-ai-black relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-obsidian-950 relative overflow-hidden px-6">
       {/* Background Decor */}
-      <div className="absolute top-0 left-0 w-full h-full bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none"></div>
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-accent-orange/5 rounded-full blur-[120px] pointer-events-none translate-x-1/2 -translate-y-1/2"></div>
+      <div className="absolute top-0 left-0 w-full h-full bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none"></div>
+      <div className="absolute bottom-0 right-0 w-[800px] h-[800px] bg-brand-primary/5 rounded-full blur-[160px] pointer-events-none translate-x-1/4 translate-y-1/4"></div>
 
       <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="relative z-10 bg-white/[0.03] backdrop-blur-2xl p-12 rounded-[3rem] border border-white/10 shadow-[0_40px_100px_rgba(0,0,0,0.8)] w-full max-w-lg"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative z-10 w-full max-w-lg"
       >
-        <div className="flex flex-col items-center mb-12">
-          <Link to="/" className="bg-accent-orange/10 border border-accent-orange/20 p-3 rounded-2xl text-accent-orange mb-8 shadow-2xl hover:scale-110 transition-transform">
-            <UserPlus size={32} />
-          </Link>
-          <h1 className="text-4xl font-black text-white tracking-tighter mb-2 text-center">Join the Network.</h1>
-          <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Initialize your persistent AI workspace</p>
-        </div>
-
-        {error && (
-          <motion.div 
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="bg-red-500/10 text-red-400 p-4 rounded-2xl mb-8 text-xs font-bold border border-red-500/20 text-center uppercase tracking-widest"
-          >
-            {error}
-          </motion.div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Neural Identity</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-black/40 px-6 py-5 rounded-2xl border border-white/10 text-white focus:border-accent-orange outline-none transition-all placeholder:text-slate-700 shadow-inner"
-              placeholder="id@network.com"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Create Key</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-black/40 px-6 py-5 rounded-2xl border border-white/10 text-white focus:border-accent-orange outline-none transition-all placeholder:text-slate-700 shadow-inner"
-              placeholder="••••••••"
-              required
-            />
-          </div>
+        <div className="glass-card p-12 md:p-16 rounded-[4rem] border-white/5 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-brand-primary/5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
           
-          <button
-            type="submit"
-            className="w-full bg-accent-orange text-white py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-xs hover:bg-amber-700 transition-all shadow-[0_20px_50px_rgba(217,119,6,0.3)] active:scale-[0.98] flex items-center justify-center gap-3"
-          >
-            Create Identity <ArrowRight size={16} />
-          </button>
-        </form>
+          <div className="flex flex-col items-center mb-16">
+            <Link to="/" className="group relative mb-10">
+               <div className="absolute inset-0 bg-brand-primary/20 blur-2xl rounded-full group-hover:scale-150 transition-transform duration-1000"></div>
+               <div className="bg-brand-primary/10 border border-brand-primary/20 p-4 rounded-3xl text-brand-primary relative z-10 shadow-2xl group-hover:rotate-[360deg] transition-transform duration-1000">
+                 <UserPlus size={32} />
+               </div>
+            </Link>
+            <h1 className="text-4xl font-black text-white tracking-tighter mb-3 text-center">Join the Network.</h1>
+            <p className="text-slate-500 font-black uppercase tracking-[0.3em] text-[10px] text-center">Initialize Neural Identity</p>
+          </div>
 
-        <p className="text-center mt-10 text-[10px] font-bold text-slate-600 uppercase tracking-widest">
-          Already registered?{' '}
-          <Link to="/login" className="text-white hover:text-accent-orange transition-colors underline underline-offset-4">
-            Authenticate
-          </Link>
-        </p>
+          {error && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-red-500/10 text-red-400 p-5 rounded-2xl mb-10 text-[10px] font-black border border-red-500/20 text-center uppercase tracking-[0.2em]"
+            >
+              Initialization Failed: {error}
+            </motion.div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-8">
+            <div className="space-y-3">
+              <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Desired Identity</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full bg-black/40 px-8 py-6 rounded-[2rem] border border-white/5 text-white focus:border-brand-primary/50 outline-none transition-all placeholder:text-slate-800 font-medium shadow-inner"
+                placeholder="identity@network.io"
+                required
+              />
+            </div>
+            <div className="space-y-3">
+              <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Generate Key</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full bg-black/40 px-8 py-6 rounded-[2rem] border border-white/5 text-white focus:border-brand-primary/50 outline-none transition-all placeholder:text-slate-800 font-medium shadow-inner"
+                placeholder="••••••••••••"
+                required
+              />
+            </div>
+            
+            <button
+              type="submit"
+              className="shimmer-button w-full bg-brand-primary text-white py-6 rounded-[2rem] font-black uppercase tracking-[0.2em] text-[10px] hover:brightness-110 transition-all shadow-[0_20px_50px_rgba(217,119,6,0.3)] active:scale-[0.98] flex items-center justify-center gap-3"
+            >
+              Request Initialization <ArrowRight size={16} />
+            </button>
+          </form>
+
+          <div className="mt-16 pt-10 border-t border-white/5 flex flex-col items-center gap-6">
+             <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em]">
+               Already initialized?{' '}
+               <Link to="/login" className="text-white hover:text-brand-primary transition-colors underline underline-offset-8">
+                 Authenticate
+               </Link>
+             </p>
+             <div className="flex items-center gap-2 text-slate-700 text-[9px] font-bold uppercase tracking-widest bg-white/[0.02] px-4 py-2 rounded-full border border-white/5">
+                <Command size={12} className="text-brand-primary" /> Multi-Region Deployment
+             </div>
+          </div>
+        </div>
       </motion.div>
     </div>
   );
