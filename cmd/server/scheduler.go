@@ -350,11 +350,6 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 			}); err != nil {
 				log.Printf("Error updating next run for missed task %s: %v", taskID, err)
 			}
-			// Clear lock so it can be picked up immediately if needed
-			queries.UpdateTaskStatus(workerCtx, db.UpdateTaskStatusParams{
-				Status: pgtype.Text{String: StatusActive, Valid: true},
-				ID:     t.ID,
-			})
 			return
 		}
 
@@ -1105,11 +1100,12 @@ func extractRawText(res interface{}) string {
 
 	resBytes, err := json.Marshal(res)
 	if err != nil {
-		log.Printf("Error marshaling LLM response in extractRawText: %v", err)
 		return ""
 	}
 	var resMap map[string]interface{}
-	json.Unmarshal(resBytes, &resMap)
+	if err := json.Unmarshal(resBytes, &resMap); err != nil {
+		return ""
+	}
 
 	if content, ok := resMap["content"].(map[string]interface{}); ok {
 		if text, ok := content["text"].(string); ok {
