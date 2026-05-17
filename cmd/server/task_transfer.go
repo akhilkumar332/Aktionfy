@@ -20,6 +20,11 @@ type TransferTask struct {
 	RequiresApproval    bool            `json:"requires_approval"`
 	DependsOnLegacyID   string          `json:"depends_on_legacy_id,omitempty"`
 	TriggerOnCompletion bool            `json:"trigger_on_completion"`
+	TaskType            string          `json:"task_type"`
+	NativeCode          string          `json:"native_code"`
+	BranchCondition     json.RawMessage `json:"branch_condition"`
+	IsBundleRoot        bool            `json:"is_bundle_root"`
+	SwarmConfig         json.RawMessage `json:"swarm_config"`
 }
 
 type ImportTasksRequest struct {
@@ -38,11 +43,16 @@ func exportUserTasks(ctx context.Context, userID string) ([]TransferTask, error)
 			LegacyID:            formatUUID(row.ID),
 			Name:                row.Name,
 			TriggerType:         row.TriggerType.String,
-			TriggerConfig:       json.RawMessage(row.TriggerConfig),
+			TriggerConfig:       row.TriggerConfig,
 			AgentPrompt:         row.AgentPrompt,
 			MissedTaskPolicy:    row.MissedTaskPolicy.String,
 			RequiresApproval:    row.RequiresApproval.Bool,
 			TriggerOnCompletion: row.TriggerOnCompletion.Bool,
+			TaskType:            row.TaskType.String,
+			NativeCode:          row.NativeCode.String,
+			BranchCondition:     row.BranchCondition,
+			IsBundleRoot:        row.IsBundleRoot.Bool,
+			SwarmConfig:         row.SwarmConfig,
 		}
 		if row.DependsOnTaskID.Valid {
 			task.DependsOnLegacyID = formatUUID(row.DependsOnTaskID)
@@ -67,12 +77,10 @@ func importUserTasks(ctx context.Context, userID string, tasks []TransferTask) (
 		if task.TriggerType == "" {
 			return nil, fmt.Errorf("task %d: trigger_type is required", idx)
 		}
-		if task.AgentPrompt == "" {
-			return nil, fmt.Errorf("task %d: agent_prompt is required", idx)
-		}
+		
 		missedPolicy := task.MissedTaskPolicy
 		if missedPolicy == "" {
-			missedPolicy = PolicySkip
+			missedPolicy = "run_immediately"
 		}
 
 		var triggerConfig map[string]interface{}
@@ -85,20 +93,21 @@ func importUserTasks(ctx context.Context, userID string, tasks []TransferTask) (
 			return nil, fmt.Errorf("task %d: invalid schedule: %w", idx, err)
 		}
 
-		triggerConfigBytes, err := json.Marshal(triggerConfig)
-		if err != nil {
-			return nil, fmt.Errorf("task %d: failed to re-marshal trigger_config: %w", idx, err)
-		}
 		createdTask, err := queries.CreateTask(ctx, db.CreateTaskParams{
 			UserID:              userID,
 			Name:                task.Name,
 			TriggerType:         pgtype.Text{String: task.TriggerType, Valid: true},
-			TriggerConfig:       triggerConfigBytes,
+			TriggerConfig:       task.TriggerConfig,
 			AgentPrompt:         task.AgentPrompt,
 			MissedTaskPolicy:    pgtype.Text{String: missedPolicy, Valid: true},
 			NextRun:             pgtype.Timestamptz{Time: nextRun, Valid: true},
 			RequiresApproval:    pgtype.Bool{Bool: task.RequiresApproval, Valid: true},
 			TriggerOnCompletion: pgtype.Bool{Bool: task.TriggerOnCompletion, Valid: true},
+			TaskType:            pgtype.Text{String: task.TaskType, Valid: task.TaskType != ""},
+			NativeCode:          pgtype.Text{String: task.NativeCode, Valid: task.NativeCode != ""},
+			BranchCondition:     task.BranchCondition,
+			IsBundleRoot:        pgtype.Bool{Bool: task.IsBundleRoot, Valid: true},
+			SwarmConfig:         task.SwarmConfig,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("task %d: create failed: %w", idx, err)

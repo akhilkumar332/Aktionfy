@@ -1020,11 +1020,16 @@ func completeTask(ctx context.Context, userID string, taskID string, nextRun tim
 	}
 
 	// Fetch last output of the parent task
-	parentOutputBytes, _ := queries.GetTaskOutput(ctx, db.GetTaskOutputParams{
+	parentOutputBytes, err := queries.GetTaskOutput(ctx, db.GetTaskOutputParams{
 		TaskID: tid,
 		UserID: userID,
 	})
-	parentOutput := parentOutputBytes.String
+	parentOutput := ""
+	if err != nil {
+		log.Printf("Error fetching output for task %s in completeTask: %v", taskID, err)
+	} else {
+		parentOutput = parentOutputBytes.String
+	}
 
 	for _, t := range dependents {
 		if !evaluateBranchCondition(t.BranchCondition, parentOutput) {
@@ -1172,6 +1177,16 @@ func executeSwarmRouter(ctx context.Context, mcpServer *server.MCPServer, t db.T
 	var swarmCfg SwarmConfig
 	if err := json.Unmarshal(t.SwarmConfig, &swarmCfg); err != nil {
 		log.Printf("Failed to parse swarm config for task %s: %v", taskID, err)
+		return
+	}
+
+	if len(swarmCfg.Council) == 0 {
+		log.Printf("Swarm council is empty for task %s", taskID)
+		queries.UpdateTaskStatus(ctx, db.UpdateTaskStatusParams{
+			Status: pgtype.Text{String: ApprovalStatusNeedsRouting, Valid: true},
+			ID:     t.ID,
+			UserID: t.UserID,
+		})
 		return
 	}
 

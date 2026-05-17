@@ -43,6 +43,7 @@ type blueprintTask struct {
 	TriggerOnCompletion bool            `json:"trigger_on_completion"`
 	BranchCondition     json.RawMessage `json:"branch_condition"`
 	IsBundleRoot        bool            `json:"is_bundle_root"`
+	SwarmConfig         json.RawMessage `json:"swarm_config"`
 }
 
 func apiDeployBlueprintHandler(c echo.Context) error {
@@ -134,6 +135,7 @@ func apiDeployBlueprintHandler(c echo.Context) error {
 			BranchCondition:     bt.BranchCondition,
 			IsBundleRoot:        pgtype.Bool{Bool: bt.IsBundleRoot, Valid: true},
 			NextRun:             pgtype.Timestamptz{Time: time.Now(), Valid: true},
+			SwarmConfig:         bt.SwarmConfig,
 		})
 		if err != nil {
 			log.Printf("Failed to create task in blueprint: %v", err)
