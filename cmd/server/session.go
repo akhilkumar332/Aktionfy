@@ -229,8 +229,8 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 							emailStr = userEmail.String
 						}
 
-						if t.TaskType.String == TaskTypeDecisionRouter {
-							// Decision Router logic:
+						if t.TaskType.String == TaskTypeDecisionRouter || t.TaskType.String == TaskTypeSwarmRouter {
+							// Decision/Swarm Router logic:
 							// 1. Get output of parent task
 							parentOutput := ""
 							if t.DependsOnTaskID.Valid {
@@ -241,7 +241,11 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 								parentOutput = outBytes.String
 							}
 
-							executeDecisionRouter(dbCtx, mcpServer, t, parentOutput)
+							if t.TaskType.String == TaskTypeSwarmRouter {
+								executeSwarmRouter(dbCtx, mcpServer, t, parentOutput)
+							} else {
+								executeDecisionRouter(dbCtx, mcpServer, t, parentOutput)
+							}
 							return
 						}
 

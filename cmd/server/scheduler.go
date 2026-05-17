@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"aktionfy/db"
@@ -1074,5 +1075,264 @@ func runWorkerHeartbeat(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		}
+	}
+}
+
+type SwarmAgent struct {
+	Name   string `json:"name"`
+	Prompt string `json:"prompt"`
+}
+
+type SwarmConfig struct {
+	ConsensusMode    string       `json:"consensus_mode"` // "voting" or "supervisor"
+	SupervisorPrompt string       `json:"supervisor_prompt"`
+	Council          []SwarmAgent `json:"council"`
+}
+
+func executeSwarmRouter(ctx context.Context, mcpServer *server.MCPServer, t db.Task, prevOutput string) {
+	taskID := formatUUID(t.ID)
+	// Using workerID from the package scope
+	executionID := fmt.Sprintf("exec-%s-%d", taskID, time.Now().UnixNano())
+
+	if _, err := queries.CreateExecutionTrace(ctx, db.CreateExecutionTraceParams{
+		TaskID:      t.ID,
+		ExecutionID: executionID,
+		WorkerID:    workerID,
+		StepName:    "Swarm Router Start",
+		InputData:   pgtype.Text{String: prevOutput, Valid: true},
+	}); err != nil {
+		log.Printf("Trace error: %v", err)
+	}
+
+	var swarmCfg SwarmConfig
+	if err := json.Unmarshal(t.SwarmConfig, &swarmCfg); err != nil {
+		log.Printf("Failed to parse swarm config for task %s: %v", taskID, err)
+		return
+	}
+
+	dependents, err := queries.GetDependentTasks(ctx, t.ID)
+	if err != nil {
+		log.Printf("Failed to get dependent tasks for %s: %v", taskID, err)
+		return
+	}
+
+	// Build options string for the prompt
+	optionsStr := ""
+	for _, dept := range dependents {
+		var cond map[string]string
+		if err := json.Unmarshal(dept.BranchCondition, &cond); err == nil {
+			if key, ok := cond["key"]; ok {
+				optionsStr += fmt.Sprintf("- %s\n", key)
+			} else {
+				optionsStr += "- (missing key in branch condition)\n"
+			}
+		}
+	}
+
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	agentResponses := make(map[string]string)
+
+	for _, agent := range swarmCfg.Council {
+		wg.Add(1)
+		go func(a SwarmAgent) {
+			defer wg.Done()
+			defer func() {
+				if r := recover(); r != nil {
+					log.Printf("Panic in swarm agent %s: %v", a.Name, r)
+				}
+			}()
+
+			agentPrompt := fmt.Sprintf("You are %s. %s\n\nAnalyze this input:\n%s\n\nAvailable options:\n%s\nOutput JSON with a single key 'choice' containing your selected option.", a.Name, a.Prompt, prevOutput, optionsStr)
+
+			// Request Sampling
+			sampleCtx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+			defer cancel()
+
+			req := mcp.CreateMessageRequest{
+				CreateMessageParams: mcp.CreateMessageParams{
+					Messages: []mcp.SamplingMessage{
+						{Role: "user", Content: mcp.TextContent{Type: "text", Text: agentPrompt}},
+					},
+					MaxTokens: 500,
+				},
+			}
+
+			res, err := mcpServer.RequestSampling(sampleCtx, req)
+			if err != nil {
+				log.Printf("Agent %s sampling request failed: %v", a.Name, err)
+				return
+			}
+
+			// Parse response
+			resBytes, _ := json.Marshal(res)
+			var resMap map[string]interface{}
+			json.Unmarshal(resBytes, &resMap)
+			var responseText string
+			if content, ok := resMap["content"].(map[string]interface{}); ok {
+				if text, ok := content["text"].(string); ok {
+					responseText = text
+				}
+			} else if contentSlice, ok := resMap["content"].([]interface{}); ok && len(contentSlice) > 0 {
+				if first, ok := contentSlice[0].(map[string]interface{}); ok {
+					if text, ok := first["text"].(string); ok {
+						responseText = text
+					}
+				}
+			}
+
+			// Extract choice
+			var choice string
+			var respObj struct {
+				Choice string `json:"choice"`
+			}
+			if err := json.Unmarshal([]byte(responseText), &respObj); err == nil {
+				choice = respObj.Choice
+			} else {
+				re := regexp.MustCompile(`\{.*"choice".*\}`)
+				match := re.FindString(responseText)
+				if match != "" {
+					json.Unmarshal([]byte(match), &respObj)
+					choice = respObj.Choice
+				}
+			}
+
+			if choice != "" {
+				mu.Lock()
+				agentResponses[a.Name] = choice
+				mu.Unlock()
+
+				queries.CreateExecutionTrace(context.Background(), db.CreateExecutionTraceParams{
+					TaskID:      t.ID,
+					ExecutionID: executionID,
+					WorkerID:    workerID,
+					StepName:    fmt.Sprintf("Swarm Agent: %s", a.Name),
+					OutputData:  pgtype.Text{String: fmt.Sprintf("Choice: %s", choice), Valid: true},
+				})
+			}
+		}(agent)
+	}
+
+	wg.Wait()
+
+	// Consensus Resolution
+	finalChoice := ""
+	if swarmCfg.ConsensusMode == "voting" {
+		counts := make(map[string]int)
+		maxCount := 0
+		for _, c := range agentResponses {
+			counts[c]++
+			if counts[c] > maxCount {
+				maxCount = counts[c]
+				finalChoice = c
+			}
+		}
+		
+		tieCount := 0
+		for _, c := range counts {
+			if c == maxCount {
+				tieCount++
+			}
+		}
+		if tieCount > 1 {
+			finalChoice = "" // Tie, force fallback
+		}
+	} else if swarmCfg.ConsensusMode == "supervisor" {
+		// Construct transcript
+		transcript := "Debate Transcript:\n"
+		for name, choice := range agentResponses {
+			transcript += fmt.Sprintf("Agent %s voted for: %s\n", name, choice)
+		}
+
+		supervisorPrompt := fmt.Sprintf("%s\n\n%s\n\nAvailable options:\n%s\nOutput JSON with a single key 'choice' containing your selected option.", swarmCfg.SupervisorPrompt, transcript, optionsStr)
+
+		// Run supervisor LLM call
+		sampleCtx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+		defer cancel()
+
+		req := mcp.CreateMessageRequest{
+			CreateMessageParams: mcp.CreateMessageParams{
+				Messages: []mcp.SamplingMessage{
+					{Role: "user", Content: mcp.TextContent{Type: "text", Text: supervisorPrompt}},
+				},
+				MaxTokens: 500,
+			},
+		}
+		res, err := mcpServer.RequestSampling(sampleCtx, req)
+		var responseText string
+		if res != nil && err == nil {
+			resBytes, _ := json.Marshal(res)
+			var resMap map[string]interface{}
+			json.Unmarshal(resBytes, &resMap)
+			if content, ok := resMap["content"].(map[string]interface{}); ok {
+				if text, ok := content["text"].(string); ok {
+					responseText = text
+				}
+			} else if contentSlice, ok := resMap["content"].([]interface{}); ok && len(contentSlice) > 0 {
+				if first, ok := contentSlice[0].(map[string]interface{}); ok {
+					if text, ok := first["text"].(string); ok {
+						responseText = text
+					}
+				}
+			}
+			var respObj struct {
+				Choice string `json:"choice"`
+			}
+			if err := json.Unmarshal([]byte(responseText), &respObj); err == nil {
+				finalChoice = respObj.Choice
+			} else {
+				re := regexp.MustCompile(`\{.*"choice".*\}`)
+				match := re.FindString(responseText)
+				if match != "" {
+					json.Unmarshal([]byte(match), &respObj)
+					finalChoice = respObj.Choice
+				}
+			}
+		}
+	}
+
+	queries.CreateExecutionTrace(ctx, db.CreateExecutionTraceParams{
+		TaskID:      t.ID,
+		ExecutionID: executionID,
+		WorkerID:    workerID,
+		StepName:    "Swarm Consensus Reached",
+		OutputData:  pgtype.Text{String: fmt.Sprintf("Final Choice: %s", finalChoice), Valid: true},
+	})
+
+	// Match choice and activate task
+	found := false
+	if finalChoice != "" {
+		for _, dept := range dependents {
+			var cond map[string]string
+			if len(dept.BranchCondition) == 0 {
+				continue
+			}
+			if err := json.Unmarshal(dept.BranchCondition, &cond); err == nil {
+				if cond["key"] == finalChoice {
+					queries.UpdateTaskNextRun(ctx, db.UpdateTaskNextRunParams{
+						Status:  pgtype.Text{String: StatusActive, Valid: true},
+						NextRun: pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},
+						ID:      dept.ID,
+					})
+					found = true
+					break
+				}
+			}
+		}
+	}
+
+	if !found {
+		queries.UpdateTaskApprovalStatusAndLastRun(ctx, db.UpdateTaskApprovalStatusAndLastRunParams{
+			LastApprovalStatus: pgtype.Text{String: ApprovalStatusNeedsRouting, Valid: true},
+			Status:             pgtype.Text{String: StatusHalted, Valid: true},
+			ID:                 t.ID,
+			UserID:             t.UserID,
+		})
+	} else {
+		queries.UpdateTaskStatusAndLastRun(ctx, db.UpdateTaskStatusAndLastRunParams{
+			Status: pgtype.Text{String: StatusCompleted, Valid: true},
+			ID:     t.ID,
+			UserID: t.UserID,
+		})
 	}
 }
