@@ -280,7 +280,12 @@ const WorkflowCanvas = () => {
           break;
         }
       }
-      setCurrentTraceIndex(foundIndex);
+      // Use setTimeout to avoid synchronous setState inside effect (cascading render)
+      setTimeout(() => {
+        if (isMountedRef.current) {
+          setCurrentTraceIndex(foundIndex);
+        }
+      }, 0);
     }
   }, [globalTime, playbackMode, traces]);
 
@@ -330,7 +335,11 @@ const WorkflowCanvas = () => {
       }));
     } else if (!playbackMode && traces.length > 0) {
       // Reset styles when leaving playback mode
-      fetchTasks();
+      setTimeout(() => {
+        if (isMountedRef.current) {
+          fetchTasks();
+        }
+      }, 0);
     }
   }, [playbackMode, globalTime, traces, rawTasks, fetchTasks, setNodes, setEdges]);
 
