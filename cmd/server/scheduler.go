@@ -265,7 +265,9 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 		log.Printf("Error fetching workflow state for dispatch %s: %v", taskID, err)
 	}
 	if len(stateBytes) > 0 {
-		json.Unmarshal(stateBytes, &state)
+		if err := json.Unmarshal(stateBytes, &state); err != nil {
+			log.Printf("Error unmarshaling workflow state for dispatch %s: %v", taskID, err)
+		}
 	}
 
 	userEmail, err := queries.GetUserEmail(workerCtx, t.UserID)
@@ -537,7 +539,9 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 				
 				var stateMap map[string]interface{}
 				if len(sBytes) > 0 {
-					json.Unmarshal(sBytes, &stateMap)
+					if err := json.Unmarshal(sBytes, &stateMap); err != nil {
+						log.Printf("Error unmarshaling workflow state for native loop eval %s: %v", taskID, err)
+					}
 				}
 
 				if evaluateWorkflowLoop(t.LoopCondition, stateMap) {
@@ -609,7 +613,7 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 	if err != nil || subscribers == 0 {
 		observeTaskOutcome("delivery_failure")
 		if err == nil {
-			err = fmt.Errorf("no active subscribers received the payload")
+			err = fmt.Errorf("no active subscribers received the payload: %w", err)
 		}
 		log.Printf("Failed to deliver task %s for user %s: %v", taskID, t.UserID, err)
 

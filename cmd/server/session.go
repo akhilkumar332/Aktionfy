@@ -452,7 +452,9 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 								}
 
 								if len(sBytes) > 0 {
-									json.Unmarshal(sBytes, &currentState)
+									if err := json.Unmarshal(sBytes, &currentState); err != nil {
+										log.Printf("Error unmarshaling current workflow state for %s: %v", taskID, err)
+									}
 								}
 								// Merge
 								for k, v := range stateUpdate {
@@ -534,7 +536,9 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 							
 							var stateMap map[string]interface{}
 							if len(sBytes) > 0 {
-								json.Unmarshal(sBytes, &stateMap)
+								if err := json.Unmarshal(sBytes, &stateMap); err != nil {
+									log.Printf("Error unmarshaling workflow state for loop eval %s: %v", taskID, err)
+								}
 							}
 
 							if evaluateWorkflowLoop(t.LoopCondition, stateMap) {

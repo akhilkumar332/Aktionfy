@@ -48,7 +48,7 @@ func handleInboundWebhook(c echo.Context) error {
 				log.Printf("Panic recovered in inbound webhook worker: %v", r)
 			}
 		}()
-		workerCtx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+		workerCtx, cancel := context.WithTimeout(c.Request().Context(), 60*time.Second)
 		defer cancel()
 		handleDispatchTask(workerCtx, claimedTask, p)
 	}(payload)
