@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
 import axios from 'axios';
-import { Key, Trash2, Plus, ShieldCheck, Zap, Bell, Loader2, X } from 'lucide-react';
+import { Key, Trash2, Plus, ShieldCheck, Zap, Bell, Loader2, X, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Vault = () => {
@@ -21,7 +21,6 @@ const Vault = () => {
   }, []);
 
   const fetchData = useCallback(async () => {
-    setLoading(true);
     try {
       const res = await axios.get('/api/v1/secrets');
       if (res.data.success) {
@@ -42,26 +41,26 @@ const Vault = () => {
   }, [fetchData]);
 
   const handleDelete = async (name) => {
-    if (!confirm(`Are you sure you want to delete secret "${name}"?`)) return;
+    if (!confirm(`Terminate secret "${name}" linkage?`)) return;
     try {
       await axios.delete(`/api/v1/secrets/${name}`);
-      addToast(`Secret "${name}" deleted`);
+      addToast(`Secret "${name}" decoupled`);
       fetchData();
     } catch {
-      addToast(`Failed to delete secret "${name}"`, 'error');
+      addToast(`Failed to decouple secret`, 'error');
     }
   };
 
   const handleUpsert = async (e) => {
     e.preventDefault();
     if (!newSecret.name || !newSecret.value) {
-      addToast('Name and value are required', 'error');
+      addToast('Identity and value required', 'error');
       return;
     }
     setSubmitting(true);
     try {
       await axios.post('/api/v1/secrets', newSecret);
-      addToast(`Secret "${newSecret.name}" stored successfully`);
+      addToast(`Secret "${newSecret.name}" encrypted and stored`);
       setNewSecret({ name: '', value: '' });
       setShowAddForm(false);
       fetchData();
@@ -74,23 +73,41 @@ const Vault = () => {
 
   return (
     <DashboardLayout>
-      <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+      <header className="mb-12 flex flex-col md:flex-row md:items-center justify-between gap-8">
         <div>
-          <motion.h1 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-4xl font-black text-white tracking-tight mb-2"
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="flex items-center gap-3 mb-4"
           >
-            Secret Vault
+             <div className="w-8 h-8 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center justify-center text-emerald-500">
+                <ShieldCheck size={16} />
+             </div>
+             <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Security Sector</span>
+          </motion.div>
+          <motion.h1 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-4xl font-black text-white tracking-tighter"
+          >
+            Secret Vault.
           </motion.h1>
-          <p className="text-slate-400 font-medium tracking-wide uppercase text-[10px] tracking-[0.2em]">Security Status: <span className="text-emerald-500">Encrypted</span></p>
+          <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.2em] mt-2 ml-1">Encrypted Credential & Key Buffer</p>
         </div>
-        <button 
-          onClick={() => setShowAddForm(true)}
-          className="bg-accent-orange text-white px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-widest shadow-[0_10px_30px_rgba(217,119,6,0.3)] hover:scale-105 transition-transform flex items-center gap-2"
-        >
-          <Plus size={16} /> Store New Secret
-        </button>
+        <div className="flex gap-4">
+           <button 
+             onClick={fetchData}
+             className="bg-white/5 border border-white/10 p-5 rounded-[2rem] text-slate-400 hover:text-white transition-all active:scale-95"
+           >
+             <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+           </button>
+           <button 
+            onClick={() => setShowAddForm(true)}
+            className="shimmer-button bg-brand-primary text-white px-10 py-5 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] shadow-[0_20px_50px_rgba(217,119,6,0.3)] hover:brightness-110 active:scale-95 transition-all flex items-center gap-3"
+          >
+            <Plus size={16} /> Store Identity
+          </button>
+        </div>
       </header>
 
       {/* Add Secret Form Modal */}
@@ -102,47 +119,55 @@ const Vault = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowAddForm(false)}
-              className="absolute inset-0 bg-black/80 backdrop-blur-md"
+              className="absolute inset-0 bg-black/90 backdrop-blur-2xl"
             />
             <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-zinc-900 border border-white/10 p-10 rounded-[2.5rem] shadow-2xl w-full max-w-lg relative z-10"
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-obsidian-900 border border-white/5 p-12 rounded-[3.5rem] shadow-[0_0_100px_rgba(0,0,0,0.8)] w-full max-w-xl relative z-10 overflow-hidden"
             >
-              <div className="flex items-center justify-between mb-8">
-                <h2 className="text-2xl font-black text-white uppercase tracking-tighter">New Secret</h2>
-                <button onClick={() => setShowAddForm(false)} className="text-slate-500 hover:text-white transition-colors">
+              <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/5 blur-[80px] -translate-y-1/2 translate-x-1/2"></div>
+              
+              <div className="flex items-center justify-between mb-12">
+                <div>
+                  <h2 className="text-2xl font-black text-white uppercase tracking-tighter">New Secret</h2>
+                  <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.3em] mt-1">Protocol: SECURE_VAULT_DEPOSIT</p>
+                </div>
+                <button onClick={() => setShowAddForm(false)} className="text-slate-500 hover:text-white transition-colors p-3 bg-white/5 rounded-2xl border border-white/10">
                   <X size={24} />
                 </button>
               </div>
-              <form onSubmit={handleUpsert} className="space-y-6">
-                <div>
-                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3">Secret Name</label>
+
+              <form onSubmit={handleUpsert} className="space-y-10">
+                <div className="space-y-4">
+                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Secret Designation (Identity)</label>
                   <input 
                     type="text"
                     value={newSecret.name}
-                    onChange={(e) => setNewSecret({...newSecret, name: e.target.value})}
-                    placeholder="e.g. OPENAI_API_KEY"
-                    className="w-full bg-black/40 border border-white/5 rounded-2xl p-5 text-white font-mono text-sm focus:outline-none focus:border-accent-orange/50 transition-colors"
+                    onChange={(e) => setNewSecret({...newSecret, name: e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, '')})}
+                    placeholder="e.g. INFRA_CORE_TOKEN"
+                    className="w-full bg-black/40 border border-white/5 rounded-[2rem] p-6 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner"
+                    required
                   />
                 </div>
-                <div>
-                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3">Secret Value</label>
+                <div className="space-y-4">
+                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Encrypted Payload</label>
                   <textarea 
                     value={newSecret.value}
                     onChange={(e) => setNewSecret({...newSecret, value: e.target.value})}
-                    placeholder="Sensitive data will be encrypted before storage"
+                    placeholder="Sensitive data will undergo 256-bit encryption..."
                     rows={4}
-                    className="w-full bg-black/40 border border-white/5 rounded-2xl p-5 text-white font-mono text-sm focus:outline-none focus:border-accent-orange/50 transition-colors resize-none"
+                    className="w-full bg-black/40 border border-white/5 rounded-[2.5rem] p-8 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all resize-none shadow-inner custom-scrollbar"
+                    required
                   />
                 </div>
                 <button 
                   disabled={submitting}
-                  className="w-full bg-accent-orange text-white py-5 rounded-2xl text-xs font-black uppercase tracking-widest shadow-[0_10px_30px_rgba(217,119,6,0.3)] hover:brightness-110 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                  className="shimmer-button w-full bg-brand-primary text-white py-6 rounded-[2rem] text-[10px] font-black uppercase tracking-widest shadow-[0_20px_50px_rgba(217,119,6,0.3)] hover:brightness-110 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
                 >
                   {submitting ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
-                  Secure Storage
+                  Authorize Encryption
                 </button>
               </form>
             </motion.div>
@@ -150,59 +175,74 @@ const Vault = () => {
         )}
       </AnimatePresence>
 
-      <div className="bg-white/5 rounded-[2.5rem] border border-white/10 shadow-2xl overflow-hidden backdrop-blur-xl">
-        {loading ? (
-          <div className="p-20 flex flex-col items-center justify-center text-slate-500 gap-4">
-            <Loader2 className="animate-spin" size={32} />
-            <p className="text-xs font-black uppercase tracking-[0.2em]">Synchronizing Vault...</p>
+      <div className="bg-obsidian-900 border border-white/5 rounded-[3.5rem] shadow-[0_40px_100px_rgba(0,0,0,0.5)] overflow-hidden backdrop-blur-3xl relative">
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/5 blur-[100px] -translate-x-1/2 translate-y-1/2 pointer-events-none"></div>
+
+        {loading && secrets.length === 0 ? (
+          <div className="py-40 flex flex-col items-center justify-center gap-6">
+            <Loader2 className="animate-spin text-brand-primary" size={48} />
+            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 animate-pulse">Synchronizing Neural Vault...</p>
           </div>
         ) : secrets.length === 0 ? (
-          <div className="p-20 flex flex-col items-center justify-center text-slate-500 gap-6 text-center">
-            <div className="bg-white/5 p-6 rounded-3xl">
-              <Key size={48} className="text-slate-600" />
+          <div className="py-40 flex flex-col items-center justify-center text-center gap-8">
+            <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center border border-white/5">
+              <Key size={48} className="text-slate-700" />
             </div>
             <div>
-              <p className="text-white font-bold text-lg mb-1">Your vault is empty</p>
-              <p className="text-sm max-w-xs">Securely store API keys and credentials for use in your scheduled tasks.</p>
+              <p className="text-white font-black text-xl uppercase tracking-tighter mb-2">Vault Registry Empty</p>
+              <p className="text-slate-500 text-xs font-bold uppercase tracking-widest max-w-xs leading-relaxed opacity-60">No encrypted identities identified. Deposit credentials to enable autonomous authentication.</p>
             </div>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-white/5">
-                  <th className="p-8 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Secret Name</th>
-                  <th className="p-8 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Created At</th>
-                  <th className="p-8 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] text-right">Actions</th>
+          <div className="overflow-x-auto custom-scrollbar">
+            <table className="w-full text-left border-collapse min-w-[800px]">
+              <thead className="bg-white/[0.02] text-slate-600 text-[10px] font-black uppercase tracking-[0.3em]">
+                <tr>
+                  <th className="px-10 py-8">Secret Designation</th>
+                  <th className="px-8 py-8 text-center">Status</th>
+                  <th className="px-8 py-8 text-center">Initialized</th>
+                  <th className="px-10 py-8 text-right">System Overrides</th>
                 </tr>
               </thead>
-              <tbody>
-                {secrets.map((secret) => (
+              <tbody className="divide-y divide-white/5">
+                {secrets.map((secret, i) => (
                   <motion.tr 
                     layout
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.05 }}
                     key={secret.name} 
-                    className="border-b border-white/5 hover:bg-white/[0.02] transition-colors group"
+                    className="hover:bg-white/[0.02] transition-colors group"
                   >
-                    <td className="p-8">
-                      <div className="flex items-center gap-4">
-                        <div className="bg-emerald-500/10 p-2 rounded-lg text-emerald-500">
-                          <Key size={14} />
+                    <td className="px-10 py-8">
+                      <div className="flex items-center gap-6">
+                        <div className="bg-obsidian-950 p-4 rounded-[1.5rem] text-brand-primary border border-white/5 group-hover:border-brand-primary/30 transition-all">
+                          <Key size={20} />
                         </div>
-                        <span className="text-sm font-bold text-white font-mono">{secret.name}</span>
+                        <div className="flex flex-col gap-1">
+                           <span className="text-base font-black text-white tracking-widest font-mono uppercase">{secret.name}</span>
+                           <div className="flex items-center gap-2">
+                              <ShieldCheck size={10} className="text-emerald-500" />
+                              <span className="text-[9px] text-slate-600 font-bold uppercase tracking-widest">AES-256 Bit Buffer</span>
+                           </div>
+                        </div>
                       </div>
                     </td>
-                    <td className="p-8">
-                      <span className="text-xs text-slate-500 font-medium">{new Date(secret.created_at).toLocaleString()}</span>
+                    <td className="px-8 py-8 text-center">
+                       <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-black uppercase tracking-widest rounded-full shadow-[0_0_20px_rgba(16,185,129,0.1)]">
+                          Locked
+                       </div>
                     </td>
-                    <td className="p-8 text-right">
+                    <td className="px-8 py-8 text-center">
+                      <span className="text-[11px] text-slate-500 font-black tabular-nums">{new Date(secret.created_at).toLocaleDateString()}</span>
+                    </td>
+                    <td className="px-10 py-8 text-right">
                       <button 
                         onClick={() => handleDelete(secret.name)}
-                        className="p-3 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
-                        title="Delete Secret"
+                        className="p-3.5 bg-white/5 border border-white/10 rounded-2xl text-slate-500 hover:text-red-500 hover:border-red-500/40 hover:bg-red-500/5 transition-all active:scale-95"
+                        title="Terminate Linkage"
                       >
-                        <Trash2 size={18} />
+                        <Trash2 size={20} />
                       </button>
                     </td>
                   </motion.tr>
@@ -214,24 +254,24 @@ const Vault = () => {
       </div>
 
       {/* Real-time Toast Notifications */}
-      <div className="fixed bottom-8 right-8 z-[100] flex flex-col gap-3 pointer-events-none">
+      <div className="fixed bottom-10 right-10 z-[100] flex flex-col gap-4 pointer-events-none">
         <AnimatePresence>
           {toasts.map((toast) => (
             <motion.div
               key={toast.id}
-              initial={{ opacity: 0, x: 50, scale: 0.9 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 20, scale: 0.9 }}
-              className={`pointer-events-auto px-6 py-4 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border flex items-center gap-4 backdrop-blur-2xl min-w-[300px] ${
+              initial={{ opacity: 0, x: 50, scale: 0.9, filter: 'blur(10px)' }}
+              animate={{ opacity: 1, x: 0, scale: 1, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, x: 20, scale: 0.9, filter: 'blur(10px)' }}
+              className={`pointer-events-auto px-8 py-5 rounded-[2rem] shadow-[0_30px_60px_rgba(0,0,0,0.6)] border flex items-center gap-5 backdrop-blur-3xl min-w-[350px] ${
                 toast.type === 'success' 
                   ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
                   : 'bg-red-500/10 border-red-500/20 text-red-400'
               }`}
             >
-              <div className={`p-2 rounded-xl ${toast.type === 'success' ? 'bg-emerald-500/20' : 'bg-red-500/20'}`}>
-                {toast.type === 'success' ? <Zap size={16} /> : <Bell size={16} />}
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${toast.type === 'success' ? 'bg-emerald-500/20' : 'bg-red-500/20'}`}>
+                {toast.type === 'success' ? <Zap size={18} /> : <Bell size={18} />}
               </div>
-              <span className="text-xs font-black uppercase tracking-widest">{toast.message}</span>
+              <span className="text-xs font-bold uppercase tracking-widest leading-tight">{toast.message}</span>
             </motion.div>
           ))}
         </AnimatePresence>
