@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
 import axios from 'axios';
 import { 
@@ -104,28 +104,34 @@ const Monitor = () => {
   const [auditLogs, setAuditLogs] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async (isMounted = { current: true }) => {
     setLoading(true);
     try {
       const [usageRes, auditRes] = await Promise.all([
         axios.get('/api/v1/admin/usage'),
         axios.get('/api/v1/admin/audit-logs?limit=100')
       ]);
+      if (!isMounted.current) return;
       if (usageRes.data.success) setUsage(usageRes.data.data);
       if (auditRes.data.success) setAuditLogs(auditRes.data.data);
     } catch (err) {
       console.error('Failed to fetch monitor data', err);
     } finally {
-      setLoading(false);
+      if (isMounted.current) setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line
-    fetchData();
-    const interval = setInterval(fetchData, 60000); // Refresh every minute
-    return () => clearInterval(interval);
-  }, []);
+    const isMounted = { current: true };
+    setTimeout(() => {
+      if (isMounted.current) fetchData(isMounted);
+    }, 0);
+    const interval = setInterval(() => fetchData(isMounted), 60000); // Refresh every minute
+    return () => {
+      isMounted.current = false;
+      clearInterval(interval);
+    };
+  }, [fetchData]);
 
   return (
     <DashboardLayout>
