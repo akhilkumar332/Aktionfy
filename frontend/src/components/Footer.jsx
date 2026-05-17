@@ -1,94 +1,112 @@
 import { Link } from 'react-router-dom';
-import { Globe, Shield, Mail } from 'lucide-react';
+import { Globe, Shield, Mail, ArrowRight, Zap, Activity } from 'lucide-react';
 
 const Footer = () => {
   return (
-    <footer className="bg-ink-900 text-white pt-24 pb-12">
-      <div className="container mx-auto px-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
-          {/* Brand */}
-          <div className="col-span-1 md:col-span-1">
-            <Link to="/" className="flex items-center gap-3 mb-6 group">
-              <img src="/logo-icon.svg" className="w-8 h-8 text-accent-orange" alt="Aktionfy Logo" />
-              <span className="font-bold text-xl tracking-tight text-white">Aktionfy</span>
+    <footer className="bg-obsidian-900 text-white pt-32 pb-12 border-t border-white/5 relative overflow-hidden">
+      {/* Background Glow */}
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-brand-primary/5 blur-[120px] rounded-full -z-0"></div>
+
+      <div className="container mx-auto px-6 relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16 mb-24">
+          {/* Brand & Mission */}
+          <div className="space-y-8">
+            <Link to="/" className="flex items-center gap-3 group">
+              <div className="bg-brand-primary/10 p-2 rounded-xl border border-brand-primary/20 group-hover:scale-110 transition-transform">
+                <img src="/logo-icon.svg" className="w-8 h-8" alt="Aktionfy Logo" />
+              </div>
+              <span className="font-black text-2xl tracking-tighter text-white">Aktionfy</span>
             </Link>
-            <p className="text-slate-400 text-sm leading-relaxed mb-8">
-              The industry standard for persistent task scheduling within the Model Context Protocol ecosystem. 
-              Built for reliability, speed, and massive scale.
+            <p className="text-slate-400 text-sm leading-relaxed max-w-xs font-medium">
+              The neural backbone for persistent task orchestration. Engineered for the future of decentralized AI intelligence.
             </p>
             <div className="flex gap-4">
-              <a href="#" className="p-2 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
-                <Globe size={18} className="text-slate-300" />
-              </a>
-              <a href="#" className="p-2 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
-                <Shield size={18} className="text-slate-300" />
-              </a>
-              <a href="#" className="p-2 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
-                <Mail size={18} className="text-slate-300" />
-              </a>
+              {[Globe, Shield, Mail].map((Icon, i) => (
+                <a key={i} href="#" className="p-3 bg-white/5 rounded-2xl border border-white/10 hover:border-brand-primary/50 hover:bg-brand-primary/5 transition-all group">
+                  <Icon size={18} className="text-slate-400 group-hover:text-brand-primary transition-colors" />
+                </a>
+              ))}
             </div>
           </div>
 
-          {/* Product */}
-          <div>
-            <h4 className="font-bold text-white mb-6 uppercase text-xs tracking-widest">Product</h4>
-            <ul className="space-y-4">
-              <li><Link to="/#features" className="text-slate-400 hover:text-white transition-colors text-sm">Features</Link></li>
-              <li><Link to="/#pricing" className="text-slate-400 hover:text-white transition-colors text-sm">Pricing</Link></li>
-              <li><Link to="/#installation" className="text-slate-400 hover:text-white transition-colors text-sm">Installation</Link></li>
-              <li><Link to="/dashboard" className="text-slate-400 hover:text-white transition-colors text-sm">Dashboard</Link></li>
-              <li><a href="#" className="text-slate-400 hover:text-white transition-colors text-sm">SLA & Security</a></li>
+          {/* Product Deep Links */}
+          <div className="space-y-8">
+            <h4 className="font-black text-white uppercase text-[10px] tracking-[0.3em] opacity-50">Infrastructure</h4>
+            <ul className="space-y-5">
+              {['Features', 'Intelligence', 'Protocol', 'Dashboard', 'Security'].map((link) => (
+                <li key={link}>
+                  <Link to={`/#${link.toLowerCase()}`} className="text-slate-400 hover:text-white transition-all text-[13px] font-bold flex items-center gap-2 group">
+                    <div className="w-1.5 h-1.5 rounded-full bg-brand-primary scale-0 group-hover:scale-100 transition-transform"></div>
+                    {link}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
-          {/* Resources */}
-          <div>
-            <h4 className="font-bold text-white mb-6 uppercase text-xs tracking-widest">Resources</h4>
-            <ul className="space-y-4">
-              <li><Link to="/docs/overview" className="text-slate-400 hover:text-white transition-colors text-sm">Documentation</Link></li>
-              <li><Link to="/docs/protocol-spec" className="text-slate-400 hover:text-white transition-colors text-sm">MCP Protocol Spec</Link></li>
-              <li><a href="#" className="text-slate-400 hover:text-white transition-colors text-sm">Blog</a></li>
-              <li><Link to="/docs/api-reference" className="text-slate-400 hover:text-white transition-colors text-sm">Developer Guide</Link></li>
-              <li><a href="#" className="text-slate-400 hover:text-white transition-colors text-sm">Status Page</a></li>
+          {/* Knowledge Base */}
+          <div className="space-y-8">
+            <h4 className="font-black text-white uppercase text-[10px] tracking-[0.3em] opacity-50">Resources</h4>
+            <ul className="space-y-5">
+              {['Documentation', 'API Guide', 'Architecture', 'Status', 'Research'].map((link) => (
+                <li key={link}>
+                  <Link to="/docs/overview" className="text-slate-400 hover:text-white transition-all text-[13px] font-bold flex items-center gap-2 group">
+                    <div className="w-1.5 h-1.5 rounded-full bg-brand-secondary scale-0 group-hover:scale-100 transition-transform"></div>
+                    {link}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
-          {/* Contact */}
-          <div>
-            <h4 className="font-bold text-white mb-6 uppercase text-xs tracking-widest">Newsletter</h4>
-            <p className="text-slate-400 text-sm mb-6">Stay updated with the latest in AI automation and MCP tools.</p>
-            <form className="flex gap-2">
+          {/* Newsletter Terminal */}
+          <div className="space-y-8">
+            <h4 className="font-black text-white uppercase text-[10px] tracking-[0.3em] opacity-50">Neural Updates</h4>
+            <p className="text-slate-400 text-sm font-medium leading-relaxed">Join 20k+ engineers receiving weekly insights into AI automation.</p>
+            <form className="relative group">
               <input 
                 type="email" 
-                placeholder="you@email.com" 
-                className="bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm outline-none focus:border-accent-orange transition-colors w-full"
+                placeholder="Enter Identity (Email)" 
+                className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-5 text-sm outline-none focus:border-brand-primary/50 transition-all font-mono placeholder:text-slate-700"
               />
-              <button className="bg-accent-orange p-2 rounded-lg hover:bg-amber-700 transition-colors">
+              <button className="absolute right-2 top-2 bottom-2 bg-brand-primary text-white px-4 rounded-xl hover:brightness-110 transition-all active:scale-95 flex items-center justify-center">
                 <ArrowRight size={20} />
               </button>
             </form>
+            <div className="flex items-center gap-3 bg-emerald-500/5 border border-emerald-500/10 px-4 py-3 rounded-2xl">
+               <div className="relative">
+                  <Activity size={14} className="text-emerald-500" />
+                  <div className="absolute inset-0 bg-emerald-500 blur-md opacity-50 animate-pulse"></div>
+               </div>
+               <span className="text-[10px] font-black text-emerald-500/80 uppercase tracking-widest">Core Status: Nominal</span>
+            </div>
           </div>
         </div>
 
-        <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
-          <p className="text-slate-500 text-sm">
-            &copy; {new Date().getFullYear()} Aktionfy. All rights reserved.
-          </p>
-          <div className="flex gap-8">
-            <a href="#" className="text-slate-500 hover:text-white text-xs transition-colors underline-offset-4 hover:underline">Privacy Policy</a>
-            <a href="#" className="text-slate-500 hover:text-white text-xs transition-colors underline-offset-4 hover:underline">Terms of Service</a>
-            <a href="#" className="text-slate-500 hover:text-white text-xs transition-colors underline-offset-4 hover:underline">Cookie Policy</a>
+        {/* Legal & Meta */}
+        <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-8">
+          <div className="flex items-center gap-6">
+            <p className="text-slate-500 text-[11px] font-black uppercase tracking-widest">
+              &copy; {new Date().getFullYear()} Aktionfy Labs.
+            </p>
+            <div className="h-4 w-px bg-white/5 hidden md:block"></div>
+            <div className="flex items-center gap-2 text-slate-600 text-[10px] font-bold">
+               <Zap size={10} className="text-brand-primary" /> Distributed via Global Reaper Network
+            </div>
+          </div>
+          
+          <div className="flex gap-10">
+            {['Privacy', 'Terms', 'SLA', 'Cookies'].map((link) => (
+              <a key={link} href="#" className="text-slate-500 hover:text-white text-[10px] font-black uppercase tracking-[0.2em] transition-colors relative group">
+                {link}
+                <span className="absolute -bottom-1 left-0 w-0 h-px bg-slate-500 group-hover:w-full transition-all"></span>
+              </a>
+            ))}
           </div>
         </div>
       </div>
     </footer>
   );
 };
-
-const ArrowRight = ({ size, className }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M5 12h14M12 5l7 7-7 7" />
-  </svg>
-);
 
 export default Footer;

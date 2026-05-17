@@ -6,33 +6,76 @@
   --color-accent-orange: #d97706;
   --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
   
-  /* Dark AI Theme */
-  --color-ai-black: #050505;
-  --color-ai-grey: #111111;
-  --color-ai-border: rgba(255, 255, 255, 0.1);
-  --color-ai-glow: rgba(217, 119, 6, 0.15);
+  /* Neural Elegance Theme Variables */
+  --color-obsidian-950: #050505;
+  --color-obsidian-900: #0a0a0a;
+  --color-obsidian-800: #111111;
+  --color-obsidian-700: #1a1a1a;
+  
+  --color-brand-primary: #d97706;
+  --color-brand-secondary: #3b82f6;
+  --color-brand-neon: #ff9d00;
+  
+  --color-glass-white: rgba(255, 255, 255, 0.05);
+  --color-glass-border: rgba(255, 255, 255, 0.1);
+  --color-glass-glow: rgba(217, 119, 6, 0.15);
+  
+  --shadow-premium: 0 20px 50px rgba(0, 0, 0, 0.5);
+  --blur-nexus: blur(12px);
 }
 
 :root {
-  background-color: var(--color-paper-50);
-  color: var(--color-ink-900);
+  background-color: var(--color-obsidian-950);
+  color: #ffffff;
+  --brand-primary: var(--color-accent-orange);
 }
 
 .dark-theme {
-  background-color: var(--color-ai-black);
+  background-color: var(--color-obsidian-950);
   color: #ffffff;
 }
 
 body {
-  @apply antialiased;
+  @apply antialiased overflow-x-hidden;
+  font-family: var(--font-sans);
 }
 
 .glass-card {
-  @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl;
+  @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-premium;
+}
+
+.nexus-blur {
+  backdrop-filter: var(--blur-nexus) saturate(180%);
 }
 
 .glow-text {
   text-shadow: 0 0 20px rgba(217, 119, 6, 0.5);
+}
+
+.premium-gradient {
+  background: linear-gradient(135deg, var(--color-obsidian-900) 0%, var(--color-obsidian-950) 100%);
+}
+
+.shimmer-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer-button::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transform: rotate(45deg);
+  animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%) rotate(45deg); }
+  100% { transform: translateX(100%) rotate(45deg); }
 }
 
 @keyframes float {
@@ -64,4 +107,22 @@ body {
   animation: particle-flow 1s linear infinite;
   stroke-width: 4 !important;
   filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.6));
+}
+
+/* Custom Scrollbar - Obsidian Style */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-obsidian-950);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-obsidian-700);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-brand-primary);
 }
