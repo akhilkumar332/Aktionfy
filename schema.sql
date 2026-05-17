@@ -318,3 +318,13 @@ CREATE TABLE workflow_state (
 CREATE INDEX IF NOT EXISTS idx_execution_traces_task_id_exec_id ON execution_traces (task_id, execution_id);
 CREATE INDEX IF NOT EXISTS idx_workflow_state_task_id_exec_id ON workflow_state (task_id, execution_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_workspace_id ON tasks (workspace_id);
+
+CREATE TABLE IF NOT EXISTS system_settings (
+    id INT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+    worker_prune_days INT NOT NULL DEFAULT 7,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+INSERT INTO system_settings (id, worker_prune_days)
+VALUES (1, 7)
+ON CONFLICT DO NOTHING;

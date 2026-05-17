@@ -421,3 +421,16 @@ SELECT state_data FROM workflow_state WHERE task_id = $1 AND execution_id = $2;
 
 -- name: GetLatestWorkflowState :one
 SELECT state_data FROM workflow_state WHERE task_id = $1 ORDER BY updated_at DESC LIMIT 1;
+
+-- name: GetSystemSettings :one
+SELECT worker_prune_days FROM system_settings WHERE id = 1;
+
+-- name: UpdateSystemSettings :exec
+UPDATE system_settings 
+SET worker_prune_days = $1, 
+    updated_at = NOW() 
+WHERE id = 1;
+
+-- name: PruneZombieWorkers :exec
+DELETE FROM worker_heartbeats 
+WHERE last_heartbeat < NOW() - ($1 * INTERVAL '1 day');
