@@ -14,6 +14,11 @@ import TaskWizard from '../components/TaskWizard';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { Save, RefreshCw, Layers, X, Trash2, Play, Pause, FastForward, Rewind, Activity } from 'lucide-react';
+import DecisionNode from '../components/DecisionNode';
+
+const nodeTypes = {
+  decision: DecisionNode,
+};
 
 const WorkflowCanvas = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
@@ -53,13 +58,15 @@ const WorkflowCanvas = () => {
       }
 
       const isProcessing = task.status === 'processing';
+      const isDecision = task.task_type === 'decision_router';
 
       return {
         id: task.id,
         position,
+        type: isDecision ? 'decision' : undefined,
         data: { 
           task,
-          label: (
+          label: isDecision ? undefined : (
             <div className={`flex flex-col items-center gap-1 transition-all duration-500 ${isProcessing ? 'scale-110' : ''}`}>
               <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">{task.trigger_type}</div>
               <div className="font-bold text-white text-xs">{task.name}</div>
@@ -76,7 +83,7 @@ const WorkflowCanvas = () => {
             </div>
           )
         },
-        style: {
+        style: isDecision ? undefined : {
           background: isProcessing ? 'rgba(217, 119, 6, 0.15)' : 'rgba(15, 23, 42, 0.8)',
           color: '#fff',
           border: isProcessing ? '2px solid rgba(217, 119, 6, 0.5)' : '1px solid rgba(255, 255, 255, 0.1)',
@@ -92,24 +99,33 @@ const WorkflowCanvas = () => {
     // Map dependencies to edges
     const newEdges = tasksList
       .filter(task => task.depends_on_task_id)
-      .map(task => ({
-        id: `e-${task.depends_on_task_id}-${task.id}`,
-        source: task.depends_on_task_id,
-        target: task.id,
-        animated: task.trigger_on_completion || task.status === 'processing',
-        label: task.trigger_on_completion ? 'triggers' : 'depends',
-        labelStyle: { fill: '#94a3b8', fontWeight: 700, fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.1em' },
-        labelBgStyle: { fill: 'transparent' },
-        style: { stroke: task.trigger_on_completion ? '#f59e0b' : '#3b82f6', strokeWidth: 2 },
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-          color: task.trigger_on_completion ? '#f59e0b' : '#3b82f6',
-        },
-      }));
+      .map(task => {
+        const sourceTask = tasksList.find(t => t.id === task.depends_on_task_id);
+        const isDecisionSource = sourceTask?.task_type === 'decision_router';
+        const branchKey = task.branch_condition;
+
+        return {
+          id: `e-${task.depends_on_task_id}-${task.id}`,
+          source: task.depends_on_task_id,
+          target: task.id,
+          animated: task.trigger_on_completion || task.status === 'processing' || isDecisionSource,
+          label: isDecisionSource ? (branchKey || 'branch') : (task.trigger_on_completion ? 'triggers' : 'depends'),
+          labelStyle: { fill: isDecisionSource ? '#818cf8' : '#94a3b8', fontWeight: 800, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em' },
+          labelBgStyle: { fill: 'rgba(15, 23, 42, 0.8)', fillOpacity: 0.8 },
+          labelBgPadding: [4, 2],
+          labelBgBorderRadius: 4,
+          style: { stroke: isDecisionSource ? '#6366f1' : (task.trigger_on_completion ? '#f59e0b' : '#3b82f6'), strokeWidth: isDecisionSource ? 3 : 2 },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: isDecisionSource ? '#6366f1' : (task.trigger_on_completion ? '#f59e0b' : '#3b82f6'),
+          },
+        };
+      });
 
     setNodes(newNodes);
     setEdges(newEdges);
   }, [setNodes, setEdges]);
+
 
   const fetchTasks = useCallback(async () => {
     try {
@@ -439,6 +455,7 @@ const WorkflowCanvas = () => {
           <ReactFlow
             nodes={nodes}
             edges={edges}
+            nodeTypes={nodeTypes}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
