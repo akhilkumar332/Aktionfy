@@ -57,8 +57,8 @@ func TestApiCreateTaskHandler(t *testing.T) {
 }
 
 func TestApiUpdateTaskHandler(t *testing.T) {
-	if queries == nil {
-		t.Skip("Skipping test: queries is nil")
+	if queries == nil || dbPool == nil {
+		t.Skip("Skipping test: queries or dbPool is nil")
 	}
 	e := echo.New()
 
@@ -99,8 +99,8 @@ func TestApiUpdateTaskHandler(t *testing.T) {
 }
 
 func TestApiRestoreTaskVersionHandler(t *testing.T) {
-	if queries == nil {
-		t.Skip("Skipping test: queries is nil")
+	if queries == nil || dbPool == nil {
+		t.Skip("Skipping test: queries or dbPool is nil")
 	}
 	e := echo.New()
 

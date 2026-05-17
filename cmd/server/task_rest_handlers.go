@@ -248,8 +248,17 @@ func apiUpdateTaskHandler(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid request body"})
 	}
 
+	ctx := c.Request().Context()
+	tx, err := dbPool.Begin(ctx)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to start transaction"})
+	}
+	defer tx.Rollback(ctx)
+
+	qtx := queries.WithTx(tx)
+
 	// Auto-snapshot before update
-	if _, err := queries.CreateTaskVersion(c.Request().Context(), db.CreateTaskVersionParams{
+	if _, err := qtx.CreateTaskVersion(ctx, db.CreateTaskVersionParams{
 		ID:     taskID,
 		UserID: userID,
 	}); err != nil {
@@ -258,14 +267,13 @@ func apiUpdateTaskHandler(c echo.Context) error {
 
 	var dependsOnTaskID pgtype.UUID
 	if req.DependsOnTaskID != "" {
-		var err error
 		dependsOnTaskID, err = mustParseUUID(c, req.DependsOnTaskID)
 		if err != nil {
 			return err
 		}
 	}
 
-	_, err = queries.UpdateTaskAgentPromptAndPolicy(c.Request().Context(), db.UpdateTaskAgentPromptAndPolicyParams{
+	_, err = qtx.UpdateTaskAgentPromptAndPolicy(ctx, db.UpdateTaskAgentPromptAndPolicyParams{
 		AgentPrompt:         req.AgentPrompt,
 		MissedTaskPolicy:    pgtype.Text{String: req.MissedTaskPolicy, Valid: true},
 		UiCoordinates:       req.UICoordinates,
@@ -285,8 +293,12 @@ func apiUpdateTaskHandler(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to update task"})
 	}
 
+	if err := tx.Commit(ctx); err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to commit transaction"})
+	}
+
 	// Audit Log
-	writeAuditLog(c.Request().Context(), AuditEvent{
+	writeAuditLog(ctx, AuditEvent{
 		UserID:       userID,
 		Action:       "task.update",
 		ResourceType: "task",
@@ -295,7 +307,6 @@ func apiUpdateTaskHandler(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Task updated"})
 }
-
 func apiListTaskVersionsHandler(c echo.Context) error {
 	userID := getUserID(c)
 	if userID == "" {
@@ -341,8 +352,17 @@ func apiRestoreTaskVersionHandler(c echo.Context) error {
 		return err
 	}
 
+	ctx := c.Request().Context()
+	tx, err := dbPool.Begin(ctx)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to start transaction"})
+	}
+	defer tx.Rollback(ctx)
+
+	qtx := queries.WithTx(tx)
+
 	// 1. Create a snapshot of CURRENT state before rolling back
-	if _, err := queries.CreateTaskVersion(c.Request().Context(), db.CreateTaskVersionParams{
+	if _, err := qtx.CreateTaskVersion(ctx, db.CreateTaskVersionParams{
 		ID:     taskID,
 		UserID: userID,
 	}); err != nil {
@@ -350,7 +370,7 @@ func apiRestoreTaskVersionHandler(c echo.Context) error {
 	}
 
 	// 2. Restore
-	err = queries.RestoreTaskFromVersion(c.Request().Context(), db.RestoreTaskFromVersionParams{
+	err = qtx.RestoreTaskFromVersion(ctx, db.RestoreTaskFromVersionParams{
 		ID:     taskID,
 		UserID: userID,
 		ID_2:   versionID, // ID_2 is the version ID in RestoreTaskFromVersionParams
@@ -360,8 +380,12 @@ func apiRestoreTaskVersionHandler(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Restore failed"})
 	}
 
+	if err := tx.Commit(ctx); err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to commit transaction"})
+	}
+
 	// Audit Log
-	writeAuditLog(c.Request().Context(), AuditEvent{
+	writeAuditLog(ctx, AuditEvent{
 		UserID:       userID,
 		Action:       "task.restore_version",
 		ResourceType: "task",
