@@ -180,6 +180,11 @@ func main() {
 	workerWG.Add(1)
 	go func() {
 		defer workerWG.Done()
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("Panic recovered in event subscriber: %v", r)
+			}
+		}()
 		SubscribeToEvents(context.Background(), func(ctx context.Context, event PubSubEvent) {
 			handleSystemEvent(ctx, event)
 		})
@@ -241,6 +246,7 @@ func main() {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(middleware.RequestID())
+	e.Use(middleware.BodyLimit("2M")) // Prevent DoS via large payloads
 	e.Use(prometheusMiddleware)
 
 	// CSRF Setup
@@ -476,6 +482,11 @@ func main() {
 	}
 
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("Panic recovered in server main loop: %v", r)
+			}
+		}()
 		if err := e.Start(":" + port); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("shutting down the server: %v", err)
 		}
@@ -494,6 +505,12 @@ func main() {
 
 	done := make(chan struct{})
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("Panic recovered in shutdown waiter: %v", r)
+				close(done)
+			}
+		}()
 		workerWG.Wait()
 		close(done)
 	}()

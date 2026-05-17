@@ -150,6 +150,11 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 					workerWG.Add(1)
 					go func(payload string) {
 						defer workerWG.Done()
+						defer func() {
+							if r := recover(); r != nil {
+								log.Printf("Panic recovered in task worker for user %s: %v", userID, r)
+							}
+						}()
 						executionStart := time.Now()
 
 						var taskData map[string]interface{}

@@ -80,6 +80,11 @@ func dispatchOutboundWebhooks(ctx context.Context, event PubSubEvent) {
 		workerWG.Add(1)
 		go func(webhookID, endpointURL string, secret []byte) {
 			defer workerWG.Done()
+			defer func() {
+				if r := recover(); r != nil {
+					log.Printf("Panic recovered in webhook delivery worker: %v", r)
+				}
+			}()
 			deliverCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 			if err := deliverWebhookEvent(deliverCtx, webhookID, event, endpointURL, string(secret)); err != nil {

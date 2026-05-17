@@ -130,6 +130,11 @@ func handleTaskClaimNotification(payload string) {
 	workerWG.Add(1)
 	go func() {
 		defer workerWG.Done()
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("Panic recovered in task claim worker: %v", r)
+			}
+		}()
 		workerCtx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 		defer cancel()
 
