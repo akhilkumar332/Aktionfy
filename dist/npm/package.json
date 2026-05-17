@@ -1,5 +1,5 @@
 {
-  "name": "@gsactions/mcp",
+  "name": "@actionfy/mcp",
   "version": "1.0.0",
   "description": "NPM wrapper for Actionfy MCP Go binary",
   "main": "index.js",

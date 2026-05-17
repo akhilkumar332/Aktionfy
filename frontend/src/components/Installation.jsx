@@ -29,7 +29,7 @@ const Installation = () => {
     }
   ];
 
-  const installCommand = 'npx @gsactions/mcp install';
+  const installCommand = 'npx @actionfy/mcp install';
   const configSnippet = `{
   "mcpServers": {
     "actionfy": {

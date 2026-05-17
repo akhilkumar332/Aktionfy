@@ -55,7 +55,7 @@ The system will start:
 ### 2. Connect your Local LLM
 Install the global bridge to link your local AI to the persistent engine:
 ```bash
-npx @gsactions/mcp install --api-key YOUR_NEURAL_KEY
+npx @actionfy/mcp install --api-key YOUR_NEURAL_KEY
 ```
 
 ---
