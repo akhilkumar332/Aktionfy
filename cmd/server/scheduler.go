@@ -1034,7 +1034,10 @@ Synthesize the views and pick the final branch. Respond ONLY with JSON: {"choice
 		return
 	}
 
-	transcriptJSON, _ := json.Marshal(map[string]string{"transcript": transcript})
+	transcriptJSON, err := json.Marshal(map[string]string{"transcript": maskSensitiveData(transcript)})
+	if err != nil {
+		log.Printf("Warning: failed to marshal debate transcript: %v", err)
+	}
 	if _, err := queries.CreateExecutionTrace(ctx, db.CreateExecutionTraceParams{
 		TaskID:      t.ID,
 		ExecutionID: executionID,
@@ -1507,12 +1510,14 @@ func executeSwarmRouter(ctx context.Context, mcpServer *server.MCPServer, t db.T
 		}
 	}
 
-	queries.CreateExecutionTrace(ctx, db.CreateExecutionTraceParams{Metadata: nil, 
+	consensusMetadata, _ := json.Marshal(map[string]string{"details": consensusDetails})
+	queries.CreateExecutionTrace(ctx, db.CreateExecutionTraceParams{
 		TaskID:      t.ID,
 		ExecutionID: executionID,
 		WorkerID:    workerID,
 		StepName:    "Swarm Consensus Reached",
 		OutputData:  pgtype.Text{String: consensusDetails, Valid: true},
+		Metadata:    consensusMetadata,
 	})
 
 	// Match choice and activate task
