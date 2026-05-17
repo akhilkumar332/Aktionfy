@@ -97,7 +97,7 @@ const WorkflowCanvas = () => {
             </div>
           )
         },
-        style: isRouter ? undefined : {
+        style: isRouter ? { transition: 'all 0.5s ease-in-out' } : {
           background: isProcessing ? 'rgba(217, 119, 6, 0.15)' : 'rgba(15, 23, 42, 0.8)',
           color: '#fff',
           border: isProcessing ? '2px solid rgba(217, 119, 6, 0.5)' : '1px solid rgba(255, 255, 255, 0.1)',
@@ -106,6 +106,7 @@ const WorkflowCanvas = () => {
           width: 180,
           backdropFilter: 'blur(12px)',
           boxShadow: isProcessing ? '0 0 20px rgba(217, 119, 6, 0.3)' : 'none',
+          transition: 'all 0.5s ease-in-out'
         },
       };
     });
@@ -151,6 +152,7 @@ const WorkflowCanvas = () => {
           id: `e-${task.depends_on_task_id}-${task.id}`,
           source: task.depends_on_task_id,
           target: task.id,
+          type: 'smoothstep',
           animated: task.trigger_on_completion || task.status === 'processing' || isRouterSource,
           label: label,
           labelStyle: { fill: isRouterSource ? '#818cf8' : '#94a3b8', fontWeight: 800, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em' },
@@ -306,7 +308,7 @@ const WorkflowCanvas = () => {
             border: isActive ? '3px solid #f59e0b' : '1px solid rgba(255, 255, 255, 0.1)',
             boxShadow: isActive ? '0 0 25px rgba(245, 158, 11, 0.4)' : 'none',
             transform: isActive ? 'scale(1.05)' : 'scale(1)',
-            transition: 'all 0.3s ease'
+            transition: 'all 0.5s ease-in-out'
           }
         };
       }));
@@ -365,6 +367,7 @@ const WorkflowCanvas = () => {
                     background: isProcessing ? 'rgba(217, 119, 6, 0.15)' : 'rgba(15, 23, 42, 0.8)',
                     border: isProcessing ? '2px solid rgba(217, 119, 6, 0.5)' : '1px solid rgba(255, 255, 255, 0.1)',
                     boxShadow: isProcessing ? '0 0 20px rgba(217, 119, 6, 0.3)' : 'none',
+                    transition: 'all 0.5s ease-in-out'
                 }
             };
         }
@@ -444,6 +447,10 @@ const WorkflowCanvas = () => {
           x: nodeWithPosition.x - 180 / 2,
           y: nodeWithPosition.y - 100 / 2,
         },
+        style: {
+          ...node.style,
+          transition: 'all 0.5s ease-in-out'
+        }
       };
     });
 
@@ -458,7 +465,7 @@ const WorkflowCanvas = () => {
         trigger_on_completion: true
       });
       if (res.data.success) {
-        setEdges((eds) => addEdge({ ...params, animated: true, style: { stroke: '#f59e0b' } }, eds));
+        setEdges((eds) => addEdge({ ...params, type: 'smoothstep', animated: true, style: { stroke: '#f59e0b' } }, eds));
         // Refresh tasks to get updated dependency state
         fetchTasks();
       }
