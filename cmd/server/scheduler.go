@@ -26,6 +26,12 @@ import (
 var promptVarRegex = regexp.MustCompile(`\{\{task\.([0-9a-fA-F-]{36})\.output\}\}`)
 var stateVarRegex = regexp.MustCompile(`\{\{state\.([a-zA-Z0-9._-]+)\}\}`)
 
+const (
+	PersonaArchitect = "Architect (Logic): You focus on structural integrity, technical consistency, and ensuring the output follows a logical flow. Critique the output against the available branches."
+	PersonaSecurity  = "Security Officer (Safety): You scan for high-risk outcomes, malicious intent, or potential safety violations. Critique the output from a risk perspective."
+	PersonaAdvocate  = "User Advocate (Intent): You prioritize the end-user's goal and helpfulness. Critique whether the output truly serves the user's original request."
+)
+
 func listenForTaskQueued(ctx context.Context, dbURL string) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -922,20 +928,60 @@ func executeDecisionRouter(ctx context.Context, mcpServer *server.MCPServer, t d
 		}
 	}
 
-	// 2. LLM Call to categorize
-	prompt := fmt.Sprintf(`You are a decision router. Based on the following output from a previous task, choose the best branch.
-Output:
+	// 2. Parallel Fan-out Debate
+	personas := []string{PersonaArchitect, PersonaSecurity, PersonaAdvocate}
+	type debateResult struct {
+		persona  string
+		critique string
+	}
+	resultsChan := make(chan debateResult, len(personas))
+	var wg sync.WaitGroup
+
+	for _, p := range personas {
+		wg.Add(1)
+		go func(persona string) {
+			defer wg.Done()
+			// Call Sampling with specific persona prepended to prompt
+			personaPrompt := fmt.Sprintf("%s\n\nTask Input: %s\nOptions:\n%s\n\nProvide your critique.", persona, prevOutput, optionsStr)
+			req := mcp.CreateMessageRequest{
+				CreateMessageParams: mcp.CreateMessageParams{
+					Messages: []mcp.SamplingMessage{
+						{Role: "user", Content: mcp.TextContent{Type: "text", Text: personaPrompt}},
+					},
+					MaxTokens: 300,
+				},
+			}
+			res, err := mcpServer.RequestSampling(ctx, req)
+			if err == nil {
+				resultsChan <- debateResult{persona: persona, critique: extractRawText(res)}
+			}
+		}(p)
+	}
+
+	wg.Wait()
+	close(resultsChan)
+
+	transcript := ""
+	for r := range resultsChan {
+		transcript += fmt.Sprintf("### %s\n%s\n\n", r.persona, r.critique)
+	}
+
+	judgePrompt := fmt.Sprintf(`You are the Executive Judge. You have received the following critiques from three specialists regarding a workflow decision.
+Critiques:
 %s
 
-Available options:
+Options:
 %s
 
-Respond with a JSON object: {"choice": "branch_key", "reasoning": "..."}`, prevOutput, optionsStr)
+Final Task Output to Evaluate:
+%s
+
+Synthesize the views and pick the final branch. Respond ONLY with JSON: {"choice": "branch_key", "reasoning": "..."}`, transcript, optionsStr, prevOutput)
 
 	req := mcp.CreateMessageRequest{
 		CreateMessageParams: mcp.CreateMessageParams{
 			Messages: []mcp.SamplingMessage{
-				{Role: "user", Content: mcp.TextContent{Type: "text", Text: prompt}},
+				{Role: "user", Content: mcp.TextContent{Type: "text", Text: judgePrompt}},
 			},
 			MaxTokens: 500,
 		},
@@ -988,12 +1034,14 @@ Respond with a JSON object: {"choice": "branch_key", "reasoning": "..."}`, prevO
 		return
 	}
 
-	if _, err := queries.CreateExecutionTrace(ctx, db.CreateExecutionTraceParams{Metadata: nil, 
+	transcriptJSON, _ := json.Marshal(map[string]string{"transcript": transcript})
+	if _, err := queries.CreateExecutionTrace(ctx, db.CreateExecutionTraceParams{
 		TaskID:      t.ID,
 		ExecutionID: executionID,
 		WorkerID:    workerID,
-		StepName:    "Decision Router Choice Made",
+		StepName:    "Swarm Debate Conclusion",
 		OutputData:  pgtype.Text{String: fmt.Sprintf("Choice: %s", choice), Valid: true},
+		Metadata:    transcriptJSON,
 	}); err != nil {
 		log.Printf("Trace error: %v", err)
 	}
