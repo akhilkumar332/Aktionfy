@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -524,7 +525,11 @@ func apiListWebhooksHandler(c echo.Context) error {
 	var hooks []WebhookSubscription
 	for _, row := range rows {
 		var eventTypes []string
-		_ = json.Unmarshal(row.EventTypes, &eventTypes)
+		if len(row.EventTypes) > 0 {
+			if err := json.Unmarshal(row.EventTypes, &eventTypes); err != nil {
+				log.Printf("Warning: failed to unmarshal event types for webhook %s: %v", formatUUID(row.ID), err)
+			}
+		}
 
 		hooks = append(hooks, WebhookSubscription{
 			ID:          formatUUID(row.ID),
@@ -791,7 +796,11 @@ func apiAdminAuditLogsHandler(c echo.Context) error {
 		}
 		entry.CreatedAt = row.CreatedAt.Time.UTC().Format(time.RFC3339)
 		entry.Metadata = map[string]interface{}{}
-		_ = json.Unmarshal(row.Metadata, &entry.Metadata)
+		if len(row.Metadata) > 0 {
+			if err := json.Unmarshal(row.Metadata, &entry.Metadata); err != nil {
+				log.Printf("Warning: failed to unmarshal metadata for audit log %s: %v", formatUUID(row.ID), err)
+			}
+		}
 		logs = append(logs, entry)
 	}
 

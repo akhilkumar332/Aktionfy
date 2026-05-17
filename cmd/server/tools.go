@@ -104,7 +104,11 @@ func registerTools(s *server.MCPServer) {
 
 		var branchCondition []byte
 		if bc, ok := args["branch_condition"].(map[string]interface{}); ok {
-			branchCondition, _ = json.Marshal(bc)
+			var err error
+			branchCondition, err = json.Marshal(bc)
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("invalid branch_condition JSON: %v", err)), nil
+			}
 		}
 
 		isBundleRoot := false

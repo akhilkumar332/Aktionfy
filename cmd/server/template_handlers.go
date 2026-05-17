@@ -108,6 +108,8 @@ func apiDeployBlueprintHandler(c echo.Context) error {
 		if bt.DependsOn != "" {
 			if uuid, ok := idMap[bt.DependsOn]; ok {
 				dependsOnTaskID = uuid
+			} else {
+				log.Printf("Warning: blueprint task '%s' depends on unknown ID '%s'. Ensure tasks are in topological order.", bt.Name, bt.DependsOn)
 			}
 		}
 
@@ -145,7 +147,9 @@ func apiDeployBlueprintHandler(c echo.Context) error {
 	}
 
 	// Increment uses
-	_, _ = qtx.IncrementTemplateUses(c.Request().Context(), templateID)
+	if _, err := qtx.IncrementTemplateUses(c.Request().Context(), templateID); err != nil {
+		log.Printf("Warning: failed to increment template uses for %s: %v", req.TemplateID, err)
+	}
 
 	if err := tx.Commit(c.Request().Context()); err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to commit deployment"})
