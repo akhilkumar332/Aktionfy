@@ -302,7 +302,7 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 								ExecutionID: executionID,
 								WorkerID:    workerID,
 								StepName:    "Prompt Resolution Success",
-								OutputData:  pgtype.Text{String: finalPrompt, Valid: true},
+								OutputData:  pgtype.Text{String: maskSensitiveData(finalPrompt), Valid: true},
 							}); err != nil {
 								log.Printf("Trace error for task %s: %v", taskID, err)
 							}
@@ -323,7 +323,7 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 							ExecutionID: executionID,
 							WorkerID:    workerID,
 							StepName:    "LLM Sampling",
-							InputData:   pgtype.Text{String: finalPrompt, Valid: true},
+							InputData:   pgtype.Text{String: maskSensitiveData(finalPrompt), Valid: true},
 						}); err != nil {
 							log.Printf("Trace error for task %s: %v", taskID, err)
 						}

@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
+	"strings"
 	"time"
 
 	"github.com/dop251/goja"
@@ -13,6 +15,16 @@ var ErrExecutionTimeout = errors.New("JS execution timed out")
 
 func executeNativeJS(ctx context.Context, code string, input map[string]interface{}) (string, error) {
 	vm := goja.New()
+
+	// Add 'log' global for debugging in Native Actions
+	vm.Set("log", func(call goja.FunctionCall) goja.Value {
+		msg := ""
+		for _, arg := range call.Arguments {
+			msg += fmt.Sprintf("%v ", arg.Export())
+		}
+		log.Printf("[SANDBOX LOG]: %s", strings.TrimSpace(msg))
+		return goja.Undefined()
+	})
 
 	// Set execution limit
 	timeout := 5 * time.Second
@@ -34,7 +46,7 @@ func executeNativeJS(ctx context.Context, code string, input map[string]interfac
 		if errors.As(err, &jsErr) && jsErr.Value() == ErrExecutionTimeout {
 			return "", ErrExecutionTimeout
 		}
-		return "", err
+		return "", fmt.Errorf("JS error: %w", err)
 	}
 
 	return val.String(), nil

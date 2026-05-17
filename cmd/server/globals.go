@@ -9,6 +9,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/redis/go-redis/v9"
 	"net/http"
+	"regexp"
 	"strings"
 	"sync"
 )
@@ -57,4 +58,23 @@ func mustParseUUID(c echo.Context, src string) (pgtype.UUID, error) {
 		return id, c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid ID format"})
 	}
 	return id, nil
+}
+
+// maskSensitiveData looks for common secret patterns and masks them for UI safety.
+func maskSensitiveData(input string) string {
+	// Mask potential API keys, passwords, etc.
+	// This is a simple heuristic-based masker for production UI safety.
+	sensitivePatterns := []struct {
+		regex *regexp.Regexp
+		repl  string
+	}{
+		{regexp.MustCompile(`(?i)(api_key|password|secret|token|auth)["']?\s*[:=]\s*["']?([a-zA-Z0-9-_]{8,})["']?`), `$1: ********`},
+		{regexp.MustCompile(`(?i)(Bearer\s+)([a-zA-Z0-9._-]{10,})`), `$1********`},
+	}
+
+	result := input
+	for _, p := range sensitivePatterns {
+		result = p.regex.ReplaceAllString(result, p.repl)
+	}
+	return result
 }

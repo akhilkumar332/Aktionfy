@@ -498,6 +498,15 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 	}
 
 	resolvedPrompt := resolvePromptVariables(workerCtx, t.UserID, t.AgentPrompt, triggerPayload, state)
+	if _, err := queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{
+		TaskID:      t.ID,
+		ExecutionID: executionID,
+		WorkerID:    workerID,
+		StepName:    "Prompt Variables Resolved",
+		OutputData:  pgtype.Text{String: maskSensitiveData(resolvedPrompt), Valid: true},
+	}); err != nil {
+		log.Printf("Trace error: %v", err)
+	}
 
 	traceContext := make(map[string]string)
 	otel.GetTextMapPropagator().Inject(workerCtx, propagation.MapCarrier(traceContext))
@@ -822,7 +831,7 @@ func executeDecisionRouter(ctx context.Context, mcpServer *server.MCPServer, t d
 		ExecutionID: executionID,
 		WorkerID:    workerID,
 		StepName:    "Decision Router Start",
-		InputData:   pgtype.Text{String: prevOutput, Valid: true},
+		InputData:   pgtype.Text{String: maskSensitiveData(prevOutput), Valid: true},
 	}); err != nil {
 		log.Printf("Trace error: %v", err)
 	}
@@ -1207,7 +1216,7 @@ func executeSwarmRouter(ctx context.Context, mcpServer *server.MCPServer, t db.T
 		ExecutionID: executionID,
 		WorkerID:    workerID,
 		StepName:    "Swarm Router Start",
-		InputData:   pgtype.Text{String: prevOutput, Valid: true},
+		InputData:   pgtype.Text{String: maskSensitiveData(prevOutput), Valid: true},
 	}); err != nil {
 		log.Printf("Trace error: %v", err)
 	}
