@@ -4,7 +4,7 @@
   "description": "NPM wrapper for Scheduled Actions MCP Go binary",
   "main": "index.js",
   "bin": {
-    "schedule-mcp": "index.js"
+    "actionfy": "index.js"
   },
   "scripts": {
     "install": "node install.js"

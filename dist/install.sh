@@ -3,9 +3,9 @@
 set -e
 
 # --- Configuration ---
-BINARY_NAME="schedule-mcp"
+BINARY_NAME="actionfy"
 REPO_OWNER="akhilkumar332"
-REPO_NAME="schedule-mcp"
+REPO_NAME="actionfy"
 GITHUB_RELEASE_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/latest/download"
 
 # --- Colors for output ---
@@ -58,7 +58,7 @@ fi
 log_info "Using ${DOWNLOAD_TOOL} for downloading."
 
 # --- 3. Prepare download URL ---
-# Format: schedule-mcp-linux-amd64
+# Format: actionfy-linux-amd64
 DOWNLOAD_URL="${GITHUB_RELEASE_URL}/${BINARY_NAME}-${OS}-${ARCH}"
 
 log_info "Download URL would be: ${DOWNLOAD_URL}"

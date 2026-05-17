@@ -4,7 +4,7 @@ const path = require('path');
 const os = require('os');
 
 const platform = os.platform();
-const BINARY_NAME = platform === 'win32' ? 'schedule-mcp.exe' : 'schedule-mcp';
+const BINARY_NAME = platform === 'win32' ? 'actionfy.exe' : 'actionfy';
 const binaryPath = path.join(__dirname, BINARY_NAME);
 
 const args = process.argv.slice(2);

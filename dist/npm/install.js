@@ -8,12 +8,12 @@ const arch = os.arch() === 'x64' ? 'amd64' : os.arch(); // Map x64 to amd64
 let githubPlatform = platform;
 if (platform === 'win32') githubPlatform = 'windows';
 
-const BINARY_NAME = platform === 'win32' ? 'schedule-mcp.exe' : 'schedule-mcp';
-const GITHUB_BINARY_NAME = platform === 'win32' ? `schedule-mcp-${githubPlatform}-${arch}.exe` : `schedule-mcp-${githubPlatform}-${arch}`;
+const BINARY_NAME = platform === 'win32' ? 'actionfy.exe' : 'actionfy';
+const GITHUB_BINARY_NAME = platform === 'win32' ? `actionfy-${githubPlatform}-${arch}.exe` : `actionfy-${githubPlatform}-${arch}`;
 const DEST_PATH = path.join(__dirname, BINARY_NAME);
 
 const REPO_OWNER = 'akhilkumar332';
-const REPO_NAME = 'schedule-mcp';
+const REPO_NAME = 'actionfy';
 const DOWNLOAD_URL = `https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/latest/download/${GITHUB_BINARY_NAME}`;
 
 console.log(`Installing Scheduled Actions MCP for ${platform}-${arch}...`);
