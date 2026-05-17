@@ -110,7 +110,9 @@ func runSettingsPoller(ctx context.Context) {
 }
 func syncSettings(ctx context.Context) {
 	var js, reaper, poll int
-	err := dbPool.QueryRow(ctx, "SELECT js_timeout_ms, reaper_stuck_threshold_minutes, scheduler_poll_interval_seconds FROM system_settings WHERE id = 1").Scan(&js, &reaper, &poll)
+	timeoutCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	err := dbPool.QueryRow(timeoutCtx, "SELECT js_timeout_ms, reaper_stuck_threshold_minutes, scheduler_poll_interval_seconds FROM system_settings WHERE id = 1").Scan(&js, &reaper, &poll)
 	if err != nil {
 		log.Printf("Error syncing system settings: %v", err)
 		return
