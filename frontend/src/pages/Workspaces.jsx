@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Globe, ChevronDown, Trash2, Plus, Loader2, X, Activity, Command, Zap } from 'lucide-react';
+import { Globe, ChevronDown, Trash2, Plus, Loader2, X, Command, Zap, RefreshCw, Key } from 'lucide-react';
 
 const WorkspaceEnvSection = ({ workspaceId }) => {
   const [envs, setEnvs] = useState([]);
@@ -62,43 +62,42 @@ const WorkspaceEnvSection = ({ workspaceId }) => {
   };
 
   return (
-    <div className="mt-8 pt-8 border-t border-white/5 space-y-8">
-      <div className="flex items-center gap-3 ml-2">
-         <div className="w-1.5 h-1.5 rounded-full bg-brand-primary"></div>
-         <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Environment Neural Links</h3>
+    <div className="mt-6 pt-6 border-t border-zinc-800 space-y-6">
+      <div className="flex items-center gap-2 ml-1">
+         <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Environment Variables</span>
       </div>
       
       {loading ? (
-        <div className="py-8 flex flex-col items-center gap-4">
-          <Loader2 size={24} className="animate-spin text-brand-primary/50" />
-          <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest animate-pulse">Syncing Variables...</span>
+        <div className="py-6 flex flex-col items-center gap-2 opacity-40">
+          <Loader2 size={16} className="animate-spin text-zinc-600" />
+          <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest animate-pulse">Syncing...</span>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {envs.length === 0 ? (
-            <div className="col-span-full py-10 px-8 bg-white/[0.01] border border-dashed border-white/5 rounded-3xl text-center">
-               <span className="text-[10px] text-slate-600 font-bold uppercase tracking-widest italic opacity-50">Empty variable buffer. Initialize to enable context propagation.</span>
+            <div className="col-span-full py-8 px-6 bg-zinc-950/50 border border-dashed border-zinc-800 rounded-lg text-center">
+               <span className="text-[10px] text-zinc-600 font-medium uppercase tracking-tighter opacity-50">Empty variable buffer. Initialize to enable context propagation.</span>
             </div>
           ) : (
             envs.map(env => (
               <motion.div 
                 layout
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 key={env.name} 
-                className="flex items-center justify-between bg-black/60 p-5 rounded-[2rem] border border-white/5 group hover:border-brand-primary/20 transition-all"
+                className="flex items-center justify-between bg-zinc-950 p-4 rounded-lg border border-zinc-800 group hover:border-zinc-700 transition-all shadow-inner"
               >
-                <div className="flex flex-col gap-1.5 ml-2">
-                  <span className="text-xs font-mono font-black text-white tracking-widest flex items-center gap-2">
-                     <Command size={10} className="text-brand-primary opacity-50" /> {env.name}
+                <div className="flex flex-col gap-1 min-w-0">
+                  <span className="text-xs font-mono font-bold text-zinc-100 flex items-center gap-2">
+                     <Key size={10} className="text-zinc-600" /> {env.name}
                   </span>
-                  <span className="text-[10px] font-mono text-slate-600 truncate max-w-[150px] sm:max-w-xs uppercase tracking-tighter">VALUE: {env.value.substring(0, 20)}{env.value.length > 20 ? '...' : ''}</span>
+                  <span className="text-[9px] font-mono text-zinc-500 truncate max-w-[150px] sm:max-w-xs uppercase">VALUE: {env.value.substring(0, 20)}{env.value.length > 20 ? '...' : ''}</span>
                 </div>
                 <button 
                   onClick={() => handleDelete(env.name)}
-                  className="p-3 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl transition-all opacity-0 group-hover:opacity-100 hover:bg-red-500 hover:text-white"
+                  className="p-2 bg-zinc-900 text-zinc-600 border border-zinc-800 rounded-md transition-all opacity-0 group-hover:opacity-100 hover:text-red-500"
                 >
-                  <Trash2 size={16} />
+                  <Trash2 size={14} />
                 </button>
               </motion.div>
             ))
@@ -106,27 +105,27 @@ const WorkspaceEnvSection = ({ workspaceId }) => {
         </div>
       )}
 
-      <form onSubmit={handleAdd} className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
+      <form onSubmit={handleAdd} className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
         <input 
           type="text" 
-          placeholder="IDENTITY_KEY"
+          placeholder="KEY_DESIGNATION"
           value={newName}
           onChange={e => setNewName(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ''))}
-          className="bg-black/80 border border-white/5 rounded-2xl px-6 py-5 text-xs text-white font-mono focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner"
+          className="pro-input !py-2 !text-[10px] font-mono"
         />
         <input 
           type="text" 
           placeholder="Value String"
           value={newValue}
           onChange={e => setNewValue(e.target.value)}
-          className="bg-black/80 border border-white/5 rounded-2xl px-6 py-5 text-xs text-white font-mono focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner"
+          className="pro-input !py-2 !text-[10px] font-mono"
         />
         <button 
           disabled={submitting || !newName || !newValue}
-          className="shimmer-button bg-brand-primary text-white py-5 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-[0_10px_30px_rgba(217,119,6,0.3)] hover:brightness-110 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
+          className="pro-button-primary !py-2 !text-[10px] uppercase tracking-widest disabled:opacity-50"
         >
           {submitting ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-          Inject Link
+          Inject
         </button>
       </form>
     </div>
@@ -179,32 +178,16 @@ const Workspaces = () => {
 
   return (
     <DashboardLayout>
-      <header className="mb-12 flex flex-col md:flex-row md:items-center justify-between gap-8">
+      <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <motion.div 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-3 mb-4"
-          >
-             <div className="w-8 h-8 bg-brand-primary/10 border border-brand-primary/20 rounded-lg flex items-center justify-center text-brand-primary">
-                <Globe size={16} />
-             </div>
-             <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Infrastructure Sector</span>
-          </motion.div>
-          <motion.h1 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-4xl font-black text-white tracking-tighter"
-          >
-            Compute Clusters.
-          </motion.h1>
-          <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.2em] mt-2 ml-1">Virtual Isolation & Context Deployment</p>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Compute Clusters</h1>
+          <p className="text-zinc-500 text-xs font-medium mt-1">Virtual isolation sectors and context deployment management.</p>
         </div>
         <button 
           onClick={() => setShowCreateForm(true)}
-          className="shimmer-button bg-brand-primary text-white px-10 py-5 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] shadow-[0_20px_50px_rgba(217,119,6,0.3)] hover:brightness-110 active:scale-95 transition-all flex items-center gap-3"
+          className="pro-button-primary !py-2 !px-5 flex items-center gap-2"
         >
-          <Plus size={16} /> Enlist Cluster
+          <Plus size={16} /> <span className="text-[11px] uppercase tracking-widest">Enlist Cluster</span>
         </button>
       </header>
 
@@ -217,41 +200,39 @@ const Workspaces = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowCreateForm(false)}
-              className="absolute inset-0 bg-black/90 backdrop-blur-2xl"
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             />
             <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              initial={{ opacity: 0, scale: 0.98, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-obsidian-900 border border-white/5 p-12 rounded-[3.5rem] shadow-[0_0_100px_rgba(0,0,0,0.8)] w-full max-w-xl relative z-10 overflow-hidden"
+              exit={{ opacity: 0, scale: 0.98, y: 10 }}
+              className="bg-zinc-950 border border-zinc-800 p-8 rounded-lg shadow-2xl w-full max-w-md relative z-10 overflow-hidden"
             >
-              <div className="absolute top-0 right-0 w-48 h-48 bg-brand-primary/5 blur-[80px] -translate-y-1/2 translate-x-1/2"></div>
-              
-              <div className="flex items-center justify-between mb-12">
+              <div className="flex items-center justify-between mb-8">
                 <div>
-                  <h2 className="text-2xl font-black text-white uppercase tracking-tighter">Initialize Cluster</h2>
-                  <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.3em] mt-1">Protocol: NEW_WORKSPACE_INIT</p>
+                  <h2 className="text-lg font-bold text-white uppercase tracking-tight">Initialize Cluster</h2>
+                  <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-0.5">NEW_WORKSPACE_INIT</p>
                 </div>
-                <button onClick={() => setShowCreateForm(false)} className="text-slate-500 hover:text-white transition-colors p-3 bg-white/5 rounded-2xl border border-white/10">
-                  <X size={24} />
+                <button onClick={() => setShowCreateForm(false)} className="text-zinc-500 hover:text-white p-2">
+                  <X size={20} />
                 </button>
               </div>
 
-              <form onSubmit={handleCreateWorkspace} className="space-y-10">
-                <div className="space-y-4">
-                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Cluster Designation</label>
+              <form onSubmit={handleCreateWorkspace} className="space-y-6">
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Cluster Designation</label>
                   <input 
                     type="text"
                     value={newWorkspaceName}
-                    onChange={(e) => setNewWorkspaceName(e.target.value)}
-                    placeholder="e.g. ALPHA_NEURAL_GRID"
-                    className="w-full bg-black/40 border border-white/5 rounded-[2rem] p-6 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner"
+                    onChange={(e) => setNewWorkspaceName(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ''))}
+                    placeholder="ALPHA_SECTOR_01"
+                    className="pro-input w-full font-mono !text-xs"
                     autoFocus
                   />
                 </div>
                 <button 
                   disabled={creating || !newWorkspaceName}
-                  className="shimmer-button w-full bg-brand-primary text-white py-6 rounded-[2rem] text-[10px] font-black uppercase tracking-widest shadow-[0_20px_50px_rgba(217,119,6,0.3)] hover:brightness-110 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                  className="pro-button-primary w-full !py-3 !text-[11px] uppercase tracking-[0.2em] disabled:opacity-50"
                 >
                   {creating ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />}
                   Authorize Deployment
@@ -262,87 +243,64 @@ const Workspaces = () => {
         )}
       </AnimatePresence>
 
-      <div className="grid grid-cols-1 gap-6">
+      <div className="grid grid-cols-1 gap-4">
         {loading ? (
-          <div className="py-40 flex flex-col items-center justify-center gap-6">
-            <Loader2 className="animate-spin text-brand-primary" size={48} />
-            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 animate-pulse">Syncing Cluster Topology...</p>
+          <div className="py-40 flex flex-col items-center justify-center gap-4 opacity-50">
+            <RefreshCw className="animate-spin text-zinc-600" size={32} />
+            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest animate-pulse">Mapping Topology...</p>
           </div>
         ) : workspaces.length === 0 ? (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="py-40 flex flex-col items-center justify-center text-center gap-8 bg-white/[0.01] border border-dashed border-white/10 rounded-[4rem]"
-          >
-            <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center border border-white/5">
-              <Globe size={48} className="text-slate-700" />
-            </div>
-            <div>
-              <p className="text-white font-black text-xl uppercase tracking-tighter mb-2">Neural Registry Void</p>
-              <p className="text-slate-500 text-xs font-bold uppercase tracking-widest max-w-xs leading-relaxed opacity-60">No active compute clusters identified. Initialize your first sector to begin.</p>
-            </div>
-          </motion.div>
+          <div className="py-32 flex flex-col items-center justify-center text-center gap-4 pro-card border-dashed bg-zinc-900/10 opacity-50">
+            <Globe size={32} className="text-zinc-700" />
+            <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest italic">No active compute clusters identified.</span>
+          </div>
         ) : (
-          <AnimatePresence>
-            {workspaces.map((w, i) => (
-              <motion.div 
-                key={w.id} 
-                layout
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.1 }}
-                className={`bg-obsidian-900 border border-white/5 rounded-[3rem] p-10 hover:bg-white/[0.02] transition-all cursor-pointer group relative overflow-hidden shadow-2xl ${expandedId === w.id ? 'ring-2 ring-brand-primary/20 bg-white/[0.02]' : ''}`}
-                onClick={() => setExpandedId(expandedId === w.id ? null : w.id)}
-              >
-                <div className="absolute top-0 right-0 w-64 h-64 bg-brand-primary/5 blur-[100px] translate-x-1/2 -translate-y-1/2 pointer-events-none group-hover:scale-150 transition-transform duration-700"></div>
-
-                <div className="flex items-center justify-between relative z-10">
-                  <div className="flex items-center gap-8">
-                    <div className="relative">
-                       <div className="absolute inset-0 bg-brand-primary/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                       <div className={`p-6 rounded-[2rem] border transition-all duration-500 ${expandedId === w.id ? 'bg-brand-primary text-white shadow-2xl shadow-orange-500/20 border-brand-primary' : 'bg-obsidian-950 text-brand-primary border-white/5 group-hover:border-brand-primary/30'}`}>
-                          <Globe size={32} />
-                       </div>
-                    </div>
-                    <div>
-                      <h2 className="text-3xl font-black text-white uppercase tracking-tighter mb-2">{w.name}</h2>
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2 bg-black/40 px-3 py-1 rounded-lg border border-white/5 shadow-inner">
-                           <Command size={10} className="text-slate-600" />
-                           <span className="text-[10px] text-slate-500 font-mono uppercase tracking-widest tabular-nums">{w.id ? w.id.substring(0, 13) : 'N/A'}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-[9px] font-black text-slate-600 uppercase tracking-widest ml-1">
-                           <Activity size={10} className="text-emerald-500" />
-                           Initialized: {new Date(w.created_at).toLocaleDateString()}
-                        </div>
+          workspaces.map((w) => (
+            <div 
+              key={w.id} 
+              className={`pro-card p-6 hover:bg-zinc-900/40 transition-all cursor-pointer group ${expandedId === w.id ? 'ring-1 ring-brand-primary/30 bg-zinc-900/40' : ''}`}
+              onClick={() => setExpandedId(expandedId === w.id ? null : w.id)}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-5">
+                  <div className={`w-10 h-10 rounded-lg border transition-all flex items-center justify-center ${expandedId === w.id ? 'bg-brand-primary border-brand-primary text-white shadow-lg shadow-indigo-900/20' : 'bg-zinc-950 border-zinc-800 text-zinc-600 group-hover:border-zinc-700'}`}>
+                    <Globe size={20} />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-bold text-white uppercase tracking-tight">{w.name}</h2>
+                    <div className="flex items-center gap-3 mt-1">
+                      <div className="flex items-center gap-1 text-[10px] text-zinc-600 font-mono tracking-tighter uppercase opacity-60">
+                         <Command size={10} /> {w.id.substring(0, 13)}
                       </div>
+                      <div className="w-1 h-1 rounded-full bg-zinc-800"></div>
+                      <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Initialized: {new Date(w.created_at).toLocaleDateString()}</span>
                     </div>
                   </div>
-                  <motion.div 
-                    animate={{ rotate: expandedId === w.id ? 180 : 0 }}
-                    className={`w-14 h-14 rounded-2xl flex items-center justify-center border transition-all ${expandedId === w.id ? 'bg-brand-primary border-brand-primary text-white shadow-2xl' : 'bg-white/5 border-white/10 text-slate-500'}`}
-                  >
-                    <ChevronDown size={24} />
-                  </motion.div>
                 </div>
+                <motion.div 
+                  animate={{ rotate: expandedId === w.id ? 180 : 0 }}
+                  className="text-zinc-700 group-hover:text-zinc-400"
+                >
+                  <ChevronDown size={20} />
+                </motion.div>
+              </div>
 
-                <AnimatePresence>
-                  {expandedId === w.id && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-                      className="overflow-hidden"
-                      onClick={e => e.stopPropagation()}
-                    >
-                      <WorkspaceEnvSection workspaceId={w.id} />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            ))}
-          </AnimatePresence>
+              <AnimatePresence>
+                {expandedId === w.id && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <WorkspaceEnvSection workspaceId={w.id} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ))
         )}
       </div>
     </DashboardLayout>

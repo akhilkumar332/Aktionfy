@@ -4,8 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import { 
   Crown, Key, RefreshCw, Copy, Check, 
-  ShieldCheck, Zap, ArrowRight, Bell, ShieldAlert, 
-  Terminal, Cpu, Globe, Server, Activity, ArrowUpRight
+  ShieldCheck, Zap, Bell, ShieldAlert, 
+  Terminal, Cpu, Globe, ArrowUpRight, Layers
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSSE } from '../hooks/useSSE';
@@ -131,292 +131,206 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="space-y-12">
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-8">
+    <div className="space-y-10">
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <motion.div 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-3 mb-4"
-          >
-             <div className="w-8 h-8 bg-brand-primary/10 border border-brand-primary/20 rounded-lg flex items-center justify-center">
-                <Activity size={16} className="text-brand-primary" />
-             </div>
-             <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Operational Environment</span>
-          </motion.div>
-          <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-5xl font-black text-white tracking-tighter"
-          >
-            Command Hub.
-          </motion.h1>
+          <h1 className="text-3xl font-bold text-white tracking-tight">Command Hub</h1>
+          <p className="text-zinc-500 text-sm font-medium mt-1">Global orchestration overview and system health.</p>
         </div>
-
-        <motion.div 
-           initial={{ opacity: 0 }}
-           animate={{ opacity: 1 }}
-           transition={{ delay: 0.3 }}
-           className="flex items-center gap-6 bg-white/5 border border-white/10 px-8 py-4 rounded-3xl backdrop-blur-xl"
-        >
+        
+        <div className="flex items-center gap-4 bg-zinc-900 border border-zinc-800 px-4 py-2.5 rounded-lg shadow-sm">
            <div className="flex flex-col">
-              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Global Status</span>
-              <span className="text-xs font-bold text-emerald-400 flex items-center gap-2">
-                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_#10b981]"></div>
-                 All Systems Nominal
+              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-none">Cluster Status</span>
+              <span className="text-xs font-bold text-emerald-500 flex items-center gap-1.5 mt-1">
+                 <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse"></div>
+                 Nominal
               </span>
            </div>
-           <div className="h-8 w-px bg-white/10"></div>
+           <div className="h-6 w-px bg-zinc-800 mx-2"></div>
            <div className="flex flex-col">
-              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Active Latency</span>
-              <span className="text-xs font-bold text-white font-mono">14ms</span>
+              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-none">Latency</span>
+              <span className="text-xs font-bold text-zinc-200 mt-1 tabular-nums font-mono">14ms</span>
            </div>
-        </motion.div>
+        </div>
       </header>
 
-      {/* Pending Approvals Section */}
+      {/* Manual Interventions */}
       <AnimatePresence>
         {pendingApprovals.length > 0 && (
           <motion.section 
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="space-y-4"
           >
-            <div className="bg-red-500/5 border border-red-500/10 rounded-[3rem] p-10 backdrop-blur-3xl relative overflow-hidden">
-               <div className="absolute top-0 right-0 w-64 h-64 bg-red-500/5 blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
-               
-               <h2 className="text-xl font-black text-white uppercase tracking-widest mb-10 flex items-center gap-3">
-                 <ShieldAlert className="text-red-500 animate-pulse" size={24} />
-                 Manual Resolution Required
-               </h2>
-
-               <div className="grid grid-cols-1 gap-4">
-                 {pendingApprovals.map((approval) => (
-                   <motion.div 
-                     key={approval.task_id}
-                     layout
-                     initial={{ x: -20, opacity: 0 }}
-                     animate={{ x: 0, opacity: 1 }}
-                     className="bg-black/40 border border-white/5 p-8 rounded-[2rem] flex flex-col md:flex-row items-center justify-between gap-8 transition-all hover:border-red-500/30 group"
-                   >
-                     <div className="flex items-center gap-6">
-                        <div className="w-14 h-14 rounded-2xl bg-red-500/10 flex items-center justify-center text-red-500 border border-red-500/20 group-hover:scale-110 transition-transform">
-                           <Terminal size={24} />
-                        </div>
-                        <div>
-                          <h4 className="text-white font-bold text-lg mb-1">{approval.task_name}</h4>
-                          <p className="text-slate-500 text-[10px] font-mono uppercase tracking-widest">Execution-ID: {approval.execution_id?.slice(0, 13)}</p>
-                        </div>
-                     </div>
-                     <div className="flex items-center gap-4 w-full md:w-auto">
-                       <button 
-                         onClick={() => handleDeny(approval.task_id)}
-                         className="flex-1 md:flex-none px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-white border border-white/5 transition-all"
-                       >
-                         Abort
-                       </button>
-                       <button 
-                         onClick={() => handleApprove(approval.task_id)}
-                         className="flex-1 md:flex-none bg-red-500 text-white px-10 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-[0_10px_40px_rgba(239,68,68,0.2)] hover:brightness-110 active:scale-95 transition-all"
-                       >
-                         Authorize Execution
-                       </button>
-                     </div>
-                   </motion.div>
-                 ))}
-               </div>
+            <div className="flex items-center gap-2 text-red-500 ml-2">
+               <ShieldAlert size={14} className="animate-pulse" />
+               <span className="text-[10px] font-black uppercase tracking-[0.2em]">Manual Resolution Required</span>
+            </div>
+            <div className="grid grid-cols-1 gap-3">
+              {pendingApprovals.map((approval) => (
+                <div key={approval.task_id} className="pro-card p-6 flex flex-col sm:flex-row items-center justify-between gap-6 border-red-500/20 bg-red-500/[0.02]">
+                   <div className="flex items-center gap-5">
+                      <div className="w-10 h-10 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500">
+                         <Terminal size={18} />
+                      </div>
+                      <div>
+                        <h4 className="text-white font-bold text-base">{approval.task_name}</h4>
+                        <p className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest mt-0.5">AUTH_REQ // {approval.execution_id?.slice(0, 13)}</p>
+                      </div>
+                   </div>
+                   <div className="flex items-center gap-3 w-full sm:w-auto">
+                     <button onClick={() => handleDeny(approval.task_id)} className="pro-button-secondary !py-2 !px-6 flex-1 sm:flex-none !border-zinc-800 text-[11px] uppercase tracking-widest">Abort</button>
+                     <button onClick={() => handleApprove(approval.task_id)} className="pro-button-primary !py-2 !px-8 flex-1 sm:flex-none !bg-red-600 hover:!bg-red-500 text-[11px] uppercase tracking-widest">Authorize</button>
+                   </div>
+                </div>
+              ))}
             </div>
           </motion.section>
         )}
       </AnimatePresence>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {/* Tier Intelligence Card */}
-        <div className="glass-card p-10 rounded-[3rem] flex flex-col group relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-brand-primary/5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none group-hover:scale-150 transition-transform duration-700"></div>
-          
-          <div className="flex items-center gap-4 mb-10">
-            <div className="bg-brand-primary/10 p-3 rounded-2xl text-brand-primary border border-brand-primary/20 group-hover:rotate-12 transition-transform">
-              <Crown size={24} />
-            </div>
-            <h3 className="font-black text-slate-500 uppercase tracking-[0.2em] text-[10px]">Node Privilege</h3>
-          </div>
-          
-          <div className="flex items-baseline gap-2 mb-4">
-             <span className="text-5xl font-black text-white uppercase tracking-tighter glow-text">{user?.tier}</span>
-             <span className="w-2 h-2 rounded-full bg-brand-primary shadow-[0_0_10px_#d97706]"></span>
-          </div>
-
-          <p className="text-slate-400 text-sm font-medium leading-relaxed flex-1">
-            {user?.tier === 'free' 
-              ? 'Standard throughput. 2 concurrent neural streams active.' 
-              : 'Unrestricted throughput. Up to 50 concurrent neural streams enabled.'}
-          </p>
-
-          {user?.tier === 'free' && (
-            <button 
-              onClick={handleUpgrade}
-              className="mt-10 shimmer-button w-full bg-brand-primary text-white py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-2xl flex items-center justify-center gap-3 transition-all active:scale-95"
-            >
-              Elevate Node Tier <Zap size={14} />
-            </button>
-          )}
-        </div>
-
-        {/* Neural Streams Card */}
-        <Link to="/tasks" className="glass-card p-10 rounded-[3rem] flex flex-col group relative overflow-hidden transition-all hover:border-brand-primary/30">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none group-hover:scale-150 transition-transform duration-700"></div>
-          
-          <div className="flex items-center gap-4 mb-10">
-            <div className="bg-blue-500/10 p-3 rounded-2xl text-blue-400 border border-blue-500/20 group-hover:-rotate-12 transition-transform">
-              <Activity size={24} />
-            </div>
-            <h3 className="font-black text-slate-500 uppercase tracking-[0.2em] text-[10px]">Neural Streams</h3>
-          </div>
-
-          <div className="flex items-baseline gap-2 mb-4">
-             <span className="text-6xl font-black text-white tracking-tighter">{taskCount}</span>
-             <span className="text-slate-500 font-bold uppercase text-xs tracking-widest">Active</span>
-          </div>
-
-          <p className="text-slate-400 text-sm font-medium leading-relaxed mb-10">
-            Persistent orchestration threads currently executing across the distributed reaper network.
-          </p>
-
-          <div className="mt-auto flex items-center justify-between text-blue-400">
-             <span className="text-[10px] font-black uppercase tracking-widest group-hover:translate-x-2 transition-transform">Orchestrate Now</span>
-             <ArrowRight size={18} className="group-hover:translate-x-2 transition-transform" />
-          </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Stream Metrics */}
+        <Link to="/tasks" className="pro-card p-8 group hover:bg-zinc-800/40 transition-all border-zinc-800/50">
+           <div className="flex items-center justify-between mb-8">
+              <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-500 group-hover:text-brand-primary transition-colors shadow-inner">
+                 <Layers size={20} />
+              </div>
+              <ArrowUpRight size={18} className="text-zinc-700 group-hover:text-zinc-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+           </div>
+           <div className="space-y-1">
+              <p className="text-4xl font-bold text-white tabular-nums tracking-tighter">{taskCount}</p>
+              <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Active Neural Streams</p>
+           </div>
+           <p className="text-xs text-zinc-500 mt-6 leading-relaxed opacity-80">Persistent orchestration threads executing across the cluster.</p>
         </Link>
 
-        {/* Reaper Network Card */}
-        <div className="glass-card p-10 rounded-[3rem] flex flex-col group relative overflow-hidden">
-           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none group-hover:scale-150 transition-transform duration-700"></div>
-          
-          <div className="flex items-center gap-4 mb-10">
-            <div className="bg-emerald-500/10 p-3 rounded-2xl text-emerald-400 border border-emerald-500/20 group-hover:scale-110 transition-transform">
-              <Server size={24} />
-            </div>
-            <h3 className="font-black text-slate-500 uppercase tracking-[0.2em] text-[10px]">Infrastructure</h3>
-          </div>
-
-          <div className="flex items-baseline gap-2 mb-4">
-             <span className="text-5xl font-black text-white tracking-tighter italic">Reaper</span>
-             <span className="text-emerald-500 font-black uppercase text-[10px] tracking-widest px-2 py-0.5 bg-emerald-500/10 rounded-lg">Online</span>
-          </div>
-
-          <p className="text-slate-400 text-sm font-medium leading-relaxed flex-1">
-            Edge-compute nodes optimized for high-frequency task delivery and state synchronization.
-          </p>
-
-          <div className="mt-10 flex gap-2">
-             <div className="flex-1 bg-white/5 rounded-2xl p-4 border border-white/5">
-                <span className="block text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Health</span>
-                <span className="text-xs font-bold text-white uppercase tracking-tighter">Peak</span>
-             </div>
-             <div className="flex-1 bg-white/5 rounded-2xl p-4 border border-white/5">
-                <span className="block text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Uptime</span>
-                <span className="text-xs font-bold text-white uppercase tracking-tighter">99.99%</span>
-             </div>
-          </div>
+        {/* Tier Status */}
+        <div className="pro-card p-8 relative overflow-hidden group">
+           <div className="absolute top-0 right-0 p-8 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity pointer-events-none">
+              <Crown size={100} />
+           </div>
+           <div className="flex items-center justify-between mb-8 relative z-10">
+              <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-500 shadow-inner">
+                 <Crown size={20} className="text-amber-500/50" />
+              </div>
+              <span className={`pro-badge ${user?.tier === 'pro' ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' : 'bg-zinc-800 border-zinc-700 text-zinc-500'}`}>
+                 {user?.tier}
+              </span>
+           </div>
+           <div className="space-y-1 relative z-10">
+              <p className="text-3xl font-bold text-white uppercase tracking-tight">{user?.tier} Node</p>
+              <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Access Privilege Level</p>
+           </div>
+           {user?.tier === 'free' && (
+             <button onClick={handleUpgrade} className="pro-button-primary w-full mt-8 !bg-zinc-100 !text-black hover:!bg-white text-[11px] uppercase tracking-[0.2em] font-black">Elevate Tier</button>
+           )}
         </div>
 
-        {/* API Identity Command Card */}
-        <div className="glass-card p-10 rounded-[3.5rem] md:col-span-2 lg:col-span-3 flex flex-col relative overflow-hidden">
-          <div className="absolute top-1/2 right-0 w-96 h-96 bg-brand-primary/5 blur-[120px] rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
-          
-          <div className="flex items-center justify-between mb-12 relative z-10">
-            <div className="flex items-center gap-4">
-              <div className="bg-white/5 p-3 rounded-2xl text-slate-400 border border-white/10">
-                <Key size={24} />
+        {/* System Load */}
+        <div className="pro-card p-8 group">
+           <div className="flex items-center justify-between mb-8">
+              <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-500 shadow-inner">
+                 <Zap size={20} className="text-brand-primary/50" />
               </div>
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-zinc-950 border border-zinc-800 rounded-md">
+                 <div className="w-1 h-1 rounded-full bg-brand-primary"></div>
+                 <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-tighter">Peak_Cap</span>
+              </div>
+           </div>
+           <div className="space-y-4">
               <div>
-                <h3 className="font-black text-white uppercase tracking-[0.2em] text-xs">Neural Access Key</h3>
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Private Authentication Token</p>
+                 <p className="text-2xl font-bold text-white tabular-nums tracking-tighter">99.9%</p>
+                 <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-none mt-1">Infrastructure Uptime</p>
               </div>
-            </div>
-            
-            <button 
-              onClick={handleRotate}
-              disabled={rotating}
-              className="hidden md:flex bg-red-500/10 text-red-400 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] border border-red-500/20 hover:bg-red-500/20 transition-all items-center gap-3 shadow-xl active:scale-95"
-            >
-              <RefreshCw className={`w-4 h-4 ${rotating ? 'animate-spin' : ''}`} />
-              Rotate Token
-            </button>
-          </div>
+              <div className="h-1 w-full bg-zinc-900 rounded-full overflow-hidden border border-zinc-800/50">
+                 <motion.div initial={{ width: 0 }} animate={{ width: '85%' }} className="h-full bg-brand-primary" />
+              </div>
+           </div>
+        </div>
 
-          <div className="flex flex-col md:flex-row gap-6 items-stretch md:items-center relative z-10">
-            <div className="flex-1 bg-obsidian-950/80 text-emerald-400 p-8 rounded-[2rem] font-mono text-sm break-all flex items-center justify-between border border-white/5 shadow-inner backdrop-blur-3xl group">
-              <code className="tracking-[0.2em] opacity-80 group-hover:opacity-100 transition-opacity">{user?.api_key}</code>
-              <button onClick={handleCopy} className="ml-8 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl hover:bg-emerald-500/20 transition-all text-emerald-500 shadow-2xl">
-                {copied ? <Check size={20} /> : <Copy size={20} />}
+        {/* API Authentication Interface */}
+        <div className="pro-card p-8 md:col-span-2 lg:col-span-3 space-y-8 relative overflow-hidden">
+           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                 <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-500 shadow-inner">
+                    <Key size={20} />
+                 </div>
+                 <div>
+                    <h3 className="text-lg font-bold text-white tracking-tight">Neural Access Key</h3>
+                    <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mt-0.5">Private Protocol Token</p>
+                 </div>
+              </div>
+              <button 
+                onClick={handleRotate} 
+                disabled={rotating}
+                className="pro-button-secondary !py-2 !px-6 !border-zinc-800 text-[11px] uppercase tracking-widest flex items-center gap-2"
+              >
+                <RefreshCw size={14} className={rotating ? 'animate-spin' : ''} /> Rotate Signature
               </button>
-            </div>
-            
-            <button 
-              onClick={handleRotate}
-              disabled={rotating}
-              className="md:hidden bg-red-500/10 text-red-400 px-8 py-6 rounded-[2rem] font-black text-[10px] uppercase tracking-[0.2em] border border-red-500/20 hover:bg-red-500/20 transition-all flex items-center justify-center gap-3 shadow-xl active:scale-95"
-            >
-              <RefreshCw className={`w-4 h-4 ${rotating ? 'animate-spin' : ''}`} />
-              Rotate Token
-            </button>
-          </div>
-          
-          <div className="mt-8 flex items-center gap-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest relative z-10 bg-white/[0.02] w-fit px-4 py-2 rounded-lg border border-white/5">
-             <ShieldCheck size={14} className="text-red-900" /> 
-             <span>Security Alert: Rotation will instantly terminate all active client integrations.</span>
-          </div>
+           </div>
+
+           <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex-1 bg-zinc-950 border border-zinc-800 rounded-lg p-5 flex items-center justify-between shadow-inner group/key">
+                 <code className="text-sm font-mono text-emerald-500 tracking-[0.1em] opacity-80 truncate select-all">{user?.api_key}</code>
+                 <button onClick={handleCopy} className="ml-4 p-2.5 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-500 hover:text-white transition-all shadow-xl">
+                   {copied ? <Check size={16} className="text-emerald-500" /> : <Copy size={16} />}
+                 </button>
+              </div>
+           </div>
+
+           <div className="flex items-center gap-3 bg-red-500/[0.02] border border-red-500/10 px-5 py-3 rounded-lg w-fit">
+              <ShieldCheck size={14} className="text-red-900" />
+              <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest italic">Security Notice: Key rotation will invalidate all active client integrations.</span>
+           </div>
         </div>
       </div>
 
-      {/* Quick Navigation Terminal */}
-      <section className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Quick Access Terminal */}
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
          {[
-           { label: 'Intelligence', sub: 'Templates', icon: Cpu, path: '/templates' },
-           { label: 'Geography', sub: 'Workspaces', icon: Globe, path: '/workspaces' },
-           { label: 'Logistics', sub: 'Integrations', icon: Zap, path: '/webhooks' },
+           { label: 'Blueprints', sub: 'Templates', icon: Cpu, path: '/templates' },
+           { label: 'Sectors', sub: 'Workspaces', icon: Globe, path: '/workspaces' },
+           { label: 'Protocols', sub: 'Integrations', icon: Zap, path: '/webhooks' },
            { label: 'Security', sub: 'Vault', icon: Key, path: '/vault' },
-         ].map((nav, i) => (
-           <Link key={i} to={nav.path} className="glass-card p-6 rounded-[2rem] group hover:bg-white/[0.08] transition-all flex items-center justify-between">
+         ].map((nav) => (
+           <Link key={nav.sub} to={nav.path} className="pro-card p-5 group hover:bg-zinc-900/80 transition-all flex items-center justify-between border-zinc-800/30">
               <div className="flex items-center gap-4">
-                 <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-500 group-hover:text-brand-primary transition-colors">
-                    <nav.icon size={20} />
+                 <div className="w-10 h-10 rounded-lg bg-zinc-950 border border-zinc-800 flex items-center justify-center text-zinc-600 group-hover:text-brand-primary transition-colors">
+                    <nav.icon size={18} />
                  </div>
-                 <div>
-                    <span className="block text-[8px] font-black text-slate-600 uppercase tracking-widest mb-0.5">{nav.label}</span>
-                    <span className="block text-sm font-black text-white tracking-tight">{nav.sub}</span>
+                 <div className="hidden sm:block">
+                    <span className="block text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-0.5">{nav.label}</span>
+                    <span className="block text-sm font-bold text-zinc-200 tracking-tight">{nav.sub}</span>
                  </div>
               </div>
-              <ArrowUpRight size={18} className="text-slate-700 group-hover:text-white group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+              <ArrowUpRight size={16} className="text-zinc-800 group-hover:text-zinc-500 transition-colors" />
            </Link>
          ))}
       </section>
 
-      {/* Real-time Toast Notifications */}
-      <div className="fixed bottom-10 right-10 z-[100] flex flex-col gap-4 pointer-events-none">
+      {/* Notification Toast Stream */}
+      <div className="fixed bottom-8 right-8 z-[100] flex flex-col gap-3 pointer-events-none">
         <AnimatePresence>
           {toasts.map((toast) => (
             <motion.div
               key={toast.id}
-              initial={{ opacity: 0, x: 50, scale: 0.9, filter: 'blur(10px)' }}
-              animate={{ opacity: 1, x: 0, scale: 1, filter: 'blur(0px)' }}
-              exit={{ opacity: 0, x: 20, scale: 0.9, filter: 'blur(10px)' }}
-              className={`pointer-events-auto px-8 py-5 rounded-[2rem] shadow-[0_30px_60px_rgba(0,0,0,0.6)] border flex items-center gap-5 backdrop-blur-3xl min-w-[350px] ${
+              initial={{ opacity: 0, x: 20, scale: 0.95 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 10, scale: 0.95 }}
+              className={`pointer-events-auto px-6 py-4 rounded-xl shadow-2xl border flex items-center gap-4 min-w-[320px] backdrop-blur-md ${
                 toast.type === 'success' 
-                  ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
-                  : 'bg-red-500/10 border-red-500/20 text-red-400'
+                  ? 'bg-zinc-900/90 border-emerald-500/20 text-zinc-100' 
+                  : 'bg-zinc-900/90 border-red-500/20 text-zinc-100'
               }`}
             >
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${toast.type === 'success' ? 'bg-emerald-500/20' : 'bg-red-500/20'}`}>
-                {toast.type === 'success' ? <Zap size={18} /> : <Bell size={18} />}
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${toast.type === 'success' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
+                {toast.type === 'success' ? <Zap size={14} /> : <Bell size={14} />}
               </div>
-              <div>
-                <span className="block text-[10px] font-black uppercase tracking-[0.2em] opacity-50 mb-0.5">{toast.type === 'success' ? 'Protocol Success' : 'Terminal Alert'}</span>
-                <span className="block text-xs font-bold uppercase tracking-widest leading-tight">{toast.message}</span>
+              <div className="flex-1 min-w-0">
+                <span className="block text-[10px] font-black uppercase tracking-[0.15em] opacity-40 leading-none mb-1.5">{toast.type === 'success' ? 'Protocol Sync' : 'Terminal Alert'}</span>
+                <span className="block text-xs font-semibold tracking-tight truncate">{toast.message}</span>
               </div>
             </motion.div>
           ))}

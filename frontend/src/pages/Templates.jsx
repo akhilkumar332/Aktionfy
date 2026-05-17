@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/DashboardLayout';
-import { Layout, Search, Download, Loader2, Sparkles, Plus, Zap, RefreshCw } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Layout, Search, Download, Sparkles, Zap, RefreshCw } from 'lucide-react';
+import { AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import TaskWizard from '../components/TaskWizard';
 
@@ -116,118 +116,79 @@ const Templates = () => {
                 initialData={selectedTemplate}
             />
             
-            <header className="mb-12 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+            <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <motion.div 
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="flex items-center gap-3 mb-4"
-                  >
-                     <div className="w-8 h-8 bg-brand-primary/10 border border-brand-primary/20 rounded-lg flex items-center justify-center text-brand-primary">
-                        <Sparkles size={16} />
-                     </div>
-                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Knowledge Base</span>
-                  </motion.div>
-                  <motion.h1 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-4xl font-black text-white tracking-tighter"
-                  >
-                    Intelligence Marketplace.
-                  </motion.h1>
-                  <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.2em] mt-2 ml-1">Pre-built Neural Workflow Blueprints</p>
+                  <h1 className="text-2xl font-bold text-white tracking-tight">Intelligence Marketplace</h1>
+                  <p className="text-zinc-500 text-xs font-medium mt-1">Industrial blueprints for high-frequency neural orchestration.</p>
                 </div>
                 
-                <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
-                   <div className="relative group flex-1 sm:w-80">
-                      <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-brand-primary transition-colors z-10">
-                         <Search size={18} />
-                      </div>
+                <div className="flex items-center gap-2">
+                   <div className="relative group">
+                      <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-brand-primary transition-colors" />
                       <input 
                         type="text" 
-                        placeholder="Search Intelligence..." 
+                        placeholder="Search Blueprints..." 
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full bg-black/40 border border-white/5 rounded-[2rem] pl-16 pr-8 py-5 text-sm text-white focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner placeholder:text-slate-800 font-mono"
+                        className="pro-input pl-9 w-64 !py-1.5 !text-xs"
                       />
                    </div>
                    <button 
                      onClick={() => fetchTemplates(search)}
-                     className="bg-white/5 border border-white/10 p-5 rounded-[2rem] text-slate-400 hover:text-white transition-all active:scale-95"
+                     className="p-2 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-500 hover:text-white transition-all"
                    >
-                     <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+                     <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
                    </button>
                 </div>
             </header>
 
             <AnimatePresence mode="wait">
               {loading && templates.length === 0 ? (
-                <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="py-40 flex flex-col items-center justify-center gap-6"
-                >
-                  <Loader2 className="animate-spin text-brand-primary" size={48} />
-                  <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 animate-pulse">Curating Intelligence Registry...</p>
-                </motion.div>
+                <div className="py-40 flex flex-col items-center justify-center gap-4 opacity-50">
+                  <RefreshCw className="animate-spin text-zinc-600" size={32} />
+                  <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest animate-pulse">Syncing Marketplace...</p>
+                </div>
               ) : templates.length === 0 ? (
-                <motion.div 
-                   initial={{ opacity: 0, scale: 0.95 }}
-                   animate={{ opacity: 1, scale: 1 }}
-                   className="py-40 flex flex-col items-center justify-center text-center gap-8 bg-white/[0.01] border border-dashed border-white/10 rounded-[4rem]"
-                >
-                   <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center border border-white/5 text-slate-700">
-                      <Layout size={48} />
-                   </div>
-                   <div>
-                      <h3 className="text-xl font-black text-white uppercase tracking-widest mb-2">Registry Exhausted</h3>
-                      <p className="text-slate-500 text-xs font-bold uppercase tracking-widest max-w-xs leading-relaxed opacity-60">The intelligence marketplace is currently undergoing a deep synchronization. Check back shortly.</p>
-                   </div>
-                </motion.div>
+                <div className="py-32 flex flex-col items-center justify-center text-center gap-4 pro-card border-dashed bg-zinc-900/10 opacity-50">
+                   <Layout size={32} className="text-zinc-700" />
+                   <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest italic">Registry synchronized. No blueprints matching query.</span>
+                </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {templates.map((t, idx) => (
-                    <motion.div 
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {templates.map((t) => (
+                    <div 
                       key={t.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: idx * 0.1 }}
-                      className="bg-obsidian-900 border border-white/5 rounded-[3rem] p-10 hover:bg-white/[0.02] hover:border-brand-primary/20 transition-all group flex flex-col h-full relative overflow-hidden shadow-2xl"
+                      className="pro-card p-6 flex flex-col h-full hover:bg-zinc-900/40 transition-all group"
                     >
-                      <div className="absolute top-0 right-0 w-48 h-48 bg-brand-primary/5 blur-[80px] translate-x-1/4 -translate-y-1/4 pointer-events-none group-hover:bg-brand-primary/10 transition-all duration-700"></div>
-
-                      <div className="flex items-start justify-between mb-10 relative z-10">
-                        <div className="bg-brand-primary/10 p-5 rounded-[1.5rem] text-brand-primary border border-brand-primary/20 group-hover:rotate-12 transition-transform">
-                          <Sparkles size={28} />
+                      <div className="flex items-start justify-between mb-6">
+                        <div className="w-10 h-10 rounded-lg bg-zinc-950 border border-zinc-800 flex items-center justify-center text-zinc-600 group-hover:border-brand-primary/40 group-hover:text-brand-primary transition-all">
+                          <Sparkles size={20} />
                         </div>
                         {t.is_premium && (
-                          <div className="flex items-center gap-2 px-4 py-1.5 bg-yellow-500/10 text-yellow-500 text-[9px] font-black uppercase tracking-[0.2em] rounded-full border border-yellow-500/20 shadow-[0_0_20px_rgba(234,179,8,0.1)]">
+                          <span className="pro-badge bg-amber-500/10 border-amber-500/20 text-amber-500 flex items-center gap-1.5">
                              <Zap size={10} fill="currentColor" /> Premium
-                          </div>
+                          </span>
                         )}
                       </div>
 
-                      <h3 className="text-2xl font-black text-white uppercase tracking-tighter mb-4 relative z-10 group-hover:text-brand-primary transition-colors">{t.name}</h3>
-                      <p className="text-slate-400 text-sm font-medium leading-relaxed mb-10 flex-grow relative z-10 opacity-80 group-hover:opacity-100 transition-opacity">
+                      <h3 className="text-base font-bold text-white uppercase tracking-tight mb-2 group-hover:text-brand-primary transition-colors">{t.name}</h3>
+                      <p className="text-xs text-zinc-500 leading-relaxed font-medium mb-8 flex-grow">
                         {t.description || "Baseline neural configuration for autonomous task orchestration."}
                       </p>
 
-                      <div className="flex items-center justify-between pt-8 border-t border-white/5 relative z-10">
-                        <div className="flex items-center gap-3">
-                           <div className="p-2 bg-white/5 rounded-lg border border-white/5 text-slate-500 group-hover:text-brand-primary transition-colors">
-                              <Download size={14} />
-                           </div>
-                           <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{t.uses_count || 0} Synchronizations</span>
+                      <div className="flex items-center justify-between pt-6 border-t border-zinc-800/50">
+                        <div className="flex items-center gap-2 text-[10px] font-bold text-zinc-600 uppercase tracking-widest">
+                           <Download size={12} />
+                           {t.uses_count || 0} Syncs
                         </div>
                         <button 
                           onClick={() => handleUseBlueprint(t)}
-                          className="shimmer-button bg-white text-obsidian-950 px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:brightness-110 active:scale-95 transition-all flex items-center gap-3 shadow-2xl"
+                          className="pro-button-secondary !py-1.5 !px-4 !text-[10px] uppercase tracking-widest"
                         >
-                          <Plus size={14} /> Initialize
+                          Initialize
                         </button>
                       </div>
-                    </motion.div>
+                    </div>
                   ))}
                 </div>
               )}

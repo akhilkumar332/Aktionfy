@@ -1,8 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
 import axios from 'axios';
-import { UserCog, Shield, UserCircle, Search, Activity, Command, Key, Sparkles, RefreshCw } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { UserCog, UserCircle, Search, RefreshCw, ChevronDown, MoreHorizontal } from 'lucide-react';
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
@@ -44,184 +43,133 @@ const AdminUsers = () => {
 
   return (
     <DashboardLayout>
-      <header className="mb-12 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+      <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <motion.div 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-3 mb-4"
-          >
-             <div className="w-8 h-8 bg-purple-500/10 border border-purple-500/20 rounded-lg flex items-center justify-center text-purple-400">
-                <Shield size={16} />
-             </div>
-             <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Governance Module</span>
-          </motion.div>
-          <motion.h1 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-4xl font-black text-white tracking-tighter"
-          >
-            Identity Nexus.
-          </motion.h1>
-          <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.2em] mt-2 ml-1">Centralized Registry of Neural Actors</p>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Identity Nexus</h1>
+          <p className="text-zinc-500 text-xs font-medium mt-1">Manage and audit neural actor privileges and access signatures.</p>
         </div>
         
-        <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
-           <div className="relative group flex-1 sm:w-80">
-              <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-brand-primary transition-colors z-10">
-                 <Search size={18} />
-              </div>
+        <div className="flex items-center gap-2">
+           <div className="relative group">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-brand-primary transition-colors" />
               <input 
                 type="text" 
-                placeholder="Query Identity Registry..." 
+                placeholder="Query ID or Email..." 
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-black/40 border border-white/5 rounded-[2rem] pl-16 pr-8 py-5 text-sm text-white focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner placeholder:text-slate-800 font-mono"
+                className="pro-input pl-9 w-64 !py-1.5 !text-xs"
               />
            </div>
            <button 
              onClick={() => fetchUsers(search)}
-             className="bg-white/5 border border-white/10 p-5 rounded-[2rem] text-slate-400 hover:text-white transition-all active:scale-95"
+             className="p-2 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-500 hover:text-white transition-all"
+             aria-label="Refresh list"
            >
-             <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
            </button>
         </div>
       </header>
 
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="bg-obsidian-900 border border-white/5 rounded-[3rem] shadow-[0_40px_100px_rgba(0,0,0,0.5)] overflow-hidden backdrop-blur-3xl relative"
-      >
-        <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
-
+      <div className="pro-card overflow-hidden">
         <div className="overflow-x-auto custom-scrollbar">
-          <table className="w-full text-left border-collapse min-w-[1000px]">
-            <thead className="bg-white/[0.02] text-slate-600 text-[10px] font-black uppercase tracking-[0.3em]">
-              <tr>
-                <th className="px-10 py-8">Neural Identity</th>
-                <th className="px-6 py-8">Access Signature</th>
-                <th className="px-6 py-8 text-center">Privilege Level</th>
-                <th className="px-6 py-8 text-center">Protocol Tier</th>
-                <th className="px-10 py-8 text-right">System Overrides</th>
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="pro-table-header">
+                <th className="px-6 py-4">Neural Actor</th>
+                <th className="px-6 py-4">Signature</th>
+                <th className="px-6 py-4">Privilege</th>
+                <th className="px-6 py-4">Tier</th>
+                <th className="px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-zinc-800/50">
               {loading && users.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="px-10 py-40">
-                     <div className="flex flex-col items-center gap-6">
-                        <div className="w-12 h-12 border-2 border-brand-primary/20 border-t-brand-primary rounded-full animate-spin"></div>
-                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest animate-pulse">Syncing Encrypted Identity Buffer...</span>
+                  <td colSpan="5" className="px-6 py-32">
+                     <div className="flex flex-col items-center gap-3">
+                        <RefreshCw className="w-6 h-6 text-zinc-700 animate-spin" />
+                        <span className="text-[11px] font-semibold text-zinc-600 uppercase tracking-widest">Synchronizing Buffer...</span>
                      </div>
                   </td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="px-10 py-40 text-center">
-                     <div className="flex flex-col items-center gap-4">
-                        <UserCircle size={48} className="text-slate-800" />
-                        <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest italic">Neural registry void. No matching identities identified.</span>
+                  <td colSpan="5" className="px-6 py-32 text-center">
+                     <div className="flex flex-col items-center gap-2 opacity-40">
+                        <UserCircle size={32} className="text-zinc-600" />
+                        <span className="text-xs font-medium text-zinc-500 italic">No matching identities identified.</span>
                      </div>
                   </td>
                 </tr>
               ) : (
-                <AnimatePresence>
-                  {users.map((u, i) => (
-                    <motion.tr 
-                      key={u.id}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.05 }}
-                      className="hover:bg-white/[0.02] transition-colors group relative"
-                    >
-                      <td className="px-10 py-8">
-                        <div className="flex items-center gap-6">
-                          <div className="relative">
-                             <div className="absolute inset-0 bg-slate-400/10 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                             <div className="bg-obsidian-950 p-4 rounded-[1.5rem] text-slate-600 border border-white/5 group-hover:border-brand-primary/30 transition-all relative z-10">
-                               <UserCircle className="w-6 h-6" />
-                             </div>
-                          </div>
-                          <div>
-                            <div className="font-black text-white tracking-tight text-base mb-1">{u.email}</div>
-                            <div className="text-[9px] text-slate-500 font-mono tracking-tighter opacity-60 uppercase flex items-center gap-2">
-                               <Command size={10} /> {u.id}
-                            </div>
-                          </div>
+                users.map((u) => (
+                  <tr key={u.id} className="pro-table-row group">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-md bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-500 group-hover:border-brand-primary/50 transition-all">
+                           <UserCircle size={18} />
                         </div>
-                      </td>
-                      <td className="px-6 py-8">
-                        <div className="flex items-center gap-3">
-                           <Key size={12} className="text-slate-700" />
-                           <code className="text-[11px] bg-black/40 px-4 py-2 rounded-xl text-emerald-500/80 font-mono border border-white/5 shadow-inner tracking-widest">
-                             {u.api_key.substring(0, 16)}...
-                           </code>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-sm font-semibold text-zinc-100 truncate">{u.email}</span>
+                          <span className="text-[10px] text-zinc-500 font-mono tracking-tighter uppercase truncate opacity-60 font-bold tracking-widest">{u.id}</span>
                         </div>
-                      </td>
-                      <td className="px-6 py-8 text-center">
-                        {u.role === 'admin' ? (
-                          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-purple-500/10 text-purple-400 border border-purple-500/20 shadow-[0_0_20px_rgba(168,85,247,0.15)]">
-                            <Shield className="w-3.5 h-3.5" /> root
-                          </div>
-                        ) : u.role === 'staff' ? (
-                          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                            <Activity className="w-3.5 h-3.5" /> staff
-                          </div>
-                        ) : (
-                          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-white/5 text-slate-600 border border-white/5">
-                            user
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-8 text-center">
-                        {u.tier === 'pro' ? (
-                          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-brand-primary/10 text-brand-primary border border-brand-primary/20 shadow-[0_0_20px_rgba(217,119,6,0.15)]">
-                            <Sparkles className="w-3.5 h-3.5 fill-brand-primary" /> pro
-                          </div>
-                        ) : (
-                          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-white/5 text-slate-600 border border-white/5">
-                            lite
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-10 py-8 text-right">
-                        <div className="flex justify-end gap-4">
-                          <button 
-                            disabled={updating === u.id || u.role === 'admin'}
-                            onClick={() => handleUpdate(u.id, u.role === 'user' ? 'staff' : 'user', u.tier)}
-                            className="p-3.5 bg-white/5 border border-white/10 rounded-2xl text-slate-500 hover:text-blue-400 hover:border-blue-400/40 hover:bg-blue-400/5 transition-all disabled:opacity-20"
-                            title={u.role === 'user' ? 'Elevate to Staff' : 'Revert to User'}
-                          >
-                            <UserCog className="w-5 h-5" />
-                          </button>
-                          <button 
-                            disabled={updating === u.id || u.role === 'admin'}
-                            onClick={() => handleUpdate(u.id, u.role, u.tier === 'free' ? 'pro' : 'free')}
-                            className="p-3.5 bg-white/5 border border-white/10 rounded-2xl text-slate-500 hover:text-brand-primary hover:border-brand-primary/40 hover:bg-brand-primary/5 transition-all shadow-xl disabled:opacity-20"
-                            title={u.tier === 'free' ? 'Protocol Upgrade' : 'Protocol Downgrade'}
-                          >
-                            <Crown className="w-5 h-5" />
-                          </button>
-                        </div>
-                      </td>
-                    </motion.tr>
-                  ))}
-                </AnimatePresence>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <code className="text-[10px] bg-zinc-950 px-2 py-1 rounded border border-zinc-800 text-emerald-500 font-mono tracking-wider">
+                          {u.api_key.substring(0, 8)}••••••••
+                        </code>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      {u.role === 'admin' ? (
+                        <span className="pro-badge bg-purple-500/10 border-purple-500/20 text-purple-400">Root</span>
+                      ) : u.role === 'staff' ? (
+                        <span className="pro-badge bg-blue-500/10 border-blue-500/20 text-blue-400">Staff</span>
+                      ) : (
+                        <span className="pro-badge bg-zinc-800 border-zinc-700 text-zinc-400">User</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      {u.tier === 'pro' ? (
+                        <span className="pro-badge bg-brand-primary/10 border-brand-primary/20 text-brand-primary">Pro Node</span>
+                      ) : (
+                        <span className="pro-badge bg-zinc-800 border-zinc-700 text-zinc-500">Lite</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          disabled={updating === u.id || u.role === 'admin'}
+                          onClick={() => handleUpdate(u.id, u.role === 'user' ? 'staff' : 'user', u.tier)}
+                          className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-white transition-all disabled:opacity-20"
+                          title="Toggle Staff Role"
+                        >
+                          <UserCog size={14} />
+                        </button>
+                        <button 
+                          disabled={updating === u.id || u.role === 'admin'}
+                          onClick={() => handleUpdate(u.id, u.role, u.tier === 'free' ? 'pro' : 'free')}
+                          className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-brand-primary transition-all disabled:opacity-20"
+                          title="Toggle Tier"
+                        >
+                          <ChevronDown size={14} />
+                        </button>
+                        <button className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-white transition-all">
+                           <MoreHorizontal size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
         </div>
-      </motion.div>
+      </div>
     </DashboardLayout>
   );
 };
-
-const Crown = ({ className }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14" />
-  </svg>
-);
 
 export default AdminUsers;

@@ -1,128 +1,78 @@
 @import "tailwindcss";
 
 @theme {
-  --color-paper-50: #faf9f5;
-  --color-ink-900: #141413;
-  --color-accent-orange: #d97706;
-  --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --color-paper-50: #fafafa;
+  --color-zinc-950: #09090b;
+  --color-zinc-900: #18181b;
+  --color-zinc-800: #27272a;
+  --color-zinc-700: #3f3f46;
+  --color-zinc-400: #a1a1aa;
   
-  /* Neural Elegance Theme Variables */
-  --color-obsidian-950: #050505;
-  --color-obsidian-900: #0a0a0a;
-  --color-obsidian-800: #111111;
-  --color-obsidian-700: #1a1a1a;
+  --color-brand-primary: #6366f1; /* Indigo 600 */
+  --color-brand-secondary: #0ea5e9; /* Sky 500 */
   
-  --color-brand-primary: #d97706;
-  --color-brand-secondary: #3b82f6;
-  --color-brand-neon: #ff9d00;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   
-  --color-glass-white: rgba(255, 255, 255, 0.05);
-  --color-glass-border: rgba(255, 255, 255, 0.1);
-  --color-glass-glow: rgba(217, 119, 6, 0.15);
-  
-  --shadow-premium: 0 20px 50px rgba(0, 0, 0, 0.5);
-  --blur-nexus: blur(12px);
+  --border-radius-pro: 0.5rem;
+  --border-pro: 1px solid var(--color-zinc-800);
 }
 
 :root {
-  background-color: var(--color-obsidian-950);
-  color: #ffffff;
-  --brand-primary: var(--color-accent-orange);
-}
-
-.dark-theme {
-  background-color: var(--color-obsidian-950);
-  color: #ffffff;
+  background-color: var(--color-zinc-950);
+  color: #fafafa;
+  --brand-primary: var(--color-brand-primary);
 }
 
 body {
-  @apply antialiased overflow-x-hidden;
+  @apply antialiased overflow-x-hidden selection:bg-brand-primary/30 selection:text-white;
   font-family: var(--font-sans);
 }
 
-.glass-card {
-  @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-premium;
+/* Precision Pro Components */
+.pro-card {
+  @apply bg-zinc-900/50 border border-zinc-800 rounded-lg shadow-sm;
 }
 
-.nexus-blur {
-  backdrop-filter: var(--blur-nexus) saturate(180%);
+.pro-table-header {
+  @apply bg-zinc-900/80 border-b border-zinc-800 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider;
 }
 
-.glow-text {
-  text-shadow: 0 0 20px rgba(217, 119, 6, 0.5);
+.pro-table-row {
+  @apply border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors;
 }
 
-.premium-gradient {
-  background: linear-gradient(135deg, var(--color-obsidian-900) 0%, var(--color-obsidian-950) 100%);
+.pro-input {
+  @apply bg-zinc-900 border border-zinc-800 rounded-md px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-primary/50 transition-all;
 }
 
-.shimmer-button {
-  position: relative;
-  overflow: hidden;
+.pro-button-primary {
+  @apply bg-brand-primary text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-indigo-500 active:scale-95 transition-all shadow-sm;
 }
 
-.shimmer-button::after {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-  transform: rotate(45deg);
-  animation: shimmer 3s infinite;
+.pro-button-secondary {
+  @apply bg-zinc-800 text-zinc-300 px-4 py-2 rounded-md text-sm font-semibold hover:bg-zinc-700 hover:text-white active:scale-95 transition-all border border-zinc-700;
 }
 
-@keyframes shimmer {
-  0% { transform: translateX(-100%) rotate(45deg); }
-  100% { transform: translateX(100%) rotate(45deg); }
+.pro-badge {
+  @apply px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-tight border;
 }
 
-@keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-20px); }
-  100% { transform: translateY(0px); }
-}
-
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-
-@keyframes particle-flow {
-  0% {
-    stroke-dashoffset: 20;
-    stroke-opacity: 0.2;
-  }
-  50% {
-    stroke-opacity: 1;
-  }
-  100% {
-    stroke-dashoffset: 0;
-    stroke-opacity: 0.2;
-  }
-}
-
-.edge-particle-active {
-  stroke-dasharray: 4 6;
-  animation: particle-flow 1s linear infinite;
-  stroke-width: 4 !important;
-  filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.6));
-}
-
-/* Custom Scrollbar - Obsidian Style */
+/* Custom Scrollbar - Precision Pro */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--color-obsidian-950);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-obsidian-700);
+  background: var(--color-zinc-800);
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-brand-primary);
+  background: var(--color-zinc-700);
 }
+
