@@ -185,14 +185,14 @@ CREATE TABLE seo_settings (
     id INT PRIMARY KEY DEFAULT 1 CHECK (id = 1), -- Singleton
     title TEXT NOT NULL DEFAULT 'Actionfy',
     description TEXT NOT NULL DEFAULT 'Durable AI Workflows',
-    keywords TEXT NOT NULL DEFAULT 'AI, MCP, Scheduler',
+    keywords TEXT NOT NULL DEFAULT 'Actionfy, AI, MCP',
     og_image TEXT,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Seed initial settings
 INSERT INTO seo_settings (id, title, description, keywords) 
-VALUES (1, 'Actionfy', 'Durable AI Workflows', 'AI, MCP, Scheduler')
+VALUES (1, 'Actionfy', 'Durable AI Workflows', 'Actionfy, AI, MCP')
 ON CONFLICT DO NOTHING;
 
 -- Workspaces
