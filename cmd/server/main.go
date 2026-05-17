@@ -185,7 +185,8 @@ func main() {
 				log.Printf("Panic recovered in event subscriber: %v", r)
 			}
 		}()
-		SubscribeToEvents(context.Background(), func(ctx context.Context, event PubSubEvent) {
+		// Subscribe to events using the main cancellable context
+		SubscribeToEvents(ctx, func(ctx context.Context, event PubSubEvent) {
 			handleSystemEvent(ctx, event)
 		})
 	}()

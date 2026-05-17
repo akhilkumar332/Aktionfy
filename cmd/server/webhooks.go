@@ -127,7 +127,10 @@ func deliverWebhookEvent(ctx context.Context, webhookID string, event PubSubEven
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 4096))
+	if err != nil {
+		log.Printf("Error reading response body from webhook %s: %v", webhookID, err)
+	}
 	success := resp.StatusCode >= 200 && resp.StatusCode < 300
 	statusCode := int32(resp.StatusCode)
 	recordWebhookDelivery(ctx, webhookID, event.UserID, event.EventType, &statusCode, success, string(body))

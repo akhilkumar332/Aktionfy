@@ -119,6 +119,11 @@ func apiDeployBlueprintHandler(c echo.Context) error {
 			policy = "run_immediately"
 		}
 
+		taskType := bt.TaskType
+		if taskType == "" {
+			taskType = "mcp_sampling"
+		}
+
 		task, err := qtx.CreateTask(c.Request().Context(), db.CreateTaskParams{
 			UserID:              userID,
 			Name:                bt.Name,
@@ -126,7 +131,7 @@ func apiDeployBlueprintHandler(c echo.Context) error {
 			TriggerConfig:       bt.TriggerConfig,
 			AgentPrompt:         prompt,
 			WorkspaceID:         workspaceID,
-			TaskType:            pgtype.Text{String: bt.TaskType, Valid: bt.TaskType != ""},
+			TaskType:            pgtype.Text{String: taskType, Valid: true},
 			NativeCode:          pgtype.Text{String: bt.NativeCode, Valid: bt.NativeCode != ""},
 			MissedTaskPolicy:    pgtype.Text{String: policy, Valid: true},
 			RequiresApproval:    pgtype.Bool{Bool: bt.RequiresApproval, Valid: true},

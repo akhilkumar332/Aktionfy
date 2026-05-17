@@ -824,12 +824,26 @@ func executeDecisionRouter(ctx context.Context, mcpServer *server.MCPServer, t d
 		return
 	}
 
+	// Build options string for the prompt
+	optionsStr := ""
+	for _, dept := range dependents {
+		var cond map[string]string
+		if err := json.Unmarshal(dept.BranchCondition, &cond); err == nil {
+			if key, ok := cond["key"]; ok {
+				optionsStr += fmt.Sprintf("- %s\n", key)
+			}
+		}
+	}
+
 	// 2. LLM Call to categorize
 	prompt := fmt.Sprintf(`You are a decision router. Based on the following output from a previous task, choose the best branch.
 Output:
 %s
 
-Respond with a JSON object: {"choice": "branch_key", "reasoning": "..."}`, prevOutput)
+Available options:
+%s
+
+Respond with a JSON object: {"choice": "branch_key", "reasoning": "..."}`, prevOutput, optionsStr)
 
 	req := mcp.CreateMessageRequest{
 		CreateMessageParams: mcp.CreateMessageParams{

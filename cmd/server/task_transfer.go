@@ -93,6 +93,11 @@ func importUserTasks(ctx context.Context, userID string, tasks []TransferTask) (
 			return nil, fmt.Errorf("task %d: invalid schedule: %w", idx, err)
 		}
 
+		taskType := task.TaskType
+		if taskType == "" {
+			taskType = "mcp_sampling"
+		}
+
 		createdTask, err := queries.CreateTask(ctx, db.CreateTaskParams{
 			UserID:              userID,
 			Name:                task.Name,
@@ -103,7 +108,7 @@ func importUserTasks(ctx context.Context, userID string, tasks []TransferTask) (
 			NextRun:             pgtype.Timestamptz{Time: nextRun, Valid: true},
 			RequiresApproval:    pgtype.Bool{Bool: task.RequiresApproval, Valid: true},
 			TriggerOnCompletion: pgtype.Bool{Bool: task.TriggerOnCompletion, Valid: true},
-			TaskType:            pgtype.Text{String: task.TaskType, Valid: task.TaskType != ""},
+			TaskType:            pgtype.Text{String: taskType, Valid: true},
 			NativeCode:          pgtype.Text{String: task.NativeCode, Valid: task.NativeCode != ""},
 			BranchCondition:     task.BranchCondition,
 			IsBundleRoot:        pgtype.Bool{Bool: task.IsBundleRoot, Valid: true},
