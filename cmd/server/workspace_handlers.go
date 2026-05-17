@@ -3,7 +3,7 @@ package main
 import (
 	"net/http"
 
-	"actionfy/db"
+	"aktionfy/db"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/labstack/echo/v4"
 )

@@ -1,6 +1,6 @@
-# Releasing Actionfy MCP
+# Releasing Aktionfy MCP
 
-This document describes the process of building, verifying, and releasing the Actionfy MCP server.
+This document describes the process of building, verifying, and releasing the Aktionfy MCP server.
 
 ## 🚀 Pre-Release Checklist
 
@@ -19,15 +19,15 @@ We use standard Go build commands. Ensure you are using Go 1.25+.
 mkdir -p dist/bin
 
 # Linux
-GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o dist/bin/actionfy-linux-amd64 ./cmd/server
-GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o dist/bin/actionfy-linux-arm64 ./cmd/server
+GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o dist/bin/aktionfy-linux-amd64 ./cmd/server
+GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o dist/bin/aktionfy-linux-arm64 ./cmd/server
 
 # macOS
-GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o dist/bin/actionfy-darwin-amd64 ./cmd/server
-GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o dist/bin/actionfy-darwin-arm64 ./cmd/server
+GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o dist/bin/aktionfy-darwin-amd64 ./cmd/server
+GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o dist/bin/aktionfy-darwin-arm64 ./cmd/server
 
 # Windows
-GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o dist/bin/actionfy-windows-amd64.exe ./cmd/server
+GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o dist/bin/aktionfy-windows-amd64.exe ./cmd/server
 ```
 *Note: `-ldflags="-s -w"` reduces binary size by stripping debug symbols.*
 

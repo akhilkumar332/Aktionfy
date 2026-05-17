@@ -1,4 +1,4 @@
-# Contributing to Actionfy MCP Server
+# Contributing to Aktionfy MCP Server
 
 We welcome contributions from the community! To maintain a high bar for engineering quality, please follow these guidelines.
 
@@ -6,8 +6,8 @@ We welcome contributions from the community! To maintain a high bar for engineer
 
 1.  **Clone the Repo**:
     ```bash
-    git clone https://github.com/akhilkumar332/actionfy.git
-    cd actionfy
+    git clone https://github.com/akhilkumar332/aktionfy.git
+    cd aktionfy
     ```
 
 2.  **Infrastructure**:

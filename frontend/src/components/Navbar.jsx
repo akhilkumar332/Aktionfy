@@ -30,9 +30,9 @@ const Navbar = () => {
         <div className="flex items-center justify-between">
           {/* Brand Logo */}
           <Link to="/" className="flex items-center gap-3 group relative">
-            <img src="/logo-icon.svg" className="w-10 h-10 text-accent-orange group-hover:rotate-[360deg] transition-transform duration-700" alt="Actionfy Logo" />
+            <img src="/logo-icon.svg" className="w-10 h-10 text-accent-orange group-hover:rotate-[360deg] transition-transform duration-700" alt="Aktionfy Logo" />
             <div className="flex flex-col">
-              <span className="font-bold text-xl text-white tracking-tighter leading-tight group-hover:text-accent-orange transition-colors">Actionfy</span>
+              <span className="font-bold text-xl text-white tracking-tighter leading-tight group-hover:text-accent-orange transition-colors">Aktionfy</span>
               <span className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.3em] leading-tight">Engine v1.0</span>
             </div>
           </Link>

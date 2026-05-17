@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
 
-	"actionfy/db"
+	"aktionfy/db"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
@@ -176,7 +176,7 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 						parentCtx := otel.GetTextMapPropagator().Extract(context.Background(), carrier)
 
 						// Create a background context with timeout for the entire execution
-						ctx, span := otel.Tracer("actionfy").Start(parentCtx, "Redis Task Trigger")
+						ctx, span := otel.Tracer("aktionfy").Start(parentCtx, "Redis Task Trigger")
 						defer span.End()
 
 						taskID, _ := taskData["task_id"].(string)

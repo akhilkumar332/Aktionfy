@@ -1,10 +1,10 @@
 {
-  "name": "@actionfy/mcp",
+  "name": "@aktionfy/mcp",
   "version": "1.0.0",
-  "description": "NPM wrapper for Actionfy MCP Go binary",
+  "description": "NPM wrapper for Aktionfy MCP Go binary",
   "main": "index.js",
   "bin": {
-    "actionfy": "index.js"
+    "aktionfy": "index.js"
   },
   "scripts": {
     "install": "node install.js"

@@ -12,7 +12,7 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error('Actionfy Neural Error Captured:', error, errorInfo);
+    console.error('Aktionfy Neural Error Captured:', error, errorInfo);
   }
 
   render() {

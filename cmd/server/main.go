@@ -14,7 +14,7 @@ import (
 	"syscall"
 	"time"
 
-	"actionfy/db"
+	"aktionfy/db"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -71,7 +71,7 @@ func initTracer(ctx context.Context) func(context.Context) error {
 
 	res, err := resource.New(ctx,
 		resource.WithAttributes(
-			semconv.ServiceNameKey.String("actionfy"),
+			semconv.ServiceNameKey.String("aktionfy"),
 			semconv.ServiceVersionKey.String("1.0.0"),
 		),
 	)
@@ -194,7 +194,7 @@ func main() {
 	GlobalSessionManager.Init(RedisClient)
 
 	// 2. Initialize MCP Server
-	mcpServer := server.NewMCPServer("actionfy", "1.0.0")
+	mcpServer := server.NewMCPServer("aktionfy", "1.0.0")
 
 	// Register Tools
 	registerTools(mcpServer)
@@ -241,7 +241,7 @@ func main() {
 	})
 
 	// Standard Echo Middleware
-	e.Use(otelecho.Middleware("actionfy"))
+	e.Use(otelecho.Middleware("aktionfy"))
 	//lint:ignore SA1019 simple logger is sufficient
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())

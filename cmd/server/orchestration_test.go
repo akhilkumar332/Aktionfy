@@ -1,7 +1,7 @@
 package main
 
 import (
-	"actionfy/db"
+	"aktionfy/db"
 	"context"
 	"encoding/json"
 	"github.com/jackc/pgx/v5"

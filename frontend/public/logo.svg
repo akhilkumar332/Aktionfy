@@ -9,5 +9,5 @@
     <path d="M35 5L20 35H30L15 65L45 25H35L50 5" fill="currentColor"/>
     <path d="M35 10L50 5L45 20" fill="currentColor"/>
   </g>
-  <text x="65" y="42" font-family="Inter, system-ui, sans-serif" font-weight="900" font-size="36" fill="currentColor" letter-spacing="-0.05em">Actionfy</text>
+  <text x="65" y="42" font-family="Inter, system-ui, sans-serif" font-weight="900" font-size="36" fill="currentColor" letter-spacing="-0.05em">Aktionfy</text>
 </svg>

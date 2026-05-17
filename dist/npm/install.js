@@ -8,15 +8,15 @@ const arch = os.arch() === 'x64' ? 'amd64' : os.arch(); // Map x64 to amd64
 let githubPlatform = platform;
 if (platform === 'win32') githubPlatform = 'windows';
 
-const BINARY_NAME = platform === 'win32' ? 'actionfy.exe' : 'actionfy';
-const GITHUB_BINARY_NAME = platform === 'win32' ? `actionfy-${githubPlatform}-${arch}.exe` : `actionfy-${githubPlatform}-${arch}`;
+const BINARY_NAME = platform === 'win32' ? 'aktionfy.exe' : 'aktionfy';
+const GITHUB_BINARY_NAME = platform === 'win32' ? `aktionfy-${githubPlatform}-${arch}.exe` : `aktionfy-${githubPlatform}-${arch}`;
 const DEST_PATH = path.join(__dirname, BINARY_NAME);
 
 const REPO_OWNER = 'akhilkumar332';
-const REPO_NAME = 'actionfy';
+const REPO_NAME = 'aktionfy';
 const DOWNLOAD_URL = `https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/latest/download/${GITHUB_BINARY_NAME}`;
 
-console.log(`Installing Actionfy MCP for ${platform}-${arch}...`);
+console.log(`Installing Aktionfy MCP for ${platform}-${arch}...`);
 
 async function install() {
     console.log(`Mocking download from: ${DOWNLOAD_URL}`);

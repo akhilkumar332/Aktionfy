@@ -1,7 +1,7 @@
 package main
 
 import (
-	"actionfy/db"
+	"aktionfy/db"
 	"encoding/hex"
 	"fmt"
 	"github.com/jackc/pgx/v5/pgtype"

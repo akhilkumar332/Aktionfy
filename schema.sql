@@ -183,16 +183,16 @@ CREATE TABLE user_secrets (
 
 CREATE TABLE seo_settings (
     id INT PRIMARY KEY DEFAULT 1 CHECK (id = 1), -- Singleton
-    title TEXT NOT NULL DEFAULT 'Actionfy',
+    title TEXT NOT NULL DEFAULT 'Aktionfy',
     description TEXT NOT NULL DEFAULT 'Durable AI Workflows',
-    keywords TEXT NOT NULL DEFAULT 'Actionfy, AI, MCP',
+    keywords TEXT NOT NULL DEFAULT 'Aktionfy, AI, MCP',
     og_image TEXT,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Seed initial settings
 INSERT INTO seo_settings (id, title, description, keywords) 
-VALUES (1, 'Actionfy', 'Durable AI Workflows', 'Actionfy, AI, MCP')
+VALUES (1, 'Aktionfy', 'Durable AI Workflows', 'Aktionfy, AI, MCP')
 ON CONFLICT DO NOTHING;
 
 -- Workspaces

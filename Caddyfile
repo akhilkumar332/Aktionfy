@@ -1,7 +1,7 @@
-# Actionfy Production Caddyfile
+# Aktionfy Production Caddyfile
 # Optimized for 10k connections and high security
 
-api.actionfy.com {
+api.aktionfy.com {
     # Security Headers
     header {
         # Enable HSTS
@@ -16,8 +16,8 @@ api.actionfy.com {
         X-Frame-Options "DENY"
     }
 
-    # Reverse proxy to the Go Actionfy Server container
-    reverse_proxy actionfy-server:8080 {
+    # Reverse proxy to the Go Aktionfy Server container
+    reverse_proxy aktionfy-server:8080 {
         # CRITICAL for SSE: flush_interval -1 disables response buffering
         flush_interval -1
         

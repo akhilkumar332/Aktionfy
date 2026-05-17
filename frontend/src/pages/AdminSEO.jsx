@@ -83,7 +83,7 @@ const AdminSEO = () => {
                 value={settings.title}
                 onChange={(e) => setSettings({...settings, title: e.target.value})}
                 className="w-full bg-black/40 border border-white/10 rounded-xl px-6 py-4 text-white outline-none focus:border-accent-orange transition-colors"
-                placeholder="Actionfy - Persistent AI Workflows"
+                placeholder="Aktionfy - Persistent AI Workflows"
               />
             </div>
 
@@ -143,7 +143,7 @@ const AdminSEO = () => {
            
            {/* Google Preview */}
            <div className="bg-white p-8 rounded-3xl shadow-2xl">
-              <p className="text-[14px] text-[#202124] mb-1">https://actionfy.com</p>
+              <p className="text-[14px] text-[#202124] mb-1">https://aktionfy.com</p>
               <h3 className="text-[20px] text-[#1a0dab] hover:underline cursor-pointer truncate mb-2">{settings.title || 'Page Title'}</h3>
               <p className="text-[14px] text-[#4d5156] line-clamp-2">{settings.description || 'Enter a description to see a preview of how this page might appear in Google search results.'}</p>
            </div>
@@ -158,7 +158,7 @@ const AdminSEO = () => {
                  )}
               </div>
               <div className="p-6">
-                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2">Actionfy.com</p>
+                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2">Aktionfy.com</p>
                 <h4 className="text-white font-bold mb-2">{settings.title || 'Social Title'}</h4>
                 <p className="text-slate-400 text-xs line-clamp-2">{settings.description}</p>
               </div>

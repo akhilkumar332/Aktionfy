@@ -11,7 +11,7 @@ We provide security updates for the following versions:
 
 ## Security Architecture
 
-Actionfy implements a **Multi-Layer Defense** strategy:
+Aktionfy implements a **Multi-Layer Defense** strategy:
 
 ### 1. Data Integrity & Privacy
 *   **Zero-Trust Secret Vault**: All task secrets and API keys are encrypted with **AES-256-GCM**. Decryption only occurs in-memory during task execution.

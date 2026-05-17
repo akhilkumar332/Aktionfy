@@ -9,8 +9,8 @@ const Footer = () => {
           {/* Brand */}
           <div className="col-span-1 md:col-span-1">
             <Link to="/" className="flex items-center gap-3 mb-6 group">
-              <img src="/logo-icon.svg" className="w-8 h-8 text-accent-orange" alt="Actionfy Logo" />
-              <span className="font-bold text-xl tracking-tight text-white">Actionfy</span>
+              <img src="/logo-icon.svg" className="w-8 h-8 text-accent-orange" alt="Aktionfy Logo" />
+              <span className="font-bold text-xl tracking-tight text-white">Aktionfy</span>
             </Link>
             <p className="text-slate-400 text-sm leading-relaxed mb-8">
               The industry standard for persistent task scheduling within the Model Context Protocol ecosystem. 
@@ -72,7 +72,7 @@ const Footer = () => {
 
         <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
           <p className="text-slate-500 text-sm">
-            &copy; {new Date().getFullYear()} Actionfy. All rights reserved.
+            &copy; {new Date().getFullYear()} Aktionfy. All rights reserved.
           </p>
           <div className="flex gap-8">
             <a href="#" className="text-slate-500 hover:text-white text-xs transition-colors underline-offset-4 hover:underline">Privacy Policy</a>

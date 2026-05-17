@@ -14,7 +14,7 @@ import (
 	"net/http"
 	"time"
 
-	"actionfy/db"
+	"aktionfy/db"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 

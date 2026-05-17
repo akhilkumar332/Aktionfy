@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"actionfy/db"
+	"aktionfy/db"
 	"github.com/gorilla/csrf"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/labstack/echo/v4"

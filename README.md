@@ -1,4 +1,4 @@
-# Actionfy MCP Server
+# Aktionfy MCP Server
 
 A high-performance, durable AI workflow orchestration engine powered by the **Model Context Protocol (MCP)**. This system allows you to schedule, chain, and monitor complex AI tasks with distributed reliability, visual debugging, and intelligent agentic routing.
 
@@ -55,7 +55,7 @@ The system will start:
 ### 2. Connect your Local LLM
 Install the global bridge to link your local AI to the persistent engine:
 ```bash
-npx @actionfy/mcp install --api-key YOUR_NEURAL_KEY
+npx @aktionfy/mcp install --api-key YOUR_NEURAL_KEY
 ```
 
 ---

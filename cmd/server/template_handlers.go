@@ -1,7 +1,7 @@
 package main
 
 import (
-	"actionfy/db"
+	"aktionfy/db"
 	"encoding/json"
 	"errors"
 	"fmt"

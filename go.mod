@@ -1,4 +1,4 @@
-module actionfy
+module aktionfy
 
 go 1.25.5
 

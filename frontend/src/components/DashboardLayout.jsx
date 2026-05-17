@@ -32,8 +32,8 @@ const DashboardLayout = ({ children }) => {
       {/* Premium Sidebar */}
       <aside className="w-72 bg-black/40 backdrop-blur-2xl border-r border-white/5 flex flex-col sticky top-0 h-screen">
         <div className="p-8 border-b border-white/5 flex items-center gap-3">
-          <img src="/logo-icon.svg" className="w-10 h-10 text-accent-orange" alt="Actionfy Logo" />
-          <span className="font-bold text-xl tracking-tighter">Actionfy</span>
+          <img src="/logo-icon.svg" className="w-10 h-10 text-accent-orange" alt="Aktionfy Logo" />
+          <span className="font-bold text-xl tracking-tighter">Aktionfy</span>
         </div>
 
         <nav className="flex-1 p-6 space-y-2">

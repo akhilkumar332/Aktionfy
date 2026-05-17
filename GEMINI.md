@@ -1,6 +1,6 @@
-# Actionfy Engineering Standards & Project Instructions
+# Aktionfy Engineering Standards & Project Instructions
 
-This document defines the foundational architectural rules, security patterns, and engineering conventions for the Actionfy platform. All future development MUST adhere to these standards.
+This document defines the foundational architectural rules, security patterns, and engineering conventions for the Aktionfy platform. All future development MUST adhere to these standards.
 
 ## 🏛 Architecture Rules
 
@@ -26,7 +26,7 @@ This document defines the foundational architectural rules, security patterns, a
 
 ## 📜 Conventions
 
-- **Identity**: The brand name is **Actionfy**. Internal identifiers should use `actionfy` (snake_case) or `Actionfy` (PascalCase) consistently.
+- **Identity**: The brand name is **Aktionfy**. Internal identifiers should use `aktionfy` (snake_case) or `Aktionfy` (PascalCase) consistently.
 - **Tool Naming**: Tool names MUST exactly match the industry-standard MCP reference:
   - `create_task`, `list_tasks`, `delete_task`, `pause_task`, `resume_task`.
 - **Data Types**: `trigger_config` is stored as JSONB. `input_data` and `output_data` in traces are stored as TEXT.

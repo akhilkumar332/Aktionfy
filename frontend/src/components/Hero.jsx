@@ -83,7 +83,7 @@ const Hero = () => {
                <ShieldCheck size={18} className="text-accent-orange" /> ACID State
              </div>
              <div className="flex items-center gap-3 font-bold text-xs tracking-widest text-white uppercase">
-               <img src="/logo-icon.svg" className="w-5 h-5 text-accent-orange" alt="Actionfy Logo" /> Real-Time SSE
+               <img src="/logo-icon.svg" className="w-5 h-5 text-accent-orange" alt="Aktionfy Logo" /> Real-Time SSE
              </div>
              <div className="flex items-center gap-3 font-bold text-xs tracking-widest text-white uppercase">
                <Sparkles size={18} className="text-accent-orange" /> Model Agnostic

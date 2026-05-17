@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"actionfy/db"
+	"aktionfy/db"
 )
 
 func TestMain(m *testing.M) {

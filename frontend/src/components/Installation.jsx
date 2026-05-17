@@ -24,16 +24,16 @@ const Installation = () => {
     },
     {
       title: 'Bridge the Session',
-      description: 'Add the Actionfy engine to your local configuration via the Model Context Protocol bridge.',
+      description: 'Add the Aktionfy engine to your local configuration via the Model Context Protocol bridge.',
       icon: Boxes,
     }
   ];
 
-  const installCommand = 'npx @actionfy/mcp install';
+  const installCommand = 'npx @aktionfy/mcp install';
   const configSnippet = `{
   "mcpServers": {
-    "actionfy": {
-      "command": "actionfy",
+    "aktionfy": {
+      "command": "aktionfy",
       "args": ["run"],
       "env": {
         "X-API-KEY": "YOUR_ENCRYPTED_KEY"
