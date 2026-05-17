@@ -290,25 +290,35 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
             >
               <div className="space-y-4">
                 <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Task Execution Mode</label>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-3">
                   <button 
                     onClick={() => updateFormData('task_type', 'mcp_sampling')}
-                    className={`p-6 rounded-2xl border transition-all flex flex-col items-center gap-3 text-center ${formData.task_type === 'mcp_sampling' ? 'bg-accent-orange/10 border-accent-orange/50' : 'bg-black/20 border-white/5 hover:border-white/20'}`}
+                    className={`p-5 rounded-2xl border transition-all flex flex-col items-center gap-3 text-center ${formData.task_type === 'mcp_sampling' ? 'bg-accent-orange/10 border-accent-orange/50' : 'bg-black/20 border-white/5 hover:border-white/20'}`}
                   >
-                    <Cpu size={32} className={formData.task_type === 'mcp_sampling' ? 'text-accent-orange' : 'text-slate-500'} />
+                    <Cpu size={24} className={formData.task_type === 'mcp_sampling' ? 'text-accent-orange' : 'text-slate-500'} />
                     <div>
-                      <div className="text-xs font-black text-white uppercase tracking-widest mb-1">LLM Sampling</div>
-                      <div className="text-[9px] text-slate-500 uppercase tracking-tighter leading-relaxed">Let the AI decide the actions based on your prompt</div>
+                      <div className="text-[10px] font-black text-white uppercase tracking-widest mb-1">Sampling</div>
+                      <div className="text-[8px] text-slate-500 uppercase tracking-tighter leading-tight">AI deciding actions</div>
                     </div>
                   </button>
                   <button 
                     onClick={() => updateFormData('task_type', 'native_action')}
-                    className={`p-6 rounded-2xl border transition-all flex flex-col items-center gap-3 text-center ${formData.task_type === 'native_action' ? 'bg-blue-500/10 border-blue-500/50' : 'bg-black/20 border-white/5 hover:border-white/20'}`}
+                    className={`p-5 rounded-2xl border transition-all flex flex-col items-center gap-3 text-center ${formData.task_type === 'native_action' ? 'bg-blue-500/10 border-blue-500/50' : 'bg-black/20 border-white/5 hover:border-white/20'}`}
                   >
-                    <Terminal size={32} className={formData.task_type === 'native_action' ? 'text-blue-400' : 'text-slate-500'} />
+                    <Terminal size={24} className={formData.task_type === 'native_action' ? 'text-blue-400' : 'text-slate-500'} />
                     <div>
-                      <div className="text-xs font-black text-white uppercase tracking-widest mb-1">Native Action</div>
-                      <div className="text-[9px] text-slate-500 uppercase tracking-tighter leading-relaxed">Execute deterministic JavaScript/TypeScript code</div>
+                      <div className="text-[10px] font-black text-white uppercase tracking-widest mb-1">Native</div>
+                      <div className="text-[8px] text-slate-500 uppercase tracking-tighter leading-tight">JS Execution</div>
+                    </div>
+                  </button>
+                  <button 
+                    onClick={() => updateFormData('task_type', 'decision_router')}
+                    className={`p-5 rounded-2xl border transition-all flex flex-col items-center gap-3 text-center ${formData.task_type === 'decision_router' ? 'bg-indigo-500/10 border-indigo-500/50' : 'bg-black/20 border-white/5 hover:border-white/20'}`}
+                  >
+                    <GitBranch size={24} className={formData.task_type === 'decision_router' ? 'text-indigo-400' : 'text-slate-500'} />
+                    <div>
+                      <div className="text-[10px] font-black text-white uppercase tracking-widest mb-1">Router</div>
+                      <div className="text-[8px] text-slate-500 uppercase tracking-tighter leading-tight">Agentic Branching</div>
                     </div>
                   </button>
                 </div>
@@ -317,8 +327,8 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
-                    {formData.task_type === 'mcp_sampling' ? 'Agent Prompt' : 'Native Code'}
-                  </label>
+                  {formData.task_type === 'mcp_sampling' ? 'Agent Prompt' : formData.task_type === 'decision_router' ? 'Routing Logic' : 'Native Code'}
+                </label>
                   <div className="relative">
                     <button 
                       onClick={() => setShowVariableSelector(!showVariableSelector)}
@@ -366,15 +376,21 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
                   </div>
                 </div>
                 <textarea 
-                  value={formData.task_type === 'mcp_sampling' ? formData.agent_prompt : formData.native_code}
-                  onChange={(e) => updateFormData(formData.task_type === 'mcp_sampling' ? 'agent_prompt' : 'native_code', e.target.value)}
-                  placeholder={formData.task_type === 'mcp_sampling' ? "Describe what the AI should do..." : "// Write your action code here..."}
+                  value={formData.task_type === 'native_action' ? formData.native_code : formData.agent_prompt}
+                  onChange={(e) => updateFormData(formData.task_type === 'native_action' ? 'native_code' : 'agent_prompt', e.target.value)}
+                  placeholder={
+                    formData.task_type === 'mcp_sampling' ? "Describe what the AI should do..." : 
+                    formData.task_type === 'decision_router' ? "Define the criteria for branching. E.g. 'Categorize the sentiment of the text into: positive, negative, or neutral'..." : 
+                    "// Write your action code here..."
+                  }
                   className="w-full bg-black/40 border border-white/5 rounded-2xl p-5 text-white font-mono text-sm focus:outline-none focus:border-accent-orange/50 transition-colors h-48 resize-none"
                 />
                 <div className="flex items-center gap-2 text-slate-500">
                   <Info size={12} />
                   <span className="text-[9px] font-medium uppercase tracking-wider italic">
-                    {formData.task_type === 'mcp_sampling' ? 'The LLM will use this as instructions for every run.' : 'This code runs in a sandboxed V8 environment.'}
+                    {formData.task_type === 'mcp_sampling' ? 'The LLM will use this as instructions for every run.' : 
+                     formData.task_type === 'decision_router' ? 'This node will analyze input and pick the best outbound branch.' : 
+                     'This code runs in a sandboxed V8 environment.'}
                   </span>
                 </div>
               </div>
@@ -595,8 +611,11 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
                     <div>
                       <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Mode</div>
                       <div className="text-white font-bold flex items-center gap-2">
-                         {formData.task_type === 'mcp_sampling' ? <Cpu size={14} className="text-accent-orange" /> : <Terminal size={14} className="text-blue-400" />}
-                         {formData.task_type === 'mcp_sampling' ? 'LLM' : 'Native'}
+                         {formData.task_type === 'mcp_sampling' ? <Cpu size={14} className="text-accent-orange" /> : 
+                          formData.task_type === 'decision_router' ? <GitBranch size={14} className="text-indigo-400" /> : 
+                          <Terminal size={14} className="text-blue-400" />}
+                         {formData.task_type === 'mcp_sampling' ? 'LLM' : 
+                          formData.task_type === 'decision_router' ? 'Router' : 'Native'}
                       </div>
                     </div>
                     <div>

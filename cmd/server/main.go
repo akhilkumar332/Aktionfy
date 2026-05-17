@@ -249,6 +249,11 @@ func main() {
 	e.Use(middleware.BodyLimit("2M")) // Prevent DoS via large payloads
 	e.Use(prometheusMiddleware)
 
+	// 3.5 Health Check (Public)
+	e.GET("/health", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, map[string]string{"status": "ok", "version": "1.0.0"})
+	})
+
 	// CSRF Setup
 	csrfKey := cfg.CSRFKey
 	if len(csrfKey) < 32 {

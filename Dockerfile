@@ -12,7 +12,7 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN go build -o /app/server ./cmd/server
+RUN go build -ldflags="-s -w" -o /app/server ./cmd/server
 
 # Stage 3: Final Image
 FROM alpine:latest

@@ -1,18 +1,41 @@
-# Caddyfile for Phase 4 API Security and 10k connections scaling
-# Deploying on Hostinger VPS
+# Actionfy Production Caddyfile
+# Optimized for 10k connections and high security
 
-api.yourservice.com {
-    # Reverse proxy to the Go MCP Server container
-    reverse_proxy localhost:8080 {
-        # CRITICAL for SSE: flush_interval -1 disables response buffering
-        # Without this, Caddy buffers the server-sent events, causing Gemini CLI to hang
-        flush_interval -1
+api.actionfy.com {
+    # Security Headers
+    header {
+        # Enable HSTS
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        # Prevent MIME type sniffing
+        X-Content-Type-Options "nosniff"
+        # XSS Protection
+        X-XSS-Protection "1; mode=block"
+        # Referrer Policy
+        Referrer-Policy "strict-origin-when-cross-origin"
+        # Clickjacking protection
+        X-Frame-Options "DENY"
     }
+
+    # Reverse proxy to the Go Actionfy Server container
+    reverse_proxy actionfy-server:8080 {
+        # CRITICAL for SSE: flush_interval -1 disables response buffering
+        flush_interval -1
+        
+        # Load balancing health checks
+        health_uri /health
+        health_interval 10s
+        health_timeout 5s
+    }
+
+    # Enable Zstd and Gzip compression
+    encode zstd gzip
 
     # Logging for observability
     log {
-        output file /var/log/caddy/access.log
+        output file /var/log/caddy/access.log {
+            roll_size 100mb
+            roll_keep 10
+            roll_keep_for 720h
+        }
     }
-
-    # Automatic HTTPS is handled by default by Caddy
 }

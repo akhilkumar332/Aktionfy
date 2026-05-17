@@ -78,21 +78,44 @@ func apiStripeWebhook(c echo.Context) error {
 		var session stripe.CheckoutSession
 		err := json.Unmarshal(event.Data.Raw, &session)
 		if err != nil {
-			log.Printf("Error unmarshaling webhook data: %v", err)
+			log.Printf("Billing: Error unmarshaling webhook data: %v", err)
 			return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid data"})
 		}
 
 		userID := session.ClientReferenceID
 		if userID != "" {
-			log.Printf("Upgrading user %s to PRO tier", userID)
-			err := queries.UpdateUserTier(c.Request().Context(), db.UpdateUserTierParams{
+			// Idempotency check: only upgrade if not already PRO
+			user, err := queries.GetUser(c.Request().Context(), userID)
+			if err != nil {
+				log.Printf("Billing: Failed to fetch user %s during webhook: %v", userID, err)
+				return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Database error"})
+			}
+
+			if user.Tier.String == TierPro {
+				log.Printf("Billing: User %s already on PRO tier, skipping upgrade", userID)
+				return c.NoContent(http.StatusOK)
+			}
+
+			log.Printf("Billing: Upgrading user %s to PRO tier", userID)
+			err = queries.UpdateUserTier(c.Request().Context(), db.UpdateUserTierParams{
 				Tier: pgtype.Text{String: TierPro, Valid: true},
 				ID:   userID,
 			})
 			if err != nil {
-				log.Printf("Failed to update user tier in DB: %v", err)
+				log.Printf("Billing: Failed to update user tier in DB: %v", err)
 				return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Database error"})
 			}
+			
+			writeAuditLog(c.Request().Context(), AuditEvent{
+				UserID:       userID,
+				Action:       "billing.upgrade",
+				ResourceType: "user",
+				ResourceID:   userID,
+				Metadata: map[string]interface{}{
+					"tier": TierPro,
+					"source": "stripe_webhook",
+				},
+			})
 		}
 	}
 
