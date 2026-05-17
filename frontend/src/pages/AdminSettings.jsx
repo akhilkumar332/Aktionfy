@@ -191,7 +191,7 @@ const AdminSettings = () => {
               <div className="flex items-start gap-4">
                 <div className="w-1 h-1 rounded-full bg-accent-orange mt-1.5 shrink-0" />
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Pruning is a background process that runs every 24 hours automatically.
+                  Pruning is a background process that runs every hour automatically.
                 </p>
               </div>
             </div>

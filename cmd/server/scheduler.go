@@ -1004,21 +1004,21 @@ func calculateNextRun(triggerType string, config map[string]interface{}, now tim
 // runReaper recovers tasks that were locked by a worker that crashed.
 // It runs every minute and resets tasks in 'processing' that have been stuck for more than 5 minutes.
 func runReaper(ctx context.Context) {
-	ticker := time.NewTicker(1 * time.Minute)
-	defer ticker.Stop()
+	reapTicker := time.NewTicker(1 * time.Minute)
+	pruneTicker := time.NewTicker(1 * time.Hour)
+	defer reapTicker.Stop()
+	defer pruneTicker.Stop()
 
 	for {
 		select {
-		case <-ticker.C:
+		case <-reapTicker.C:
 			rows, err := queries.ReapStuckTasks(ctx)
 			if err != nil {
-				log.Printf("Reaper error: %v", err)
-			} else {
-				if rows > 0 {
-					log.Printf("Reaper: recovered %d stuck tasks", rows)
-				}
+				log.Printf("Reaper: error reaping stuck tasks: %v", err)
+			} else if rows > 0 {
+				log.Printf("Reaper: recovered %d stuck tasks", rows)
 			}
-
+		case <-pruneTicker.C:
 			// Prune zombie workers
 			pruneDays, err := queries.GetSystemSettings(ctx)
 			if err != nil {
