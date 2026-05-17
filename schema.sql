@@ -332,3 +332,7 @@ ON CONFLICT DO NOTHING;
 -- Performance & Integrity Indexes
 CREATE INDEX IF NOT EXISTS idx_worker_heartbeats_last_heartbeat ON worker_heartbeats (last_heartbeat);
 CREATE INDEX IF NOT EXISTS idx_dlq_tasks_task_id ON dlq_tasks (task_id);
+
+-- Analytics Performance
+CREATE INDEX IF NOT EXISTS idx_execution_traces_start_time ON execution_traces (start_time);
+CREATE INDEX IF NOT EXISTS idx_users_created_at ON users (created_at);

@@ -2574,3 +2574,86 @@ func (q *Queries) UpdateTaskApprovalStatusAndLastRun(ctx context.Context, arg Up
 	)
 	return err
 }
+
+const getCountTracesAfter = `-- name: GetCountTracesAfter :one
+SELECT COUNT(*) FROM execution_traces WHERE start_time > $1
+`
+
+func (q *Queries) GetCountTracesAfter(ctx context.Context, startTime pgtype.Timestamptz) (int64, error) {
+	row := q.db.QueryRow(ctx, getCountTracesAfter, startTime)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const getCountTracesBetween = `-- name: GetCountTracesBetween :one
+SELECT COUNT(*) FROM execution_traces WHERE start_time > $1 AND start_time <= $2
+`
+
+type GetCountTracesBetweenParams struct {
+	StartTime   pgtype.Timestamptz `json:"start_time"`
+	EndTime     pgtype.Timestamptz `json:"end_time"`
+}
+
+func (q *Queries) GetCountTracesBetween(ctx context.Context, arg GetCountTracesBetweenParams) (int64, error) {
+	row := q.db.QueryRow(ctx, getCountTracesBetween, arg.StartTime, arg.EndTime)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const getSuccessRateAfter = `-- name: GetSuccessRateAfter :one
+SELECT COALESCE((COUNT(*) FILTER (WHERE is_error = FALSE)::float / NULLIF(COUNT(*), 0)::float) * 100, 100.0)::float
+FROM execution_traces WHERE start_time > $1
+`
+
+func (q *Queries) GetSuccessRateAfter(ctx context.Context, startTime pgtype.Timestamptz) (float64, error) {
+	row := q.db.QueryRow(ctx, getSuccessRateAfter, startTime)
+	var success_rate float64
+	err := row.Scan(&success_rate)
+	return success_rate, err
+}
+
+const getSuccessRateBetween = `-- name: GetSuccessRateBetween :one
+SELECT COALESCE((COUNT(*) FILTER (WHERE is_error = FALSE)::float / NULLIF(COUNT(*), 0)::float) * 100, 100.0)::float
+FROM execution_traces WHERE start_time > $1 AND start_time <= $2
+`
+
+type GetSuccessRateBetweenParams struct {
+	StartTime   pgtype.Timestamptz `json:"start_time"`
+	EndTime     pgtype.Timestamptz `json:"end_time"`
+}
+
+func (q *Queries) GetSuccessRateBetween(ctx context.Context, arg GetSuccessRateBetweenParams) (float64, error) {
+	row := q.db.QueryRow(ctx, getSuccessRateBetween, arg.StartTime, arg.EndTime)
+	var success_rate float64
+	err := row.Scan(&success_rate)
+	return success_rate, err
+}
+
+const getCountUsersAfter = `-- name: GetCountUsersAfter :one
+SELECT COUNT(*) FROM users WHERE created_at > $1
+`
+
+func (q *Queries) GetCountUsersAfter(ctx context.Context, createdAt pgtype.Timestamptz) (int64, error) {
+	row := q.db.QueryRow(ctx, getCountUsersAfter, createdAt)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const getCountUsersBetween = `-- name: GetCountUsersBetween :one
+SELECT COUNT(*) FROM users WHERE created_at > $1 AND created_at <= $2
+`
+
+type GetCountUsersBetweenParams struct {
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	CreatedAt_2 pgtype.Timestamptz `json:"created_at_2"`
+}
+
+func (q *Queries) GetCountUsersBetween(ctx context.Context, arg GetCountUsersBetweenParams) (int64, error) {
+	row := q.db.QueryRow(ctx, getCountUsersBetween, arg.CreatedAt, arg.CreatedAt_2)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}

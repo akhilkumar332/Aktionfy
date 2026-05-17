@@ -440,3 +440,23 @@ WHERE id = 1;
 -- name: PruneZombieWorkers :exec
 DELETE FROM worker_heartbeats 
 WHERE last_heartbeat < NOW() - ($1 * INTERVAL '1 day');
+
+-- name: GetCountTracesAfter :one
+SELECT COUNT(*) FROM execution_traces WHERE start_time > $1;
+
+-- name: GetCountTracesBetween :one
+SELECT COUNT(*) FROM execution_traces WHERE start_time > $1 AND start_time <= $2;
+
+-- name: GetSuccessRateAfter :one
+SELECT COALESCE((COUNT(*) FILTER (WHERE is_error = FALSE)::float / NULLIF(COUNT(*), 0)::float) * 100, 100.0)::float
+FROM execution_traces WHERE start_time > $1;
+
+-- name: GetSuccessRateBetween :one
+SELECT COALESCE((COUNT(*) FILTER (WHERE is_error = FALSE)::float / NULLIF(COUNT(*), 0)::float) * 100, 100.0)::float
+FROM execution_traces WHERE start_time > $1 AND start_time <= $2;
+
+-- name: GetCountUsersAfter :one
+SELECT COUNT(*) FROM users WHERE created_at > $1;
+
+-- name: GetCountUsersBetween :one
+SELECT COUNT(*) FROM users WHERE created_at > $1 AND created_at <= $2;

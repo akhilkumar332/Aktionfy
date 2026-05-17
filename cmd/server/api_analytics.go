@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/labstack/echo/v4"
 	"actionfy/db"
 )
@@ -69,44 +70,47 @@ func handleGetSystemInsights(c echo.Context) error {
 
 func handleGetTrends(c echo.Context) error {
 	ctx := c.Request().Context()
+	now := time.Now().UTC()
+	thirtyDaysAgo := now.Add(-30 * 24 * time.Hour)
+	sixtyDaysAgo := now.Add(-60 * 24 * time.Hour)
 
-	// 1. Total Tasks Trends (Current 30d vs Previous 30d)
-	var currentTasks, prevTasks int64
-	err := dbPool.QueryRow(ctx, "SELECT COUNT(*) FROM execution_traces WHERE start_time > NOW() - INTERVAL '30 days'").Scan(&currentTasks)
+	// 1. Total Tasks Trends
+	currentTasks, err := queries.GetCountTracesAfter(ctx, pgtype.Timestamptz{Time: thirtyDaysAgo, Valid: true})
 	if err != nil {
 		log.Printf("Trends: failed to fetch current tasks: %v", err)
 	}
-	err = dbPool.QueryRow(ctx, "SELECT COUNT(*) FROM execution_traces WHERE start_time > NOW() - INTERVAL '60 days' AND start_time <= NOW() - INTERVAL '30 days'").Scan(&prevTasks)
+	prevTasks, err := queries.GetCountTracesBetween(ctx, db.GetCountTracesBetweenParams{
+		StartTime: pgtype.Timestamptz{Time: sixtyDaysAgo, Valid: true},
+		EndTime:   pgtype.Timestamptz{Time: thirtyDaysAgo, Valid: true},
+	})
 	if err != nil {
 		log.Printf("Trends: failed to fetch prev tasks: %v", err)
 	}
 
 	// 2. Success Rate Trends
-	var currentSuccess, prevSuccess float64
-	err = dbPool.QueryRow(ctx, `
-		SELECT COALESCE((COUNT(*) FILTER (WHERE is_error = FALSE)::float / NULLIF(COUNT(*), 0)::float) * 100, 100)
-		FROM execution_traces WHERE start_time > NOW() - INTERVAL '30 days'
-	`).Scan(&currentSuccess)
+	currentSuccess, err := queries.GetSuccessRateAfter(ctx, pgtype.Timestamptz{Time: thirtyDaysAgo, Valid: true})
 	if err != nil {
 		log.Printf("Trends: failed to fetch current success: %v", err)
 		currentSuccess = 100.0
 	}
-	err = dbPool.QueryRow(ctx, `
-		SELECT COALESCE((COUNT(*) FILTER (WHERE is_error = FALSE)::float / NULLIF(COUNT(*), 0)::float) * 100, 100)
-		FROM execution_traces WHERE start_time > NOW() - INTERVAL '60 days' AND start_time <= NOW() - INTERVAL '30 days'
-	`).Scan(&prevSuccess)
+	prevSuccess, err := queries.GetSuccessRateBetween(ctx, db.GetSuccessRateBetweenParams{
+		StartTime: pgtype.Timestamptz{Time: sixtyDaysAgo, Valid: true},
+		EndTime:   pgtype.Timestamptz{Time: thirtyDaysAgo, Valid: true},
+	})
 	if err != nil {
 		log.Printf("Trends: failed to fetch prev success: %v", err)
 		prevSuccess = 100.0
 	}
 
 	// 3. User Growth
-	var currentUsers, prevUsers int64
-	err = dbPool.QueryRow(ctx, "SELECT COUNT(*) FROM users WHERE created_at > NOW() - INTERVAL '30 days'").Scan(&currentUsers)
+	currentUsers, err := queries.GetCountUsersAfter(ctx, pgtype.Timestamptz{Time: thirtyDaysAgo, Valid: true})
 	if err != nil {
 		log.Printf("Trends: failed to fetch current users: %v", err)
 	}
-	err = dbPool.QueryRow(ctx, "SELECT COUNT(*) FROM users WHERE created_at > NOW() - INTERVAL '60 days' AND created_at <= NOW() - INTERVAL '30 days'").Scan(&prevUsers)
+	prevUsers, err := queries.GetCountUsersBetween(ctx, db.GetCountUsersBetweenParams{
+		CreatedAt:   pgtype.Timestamptz{Time: sixtyDaysAgo, Valid: true},
+		CreatedAt_2: pgtype.Timestamptz{Time: thirtyDaysAgo, Valid: true},
+	})
 	if err != nil {
 		log.Printf("Trends: failed to fetch prev users: %v", err)
 	}
