@@ -16,7 +16,7 @@ const REPO_OWNER = 'akhilkumar332';
 const REPO_NAME = 'actionfy';
 const DOWNLOAD_URL = `https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/latest/download/${GITHUB_BINARY_NAME}`;
 
-console.log(`Installing Scheduled Actions MCP for ${platform}-${arch}...`);
+console.log(`Installing Actionfy MCP for ${platform}-${arch}...`);
 
 async function install() {
     console.log(`Mocking download from: ${DOWNLOAD_URL}`);

@@ -1,4 +1,4 @@
-# Contributing to Scheduled Actions MCP Server
+# Contributing to Actionfy MCP Server
 
 We welcome contributions from the community! To maintain a high bar for engineering quality, please follow these guidelines.
 

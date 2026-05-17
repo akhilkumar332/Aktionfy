@@ -49,7 +49,7 @@ func SubscribeToEvents(ctx context.Context, onEvent func(context.Context, PubSub
 
 				// Extract trace context
 				parentCtx := otel.GetTextMapPropagator().Extract(ctx, propagation.MapCarrier(event.TraceContext))
-				_, span := otel.Tracer("scheduler-mcp").Start(parentCtx, "Redis Subscription")
+				_, span := otel.Tracer("actionfy").Start(parentCtx, "Redis Subscription")
 				
 				onEvent(parentCtx, event)
 				span.End()

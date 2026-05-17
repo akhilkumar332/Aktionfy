@@ -1,7 +1,7 @@
 {
   "name": "@gsactions/mcp",
   "version": "1.0.0",
-  "description": "NPM wrapper for Scheduled Actions MCP Go binary",
+  "description": "NPM wrapper for Actionfy MCP Go binary",
   "main": "index.js",
   "bin": {
     "actionfy": "index.js"

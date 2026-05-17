@@ -1,4 +1,4 @@
-# Scheduled Actions MCP Server
+# Actionfy MCP Server
 
 A high-performance, durable AI workflow orchestration engine powered by the **Model Context Protocol (MCP)**. This system allows you to schedule, chain, and monitor complex AI tasks with distributed reliability, visual debugging, and intelligent agentic routing.
 

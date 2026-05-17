@@ -1,6 +1,6 @@
-# Releasing Scheduled Actions MCP
+# Releasing Actionfy MCP
 
-This document describes the process of building, verifying, and releasing the Scheduled Actions MCP server.
+This document describes the process of building, verifying, and releasing the Actionfy MCP server.
 
 ## 🚀 Pre-Release Checklist
 

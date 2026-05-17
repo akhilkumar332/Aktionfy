@@ -10,39 +10,39 @@ import (
 var (
 	httpRequestsTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "schedule_mcp_http_requests_total",
+			Name: "actionfy_http_requests_total",
 			Help: "Total HTTP requests handled by the application.",
 		},
 		[]string{"method", "route", "status"},
 	)
 	schedulerClaimsTotal = prometheus.NewCounter(
 		prometheus.CounterOpts{
-			Name: "schedule_mcp_scheduler_claims_total",
+			Name: "actionfy_scheduler_claims_total",
 			Help: "Total number of task claims returned by the scheduler.",
 		},
 	)
 	schedulerClaimErrorsTotal = prometheus.NewCounter(
 		prometheus.CounterOpts{
-			Name: "schedule_mcp_scheduler_claim_errors_total",
+			Name: "actionfy_scheduler_claim_errors_total",
 			Help: "Total number of scheduler claim errors.",
 		},
 	)
 	taskOutcomeTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "schedule_mcp_task_outcomes_total",
+			Name: "actionfy_task_outcomes_total",
 			Help: "Total task outcomes emitted by the scheduler or execution node.",
 		},
 		[]string{"outcome"},
 	)
 	activeSSEConnections = prometheus.NewGauge(
 		prometheus.GaugeOpts{
-			Name: "schedule_mcp_active_sse_connections",
+			Name: "actionfy_active_sse_connections",
 			Help: "Current number of active SSE connections.",
 		},
 	)
 	taskExecutionDurationSeconds = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name:    "schedule_mcp_task_execution_duration_seconds",
+			Name:    "actionfy_task_execution_duration_seconds",
 			Help:    "Observed task execution durations.",
 			Buckets: prometheus.DefBuckets,
 		},

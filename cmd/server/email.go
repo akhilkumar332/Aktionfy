@@ -23,11 +23,11 @@ func sendFailureEmail(ctx context.Context, userID string, taskID string, taskNam
 		return
 	}
 
-	from := mail.NewEmail("Scheduled Actions Server", "noreply@yourservice.com")
+	from := mail.NewEmail("Actionfy Server", "noreply@yourservice.com")
 	subject := fmt.Sprintf("Action Required: Task '%s' Failed", taskName)
 	to := mail.NewEmail("User", email.String)
-	plainTextContent := fmt.Sprintf("Your scheduled action '%s' (ID: %s) has failed 3 times and is now in an error state. Please review its configuration.", taskName, taskID)
-	htmlContent := fmt.Sprintf("<strong>Your scheduled action '%s'</strong> has failed 3 times and is now in an error state. Please log in to your dashboard to review its configuration.", taskName)
+	plainTextContent := fmt.Sprintf("Your actionfy workflow '%s' (ID: %s) has failed 3 times and is now in an error state. Please review its configuration.", taskName, taskID)
+	htmlContent := fmt.Sprintf("<strong>Your actionfy workflow '%s'</strong> has failed 3 times and is now in an error state. Please log in to your dashboard to review its configuration.", taskName)
 
 	message := mail.NewSingleEmail(from, subject, to, plainTextContent, htmlContent)
 	client := sendgrid.NewSendClient(apiKey)

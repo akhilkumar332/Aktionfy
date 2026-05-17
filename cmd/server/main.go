@@ -71,7 +71,7 @@ func initTracer(ctx context.Context) func(context.Context) error {
 
 	res, err := resource.New(ctx,
 		resource.WithAttributes(
-			semconv.ServiceNameKey.String("scheduled-actions"),
+			semconv.ServiceNameKey.String("actionfy"),
 			semconv.ServiceVersionKey.String("1.0.0"),
 		),
 	)
@@ -189,7 +189,7 @@ func main() {
 	GlobalSessionManager.Init(RedisClient)
 
 	// 2. Initialize MCP Server
-	mcpServer := server.NewMCPServer("scheduled-actions", "1.0.0")
+	mcpServer := server.NewMCPServer("actionfy", "1.0.0")
 
 	// Register Tools
 	registerTools(mcpServer)
@@ -236,7 +236,7 @@ func main() {
 	})
 
 	// Standard Echo Middleware
-	e.Use(otelecho.Middleware("scheduled-actions"))
+	e.Use(otelecho.Middleware("actionfy"))
 	//lint:ignore SA1019 simple logger is sufficient
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())

@@ -171,7 +171,7 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 						parentCtx := otel.GetTextMapPropagator().Extract(context.Background(), carrier)
 						
 						// Create a background context with timeout for the entire execution
-						ctx, span := otel.Tracer("scheduler-mcp").Start(parentCtx, "Redis Task Trigger")
+						ctx, span := otel.Tracer("actionfy").Start(parentCtx, "Redis Task Trigger")
 						defer span.End()
 
 						taskID, _ := taskData["task_id"].(string)
