@@ -35,7 +35,7 @@ const DashboardLayout = ({ children }) => {
           <div className="bg-accent-orange p-2 rounded-xl text-white shadow-[0_0_20px_rgba(217,119,6,0.3)]">
             <Clock size={20} />
           </div>
-          <span className="font-bold text-xl tracking-tighter">Schedule MCP</span>
+          <span className="font-bold text-xl tracking-tighter">Actionfy</span>
         </div>
 
         <nav className="flex-1 p-6 space-y-2">

@@ -11,7 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
-	"schedule-mcp/db"
+	"actionfy/db"
 )
 
 // registerTools sets up the MCP tools for managing schedules

@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"schedule-mcp/db"
+	"actionfy/db"
 )
 
 func TestMain(m *testing.M) {

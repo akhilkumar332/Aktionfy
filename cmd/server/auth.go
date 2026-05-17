@@ -9,7 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/crypto/bcrypt"
-	"schedule-mcp/db"
+	"actionfy/db"
 )
 
 // RegisterUser hashes password, generates API key, and inserts user into DB

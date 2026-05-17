@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"schedule-mcp/db"
+	"actionfy/db"
 )
 
 func handleGetSystemInsights(c echo.Context) error {

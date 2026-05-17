@@ -12,7 +12,7 @@ const Footer = () => {
               <div className="bg-accent-orange p-1.5 rounded-lg text-white">
                 <Clock size={20} />
               </div>
-              <span className="font-bold text-xl tracking-tight text-white">Schedule MCP</span>
+              <span className="font-bold text-xl tracking-tight text-white">Actionfy</span>
             </Link>
             <p className="text-slate-400 text-sm leading-relaxed mb-8">
               The industry standard for persistent task scheduling within the Model Context Protocol ecosystem. 
@@ -74,7 +74,7 @@ const Footer = () => {
 
         <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
           <p className="text-slate-500 text-sm">
-            &copy; {new Date().getFullYear()} Schedule MCP. All rights reserved.
+            &copy; {new Date().getFullYear()} Actionfy. All rights reserved.
           </p>
           <div className="flex gap-8">
             <a href="#" className="text-slate-500 hover:text-white text-xs transition-colors underline-offset-4 hover:underline">Privacy Policy</a>

@@ -11,7 +11,7 @@ We provide security updates for the following versions:
 
 ## Security Architecture
 
-Schedule MCP implements a **Multi-Layer Defense** strategy:
+Actionfy implements a **Multi-Layer Defense** strategy:
 
 ### 1. Data Integrity & Privacy
 *   **Zero-Trust Secret Vault**: All task secrets and API keys are encrypted with **AES-256-GCM**. Decryption only occurs in-memory during task execution.

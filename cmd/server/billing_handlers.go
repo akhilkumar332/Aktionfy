@@ -13,7 +13,7 @@ import (
 	"github.com/stripe/stripe-go/v78"
 	"github.com/stripe/stripe-go/v78/checkout/session"
 	"github.com/stripe/stripe-go/v78/webhook"
-	"schedule-mcp/db"
+	"actionfy/db"
 )
 
 func init() {

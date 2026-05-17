@@ -12,7 +12,7 @@ import (
 	"github.com/gorilla/csrf"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/labstack/echo/v4"
-	"schedule-mcp/db"
+	"actionfy/db"
 )
 
 type AuthInput struct {

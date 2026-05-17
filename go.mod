@@ -1,4 +1,4 @@
-module schedule-mcp
+module actionfy
 
 go 1.25.5
 

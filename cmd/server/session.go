@@ -16,7 +16,7 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	"github.com/redis/go-redis/v9"
-	"schedule-mcp/db"
+	"actionfy/db"
 )
 
 // GlobalSessionManager tracks which users have active SSE connections via Redis

@@ -24,7 +24,7 @@ const Installation = () => {
     },
     {
       title: 'Bridge the Session',
-      description: 'Add the Schedule MCP engine to your local configuration via the Model Context Protocol bridge.',
+      description: 'Add the Actionfy engine to your local configuration via the Model Context Protocol bridge.',
       icon: Boxes,
     }
   ];
@@ -32,8 +32,8 @@ const Installation = () => {
   const installCommand = 'npx @gsactions/mcp install';
   const configSnippet = `{
   "mcpServers": {
-    "schedule-mcp": {
-      "command": "schedule-mcp",
+    "actionfy": {
+      "command": "actionfy",
       "args": ["run"],
       "env": {
         "X-API-KEY": "YOUR_ENCRYPTED_KEY"

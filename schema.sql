@@ -183,7 +183,7 @@ CREATE TABLE user_secrets (
 
 CREATE TABLE seo_settings (
     id INT PRIMARY KEY DEFAULT 1 CHECK (id = 1), -- Singleton
-    title TEXT NOT NULL DEFAULT 'Schedule MCP',
+    title TEXT NOT NULL DEFAULT 'Actionfy',
     description TEXT NOT NULL DEFAULT 'Durable AI Workflows',
     keywords TEXT NOT NULL DEFAULT 'AI, MCP, Scheduler',
     og_image TEXT,
@@ -192,7 +192,7 @@ CREATE TABLE seo_settings (
 
 -- Seed initial settings
 INSERT INTO seo_settings (id, title, description, keywords) 
-VALUES (1, 'Schedule MCP', 'Durable AI Workflows', 'AI, MCP, Scheduler')
+VALUES (1, 'Actionfy', 'Durable AI Workflows', 'AI, MCP, Scheduler')
 ON CONFLICT DO NOTHING;
 
 -- Workspaces

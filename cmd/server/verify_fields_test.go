@@ -1,7 +1,7 @@
 package main
 
 import (
-	"schedule-mcp/db"
+	"actionfy/db"
 	"testing"
 )
 

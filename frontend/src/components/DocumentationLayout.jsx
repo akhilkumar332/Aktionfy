@@ -37,7 +37,7 @@ const DocumentationLayout = ({ children }) => {
             <div className="bg-accent-orange p-1 rounded text-white group-hover:scale-110 transition-transform">
               <Zap size={18} fill="currentColor" />
             </div>
-            <span className="font-bold text-lg tracking-tight text-ink-900">Schedule MCP</span>
+            <span className="font-bold text-lg tracking-tight text-ink-900">Actionfy</span>
           </NavLink>
 
           <nav className="space-y-8">

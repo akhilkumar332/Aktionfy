@@ -8,7 +8,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/redis/go-redis/v9"
 	"net/http"
-	"schedule-mcp/db"
+	"actionfy/db"
 	"strings"
 	"sync"
 )

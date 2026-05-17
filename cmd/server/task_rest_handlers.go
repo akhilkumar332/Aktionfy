@@ -10,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/labstack/echo/v4"
-	"schedule-mcp/db"
+	"actionfy/db"
 )
 
 type CreateTaskRequest struct {

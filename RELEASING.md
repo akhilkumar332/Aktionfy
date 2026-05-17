@@ -19,15 +19,15 @@ We use standard Go build commands. Ensure you are using Go 1.25+.
 mkdir -p dist/bin
 
 # Linux
-GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o dist/bin/schedule-mcp-linux-amd64 ./cmd/server
-GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o dist/bin/schedule-mcp-linux-arm64 ./cmd/server
+GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o dist/bin/actionfy-linux-amd64 ./cmd/server
+GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o dist/bin/actionfy-linux-arm64 ./cmd/server
 
 # macOS
-GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o dist/bin/schedule-mcp-darwin-amd64 ./cmd/server
-GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o dist/bin/schedule-mcp-darwin-arm64 ./cmd/server
+GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o dist/bin/actionfy-darwin-amd64 ./cmd/server
+GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o dist/bin/actionfy-darwin-arm64 ./cmd/server
 
 # Windows
-GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o dist/bin/schedule-mcp-windows-amd64.exe ./cmd/server
+GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o dist/bin/actionfy-windows-amd64.exe ./cmd/server
 ```
 *Note: `-ldflags="-s -w"` reduces binary size by stripping debug symbols.*
 

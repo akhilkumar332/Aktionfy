@@ -6,7 +6,7 @@ const Overview = () => (
     <div className="space-y-12">
       <header>
         <h1 className="text-4xl font-extrabold text-ink-900 mb-4 tracking-tighter">Overview</h1>
-        <p className="text-xl text-slate-500 font-medium text-balance">Schedule MCP is a production-grade orchestration engine that brings persistence and reliability to the Model Context Protocol ecosystem.</p>
+        <p className="text-xl text-slate-500 font-medium text-balance">Actionfy is a production-grade orchestration engine that brings persistence and reliability to the Model Context Protocol ecosystem.</p>
       </header>
 
       <section>
@@ -16,7 +16,7 @@ const Overview = () => (
           and there is no native way to trigger actions based on wall-clock time. If your LLM needs to 
           "remember" to perform a task in 4 hours, or every Monday at 9 AM, standard MCP fails.
         </p>
-        <p className="mt-4 font-bold">Schedule MCP fills this gap by providing:</p>
+        <p className="mt-4 font-bold">Actionfy fills this gap by providing:</p>
         <ul className="list-disc pl-6 space-y-2 mt-4 text-slate-600">
           <li><strong>Autonomous Pipelines:</strong> Sequential task chaining where completion triggers the next action.</li>
           <li><strong>Secure Persistence:</strong> AES-256-GCM encrypted Global Secret Vault for centralized API key management.</li>
@@ -68,7 +68,7 @@ const QuickStart = () => (
 {`{
   "mcpServers": {
     "schedule": {
-      "command": "schedule-mcp",
+      "command": "actionfy",
       "args": ["run"],
       "env": { "X-API-KEY": "YOUR_KEY" }
     }
@@ -94,21 +94,21 @@ const InstallationDocs = () => (
     <div className="space-y-12">
       <header>
         <h1 className="text-4xl font-extrabold text-ink-900 mb-4 tracking-tighter">Installation</h1>
-        <p className="text-xl text-slate-500 font-medium text-balance">Comprehensive guide for deploying Schedule MCP in your own environment.</p>
+        <p className="text-xl text-slate-500 font-medium text-balance">Comprehensive guide for deploying Actionfy in your own environment.</p>
       </header>
 
       <section>
         <h2 className="text-2xl font-bold text-ink-900 mb-6 flex items-center gap-3">
           <Terminal size={24} className="text-accent-orange" /> Client-Side (Global Installer)
         </h2>
-        <p className="mb-6">The fastest way to install the Schedule MCP client on any machine with Node.js installed.</p>
+        <p className="mb-6">The fastest way to install the Actionfy client on any machine with Node.js installed.</p>
         <div className="space-y-4">
           <div className="p-4 bg-slate-100 rounded-xl font-mono text-sm">
             $ npx @gsactions/mcp install
           </div>
           <p className="text-sm text-slate-500">For non-NPM environments, use the standard shell installer:</p>
           <div className="p-4 bg-slate-100 rounded-xl font-mono text-sm">
-            $ curl -sL https://github.com/akhilkumar332/schedule-mcp/install.sh | bash
+            $ curl -sL https://github.com/akhilkumar332/actionfy/install.sh | bash
           </div>
         </div>
       </section>
@@ -117,13 +117,13 @@ const InstallationDocs = () => (
         <h2 className="text-2xl font-bold text-ink-900 mb-6 flex items-center gap-3">
           <Globe size={24} className="text-blue-500" /> Self-Hosted Server (Docker)
         </h2>
-        <p className="mb-6">Deploy your own private Schedule MCP server using Docker Compose.</p>
+        <p className="mb-6">Deploy your own private Actionfy server using Docker Compose.</p>
         <div className="space-y-4">
           <div className="p-4 bg-slate-100 rounded-xl font-mono text-sm">
-            $ git clone https://github.com/akhilkumar332/schedule-mcp.git
+            $ git clone https://github.com/akhilkumar332/actionfy.git
           </div>
           <div className="p-4 bg-slate-100 rounded-xl font-mono text-sm">
-            $ cd schedule-mcp && docker-compose up -d
+            $ cd actionfy && docker-compose up -d
           </div>
         </div>
       </section>
@@ -336,7 +336,7 @@ const ApiReference = () => (
         <h2 className="text-2xl font-bold text-ink-900 mb-6 flex items-center gap-3">
           <Globe size={24} className="text-blue-500" /> Outbound Webhooks
         </h2>
-        <p className="mb-6">Integrate Schedule MCP with your external systems via event-driven callbacks.</p>
+        <p className="mb-6">Integrate Actionfy with your external systems via event-driven callbacks.</p>
         <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100 space-y-4">
            <h4 className="font-bold text-ink-900">Supported Events</h4>
            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -432,7 +432,7 @@ const ProtocolSpecDoc = () => (
     <div className="space-y-12">
       <header>
         <h1 className="text-4xl font-extrabold text-ink-900 mb-4 tracking-tighter">Protocol Specification</h1>
-        <p className="text-xl text-slate-500 font-medium">Deep technical details on the Schedule MCP implementation of the protocol.</p>
+        <p className="text-xl text-slate-500 font-medium">Deep technical details on the Actionfy implementation of the protocol.</p>
       </header>
 
       <section>
@@ -499,7 +499,7 @@ const SecurityDocs = () => (
           <ShieldCheck size={20} /> Data Privacy
         </h3>
         <p className="text-red-700 text-sm">
-          Schedule MCP never logs the actual contents of your API keys or passwords. Even our Staff monitoring 
+          Actionfy never logs the actual contents of your API keys or passwords. Even our Staff monitoring 
           views (Pass 5) only display masked identifiers and high-level execution metadata.
         </p>
       </section>

@@ -6,7 +6,7 @@ import (
 	"log"
 
 	"github.com/jackc/pgx/v5/pgtype"
-	"schedule-mcp/db"
+	"actionfy/db"
 )
 
 type AuditEvent struct {

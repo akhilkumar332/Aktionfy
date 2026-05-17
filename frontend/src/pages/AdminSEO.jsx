@@ -83,7 +83,7 @@ const AdminSEO = () => {
                 value={settings.title}
                 onChange={(e) => setSettings({...settings, title: e.target.value})}
                 className="w-full bg-black/40 border border-white/10 rounded-xl px-6 py-4 text-white outline-none focus:border-accent-orange transition-colors"
-                placeholder="Schedule MCP - Persistent AI Workflows"
+                placeholder="Actionfy - Persistent AI Workflows"
               />
             </div>
 

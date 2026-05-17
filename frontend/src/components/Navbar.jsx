@@ -34,7 +34,7 @@ const Navbar = () => {
               <Clock size={22} />
             </div>
             <div className="flex flex-col">
-              <span className="font-bold text-lg text-white tracking-tighter leading-tight group-hover:text-accent-orange transition-colors">Schedule MCP</span>
+              <span className="font-bold text-lg text-white tracking-tighter leading-tight group-hover:text-accent-orange transition-colors">Actionfy</span>
               <span className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.3em] leading-tight">Engine v1.0</span>
             </div>
           </Link>

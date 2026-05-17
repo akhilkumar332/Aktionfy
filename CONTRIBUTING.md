@@ -6,8 +6,8 @@ We welcome contributions from the community! To maintain a high bar for engineer
 
 1.  **Clone the Repo**:
     ```bash
-    git clone https://github.com/akhilkumar332/schedule-mcp.git
-    cd schedule-mcp
+    git clone https://github.com/akhilkumar332/actionfy.git
+    cd actionfy
     ```
 
 2.  **Infrastructure**:
