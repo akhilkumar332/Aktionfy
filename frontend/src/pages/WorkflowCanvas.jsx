@@ -68,15 +68,15 @@ const WorkflowCanvas = () => {
       }
 
       const isProcessing = task.status === 'processing';
-      const isDecision = task.task_type === 'decision_router';
+      const isRouter = task.task_type === 'decision_router' || task.task_type === 'swarm_router';
 
       return {
         id: task.id,
         position,
-        type: isDecision ? 'decision' : undefined,
+        type: isRouter ? 'decision' : undefined,
         data: { 
           task,
-          label: isDecision ? undefined : (
+          label: isRouter ? undefined : (
             <div className={`flex flex-col items-center gap-1 transition-all duration-500 ${isProcessing ? 'scale-110' : ''}`}>
               <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">{task.trigger_type}</div>
               <div className="font-bold text-white text-xs">{task.name}</div>
@@ -93,7 +93,7 @@ const WorkflowCanvas = () => {
             </div>
           )
         },
-        style: isDecision ? undefined : {
+        style: isRouter ? undefined : {
           background: isProcessing ? 'rgba(217, 119, 6, 0.15)' : 'rgba(15, 23, 42, 0.8)',
           color: '#fff',
           border: isProcessing ? '2px solid rgba(217, 119, 6, 0.5)' : '1px solid rgba(255, 255, 255, 0.1)',
@@ -111,23 +111,43 @@ const WorkflowCanvas = () => {
       .filter(task => task.depends_on_task_id)
       .map(task => {
         const sourceTask = tasksList.find(t => t.id === task.depends_on_task_id);
-        const isDecisionSource = sourceTask?.task_type === 'decision_router';
-        const branchKey = task.branch_condition;
+        const isRouterSource = sourceTask?.task_type === 'decision_router' || sourceTask?.task_type === 'swarm_router';
+        
+        let label = task.trigger_on_completion ? 'triggers' : 'depends';
+        let branchCond = null;
+        
+        if (task.branch_condition) {
+          try {
+            if (typeof task.branch_condition === 'string') {
+              branchCond = JSON.parse(atob(task.branch_condition));
+            } else {
+              branchCond = task.branch_condition;
+            }
+          } catch (e) {
+            console.warn("Failed to parse branch condition", e);
+          }
+        }
+
+        if (isRouterSource) {
+          label = branchCond?.key || branchCond?.value || 'branch';
+        } else if (branchCond?.value) {
+          label = `if: ${branchCond.value}`;
+        }
 
         return {
           id: `e-${task.depends_on_task_id}-${task.id}`,
           source: task.depends_on_task_id,
           target: task.id,
-          animated: task.trigger_on_completion || task.status === 'processing' || isDecisionSource,
-          label: isDecisionSource ? (branchKey || 'branch') : (task.trigger_on_completion ? 'triggers' : 'depends'),
-          labelStyle: { fill: isDecisionSource ? '#818cf8' : '#94a3b8', fontWeight: 800, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em' },
+          animated: task.trigger_on_completion || task.status === 'processing' || isRouterSource,
+          label: label,
+          labelStyle: { fill: isRouterSource ? '#818cf8' : '#94a3b8', fontWeight: 800, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em' },
           labelBgStyle: { fill: 'rgba(15, 23, 42, 0.8)', fillOpacity: 0.8 },
           labelBgPadding: [4, 2],
           labelBgBorderRadius: 4,
-          style: { stroke: isDecisionSource ? '#6366f1' : (task.trigger_on_completion ? '#f59e0b' : '#3b82f6'), strokeWidth: isDecisionSource ? 3 : 2 },
+          style: { stroke: isRouterSource ? '#6366f1' : (task.trigger_on_completion ? '#f59e0b' : '#3b82f6'), strokeWidth: isRouterSource ? 3 : 2 },
           markerEnd: {
             type: MarkerType.ArrowClosed,
-            color: isDecisionSource ? '#6366f1' : (task.trigger_on_completion ? '#f59e0b' : '#3b82f6'),
+            color: isRouterSource ? '#6366f1' : (task.trigger_on_completion ? '#f59e0b' : '#3b82f6'),
           },
         };
       });

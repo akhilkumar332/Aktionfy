@@ -69,3 +69,55 @@ func TestCalculateNextRunRejectsUnknownTrigger(t *testing.T) {
 		t.Fatal("expected unknown trigger type to fail")
 	}
 }
+
+func TestParseLLMChoice(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    interface{}
+		expected string
+	}{
+		{
+			name: "Direct JSON",
+			input: map[string]interface{}{
+				"content": map[string]interface{}{
+					"text": `{"choice": "branch_a", "reasoning": "test"}`,
+				},
+			},
+			expected: "branch_a",
+		},
+		{
+			name: "Markdown wrapped JSON",
+			input: map[string]interface{}{
+				"content": []interface{}{
+					map[string]interface{}{
+						"text": "The choice is:\n```json\n{\"choice\": \"branch_b\"}\n```",
+					},
+				},
+			},
+			expected: "branch_b",
+		},
+		{
+			name: "Invalid JSON",
+			input: map[string]interface{}{
+				"content": map[string]interface{}{
+					"text": "Just some random text without choice",
+				},
+			},
+			expected: "",
+		},
+		{
+			name:     "Nil input",
+			input:    nil,
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := parseLLMChoice(tt.input)
+			if got != tt.expected {
+				t.Errorf("parseLLMChoice() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}

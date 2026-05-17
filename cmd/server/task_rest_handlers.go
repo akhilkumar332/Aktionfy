@@ -28,6 +28,7 @@ type CreateTaskRequest struct {
 	BranchCondition     json.RawMessage `json:"branch_condition"`
 	LoopCondition       json.RawMessage `json:"loop_condition"`
 	IsBundleRoot        bool            `json:"is_bundle_root"`
+	SwarmConfig         json.RawMessage `json:"swarm_config"`
 }
 
 func apiCreateTaskHandler(c echo.Context) error {
@@ -87,6 +88,7 @@ func apiCreateTaskHandler(c echo.Context) error {
 		LoopCondition:       req.LoopCondition,
 		IsBundleRoot:        pgtype.Bool{Bool: req.IsBundleRoot, Valid: true},
 		NextRun:             pgtype.Timestamptz{Time: time.Now(), Valid: true},
+		SwarmConfig:         req.SwarmConfig,
 	}
 
 	task, err := queries.CreateTask(c.Request().Context(), params)
@@ -227,6 +229,7 @@ type UpdateTaskRequest struct {
 	TriggerOnCompletion bool            `json:"trigger_on_completion"`
 	BranchCondition     json.RawMessage `json:"branch_condition"`
 	LoopCondition       json.RawMessage `json:"loop_condition"`
+	SwarmConfig         json.RawMessage `json:"swarm_config"`
 }
 
 func apiUpdateTaskHandler(c echo.Context) error {
@@ -270,6 +273,7 @@ func apiUpdateTaskHandler(c echo.Context) error {
 		TriggerOnCompletion: pgtype.Bool{Bool: req.TriggerOnCompletion, Valid: true},
 		BranchCondition:     req.BranchCondition,
 		LoopCondition:       req.LoopCondition,
+		SwarmConfig:         req.SwarmConfig,
 		ID:                  taskID,
 		UserID:              userID,
 	})

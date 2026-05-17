@@ -5,6 +5,8 @@
 package db
 
 import (
+	"encoding/json"
+
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -70,7 +72,7 @@ type Task struct {
 	UserID              string             `json:"user_id"`
 	Name                string             `json:"name"`
 	TriggerType         pgtype.Text        `json:"trigger_type"`
-	TriggerConfig       []byte             `json:"trigger_config"`
+	TriggerConfig       json.RawMessage    `json:"trigger_config"`
 	AgentPrompt         string             `json:"agent_prompt"`
 	Status              pgtype.Text        `json:"status"`
 	LockedBy            pgtype.Text        `json:"locked_by"`
@@ -90,11 +92,11 @@ type Task struct {
 	MaxRetries          pgtype.Int4        `json:"max_retries"`
 	RetryCount          pgtype.Int4        `json:"retry_count"`
 	BackoffStrategy     pgtype.Text        `json:"backoff_strategy"`
-	UiCoordinates       []byte             `json:"ui_coordinates"`
-	BranchCondition     []byte             `json:"branch_condition"`
+	UiCoordinates       json.RawMessage    `json:"ui_coordinates"`
+	BranchCondition     json.RawMessage    `json:"branch_condition"`
 	IsBundleRoot        pgtype.Bool        `json:"is_bundle_root"`
-	LoopCondition       []byte             `json:"loop_condition"`
-	SwarmConfig         []byte             `json:"swarm_config"`
+	LoopCondition       json.RawMessage    `json:"loop_condition"`
+	SwarmConfig         json.RawMessage    `json:"swarm_config"`
 }
 
 type TaskLog struct {
@@ -112,7 +114,7 @@ type TaskVersion struct {
 	TaskID              pgtype.UUID        `json:"task_id"`
 	Name                string             `json:"name"`
 	TriggerType         string             `json:"trigger_type"`
-	TriggerConfig       []byte             `json:"trigger_config"`
+	TriggerConfig       json.RawMessage    `json:"trigger_config"`
 	AgentPrompt         string             `json:"agent_prompt"`
 	MissedTaskPolicy    string             `json:"missed_task_policy"`
 	DependsOnTaskID     pgtype.UUID        `json:"depends_on_task_id"`
@@ -120,17 +122,18 @@ type TaskVersion struct {
 	TriggerOnCompletion bool               `json:"trigger_on_completion"`
 	TaskType            string             `json:"task_type"`
 	NativeCode          pgtype.Text        `json:"native_code"`
-	BranchCondition     []byte             `json:"branch_condition"`
-	LoopCondition       []byte             `json:"loop_condition"`
+	BranchCondition     json.RawMessage    `json:"branch_condition"`
+	LoopCondition       json.RawMessage    `json:"loop_condition"`
 	IsBundleRoot        pgtype.Bool        `json:"is_bundle_root"`
 	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	SwarmConfig         json.RawMessage    `json:"swarm_config"`
 }
 
 type Template struct {
 	ID          pgtype.UUID        `json:"id"`
 	Name        string             `json:"name"`
 	Description pgtype.Text        `json:"description"`
-	Config      []byte             `json:"config"`
+	Config      json.RawMessage    `json:"config"`
 	IsPublic    pgtype.Bool        `json:"is_public"`
 	WorkspaceID pgtype.UUID        `json:"workspace_id"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
@@ -200,7 +203,7 @@ type WorkflowState struct {
 	ID          pgtype.UUID        `json:"id"`
 	TaskID      pgtype.UUID        `json:"task_id"`
 	ExecutionID string             `json:"execution_id"`
-	StateData   []byte             `json:"state_data"`
+	StateData   json.RawMessage    `json:"state_data"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
 

@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -293,7 +294,7 @@ type CreateTaskParams struct {
 	UserID              string             `json:"user_id"`
 	Name                string             `json:"name"`
 	TriggerType         pgtype.Text        `json:"trigger_type"`
-	TriggerConfig       []byte             `json:"trigger_config"`
+	TriggerConfig       json.RawMessage    `json:"trigger_config"`
 	AgentPrompt         string             `json:"agent_prompt"`
 	MissedTaskPolicy    pgtype.Text        `json:"missed_task_policy"`
 	DependsOnTaskID     pgtype.UUID        `json:"depends_on_task_id"`
@@ -304,10 +305,10 @@ type CreateTaskParams struct {
 	WorkspaceID         pgtype.UUID        `json:"workspace_id"`
 	TaskType            pgtype.Text        `json:"task_type"`
 	NativeCode          pgtype.Text        `json:"native_code"`
-	BranchCondition     []byte             `json:"branch_condition"`
+	BranchCondition     json.RawMessage    `json:"branch_condition"`
 	IsBundleRoot        pgtype.Bool        `json:"is_bundle_root"`
-	LoopCondition       []byte             `json:"loop_condition"`
-	SwarmConfig         []byte             `json:"swarm_config"`
+	LoopCondition       json.RawMessage    `json:"loop_condition"`
+	SwarmConfig         json.RawMessage    `json:"swarm_config"`
 }
 
 func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error) {
@@ -397,14 +398,14 @@ const createTaskVersion = `-- name: CreateTaskVersion :one
 INSERT INTO task_versions (
     task_id, name, trigger_type, trigger_config, agent_prompt, 
     missed_task_policy, depends_on_task_id, requires_approval, 
-    trigger_on_completion, task_type, native_code, branch_condition, is_bundle_root, loop_condition
+    trigger_on_completion, task_type, native_code, branch_condition, is_bundle_root, loop_condition, swarm_config
 ) 
 SELECT 
     t.id, t.name, t.trigger_type, t.trigger_config, t.agent_prompt, 
     t.missed_task_policy, t.depends_on_task_id, t.requires_approval, 
-    t.trigger_on_completion, t.task_type, t.native_code, t.branch_condition, t.is_bundle_root, t.loop_condition
+    t.trigger_on_completion, t.task_type, t.native_code, t.branch_condition, t.is_bundle_root, t.loop_condition, t.swarm_config
 FROM tasks t WHERE t.id = $1 AND t.user_id = $2
-RETURNING id, task_id, name, trigger_type, trigger_config, agent_prompt, missed_task_policy, depends_on_task_id, requires_approval, trigger_on_completion, task_type, native_code, branch_condition, loop_condition, is_bundle_root, created_at
+RETURNING id, task_id, name, trigger_type, trigger_config, agent_prompt, missed_task_policy, depends_on_task_id, requires_approval, trigger_on_completion, task_type, native_code, branch_condition, loop_condition, is_bundle_root, created_at, swarm_config
 `
 
 type CreateTaskVersionParams struct {
@@ -432,6 +433,7 @@ func (q *Queries) CreateTaskVersion(ctx context.Context, arg CreateTaskVersionPa
 		&i.LoopCondition,
 		&i.IsBundleRoot,
 		&i.CreatedAt,
+		&i.SwarmConfig,
 	)
 	return i, err
 }
@@ -2255,7 +2257,8 @@ SET
     native_code = v.native_code,
     branch_condition = v.branch_condition,
     loop_condition = v.loop_condition,
-    is_bundle_root = v.is_bundle_root
+    is_bundle_root = v.is_bundle_root,
+    swarm_config = v.swarm_config
 FROM task_versions v
 WHERE tasks.id = $1 AND tasks.user_id = $2 AND v.id = $3 AND v.task_id = $1
 `
@@ -2337,21 +2340,23 @@ SET agent_prompt = $1,
     depends_on_task_id = $4,
     trigger_on_completion = $5,
     branch_condition = $6,
-    loop_condition = $7
-WHERE id = $8 AND user_id = $9
+    loop_condition = $7,
+    swarm_config = $8
+WHERE id = $9 AND user_id = $10
 RETURNING id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, task_type, native_code, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates, branch_condition, is_bundle_root, loop_condition, swarm_config
 `
 
 type UpdateTaskAgentPromptAndPolicyParams struct {
-	AgentPrompt         string      `json:"agent_prompt"`
-	MissedTaskPolicy    pgtype.Text `json:"missed_task_policy"`
-	UiCoordinates       []byte      `json:"ui_coordinates"`
-	DependsOnTaskID     pgtype.UUID `json:"depends_on_task_id"`
-	TriggerOnCompletion pgtype.Bool `json:"trigger_on_completion"`
-	BranchCondition     []byte      `json:"branch_condition"`
-	LoopCondition       []byte      `json:"loop_condition"`
-	ID                  pgtype.UUID `json:"id"`
-	UserID              string      `json:"user_id"`
+	AgentPrompt         string          `json:"agent_prompt"`
+	MissedTaskPolicy    pgtype.Text     `json:"missed_task_policy"`
+	UiCoordinates       json.RawMessage `json:"ui_coordinates"`
+	DependsOnTaskID     pgtype.UUID     `json:"depends_on_task_id"`
+	TriggerOnCompletion pgtype.Bool     `json:"trigger_on_completion"`
+	BranchCondition     json.RawMessage `json:"branch_condition"`
+	LoopCondition       json.RawMessage `json:"loop_condition"`
+	SwarmConfig         json.RawMessage `json:"swarm_config"`
+	ID                  pgtype.UUID     `json:"id"`
+	UserID              string          `json:"user_id"`
 }
 
 func (q *Queries) UpdateTaskAgentPromptAndPolicy(ctx context.Context, arg UpdateTaskAgentPromptAndPolicyParams) (Task, error) {
@@ -2363,6 +2368,7 @@ func (q *Queries) UpdateTaskAgentPromptAndPolicy(ctx context.Context, arg Update
 		arg.TriggerOnCompletion,
 		arg.BranchCondition,
 		arg.LoopCondition,
+		arg.SwarmConfig,
 		arg.ID,
 		arg.UserID,
 	)

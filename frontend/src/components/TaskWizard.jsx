@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, ChevronRight, ChevronLeft, Check, Cpu, Globe, 
   Terminal, Calendar, Zap, Shield, Loader2, Info,
-  Link2, GitBranch
+  Link2, GitBranch, Users, Plus, Trash2
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -17,11 +17,27 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
   const [showVariableSelector, setShowVariableSelector] = useState(false);
   const [error, setError] = useState(null);
 
+  const parseJSONField = (field, defaultValue) => {
+    if (!field) return defaultValue;
+    if (typeof field === 'object') return field;
+    try {
+      // Handle Base64 from Go []byte
+      return JSON.parse(atob(field));
+    } catch {
+      try {
+        // Handle raw JSON string
+        return JSON.parse(field);
+      } catch {
+        return defaultValue;
+      }
+    }
+  };
+
   // Form State
   const [formData, setFormData] = useState({
     name: '',
     workspace_id: '',
-    task_type: 'mcp_sampling', // 'mcp_sampling' or 'native_action'
+    task_type: 'mcp_sampling', // 'mcp_sampling', 'native_action', 'decision_router', 'swarm_router'
     agent_prompt: '',
     native_code: '',
     trigger_type: 'cron', // 'cron', 'interval', 'webhook'
@@ -30,7 +46,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
     missed_task_policy: 'skip',
     depends_on_task_id: '',
     trigger_on_completion: false,
-    branch_condition: { if: 'contains', value: '' }
+    branch_condition: { if: 'contains', value: '', key: '' }
   });
 
   const resetForm = () => {
@@ -47,7 +63,12 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
       missed_task_policy: 'skip',
       depends_on_task_id: '',
       trigger_on_completion: false,
-      branch_condition: { if: 'contains', value: '' }
+      branch_condition: { if: 'contains', value: '', key: '' },
+      swarm_config: {
+        consensus_mode: 'voting',
+        supervisor_prompt: 'You are the Executive Director. Read the council\'s debate and choose the best path.',
+        council: [{ name: 'Agent 1', prompt: 'Analyze this data.' }]
+      }
     });
     setError(null);
   };
@@ -106,21 +127,16 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
   useEffect(() => {
     if (isOpen) {
       if (initialData) {
-        const updateFormData = async () => {
-          setFormData(prev => ({
-            ...prev,
-            ...initialData,
-            // Ensure nested objects are handled
-            trigger_config: initialData.trigger_config || prev.trigger_config,
-            branch_condition: initialData.branch_condition || prev.branch_condition
-          }));
-        };
-        updateFormData();
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setFormData(prev => ({
+          ...prev,
+          ...initialData,
+          trigger_config: parseJSONField(initialData.trigger_config, prev.trigger_config),
+          branch_condition: parseJSONField(initialData.branch_condition, prev.branch_condition),
+          swarm_config: parseJSONField(initialData.swarm_config, prev.swarm_config)
+        }));
       } else {
-        const performReset = async () => {
-          resetForm();
-        };
-        performReset();
+        resetForm();
       }
     }
   }, [isOpen, initialData, fetchWorkspaces, fetchUserTasks]);
@@ -141,7 +157,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
         name: formData.name,
         workspace_id: formData.workspace_id,
         task_type: formData.task_type,
-        agent_prompt: formData.task_type === 'mcp_sampling' ? formData.agent_prompt : '',
+        agent_prompt: (formData.task_type === 'mcp_sampling' || formData.task_type === 'decision_router') ? formData.agent_prompt : '',
         native_code: formData.task_type === 'native_action' ? formData.native_code : '',
         trigger_type: formData.trigger_type,
         trigger_config: formData.trigger_config,
@@ -149,7 +165,8 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
         missed_task_policy: formData.missed_task_policy,
         depends_on_task_id: formData.depends_on_task_id || null,
         trigger_on_completion: formData.trigger_on_completion,
-        branch_condition: formData.branch_condition
+        branch_condition: formData.branch_condition,
+        swarm_config: formData.task_type === 'swarm_router' ? formData.swarm_config : null
       };
 
       let res;
@@ -290,7 +307,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
             >
               <div className="space-y-4">
                 <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Task Execution Mode</label>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <button 
                     onClick={() => updateFormData('task_type', 'mcp_sampling')}
                     className={`p-5 rounded-2xl border transition-all flex flex-col items-center gap-3 text-center ${formData.task_type === 'mcp_sampling' ? 'bg-accent-orange/10 border-accent-orange/50' : 'bg-black/20 border-white/5 hover:border-white/20'}`}
@@ -298,7 +315,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
                     <Cpu size={24} className={formData.task_type === 'mcp_sampling' ? 'text-accent-orange' : 'text-slate-500'} />
                     <div>
                       <div className="text-[10px] font-black text-white uppercase tracking-widest mb-1">Sampling</div>
-                      <div className="text-[8px] text-slate-500 uppercase tracking-tighter leading-tight">AI deciding actions</div>
+                      <div className="text-[8px] text-slate-500 uppercase tracking-tighter leading-tight">AI Actions</div>
                     </div>
                   </button>
                   <button 
@@ -308,7 +325,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
                     <Terminal size={24} className={formData.task_type === 'native_action' ? 'text-blue-400' : 'text-slate-500'} />
                     <div>
                       <div className="text-[10px] font-black text-white uppercase tracking-widest mb-1">Native</div>
-                      <div className="text-[8px] text-slate-500 uppercase tracking-tighter leading-tight">JS Execution</div>
+                      <div className="text-[8px] text-slate-500 uppercase tracking-tighter leading-tight">JS Exec</div>
                     </div>
                   </button>
                   <button 
@@ -318,7 +335,17 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
                     <GitBranch size={24} className={formData.task_type === 'decision_router' ? 'text-indigo-400' : 'text-slate-500'} />
                     <div>
                       <div className="text-[10px] font-black text-white uppercase tracking-widest mb-1">Router</div>
-                      <div className="text-[8px] text-slate-500 uppercase tracking-tighter leading-tight">Agentic Branching</div>
+                      <div className="text-[8px] text-slate-500 uppercase tracking-tighter leading-tight">Branching</div>
+                    </div>
+                  </button>
+                  <button 
+                    onClick={() => updateFormData('task_type', 'swarm_router')}
+                    className={`p-5 rounded-2xl border transition-all flex flex-col items-center gap-3 text-center ${formData.task_type === 'swarm_router' ? 'bg-purple-500/10 border-purple-500/50' : 'bg-black/20 border-white/5 hover:border-white/20'}`}
+                  >
+                    <Users size={24} className={formData.task_type === 'swarm_router' ? 'text-purple-400' : 'text-slate-500'} />
+                    <div>
+                      <div className="text-[10px] font-black text-white uppercase tracking-widest mb-1">Swarm</div>
+                      <div className="text-[8px] text-slate-500 uppercase tracking-tighter leading-tight">Council</div>
                     </div>
                   </button>
                 </div>
@@ -327,72 +354,172 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
-                  {formData.task_type === 'mcp_sampling' ? 'Agent Prompt' : formData.task_type === 'decision_router' ? 'Routing Logic' : 'Native Code'}
-                </label>
-                  <div className="relative">
-                    <button 
-                      onClick={() => setShowVariableSelector(!showVariableSelector)}
-                      className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-[10px] font-black text-slate-400 uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all"
-                    >
-                      <Link2 size={12} />
-                      Insert Variable
-                    </button>
-                    
-                    <AnimatePresence>
-                      {showVariableSelector && (
-                        <motion.div 
-                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                          className="absolute right-0 mt-2 w-64 bg-zinc-800 border border-white/10 rounded-xl shadow-2xl z-20 overflow-hidden"
+                    {formData.task_type === 'swarm_router' ? 'Council Configuration' : 
+                     formData.task_type === 'mcp_sampling' ? 'Agent Prompt' : 
+                     formData.task_type === 'decision_router' ? 'Routing Logic' : 'Native Code'}
+                  </label>
+                  
+                  {formData.task_type !== 'swarm_router' && (
+                    <div className="relative">
+                      <button 
+                        onClick={() => setShowVariableSelector(!showVariableSelector)}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-[10px] font-black text-slate-400 uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all"
+                      >
+                        <Link2 size={12} />
+                        Insert Variable
+                      </button>
+                      
+                      <AnimatePresence>
+                        {showVariableSelector && (
+                          <motion.div 
+                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                            className="absolute right-0 mt-2 w-64 bg-zinc-800 border border-white/10 rounded-xl shadow-2xl z-20 overflow-hidden"
+                          >
+                            <div className="p-3 border-b border-white/5 bg-white/5">
+                              <div className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Available Parent Data</div>
+                            </div>
+                            <div className="max-h-48 overflow-y-auto custom-scrollbar">
+                              {userTasks.length > 0 ? (
+                                userTasks.map(t => (
+                                  <button 
+                                    key={t.id}
+                                    onClick={() => {
+                                      const variable = `{{task.${t.id}.output}}`;
+                                      const field = formData.task_type === 'mcp_sampling' ? 'agent_prompt' : 'native_code';
+                                      updateFormData(field, formData[field] + variable);
+                                      setShowVariableSelector(false);
+                                    }}
+                                    className="w-full px-4 py-3 text-left hover:bg-white/5 transition-colors border-b border-white/5 last:border-0"
+                                  >
+                                    <div className="text-[10px] font-bold text-white truncate">{t.name}</div>
+                                    <div className="text-[8px] font-mono text-slate-500 truncate">ID: {t.id.substring(0, 8)}...</div>
+                                  </button>
+                                ))
+                              ) : (
+                                <div className="p-4 text-[10px] text-slate-500 text-center italic">No tasks available</div>
+                              )}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  )}
+                </div>
+
+                {formData.task_type === 'swarm_router' ? (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-3">
+                      <button 
+                        onClick={() => updateFormData('swarm_config', { ...formData.swarm_config, consensus_mode: 'voting' })}
+                        className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 text-center ${formData.swarm_config.consensus_mode === 'voting' ? 'bg-purple-500/10 border-purple-500/50' : 'bg-black/20 border-white/5 hover:border-white/20'}`}
+                      >
+                        <Check size={20} className={formData.swarm_config.consensus_mode === 'voting' ? 'text-purple-400' : 'text-slate-500'} />
+                        <div>
+                          <div className="text-[10px] font-black text-white uppercase tracking-widest">Voting</div>
+                          <div className="text-[8px] text-slate-500 uppercase tracking-tighter">Majority Wins</div>
+                        </div>
+                      </button>
+                      <button 
+                        onClick={() => updateFormData('swarm_config', { ...formData.swarm_config, consensus_mode: 'supervisor' })}
+                        className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 text-center ${formData.swarm_config.consensus_mode === 'supervisor' ? 'bg-indigo-500/10 border-indigo-500/50' : 'bg-black/20 border-white/5 hover:border-white/20'}`}
+                      >
+                        <Shield size={20} className={formData.swarm_config.consensus_mode === 'supervisor' ? 'text-indigo-400' : 'text-slate-500'} />
+                        <div>
+                          <div className="text-[10px] font-black text-white uppercase tracking-widest">Supervisor</div>
+                          <div className="text-[8px] text-slate-500 uppercase tracking-tighter">Human/AI Arbiter</div>
+                        </div>
+                      </button>
+                    </div>
+
+                    {formData.swarm_config.consensus_mode === 'supervisor' && (
+                      <div className="space-y-2">
+                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Supervisor Persona</label>
+                        <textarea 
+                          value={formData.swarm_config.supervisor_prompt}
+                          onChange={(e) => updateFormData('swarm_config', { ...formData.swarm_config, supervisor_prompt: e.target.value })}
+                          className="w-full bg-black/40 border border-white/5 rounded-2xl p-4 text-white text-sm focus:outline-none focus:border-purple-500/50 transition-colors h-24 resize-none"
+                        />
+                      </div>
+                    )}
+
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">The Council</label>
+                        <button 
+                          onClick={() => {
+                            const newCouncil = [...formData.swarm_config.council, { name: `Agent ${formData.swarm_config.council.length + 1}`, prompt: '' }];
+                            updateFormData('swarm_config', { ...formData.swarm_config, council: newCouncil });
+                          }}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-purple-500/10 border border-purple-500/20 rounded-lg text-[9px] font-black text-purple-400 uppercase tracking-widest hover:bg-purple-500/20 transition-all"
                         >
-                          <div className="p-3 border-b border-white/5 bg-white/5">
-                            <div className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Available Parent Data</div>
+                          <Plus size={12} />
+                          Add Agent
+                        </button>
+                      </div>
+
+                      <div className="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                        {formData.swarm_config.council.map((agent, idx) => (
+                          <div key={idx} className="p-4 bg-black/40 border border-white/5 rounded-2xl space-y-3 relative group">
+                            <div className="flex items-center gap-3">
+                              <input 
+                                value={agent.name}
+                                onChange={(e) => {
+                                  const newCouncil = [...formData.swarm_config.council];
+                                  newCouncil[idx].name = e.target.value;
+                                  updateFormData('swarm_config', { ...formData.swarm_config, council: newCouncil });
+                                }}
+                                className="bg-transparent text-[11px] font-black text-white uppercase tracking-widest focus:outline-none w-full"
+                                placeholder="Agent Name..."
+                              />
+                              <button 
+                                onClick={() => {
+                                  const newCouncil = formData.swarm_config.council.filter((_, i) => i !== idx);
+                                  updateFormData('swarm_config', { ...formData.swarm_config, council: newCouncil });
+                                }}
+                                className="p-1.5 text-slate-500 hover:text-red-400 transition-colors"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                            <textarea 
+                              value={agent.prompt}
+                              onChange={(e) => {
+                                const newCouncil = [...formData.swarm_config.council];
+                                newCouncil[idx].prompt = e.target.value;
+                                updateFormData('swarm_config', { ...formData.swarm_config, council: newCouncil });
+                              }}
+                              placeholder="Describe this agent's specialty..."
+                              className="w-full bg-black/20 border border-white/5 rounded-xl p-3 text-xs text-slate-300 focus:outline-none focus:border-purple-500/30 transition-colors h-20 resize-none"
+                            />
                           </div>
-                          <div className="max-h-48 overflow-y-auto custom-scrollbar">
-                            {userTasks.length > 0 ? (
-                              userTasks.map(t => (
-                                <button 
-                                  key={t.id}
-                                  onClick={() => {
-                                    const variable = `{{task.${t.id}.output}}`;
-                                    const field = formData.task_type === 'mcp_sampling' ? 'agent_prompt' : 'native_code';
-                                    updateFormData(field, formData[field] + variable);
-                                    setShowVariableSelector(false);
-                                  }}
-                                  className="w-full px-4 py-3 text-left hover:bg-white/5 transition-colors border-b border-white/5 last:border-0"
-                                >
-                                  <div className="text-[10px] font-bold text-white truncate">{t.name}</div>
-                                  <div className="text-[8px] font-mono text-slate-500 truncate">ID: {t.id.substring(0, 8)}...</div>
-                                </button>
-                              ))
-                            ) : (
-                              <div className="p-4 text-[10px] text-slate-500 text-center italic">No tasks available</div>
-                            )}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <textarea 
-                  value={formData.task_type === 'native_action' ? formData.native_code : formData.agent_prompt}
-                  onChange={(e) => updateFormData(formData.task_type === 'native_action' ? 'native_code' : 'agent_prompt', e.target.value)}
-                  placeholder={
-                    formData.task_type === 'mcp_sampling' ? "Describe what the AI should do..." : 
-                    formData.task_type === 'decision_router' ? "Define the criteria for branching. E.g. 'Categorize the sentiment of the text into: positive, negative, or neutral'..." : 
-                    "// Write your action code here..."
-                  }
-                  className="w-full bg-black/40 border border-white/5 rounded-2xl p-5 text-white font-mono text-sm focus:outline-none focus:border-accent-orange/50 transition-colors h-48 resize-none"
-                />
-                <div className="flex items-center gap-2 text-slate-500">
-                  <Info size={12} />
-                  <span className="text-[9px] font-medium uppercase tracking-wider italic">
-                    {formData.task_type === 'mcp_sampling' ? 'The LLM will use this as instructions for every run.' : 
-                     formData.task_type === 'decision_router' ? 'This node will analyze input and pick the best outbound branch.' : 
-                     'This code runs in a sandboxed V8 environment.'}
-                  </span>
-                </div>
+                ) : (
+                  <>
+                    <textarea 
+                      value={formData.task_type === 'native_action' ? formData.native_code : formData.agent_prompt}
+                      onChange={(e) => updateFormData(formData.task_type === 'native_action' ? 'native_code' : 'agent_prompt', e.target.value)}
+                      placeholder={
+                        formData.task_type === 'mcp_sampling' ? "Describe what the AI should do..." : 
+                        formData.task_type === 'decision_router' ? "Define the criteria for branching. E.g. 'Categorize the sentiment of the text into: positive, negative, or neutral'..." : 
+                        "// Write your action code here..."
+                      }
+                      className="w-full bg-black/40 border border-white/5 rounded-2xl p-5 text-white font-mono text-sm focus:outline-none focus:border-accent-orange/50 transition-colors h-48 resize-none"
+                    />
+                    <div className="flex items-center gap-2 text-slate-500">
+                      <Info size={12} />
+                      <span className="text-[9px] font-medium uppercase tracking-wider italic">
+                        {formData.task_type === 'mcp_sampling' ? 'The LLM will use this as instructions for every run.' : 
+                         formData.task_type === 'decision_router' ? 'This node will analyze input and pick the best outbound branch.' : 
+                         'This code runs in a sandboxed V8 environment.'}
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
             </motion.div>
           )}
@@ -469,17 +596,31 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
                     </div>
                     
                     <div className="space-y-4 ml-14">
-                      <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">
-                        Only run if parent output contains:
-                      </div>
-                      
-                      <input 
-                        type="text"
-                        value={formData.branch_condition.value}
-                        onChange={(e) => updateFormData('branch_condition', { ...formData.branch_condition, value: e.target.value })}
-                        placeholder="e.g. 'error', 'success' (leave empty for always)"
-                        className="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white font-mono text-xs focus:outline-none focus:border-accent-orange/50 transition-colors"
-                      />
+                      {(() => {
+                        const parent = userTasks.find(t => t.id === formData.depends_on_task_id);
+                        const isRouter = parent?.task_type === 'decision_router' || parent?.task_type === 'swarm_router';
+                        
+                        return (
+                          <>
+                            <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">
+                              {isRouter ? 'Route Key (must match router output):' : 'Only run if parent output contains:'}
+                            </div>
+                            
+                            <input 
+                              type="text"
+                              value={isRouter ? (formData.branch_condition.key || '') : (formData.branch_condition.value || '')}
+                              onChange={(e) => {
+                                const newCond = { ...formData.branch_condition };
+                                if (isRouter) newCond.key = e.target.value;
+                                else newCond.value = e.target.value;
+                                updateFormData('branch_condition', newCond);
+                              }}
+                              placeholder={isRouter ? "e.g. 'positive', 'alert', 'path_a'" : "e.g. 'error', 'success'"}
+                              className="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white font-mono text-xs focus:outline-none focus:border-accent-orange/50 transition-colors"
+                            />
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                 </motion.div>
@@ -613,9 +754,11 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
                       <div className="text-white font-bold flex items-center gap-2">
                          {formData.task_type === 'mcp_sampling' ? <Cpu size={14} className="text-accent-orange" /> : 
                           formData.task_type === 'decision_router' ? <GitBranch size={14} className="text-indigo-400" /> : 
+                          formData.task_type === 'swarm_router' ? <Users size={14} className="text-purple-400" /> : 
                           <Terminal size={14} className="text-blue-400" />}
                          {formData.task_type === 'mcp_sampling' ? 'LLM' : 
-                          formData.task_type === 'decision_router' ? 'Router' : 'Native'}
+                          formData.task_type === 'decision_router' ? 'Router' : 
+                          formData.task_type === 'swarm_router' ? 'Swarm' : 'Native'}
                       </div>
                     </div>
                     <div>
@@ -623,9 +766,10 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
                       <div className="text-white font-bold uppercase tracking-widest text-[10px]">{formData.trigger_type}</div>
                     </div>
                     <div>
-                      <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Approval</div>
-                      <div className={`text-[10px] font-black uppercase tracking-widest ${formData.requires_approval ? 'text-amber-500' : 'text-slate-500'}`}>
-                        {formData.requires_approval ? 'Required' : 'Optional'}
+                      <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Detail</div>
+                      <div className="text-white font-bold text-[10px] uppercase tracking-widest">
+                        {formData.task_type === 'swarm_router' ? `${formData.swarm_config.council.length} Agents` : 
+                         formData.requires_approval ? 'Approval Required' : 'Auto-run'}
                       </div>
                     </div>
                     {formData.depends_on_task_id && (
@@ -641,7 +785,9 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
                  <div className="pt-6 border-t border-white/5">
                     <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-4">Payload Preview</div>
                     <div className="bg-black/60 rounded-2xl p-6 font-mono text-[10px] text-slate-400 overflow-hidden text-ellipsis max-h-32">
-                       {formData.task_type === 'mcp_sampling' ? formData.agent_prompt : formData.native_code}
+                       {formData.task_type === 'swarm_router' ? 
+                         `Swarm (${formData.swarm_config.consensus_mode}): ${formData.swarm_config.council.map(a => a.name).join(', ')}` : 
+                         (formData.task_type === 'native_action' ? formData.native_code : formData.agent_prompt)}
                     </div>
                  </div>
               </div>

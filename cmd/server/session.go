@@ -209,7 +209,7 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 						}
 
 						// Keep DB operations alive across prompt resolution, sampling, and status updates.
-						dbCtx, dbCancel := context.WithTimeout(ctx, 45*time.Second)
+						dbCtx, dbCancel := context.WithTimeout(ctx, 120*time.Second)
 						defer dbCancel()
 
 						t, err := queries.GetTaskByID(dbCtx, db.GetTaskByIDParams{

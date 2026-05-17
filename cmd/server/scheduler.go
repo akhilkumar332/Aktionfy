@@ -757,7 +757,7 @@ func evaluateBranchCondition(condition []byte, parentOutput string) bool {
 
 func executeDecisionRouter(ctx context.Context, mcpServer *server.MCPServer, t db.Task, prevOutput string) {
 	taskID := formatUUID(t.ID)
-	executionID := fmt.Sprintf("%s-router-%d", taskID, time.Now().UTC().UnixNano())
+	executionID := fmt.Sprintf("%s-%d", taskID, time.Now().UTC().UnixNano())
 
 	if _, err := queries.CreateExecutionTrace(ctx, db.CreateExecutionTraceParams{
 		TaskID:      t.ID,
@@ -816,44 +816,10 @@ Respond with a JSON object: {"choice": "branch_key", "reasoning": "..."}`, prevO
 	}
 
 	// Extract choice
-	var choice string
-	responseText := ""
-	if res != nil {
-		// Use JSON to extract text safely since type assertions are failing due to unknown library structure
-		resBytes, _ := json.Marshal(res)
-		var resMap map[string]interface{}
-		json.Unmarshal(resBytes, &resMap)
-
-		if content, ok := resMap["content"].(map[string]interface{}); ok {
-			if text, ok := content["text"].(string); ok {
-				responseText = text
-			}
-		} else if contentSlice, ok := resMap["content"].([]interface{}); ok && len(contentSlice) > 0 {
-			if first, ok := contentSlice[0].(map[string]interface{}); ok {
-				if text, ok := first["text"].(string); ok {
-					responseText = text
-				}
-			}
-		}
-		var respObj struct {
-			Choice string `json:"choice"`
-		}
-		// Basic JSON extraction
-		if err := json.Unmarshal([]byte(responseText), &respObj); err == nil {
-			choice = respObj.Choice
-		} else {
-			// Try fuzzy matching if JSON is wrapped in markdown
-			re := regexp.MustCompile(`\{.*"choice".*\}`)
-			match := re.FindString(responseText)
-			if match != "" {
-				json.Unmarshal([]byte(match), &respObj)
-				choice = respObj.Choice
-			}
-		}
-	}
+	choice := parseLLMChoice(res)
 
 	if choice == "" {
-		log.Printf("Decision router %s failed to get a choice from LLM response: %s", taskID, responseText)
+		log.Printf("Decision router %s failed to get a choice from LLM response", taskID)
 		queries.UpdateTaskApprovalStatus(ctx, db.UpdateTaskApprovalStatusParams{
 			LastApprovalStatus: pgtype.Text{String: ApprovalStatusNeedsRouting, Valid: true},
 			Status:             pgtype.Text{String: StatusHalted, Valid: true},
@@ -921,6 +887,58 @@ Respond with a JSON object: {"choice": "branch_key", "reasoning": "..."}`, prevO
 			UserID: t.UserID,
 		})
 	}
+}
+
+// extractRawText gets the text content from an LLM sampling result.
+func extractRawText(res interface{}) string {
+	if res == nil {
+		return ""
+	}
+
+	resBytes, _ := json.Marshal(res)
+	var resMap map[string]interface{}
+	json.Unmarshal(resBytes, &resMap)
+
+	if content, ok := resMap["content"].(map[string]interface{}); ok {
+		if text, ok := content["text"].(string); ok {
+			return text
+		}
+	} else if contentSlice, ok := resMap["content"].([]interface{}); ok && len(contentSlice) > 0 {
+		if first, ok := contentSlice[0].(map[string]interface{}); ok {
+			if text, ok := first["text"].(string); ok {
+				return text
+			}
+		}
+	}
+
+	return ""
+}
+
+// parseLLMChoice extracts the "choice" field from an LLM sampling result.
+func parseLLMChoice(res interface{}) string {
+	responseText := extractRawText(res)
+	if responseText == "" {
+		return ""
+	}
+
+	var respObj struct {
+		Choice string `json:"choice"`
+	}
+	// Basic JSON extraction
+	if err := json.Unmarshal([]byte(responseText), &respObj); err == nil {
+		return respObj.Choice
+	}
+
+	// Try fuzzy matching if JSON is wrapped in markdown
+	re := regexp.MustCompile(`\{.*"choice".*\}`)
+	match := re.FindString(responseText)
+	if match != "" {
+		if err := json.Unmarshal([]byte(match), &respObj); err == nil {
+			return respObj.Choice
+		}
+	}
+
+	return ""
 }
 
 // completeTask calls the PLpgSQL function to set the task back to active and update next_run
@@ -1091,8 +1109,7 @@ type SwarmConfig struct {
 
 func executeSwarmRouter(ctx context.Context, mcpServer *server.MCPServer, t db.Task, prevOutput string) {
 	taskID := formatUUID(t.ID)
-	// Using workerID from the package scope
-	executionID := fmt.Sprintf("exec-%s-%d", taskID, time.Now().UnixNano())
+	executionID := fmt.Sprintf("%s-%d", taskID, time.Now().UTC().UnixNano())
 
 	if _, err := queries.CreateExecutionTrace(ctx, db.CreateExecutionTraceParams{
 		TaskID:      t.ID,
@@ -1143,10 +1160,15 @@ func executeSwarmRouter(ctx context.Context, mcpServer *server.MCPServer, t db.T
 				}
 			}()
 
-			agentPrompt := fmt.Sprintf("You are %s. %s\n\nAnalyze this input:\n%s\n\nAvailable options:\n%s\nOutput JSON with a single key 'choice' containing your selected option.", a.Name, a.Prompt, prevOutput, optionsStr)
+			agentPrompt := ""
+			if swarmCfg.ConsensusMode == "voting" {
+				agentPrompt = fmt.Sprintf("You are %s. %s\n\nAnalyze this input:\n%s\n\nAvailable options:\n%s\nOutput JSON with a single key 'choice' containing your selected option.", a.Name, a.Prompt, prevOutput, optionsStr)
+			} else {
+				agentPrompt = fmt.Sprintf("You are %s. %s\n\nProvide a detailed analysis of this input:\n%s\n\nAvailable options are:\n%s\nState which option you recommend and why.", a.Name, a.Prompt, prevOutput, optionsStr)
+			}
 
 			// Request Sampling
-			sampleCtx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+			sampleCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
 			defer cancel()
 
 			req := mcp.CreateMessageRequest{
@@ -1164,52 +1186,29 @@ func executeSwarmRouter(ctx context.Context, mcpServer *server.MCPServer, t db.T
 				return
 			}
 
-			// Parse response
-			resBytes, _ := json.Marshal(res)
-			var resMap map[string]interface{}
-			json.Unmarshal(resBytes, &resMap)
-			var responseText string
-			if content, ok := resMap["content"].(map[string]interface{}); ok {
-				if text, ok := content["text"].(string); ok {
-					responseText = text
-				}
-			} else if contentSlice, ok := resMap["content"].([]interface{}); ok && len(contentSlice) > 0 {
-				if first, ok := contentSlice[0].(map[string]interface{}); ok {
-					if text, ok := first["text"].(string); ok {
-						responseText = text
-					}
-				}
-			}
+			// Extract raw text for transcript/traces
+			rawText := extractRawText(res)
 
-			// Extract choice
-			var choice string
-			var respObj struct {
-				Choice string `json:"choice"`
-			}
-			if err := json.Unmarshal([]byte(responseText), &respObj); err == nil {
-				choice = respObj.Choice
+			if swarmCfg.ConsensusMode == "voting" {
+				choice := parseLLMChoice(res)
+				if choice != "" {
+					mu.Lock()
+					agentResponses[a.Name] = choice
+					mu.Unlock()
+				}
 			} else {
-				re := regexp.MustCompile(`\{.*"choice".*\}`)
-				match := re.FindString(responseText)
-				if match != "" {
-					json.Unmarshal([]byte(match), &respObj)
-					choice = respObj.Choice
-				}
-			}
-
-			if choice != "" {
 				mu.Lock()
-				agentResponses[a.Name] = choice
+				agentResponses[a.Name] = rawText
 				mu.Unlock()
-
-				queries.CreateExecutionTrace(context.Background(), db.CreateExecutionTraceParams{
-					TaskID:      t.ID,
-					ExecutionID: executionID,
-					WorkerID:    workerID,
-					StepName:    fmt.Sprintf("Swarm Agent: %s", a.Name),
-					OutputData:  pgtype.Text{String: fmt.Sprintf("Choice: %s", choice), Valid: true},
-				})
 			}
+
+			queries.CreateExecutionTrace(ctx, db.CreateExecutionTraceParams{
+				TaskID:      t.ID,
+				ExecutionID: executionID,
+				WorkerID:    workerID,
+				StepName:    fmt.Sprintf("Swarm Agent: %s", a.Name),
+				OutputData:  pgtype.Text{String: rawText, Valid: true},
+			})
 		}(agent)
 	}
 
@@ -1217,6 +1216,8 @@ func executeSwarmRouter(ctx context.Context, mcpServer *server.MCPServer, t db.T
 
 	// Consensus Resolution
 	finalChoice := ""
+	consensusDetails := ""
+	
 	if swarmCfg.ConsensusMode == "voting" {
 		counts := make(map[string]int)
 		maxCount := 0
@@ -1228,6 +1229,17 @@ func executeSwarmRouter(ctx context.Context, mcpServer *server.MCPServer, t db.T
 			}
 		}
 		
+		tallyStr := "Vote Tally: "
+		first := true
+		for opt, count := range counts {
+			if !first {
+				tallyStr += ", "
+			}
+			tallyStr += fmt.Sprintf("%s=%d", opt, count)
+			first = false
+		}
+		consensusDetails = tallyStr
+
 		tieCount := 0
 		for _, c := range counts {
 			if c == maxCount {
@@ -1236,18 +1248,19 @@ func executeSwarmRouter(ctx context.Context, mcpServer *server.MCPServer, t db.T
 		}
 		if tieCount > 1 {
 			finalChoice = "" // Tie, force fallback
+			consensusDetails += " (Tie Detected)"
 		}
 	} else if swarmCfg.ConsensusMode == "supervisor" {
 		// Construct transcript
 		transcript := "Debate Transcript:\n"
-		for name, choice := range agentResponses {
-			transcript += fmt.Sprintf("Agent %s voted for: %s\n", name, choice)
+		for name, response := range agentResponses {
+			transcript += fmt.Sprintf("Agent %s analysis:\n%s\n---\n", name, response)
 		}
 
 		supervisorPrompt := fmt.Sprintf("%s\n\n%s\n\nAvailable options:\n%s\nOutput JSON with a single key 'choice' containing your selected option.", swarmCfg.SupervisorPrompt, transcript, optionsStr)
 
 		// Run supervisor LLM call
-		sampleCtx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+		sampleCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
 		defer cancel()
 
 		req := mcp.CreateMessageRequest{
@@ -1259,35 +1272,11 @@ func executeSwarmRouter(ctx context.Context, mcpServer *server.MCPServer, t db.T
 			},
 		}
 		res, err := mcpServer.RequestSampling(sampleCtx, req)
-		var responseText string
-		if res != nil && err == nil {
-			resBytes, _ := json.Marshal(res)
-			var resMap map[string]interface{}
-			json.Unmarshal(resBytes, &resMap)
-			if content, ok := resMap["content"].(map[string]interface{}); ok {
-				if text, ok := content["text"].(string); ok {
-					responseText = text
-				}
-			} else if contentSlice, ok := resMap["content"].([]interface{}); ok && len(contentSlice) > 0 {
-				if first, ok := contentSlice[0].(map[string]interface{}); ok {
-					if text, ok := first["text"].(string); ok {
-						responseText = text
-					}
-				}
-			}
-			var respObj struct {
-				Choice string `json:"choice"`
-			}
-			if err := json.Unmarshal([]byte(responseText), &respObj); err == nil {
-				finalChoice = respObj.Choice
-			} else {
-				re := regexp.MustCompile(`\{.*"choice".*\}`)
-				match := re.FindString(responseText)
-				if match != "" {
-					json.Unmarshal([]byte(match), &respObj)
-					finalChoice = respObj.Choice
-				}
-			}
+		if err == nil && res != nil {
+			finalChoice = parseLLMChoice(res)
+			consensusDetails = fmt.Sprintf("Supervisor chose: %s", finalChoice)
+		} else {
+			consensusDetails = "Supervisor failed to respond"
 		}
 	}
 
@@ -1296,7 +1285,7 @@ func executeSwarmRouter(ctx context.Context, mcpServer *server.MCPServer, t db.T
 		ExecutionID: executionID,
 		WorkerID:    workerID,
 		StepName:    "Swarm Consensus Reached",
-		OutputData:  pgtype.Text{String: fmt.Sprintf("Final Choice: %s", finalChoice), Valid: true},
+		OutputData:  pgtype.Text{String: consensusDetails, Valid: true},
 	})
 
 	// Match choice and activate task

@@ -207,8 +207,9 @@ SET agent_prompt = $1,
     depends_on_task_id = $4,
     trigger_on_completion = $5,
     branch_condition = $6,
-    loop_condition = $7
-WHERE id = $8 AND user_id = $9
+    loop_condition = $7,
+    swarm_config = $8
+WHERE id = $9 AND user_id = $10
 RETURNING *;
 
 -- name: CreateWorkspace :one
@@ -361,12 +362,12 @@ WHERE start_time > NOW() - INTERVAL '24 hours';
 INSERT INTO task_versions (
     task_id, name, trigger_type, trigger_config, agent_prompt, 
     missed_task_policy, depends_on_task_id, requires_approval, 
-    trigger_on_completion, task_type, native_code, branch_condition, is_bundle_root, loop_condition
+    trigger_on_completion, task_type, native_code, branch_condition, is_bundle_root, loop_condition, swarm_config
 ) 
 SELECT 
     t.id, t.name, t.trigger_type, t.trigger_config, t.agent_prompt, 
     t.missed_task_policy, t.depends_on_task_id, t.requires_approval, 
-    t.trigger_on_completion, t.task_type, t.native_code, t.branch_condition, t.is_bundle_root, t.loop_condition
+    t.trigger_on_completion, t.task_type, t.native_code, t.branch_condition, t.is_bundle_root, t.loop_condition, t.swarm_config
 FROM tasks t WHERE t.id = $1 AND t.user_id = $2
 RETURNING *;
 
@@ -391,7 +392,8 @@ SET
     native_code = v.native_code,
     branch_condition = v.branch_condition,
     loop_condition = v.loop_condition,
-    is_bundle_root = v.is_bundle_root
+    is_bundle_root = v.is_bundle_root,
+    swarm_config = v.swarm_config
 FROM task_versions v
 WHERE tasks.id = $1 AND tasks.user_id = $2 AND v.id = $3 AND v.task_id = $1;
 
