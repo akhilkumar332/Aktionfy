@@ -220,6 +220,22 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 							emailStr = userEmail.String
 						}
 
+						if t.TaskType.String == TaskTypeDecisionRouter {
+							// Decision Router logic:
+							// 1. Get output of parent task
+							parentOutput := ""
+							if t.DependsOnTaskID.Valid {
+								outBytes, _ := queries.GetTaskOutput(dbCtx, db.GetTaskOutputParams{
+									TaskID: t.DependsOnTaskID,
+									UserID: userID,
+								})
+								parentOutput = string(outBytes)
+							}
+
+							executeDecisionRouter(dbCtx, mcpServer, t, parentOutput)
+							return
+						}
+
 						// 2. Resolve Prompt (Secrets + Chaining + Webhook Body)
 						queries.CreateExecutionTrace(dbCtx, db.CreateExecutionTraceParams{
 							TaskID:      tid,

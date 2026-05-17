@@ -841,6 +841,59 @@ func (q *Queries) GetDependentTasksToTrigger(ctx context.Context, dependsOnTaskI
 	return items, nil
 }
 
+const getDependentTasks = `-- name: GetDependentTasks :many
+SELECT id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, task_type, native_code, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates, branch_condition, is_bundle_root, loop_condition FROM tasks WHERE depends_on_task_id = $1
+`
+
+func (q *Queries) GetDependentTasks(ctx context.Context, dependsOnTaskID pgtype.UUID) ([]Task, error) {
+	rows, err := q.db.Query(ctx, getDependentTasks, dependsOnTaskID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Task
+	for rows.Next() {
+		var i Task
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Name,
+			&i.TriggerType,
+			&i.TriggerConfig,
+			&i.AgentPrompt,
+			&i.Status,
+			&i.LockedBy,
+			&i.NextRun,
+			&i.LastRun,
+			&i.FailureCount,
+			&i.MissedTaskPolicy,
+			&i.DependsOnTaskID,
+			&i.CreatedAt,
+			&i.RequiresApproval,
+			&i.EncryptedSecrets,
+			&i.LastApprovalStatus,
+			&i.TriggerOnCompletion,
+			&i.TaskType,
+			&i.NativeCode,
+			&i.WorkspaceID,
+			&i.MaxRetries,
+			&i.RetryCount,
+			&i.BackoffStrategy,
+			&i.UiCoordinates,
+			&i.BranchCondition,
+			&i.IsBundleRoot,
+			&i.LoopCondition,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getDispatchableTaskByID = `-- name: GetDispatchableTaskByID :one
 SELECT id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, task_type, native_code, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates, branch_condition, is_bundle_root, loop_condition FROM tasks
 WHERE id = $1

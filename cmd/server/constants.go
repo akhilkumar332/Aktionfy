@@ -6,6 +6,7 @@ const (
 	StatusProcessing = "processing"
 	StatusCompleted  = "completed"
 	StatusError      = "error"
+	StatusHalted     = "halted"
 
 	TierFree = "free"
 	TierPlus = "plus"
@@ -21,4 +22,8 @@ const (
 	TriggerCron     = "cron"
 	TriggerInterval = "interval"
 	TriggerDate     = "date"
+
+	TaskTypeDecisionRouter = "decision_router"
+
+	ApprovalStatusNeedsRouting = "needs_routing"
 )

@@ -73,6 +73,9 @@ UPDATE users SET role = $1 WHERE email = $2;
 -- name: ExportUserTasks :many
 SELECT * FROM tasks WHERE user_id = $1;
 
+-- name: GetDependentTasks :many
+SELECT * FROM tasks WHERE depends_on_task_id = $1;
+
 -- name: LinkTaskDependency :exec
 UPDATE tasks
 SET depends_on_task_id = $1, trigger_on_completion = $2

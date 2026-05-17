@@ -19,8 +19,8 @@ func registerTools(s *server.MCPServer) {
 	createTaskTool := mcp.NewTool("create_task",
 		mcp.WithDescription("Creates a new scheduled task"),
 		mcp.WithString("name", mcp.Required(), mcp.Description("Task name")),
-		mcp.WithString("trigger_type", mcp.Required(), mcp.Description("Trigger type (e.g. interval, cron)")),
-		mcp.WithString("agent_prompt", mcp.Required(), mcp.Description("Agent prompt")),
+		mcp.WithString("trigger_type", mcp.Required(), mcp.Description("Trigger type (e.g. interval, cron, date)")),
+		mcp.WithString("agent_prompt", mcp.Description("Agent prompt")),
 		mcp.WithObject("trigger_config", mcp.Required(), mcp.Description("Trigger configuration")),
 		mcp.WithString("missed_task_policy", mcp.Description("Policy for missed tasks (skip, run_immediately)")),
 		mcp.WithString("depends_on_task_id", mcp.Description("Optional UUID of a task this task depends on")),
@@ -28,6 +28,8 @@ func registerTools(s *server.MCPServer) {
 		mcp.WithBoolean("requires_approval", mcp.Description("If true, the task will require manual approval before each execution")),
 		mcp.WithObject("branch_condition", mcp.Description("Optional branch condition for dependent tasks (e.g. {\"if\": \"contains\", \"value\": \"success\"})")),
 		mcp.WithBoolean("is_bundle_root", mcp.Description("If true, this task is the root of a workflow bundle")),
+		mcp.WithString("task_type", mcp.Description("Optional task type (e.g. decision_router, native_action)")),
+		mcp.WithString("native_code", mcp.Description("Optional JS code for native_action tasks")),
 	)
 
 	s.AddTool(createTaskTool, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -72,9 +74,9 @@ func registerTools(s *server.MCPServer) {
 		if !ok {
 			return mcp.NewToolResultError("missing or invalid 'trigger_type'"), nil
 		}
-		agentPrompt, ok := args["agent_prompt"].(string)
-		if !ok {
-			return mcp.NewToolResultError("missing or invalid 'agent_prompt'"), nil
+		agentPrompt := ""
+		if ap, ok := args["agent_prompt"].(string); ok {
+			agentPrompt = ap
 		}
 		if len(agentPrompt) > 10000 {
 			return mcp.NewToolResultError("agent_prompt too long: maximum 10,000 characters"), nil
@@ -82,6 +84,15 @@ func registerTools(s *server.MCPServer) {
 		triggerConfig, ok := args["trigger_config"].(map[string]interface{})
 		if !ok {
 			return mcp.NewToolResultError("missing or invalid 'trigger_config'"), nil
+		}
+
+		taskType := ""
+		if tt, ok := args["task_type"].(string); ok {
+			taskType = tt
+		}
+		nativeCode := ""
+		if nc, ok := args["native_code"].(string); ok {
+			nativeCode = nc
 		}
 
 		// Optional Phase 3 fields
@@ -163,6 +174,8 @@ func registerTools(s *server.MCPServer) {
 			EncryptedSecrets: encryptedSecrets,
 			BranchCondition:  branchCondition,
 			IsBundleRoot:     pgtype.Bool{Bool: isBundleRoot, Valid: true},
+			TaskType:         pgtype.Text{String: taskType, Valid: true},
+			NativeCode:       pgtype.Text{String: nativeCode, Valid: true},
 		})
 
 		if err != nil {

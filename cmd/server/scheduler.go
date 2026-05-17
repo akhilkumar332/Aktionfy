@@ -13,6 +13,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/mark3labs/mcp-go/server"
 	"github.com/robfig/cron/v3"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
@@ -706,6 +708,159 @@ func evaluateBranchCondition(condition []byte, parentOutput string) bool {
 		return strings.Contains(parentOutput, val)
 	default:
 		return true
+	}
+}
+
+func executeDecisionRouter(ctx context.Context, mcpServer *server.MCPServer, t db.Task, prevOutput string) {
+	taskID := formatUUID(t.ID)
+	executionID := fmt.Sprintf("%s-router-%d", taskID, time.Now().UTC().UnixNano())
+
+	queries.CreateExecutionTrace(ctx, db.CreateExecutionTraceParams{
+		TaskID:      t.ID,
+		ExecutionID: executionID,
+		WorkerID:    workerID,
+		StepName:    "Decision Router Start",
+		InputData:   []byte(prevOutput),
+	})
+
+	// 1. Fetch dependent tasks
+	dependents, err := queries.GetDependentTasks(ctx, t.ID)
+	if err != nil {
+		log.Printf("Error fetching dependent tasks for router %s: %v", taskID, err)
+		return
+	}
+
+	// 2. LLM Call to categorize
+	prompt := fmt.Sprintf(`You are a decision router. Based on the following output from a previous task, choose the best branch.
+Output:
+%s
+
+Respond with a JSON object: {"choice": "branch_key", "reasoning": "..."}`, prevOutput)
+
+	req := mcp.CreateMessageRequest{
+		CreateMessageParams: mcp.CreateMessageParams{
+			Messages: []mcp.SamplingMessage{
+				{Role: "user", Content: mcp.TextContent{Type: "text", Text: prompt}},
+			},
+			MaxTokens: 500,
+		},
+	}
+
+	res, err := mcpServer.RequestSampling(ctx, req)
+	if err != nil {
+		log.Printf("Decision router LLM call failed for %s: %v", taskID, err)
+		queries.UpdateTaskApprovalStatus(ctx, db.UpdateTaskApprovalStatusParams{
+			LastApprovalStatus: pgtype.Text{String: ApprovalStatusNeedsRouting, Valid: true},
+			Status:             pgtype.Text{String: StatusHalted, Valid: true},
+			ID:                 t.ID,
+			UserID:             t.UserID,
+		})
+		queries.CreateExecutionTrace(ctx, db.CreateExecutionTraceParams{
+			TaskID:       t.ID,
+			ExecutionID:  executionID,
+			WorkerID:     workerID,
+			StepName:     "Decision Router LLM Failed",
+			IsError:      pgtype.Bool{Bool: true, Valid: true},
+			ErrorMessage: pgtype.Text{String: err.Error(), Valid: true},
+		})
+		return
+	}
+
+	// Extract choice
+	var choice string
+	responseText := ""
+	if res != nil {
+		// Use JSON to extract text safely since type assertions are failing due to unknown library structure
+		resBytes, _ := json.Marshal(res)
+		var resMap map[string]interface{}
+		json.Unmarshal(resBytes, &resMap)
+
+		if content, ok := resMap["content"].(map[string]interface{}); ok {
+			if text, ok := content["text"].(string); ok {
+				responseText = text
+			}
+		} else if contentSlice, ok := resMap["content"].([]interface{}); ok && len(contentSlice) > 0 {
+			if first, ok := contentSlice[0].(map[string]interface{}); ok {
+				if text, ok := first["text"].(string); ok {
+					responseText = text
+				}
+			}
+		}
+		var respObj struct {
+			Choice string `json:"choice"`
+		}
+		// Basic JSON extraction
+		if err := json.Unmarshal([]byte(responseText), &respObj); err == nil {
+			choice = respObj.Choice
+		} else {
+			// Try fuzzy matching if JSON is wrapped in markdown
+			re := regexp.MustCompile(`\{.*"choice".*\}`)
+			match := re.FindString(responseText)
+			if match != "" {
+				json.Unmarshal([]byte(match), &respObj)
+				choice = respObj.Choice
+			}
+		}
+	}
+
+	if choice == "" {
+		log.Printf("Decision router %s failed to get a choice from LLM response: %s", taskID, responseText)
+		queries.UpdateTaskApprovalStatus(ctx, db.UpdateTaskApprovalStatusParams{
+			LastApprovalStatus: pgtype.Text{String: ApprovalStatusNeedsRouting, Valid: true},
+			Status:             pgtype.Text{String: StatusHalted, Valid: true},
+			ID:                 t.ID,
+			UserID:             t.UserID,
+		})
+		queries.CreateExecutionTrace(ctx, db.CreateExecutionTraceParams{
+			TaskID:       t.ID,
+			ExecutionID:  executionID,
+			WorkerID:     workerID,
+			StepName:     "Decision Router No Choice",
+			ErrorMessage: pgtype.Text{String: "LLM did not provide a valid choice JSON", Valid: true},
+		})
+		return
+	}
+
+	queries.CreateExecutionTrace(ctx, db.CreateExecutionTraceParams{
+		TaskID:      t.ID,
+		ExecutionID: executionID,
+		WorkerID:    workerID,
+		StepName:    "Decision Router Choice Made",
+		OutputData:  []byte(fmt.Sprintf("Choice: %s", choice)),
+	})
+
+	// 3. Match choice and activate task
+	found := false
+	for _, dept := range dependents {
+		var cond map[string]string
+		if err := json.Unmarshal(dept.BranchCondition, &cond); err == nil {
+			if cond["key"] == choice {
+				queries.UpdateTaskNextRun(ctx, db.UpdateTaskNextRunParams{
+					Status:  pgtype.Text{String: StatusActive, Valid: true},
+					NextRun: pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},
+					ID:      dept.ID,
+				})
+				log.Printf("Decision router %s activated task %s (choice: %s)", taskID, formatUUID(dept.ID), choice)
+				found = true
+				break
+			}
+		}
+	}
+
+	if !found {
+		log.Printf("Decision router %s choice '%s' matched no dependent tasks", taskID, choice)
+		queries.UpdateTaskApprovalStatus(ctx, db.UpdateTaskApprovalStatusParams{
+			LastApprovalStatus: pgtype.Text{String: ApprovalStatusNeedsRouting, Valid: true},
+			Status:             pgtype.Text{String: StatusHalted, Valid: true},
+			ID:                 t.ID,
+			UserID:             t.UserID,
+		})
+	} else {
+		queries.UpdateTaskStatus(ctx, db.UpdateTaskStatusParams{
+			Status: pgtype.Text{String: StatusCompleted, Valid: true},
+			ID:     t.ID,
+			UserID: t.UserID,
+		})
 	}
 }
 
