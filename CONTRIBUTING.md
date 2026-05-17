@@ -1,17 +1,17 @@
 # Contributing to Scheduled Actions MCP Server
 
-We welcome contributions! Please follow these guidelines to ensure a smooth development process.
+We welcome contributions from the community! To maintain a high bar for engineering quality, please follow these guidelines.
 
 ## 🛠 Local Development Environment
 
 1.  **Clone the Repo**:
     ```bash
-    git clone https://github.com/your-username/schedule-mcp.git
+    git clone https://github.com/akhilkumar332/schedule-mcp.git
     cd schedule-mcp
     ```
 
 2.  **Infrastructure**:
-    Start the database and redis dependencies:
+    Start the database, redis, and observability dependencies:
     ```bash
     docker-compose up -d db redis jaeger
     ```
@@ -31,25 +31,31 @@ We welcome contributions! Please follow these guidelines to ensure a smooth deve
 
 ---
 
-## ✅ Standards
+## ✅ Engineering Standards
 
+*   **Observability**: New background logic must include OpenTelemetry spans. Use the `otel` package to wrap critical steps.
+*   **Security**: Always perform ownership checks on database resources. Never trust user-provided IDs without verification.
 *   **Testing**: ALWAYS run the backend tests before submitting a PR:
     ```bash
     go test ./...
     ```
-*   **Linting**: Ensure the frontend is lint-free:
+*   **Linting**: Ensure the frontend is lint-free using ESLint:
     ```bash
     npm run lint
     ```
-*   **Git Hooks**: We recommend using descriptive commit messages following the Conventional Commits specification.
+*   **Conventional Commits**: We use the Conventional Commits specification for all PRs and commits.
 
 ---
 
 ## 🏗 Submitting Changes
 
-1.  Create a feature branch from `main`.
-2.  Commit your changes with clear, descriptive messages.
-3.  Ensure all tests and lint checks pass.
-4.  Open a Pull Request with a clear description of the changes and how to verify them.
+1.  **Decomposition**: If implementing a major feature, break it into small, independent sub-tasks (Database -> Backend -> Frontend).
+2.  **Branches**: Create a feature branch from `main`.
+3.  **Validation**: Ensure both backend and frontend build successfully for production:
+    ```bash
+    go build ./cmd/server/...
+    npm run build
+    ```
+4.  **Pull Requests**: Provide a clear description of the problem solved and include screenshots for UI changes.
 
-Thank you for helping improve Scheduled Actions!
+Thank you for helping build the future of AI orchestration!
