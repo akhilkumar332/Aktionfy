@@ -36,6 +36,11 @@ func apiCreateTaskHandler(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
 	}
 
+	userTier := getUserTier(c)
+	if err := CheckUserQuota(c.Request().Context(), userID, userTier); err != nil {
+		return c.JSON(http.StatusForbidden, APIResponse{Success: false, Error: err.Error()})
+	}
+
 	var req CreateTaskRequest
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid request body"})

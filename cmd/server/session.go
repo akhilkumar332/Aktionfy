@@ -166,7 +166,11 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 								carrier[k] = s
 							}
 						}
+						// Use context.Background() but propagate the trace from the pubsub message.
+						// This ensures the task finishes even if the user closes their browser (SSE cancels).
 						parentCtx := otel.GetTextMapPropagator().Extract(context.Background(), carrier)
+						
+						// Create a background context with timeout for the entire execution
 						ctx, span := otel.Tracer("scheduler-mcp").Start(parentCtx, "Redis Task Trigger")
 						defer span.End()
 

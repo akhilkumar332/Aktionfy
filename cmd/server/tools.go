@@ -47,19 +47,9 @@ func registerTools(s *server.MCPServer) {
 			userTier = TierFree
 		}
 
-		// Phase 2.2: Tool Quotas
-		taskCount, err := queries.CountUserTasks(ctx, userID)
-		if err != nil {
-			log.Printf("Quota check error: %v", err)
-			return mcp.NewToolResultError("Quota check failed. Please try again later."), nil
-		}
-
-		if userTier == TierFree && int(taskCount) >= QuotaFree {
-			return mcp.NewToolResultError(fmt.Sprintf("quota exceeded: free tier allows maximum %d tasks", QuotaFree)), nil
-		} else if userTier == TierPlus && int(taskCount) >= QuotaPlus {
-			return mcp.NewToolResultError(fmt.Sprintf("quota exceeded: plus tier allows maximum %d tasks", QuotaPlus)), nil
-		} else if userTier == TierPro && int(taskCount) >= QuotaPro {
-			return mcp.NewToolResultError(fmt.Sprintf("quota exceeded: pro tier allows maximum %d tasks", QuotaPro)), nil
+		// Central Quota Enforcement
+		if err := CheckUserQuota(ctx, userID, userTier); err != nil {
+			return mcp.NewToolResultError(err.Error()), nil
 		}
 
 		name, ok := args["name"].(string)

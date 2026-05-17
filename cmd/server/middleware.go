@@ -154,6 +154,17 @@ func getUserID(c echo.Context) string {
 	return id
 }
 
+func getUserTier(c echo.Context) string {
+	if user := getUserFromEcho(c); user != nil {
+		return user.Tier
+	}
+	tier, _ := c.Get("user_tier").(string)
+	if tier == "" {
+		return TierFree
+	}
+	return tier
+}
+
 // NetHttpAuthMiddleware is a wrapper to use authentication logic for standard library handlers (SSE/Message).
 // It supports both X-API-Key header and session_id cookie.
 func NetHttpAuthMiddleware(next http.Handler, mcpServer *server.MCPServer) http.Handler {

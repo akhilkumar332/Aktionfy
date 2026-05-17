@@ -42,8 +42,15 @@ const WorkflowCanvas = () => {
   const reconnectTimeoutRef = useRef(null);
   
   const sseRef = useRef(null);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => { isMountedRef.current = false; };
+  }, []);
 
   const mapTasksToFlow = useCallback((tasksList) => {
+    if (!isMountedRef.current) return;
     // Map tasks to nodes
     const newNodes = tasksList.map((task, index) => {
       let position = { x: index * 250, y: 100 };
@@ -240,6 +247,7 @@ const WorkflowCanvas = () => {
   }, [playbackMode, currentTraceIndex, traces, selectedTask, fetchTasks, setNodes]);
 
   const updateTaskStatusLocally = useCallback((taskId, status) => {
+    if (!isMountedRef.current) return;
     setNodes(prev => prev.map(node => {
         if (node.id === taskId) {
             const updatedTask = { ...node.data.task, status };

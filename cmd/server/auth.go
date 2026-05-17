@@ -86,3 +86,25 @@ func RotateAPIKey(ctx context.Context, userID string) (string, error) {
 
 	return newAPIKey, nil
 }
+
+// CheckUserQuota verifies if a user has reached their task limit
+func CheckUserQuota(ctx context.Context, userID string, tier string) error {
+	taskCount, err := queries.CountUserTasks(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("failed to fetch task count: %w", err)
+	}
+
+	limit := QuotaFree
+	switch tier {
+	case TierPlus:
+		limit = QuotaPlus
+	case TierPro:
+		limit = QuotaPro
+	}
+
+	if int(taskCount) >= limit {
+		return fmt.Errorf("quota exceeded: %s tier allows maximum %d tasks", tier, limit)
+	}
+
+	return nil
+}

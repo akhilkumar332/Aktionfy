@@ -833,17 +833,22 @@ Respond with a JSON object: {"choice": "branch_key", "reasoning": "..."}`, prevO
 	found := false
 	for _, dept := range dependents {
 		var cond map[string]string
-		if err := json.Unmarshal(dept.BranchCondition, &cond); err == nil {
-			if cond["key"] == choice {
-				queries.UpdateTaskNextRun(ctx, db.UpdateTaskNextRunParams{
-					Status:  pgtype.Text{String: StatusActive, Valid: true},
-					NextRun: pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},
-					ID:      dept.ID,
-				})
-				log.Printf("Decision router %s activated task %s (choice: %s)", taskID, formatUUID(dept.ID), choice)
-				found = true
-				break
-			}
+		if len(dept.BranchCondition) == 0 {
+			continue
+		}
+		if err := json.Unmarshal(dept.BranchCondition, &cond); err != nil {
+			log.Printf("Warning: failed to unmarshal branch condition for task %s: %v", formatUUID(dept.ID), err)
+			continue
+		}
+		if cond["key"] == choice {
+			queries.UpdateTaskNextRun(ctx, db.UpdateTaskNextRunParams{
+				Status:  pgtype.Text{String: StatusActive, Valid: true},
+				NextRun: pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},
+				ID:      dept.ID,
+			})
+			log.Printf("Decision router %s activated task %s (choice: %s)", taskID, formatUUID(dept.ID), choice)
+			found = true
+			break
 		}
 	}
 
