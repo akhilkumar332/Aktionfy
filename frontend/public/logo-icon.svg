@@ -1,0 +1,11 @@
+<svg width="60" height="60" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(5, 5)">
+    <path d="M45 15C45 12.2386 42.7614 10 40 10H20C17.2386 10 15 12.2386 15 15V25C15 27.7614 17.2386 30 20 30" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+    <path d="M15 35C15 37.7614 17.2386 40 20 40H40C42.7614 40 45 37.7614 45 35V25" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="45" cy="15" r="5" fill="white" stroke="currentColor" stroke-width="4"/>
+    <circle cx="15" cy="35" r="5" fill="white" stroke="currentColor" stroke-width="4"/>
+    <circle cx="45" cy="35" r="5" fill="white" stroke="currentColor" stroke-width="4"/>
+    <path d="M35 5L20 35H30L15 65L45 25H35L50 5" fill="currentColor"/>
+    <path d="M35 10L50 5L45 20" fill="currentColor"/>
+  </g>
+</svg>

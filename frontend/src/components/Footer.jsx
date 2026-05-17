@@ -8,10 +8,8 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
           {/* Brand */}
           <div className="col-span-1 md:col-span-1">
-            <Link to="/" className="flex items-center gap-2 mb-6 group">
-              <div className="bg-accent-orange p-1.5 rounded-lg text-white">
-                <Clock size={20} />
-              </div>
+            <Link to="/" className="flex items-center gap-3 mb-6 group">
+              <img src="/logo-icon.svg" className="w-8 h-8 text-accent-orange" alt="Actionfy Logo" />
               <span className="font-bold text-xl tracking-tight text-white">Actionfy</span>
             </Link>
             <p className="text-slate-400 text-sm leading-relaxed mb-8">

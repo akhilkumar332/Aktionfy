@@ -29,12 +29,10 @@ const Navbar = () => {
       <div className="container mx-auto px-6">
         <div className="flex items-center justify-between">
           {/* Brand Logo */}
-          <Link to="/" className="flex items-center gap-2 group relative">
-            <div className="bg-accent-orange p-2 rounded-xl text-white group-hover:rotate-[360deg] transition-transform duration-700 shadow-[0_0_20px_rgba(217,119,6,0.3)]">
-              <Clock size={22} />
-            </div>
+          <Link to="/" className="flex items-center gap-3 group relative">
+            <img src="/logo-icon.svg" className="w-10 h-10 text-accent-orange group-hover:rotate-[360deg] transition-transform duration-700" alt="Actionfy Logo" />
             <div className="flex flex-col">
-              <span className="font-bold text-lg text-white tracking-tighter leading-tight group-hover:text-accent-orange transition-colors">Actionfy</span>
+              <span className="font-bold text-xl text-white tracking-tighter leading-tight group-hover:text-accent-orange transition-colors">Actionfy</span>
               <span className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.3em] leading-tight">Engine v1.0</span>
             </div>
           </Link>
