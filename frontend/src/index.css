@@ -44,3 +44,24 @@ body {
 .animate-float {
   animation: float 6s ease-in-out infinite;
 }
+
+@keyframes particle-flow {
+  0% {
+    stroke-dashoffset: 20;
+    stroke-opacity: 0.2;
+  }
+  50% {
+    stroke-opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    stroke-opacity: 0.2;
+  }
+}
+
+.edge-particle-active {
+  stroke-dasharray: 4 6;
+  animation: particle-flow 1s linear infinite;
+  stroke-width: 4 !important;
+  filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.6));
+}

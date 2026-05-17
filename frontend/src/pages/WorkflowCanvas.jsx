@@ -282,14 +282,22 @@ const WorkflowCanvas = () => {
     }
   }, [globalTime, playbackMode, traces]);
 
-  // Update visual nodes based on playback
+  // Update visual state (nodes and edges) based on playback time
   useEffect(() => {
-    if (playbackMode && currentTraceIndex >= 0 && traces[currentTraceIndex]) {
-      const activeStepName = traces[currentTraceIndex].step_name;
-      
+    if (playbackMode && traces.length > 0) {
+      const executionStartTime = new Date(traces[0].start_time).getTime();
+      const currentAbsoluteTime = executionStartTime + (globalTime * 1000);
+
+      const activeTraces = traces.filter(t => {
+        const start = new Date(t.start_time).getTime();
+        const end = t.end_time ? new Date(t.end_time).getTime() : Infinity; 
+        return currentAbsoluteTime >= start && currentAbsoluteTime <= end;
+      });
+
+      const activeStepNames = new Set(activeTraces.map(t => t.step_name));
+
       setNodes(prev => prev.map(node => {
-        const isActive = node.data.task.name === activeStepName || 
-                        (currentTraceIndex === 0 && node.id === selectedTask?.id);
+        const isActive = activeStepNames.has(node.data.task.name);
         
         return {
           ...node,
@@ -302,12 +310,27 @@ const WorkflowCanvas = () => {
           }
         };
       }));
-    } else if (!playbackMode) {
-        // Reset styles when leaving playback mode
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        fetchTasks();
+
+      setEdges(prev => prev.map(edge => {
+        const targetTask = rawTasks.find(t => t.id === edge.target);
+        const isActive = targetTask && activeStepNames.has(targetTask.name);
+
+        return {
+          ...edge,
+          className: isActive ? 'edge-particle-active' : '',
+          animated: isActive || edge.animated,
+          style: {
+            ...edge.style,
+            stroke: isActive ? '#f59e0b' : (edge.style?.stroke || '#3b82f6'),
+            strokeWidth: isActive ? 4 : (edge.style?.strokeWidth || 2),
+          }
+        };
+      }));
+    } else if (!playbackMode && traces.length > 0) {
+      // Reset styles when leaving playback mode
+      fetchTasks();
     }
-  }, [playbackMode, currentTraceIndex, traces, selectedTask, fetchTasks, setNodes]);
+  }, [playbackMode, globalTime, traces, rawTasks, fetchTasks, setNodes, setEdges]);
 
   const updateTaskStatusLocally = useCallback((taskId, status) => {
     if (!isMountedRef.current) return;
