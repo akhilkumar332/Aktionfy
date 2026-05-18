@@ -8,74 +8,72 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSubmitting(true);
     const res = await login(email, password);
     if (res.success) {
       navigate('/dashboard');
     } else {
       setError(res.error || 'Invalid credentials');
     }
+    setSubmitting(false);
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-zinc-950 relative overflow-hidden px-6">
-      {/* Background Decor */}
-      <div className="absolute top-0 left-0 w-full h-full bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none"></div>
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-brand-primary/10 rounded-full blur-[160px] pointer-events-none"></div>
 
       <motion.div 
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         className="relative z-10 w-full max-w-lg"
       >
-        <div className="glass-card p-12 md:p-16 rounded-3xl border-zinc-800/50 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-brand-primary/5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
-          
-          <div className="flex flex-col items-center mb-16">
-            <Link to="/" className="group relative mb-10">
-               <div className="absolute inset-0 bg-brand-primary/20 blur-2xl rounded-full group-hover:scale-150 transition-transform duration-1000"></div>
-               <div className="bg-brand-primary p-4 rounded-3xl text-white relative z-10 shadow-lg group-hover:rotate-[360deg] transition-transform duration-1000">
-                 <Command size={32} />
+        <div className="bg-zinc-900 border border-zinc-800 p-10 md:p-14 rounded-3xl relative overflow-hidden shadow-2xl">
+          <div className="flex flex-col items-center mb-12">
+            <Link to="/" className="group relative mb-8 pro-focus rounded-2xl p-1">
+               <div className="bg-brand-primary p-3 rounded-2xl text-white relative z-10 shadow-lg group-hover:rotate-12 transition-transform duration-500">
+                 <Command size={28} />
                </div>
             </Link>
-            <h1 className="text-4xl font-black text-white tracking-tighter mb-3 text-center">Welcome Back.</h1>
-            <p className="text-zinc-400 font-black uppercase tracking-[0.3em] text-[10px] text-center">Initialize Neural Connection</p>
+            <h1 className="text-3xl font-bold text-white tracking-tight text-center">Welcome Back</h1>
+            <p className="text-zinc-500 text-xs font-semibold uppercase tracking-[0.2em] text-center mt-2">Neural Identity Authentication</p>
           </div>
 
           {error && (
             <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-red-500/10 text-red-400 p-5 rounded-2xl mb-10 text-[10px] font-black border border-red-500/20 text-center uppercase tracking-[0.2em]"
+              className="bg-red-500/10 text-red-400 p-4 rounded-xl mb-8 text-[11px] font-bold border border-red-500/20 text-center uppercase tracking-widest"
             >
-              Authentication Failed: {error}
+              Access Denied: {error}
             </motion.div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-8">
-            <div className="space-y-3">
-              <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ml-2">Neural Identity</label>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Identity (Email)</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-black/40 px-8 py-6 rounded-xl border border-zinc-800/50 text-white focus:border-brand-primary/50 outline-none transition-all placeholder:text-zinc-800 font-medium"
+                className="w-full pro-input !py-3 font-medium placeholder:text-zinc-800"
                 placeholder="identity@network.io"
                 required
               />
             </div>
-            <div className="space-y-3">
-              <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ml-2">Access Key</label>
+            <div className="space-y-2">
+              <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Access Key</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-black/40 px-8 py-6 rounded-xl border border-zinc-800/50 text-white focus:border-brand-primary/50 outline-none transition-all placeholder:text-zinc-800 font-medium"
+                className="w-full pro-input !py-3 font-medium placeholder:text-zinc-800"
                 placeholder="••••••••••••"
                 required
               />
@@ -83,20 +81,21 @@ const Login = () => {
             
             <button
               type="submit"
-              className=" w-full bg-zinc-100 text-zinc-950 py-6 rounded-xl font-black uppercase tracking-[0.2em] text-[10px] hover:brightness-110 transition-all shadow-[0_0_50px_rgba(255,255,255,0.1)] active:scale-[0.98] flex items-center justify-center gap-3"
+              disabled={submitting}
+              className="w-full pro-button-primary !py-4 uppercase tracking-[0.2em] text-[11px] flex items-center justify-center gap-3 shadow-indigo-900/40 disabled:opacity-50"
             >
-              Establish Connection <ArrowRight size={16} />
+              {submitting ? 'Verifying...' : 'Establish Connection'} <ArrowRight size={16} />
             </button>
           </form>
 
-          <div className="mt-16 pt-10 border-t border-zinc-800/50 flex flex-col items-center gap-6">
-             <p className="text-[10px] font-black text-zinc-300 uppercase tracking-[0.2em]">
-               New to the network?{' '}
-               <Link to="/signup" className="text-brand-primary hover:text-white transition-colors underline underline-offset-8">
-                 Request Access
+          <div className="mt-12 pt-8 border-t border-zinc-800/50 flex flex-col items-center gap-4">
+             <p className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">
+               New Actor?{' '}
+               <Link to="/signup" className="text-brand-primary hover:text-white transition-colors underline underline-offset-4">
+                 Request Identity
                </Link>
              </p>
-             <div className="flex items-center gap-2 text-zinc-700 text-[9px] font-bold uppercase tracking-widest bg-zinc-100/[0.02] px-4 py-2 rounded-full border border-zinc-800/50">
+             <div className="flex items-center gap-2 text-zinc-700 text-[9px] font-black uppercase tracking-[0.2em]">
                 <ShieldCheck size={12} className="text-brand-primary" /> End-to-End Encrypted
              </div>
           </div>

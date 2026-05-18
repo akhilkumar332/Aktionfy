@@ -8,74 +8,72 @@ const Signup = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const { signup } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSubmitting(true);
     const res = await signup(email, password);
     if (res.success) {
-      navigate('/login?message=Account+created+successfully');
+      navigate('/login?message=Neural+Identity+Generated');
     } else {
-      setError(res.error || 'Failed to create account');
+      setError(res.error || 'Failed to initialize identity');
     }
+    setSubmitting(false);
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-zinc-950 relative overflow-hidden px-6">
-      {/* Background Decor */}
-      <div className="absolute top-0 left-0 w-full h-full bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none"></div>
-      <div className="absolute bottom-0 right-0 w-[800px] h-[800px] bg-brand-primary/5 rounded-full blur-[160px] pointer-events-none translate-x-1/4 translate-y-1/4"></div>
+      <div className="absolute bottom-0 right-0 w-[800px] h-[800px] bg-indigo-600/5 rounded-full blur-[160px] pointer-events-none translate-x-1/4 translate-y-1/4"></div>
 
       <motion.div 
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         className="relative z-10 w-full max-w-lg"
       >
-        <div className="glass-card p-12 md:p-16 rounded-3xl border-zinc-800/50 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-brand-primary/5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
-          
-          <div className="flex flex-col items-center mb-16">
-            <Link to="/" className="group relative mb-10">
-               <div className="absolute inset-0 bg-brand-primary/20 blur-2xl rounded-full group-hover:scale-150 transition-transform duration-1000"></div>
-               <div className="bg-brand-primary/10 border border-brand-primary/20 p-4 rounded-3xl text-brand-primary relative z-10 shadow-lg group-hover:rotate-[360deg] transition-transform duration-1000">
-                 <UserPlus size={32} />
+        <div className="bg-zinc-900 border border-zinc-800 p-10 md:p-14 rounded-3xl relative overflow-hidden shadow-2xl">
+          <div className="flex flex-col items-center mb-12">
+            <Link to="/" className="group relative mb-8 pro-focus rounded-2xl p-1">
+               <div className="bg-zinc-800 border border-zinc-700 p-3 rounded-2xl text-brand-primary relative z-10 shadow-lg group-hover:-rotate-12 transition-transform duration-500">
+                 <UserPlus size={28} />
                </div>
             </Link>
-            <h1 className="text-4xl font-black text-white tracking-tighter mb-3 text-center">Join the Network.</h1>
-            <p className="text-zinc-400 font-black uppercase tracking-[0.3em] text-[10px] text-center">Initialize Neural Identity</p>
+            <h1 className="text-3xl font-bold text-white tracking-tight text-center">Join the Network</h1>
+            <p className="text-zinc-500 text-xs font-semibold uppercase tracking-[0.2em] text-center mt-2">Neural Identity Initialization</p>
           </div>
 
           {error && (
             <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-red-500/10 text-red-400 p-5 rounded-2xl mb-10 text-[10px] font-black border border-red-500/20 text-center uppercase tracking-[0.2em]"
+              className="bg-red-500/10 text-red-400 p-4 rounded-xl mb-8 text-[11px] font-bold border border-red-500/20 text-center uppercase tracking-widest"
             >
-              Initialization Failed: {error}
+              Initialization Error: {error}
             </motion.div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-8">
-            <div className="space-y-3">
-              <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ml-2">Desired Identity</label>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Desired Identity (Email)</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-black/40 px-8 py-6 rounded-xl border border-zinc-800/50 text-white focus:border-brand-primary/50 outline-none transition-all placeholder:text-zinc-800 font-medium shadow-inner"
+                className="w-full pro-input !py-3 font-medium placeholder:text-zinc-800 shadow-inner"
                 placeholder="identity@network.io"
                 required
               />
             </div>
-            <div className="space-y-3">
-              <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ml-2">Generate Key</label>
+            <div className="space-y-2">
+              <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Secure Protocol Key (Password)</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-black/40 px-8 py-6 rounded-xl border border-zinc-800/50 text-white focus:border-brand-primary/50 outline-none transition-all placeholder:text-zinc-800 font-medium shadow-inner"
+                className="w-full pro-input !py-3 font-medium placeholder:text-zinc-800 shadow-inner"
                 placeholder="••••••••••••"
                 required
               />
@@ -83,20 +81,21 @@ const Signup = () => {
             
             <button
               type="submit"
-              className=" w-full bg-brand-primary text-white py-6 rounded-xl font-black uppercase tracking-[0.2em] text-[10px] hover:brightness-110 transition-all shadow-[0_20px_50px_rgba(217,119,6,0.3)] active:scale-[0.98] flex items-center justify-center gap-3"
+              disabled={submitting}
+              className="w-full pro-button-primary !py-4 uppercase tracking-[0.2em] text-[11px] flex items-center justify-center gap-3 shadow-indigo-900/40 disabled:opacity-50"
             >
-              Request Initialization <ArrowRight size={16} />
+              {submitting ? 'Initializing...' : 'Request Initialization'} <ArrowRight size={16} />
             </button>
           </form>
 
-          <div className="mt-16 pt-10 border-t border-zinc-800/50 flex flex-col items-center gap-6">
-             <p className="text-[10px] font-black text-zinc-300 uppercase tracking-[0.2em]">
-               Already initialized?{' '}
-               <Link to="/login" className="text-white hover:text-brand-primary transition-colors underline underline-offset-8">
+          <div className="mt-12 pt-8 border-t border-zinc-800/50 flex flex-col items-center gap-4">
+             <p className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">
+               Already provisioned?{' '}
+               <Link to="/login" className="text-white hover:text-brand-primary transition-colors underline underline-offset-4">
                  Authenticate
                </Link>
              </p>
-             <div className="flex items-center gap-2 text-zinc-700 text-[9px] font-bold uppercase tracking-widest bg-zinc-100/[0.02] px-4 py-2 rounded-full border border-zinc-800/50">
+             <div className="flex items-center gap-2 text-zinc-700 text-[9px] font-black uppercase tracking-[0.2em]">
                 <Command size={12} className="text-brand-primary" /> Multi-Region Deployment
              </div>
           </div>
