@@ -73,7 +73,7 @@ const TaskHistory = () => {
           </div>
         </div>
         
-        <div className="flex items-center gap-6 bg-white/[0.02] border border-white/5 px-8 py-5 rounded-[2rem] backdrop-blur-xl relative overflow-hidden group">
+        <div className="flex items-center gap-6 bg-zinc-100/[0.02] border border-zinc-800/50 px-8 py-5 rounded-[2rem] backdrop-blur-xl relative overflow-hidden group">
            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none group-hover:scale-150 transition-transform duration-700"></div>
            <div className="flex flex-col">
               <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Node ID</span>
@@ -92,9 +92,9 @@ const TaskHistory = () => {
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="py-40 flex flex-col items-center justify-center text-center gap-8 bg-white/[0.01] border border-dashed border-white/10 rounded-[4rem]"
+            className="py-40 flex flex-col items-center justify-center text-center gap-8 bg-zinc-100/[0.01] border border-dashed border-zinc-800 rounded-[4rem]"
           >
-            <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center border border-white/5 text-slate-700">
+            <div className="w-24 h-24 bg-zinc-100/5 rounded-full flex items-center justify-center border border-zinc-800/50 text-slate-700">
               <AlertCircle size={48} />
             </div>
             <div>
@@ -118,12 +118,12 @@ const TaskHistory = () => {
                 >
                   {/* Timeline Dot */}
                   <div className={`absolute left-0 w-16 h-16 flex items-center justify-center rounded-[1.5rem] border backdrop-blur-3xl z-10 transition-all duration-500 ${
-                    index === 0 ? 'bg-blue-500 border-blue-400 text-white shadow-[0_0_30px_rgba(59,130,246,0.4)]' : 'bg-obsidian-900 border-white/10 text-slate-600'
+                    index === 0 ? 'bg-blue-500 border-blue-400 text-white shadow-[0_0_30px_rgba(59,130,246,0.4)]' : 'bg-zinc-950 border-zinc-800 text-slate-600'
                   }`}>
                     {index === 0 ? <CheckCircle2 size={24} /> : <Clock size={24} />}
                   </div>
 
-                  <div className={`bg-obsidian-900 border rounded-[3rem] p-10 hover:bg-white/[0.02] transition-all duration-500 group relative overflow-hidden shadow-2xl ${index === 0 ? 'border-blue-500/30 ring-1 ring-blue-500/10' : 'border-white/5'}`}>
+                  <div className={`bg-zinc-950 border rounded-[3rem] p-10 hover:bg-zinc-100/[0.02] transition-all duration-500 group relative overflow-hidden shadow-2xl ${index === 0 ? 'border-blue-500/30 ring-1 ring-blue-500/10' : 'border-zinc-800/50'}`}>
                     {index === 0 && <div className="absolute top-0 right-0 w-48 h-48 bg-blue-500/5 blur-[80px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>}
 
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-12 relative z-10">
@@ -132,7 +132,7 @@ const TaskHistory = () => {
                           <span className="text-white font-black text-2xl tracking-tighter uppercase">
                             {index === 0 ? 'Active Deployment' : `State Archive Alpha-${history.length - index}`}
                           </span>
-                          <div className="bg-black/40 px-3 py-1 rounded-lg border border-white/5 shadow-inner flex items-center gap-2">
+                          <div className="bg-black/40 px-3 py-1 rounded-lg border border-zinc-800/50 shadow-inner flex items-center gap-2">
                              <Command size={10} className="text-slate-600" />
                              <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest tabular-nums">
                                {version.id.substring(0, 13)}
@@ -145,7 +145,7 @@ const TaskHistory = () => {
                             <div className="flex items-center gap-2 text-[9px] font-black text-slate-500 uppercase tracking-widest ml-2">
                                <Terminal size={10} /> Logic Snapshot
                             </div>
-                            <div className="bg-black/40 p-6 rounded-[2rem] border border-white/5 font-mono text-xs text-slate-400 leading-relaxed max-h-48 overflow-y-auto custom-scrollbar shadow-inner group-hover:text-slate-200 transition-colors">
+                            <div className="bg-black/40 p-6 rounded-[2rem] border border-zinc-800/50 font-mono text-xs text-slate-400 leading-relaxed max-h-48 overflow-y-auto custom-scrollbar shadow-inner group-hover:text-slate-200 transition-colors">
                               {version.agent_prompt || version.native_code || "// Baseline configuration identified."}
                             </div>
                           </div>
@@ -158,7 +158,7 @@ const TaskHistory = () => {
                                 </div>
                                 <div>
                                   <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Vector Type</p>
-                                  <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-lg border border-white/5 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                                  <div className="flex items-center gap-2 px-3 py-1 bg-zinc-100/5 rounded-lg border border-zinc-800/50 text-[9px] font-black text-slate-400 uppercase tracking-widest">
                                      <GitBranch size={10} /> {version.trigger_type}
                                   </div>
                                 </div>

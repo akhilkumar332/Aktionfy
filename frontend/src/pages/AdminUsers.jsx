@@ -51,7 +51,7 @@ const AdminUsers = () => {
         
         <div className="flex items-center gap-2">
            <div className="relative group">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-brand-primary transition-colors" />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-indigo-400 transition-colors" />
               <input 
                 type="text" 
                 placeholder="Query ID or Email..." 
@@ -133,7 +133,7 @@ const AdminUsers = () => {
                     </td>
                     <td className="px-6 py-4">
                       {u.tier === 'pro' ? (
-                        <span className="pro-badge bg-brand-primary/10 border-brand-primary/20 text-brand-primary">Pro Node</span>
+                        <span className="pro-badge bg-indigo-600/10 border-brand-primary/20 text-indigo-400">Pro Node</span>
                       ) : (
                         <span className="pro-badge bg-zinc-800 border-zinc-700 text-zinc-500">Lite</span>
                       )}
@@ -151,7 +151,7 @@ const AdminUsers = () => {
                         <button 
                           disabled={updating === u.id || u.role === 'admin'}
                           onClick={() => handleUpdate(u.id, u.role, u.tier === 'free' ? 'pro' : 'free')}
-                          className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-brand-primary transition-all disabled:opacity-20"
+                          className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-indigo-400 transition-all disabled:opacity-20"
                           title="Toggle Tier"
                         >
                           <ChevronDown size={14} />

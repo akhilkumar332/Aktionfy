@@ -23,7 +23,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-obsidian-950 relative overflow-hidden px-6">
+    <div className="min-h-screen flex items-center justify-center bg-zinc-950 relative overflow-hidden px-6">
       {/* Background Decor */}
       <div className="absolute top-0 left-0 w-full h-full bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none"></div>
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-brand-primary/10 rounded-full blur-[160px] pointer-events-none"></div>
@@ -33,7 +33,7 @@ const Login = () => {
         animate={{ opacity: 1, y: 0 }}
         className="relative z-10 w-full max-w-lg"
       >
-        <div className="glass-card p-12 md:p-16 rounded-[4rem] border-white/5 relative overflow-hidden">
+        <div className="glass-card p-12 md:p-16 rounded-[4rem] border-zinc-800/50 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-brand-primary/5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
           
           <div className="flex flex-col items-center mb-16">
@@ -64,7 +64,7 @@ const Login = () => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-black/40 px-8 py-6 rounded-[2rem] border border-white/5 text-white focus:border-brand-primary/50 outline-none transition-all placeholder:text-slate-800 font-medium"
+                className="w-full bg-black/40 px-8 py-6 rounded-[2rem] border border-zinc-800/50 text-white focus:border-brand-primary/50 outline-none transition-all placeholder:text-slate-800 font-medium"
                 placeholder="identity@network.io"
                 required
               />
@@ -75,7 +75,7 @@ const Login = () => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-black/40 px-8 py-6 rounded-[2rem] border border-white/5 text-white focus:border-brand-primary/50 outline-none transition-all placeholder:text-slate-800 font-medium"
+                className="w-full bg-black/40 px-8 py-6 rounded-[2rem] border border-zinc-800/50 text-white focus:border-brand-primary/50 outline-none transition-all placeholder:text-slate-800 font-medium"
                 placeholder="••••••••••••"
                 required
               />
@@ -83,20 +83,20 @@ const Login = () => {
             
             <button
               type="submit"
-              className="shimmer-button w-full bg-white text-obsidian-950 py-6 rounded-[2rem] font-black uppercase tracking-[0.2em] text-[10px] hover:brightness-110 transition-all shadow-[0_0_50px_rgba(255,255,255,0.1)] active:scale-[0.98] flex items-center justify-center gap-3"
+              className="shimmer-button w-full bg-zinc-100 text-zinc-950 py-6 rounded-[2rem] font-black uppercase tracking-[0.2em] text-[10px] hover:brightness-110 transition-all shadow-[0_0_50px_rgba(255,255,255,0.1)] active:scale-[0.98] flex items-center justify-center gap-3"
             >
               Establish Connection <ArrowRight size={16} />
             </button>
           </form>
 
-          <div className="mt-16 pt-10 border-t border-white/5 flex flex-col items-center gap-6">
+          <div className="mt-16 pt-10 border-t border-zinc-800/50 flex flex-col items-center gap-6">
              <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em]">
                New to the network?{' '}
                <Link to="/signup" className="text-brand-primary hover:text-white transition-colors underline underline-offset-8">
                  Request Access
                </Link>
              </p>
-             <div className="flex items-center gap-2 text-slate-700 text-[9px] font-bold uppercase tracking-widest bg-white/[0.02] px-4 py-2 rounded-full border border-white/5">
+             <div className="flex items-center gap-2 text-slate-700 text-[9px] font-bold uppercase tracking-widest bg-zinc-100/[0.02] px-4 py-2 rounded-full border border-zinc-800/50">
                 <ShieldCheck size={12} className="text-brand-primary" /> End-to-End Encrypted
              </div>
           </div>

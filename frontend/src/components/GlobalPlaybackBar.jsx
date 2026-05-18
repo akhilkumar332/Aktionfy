@@ -12,9 +12,9 @@ const GlobalPlaybackBar = ({
         <motion.div 
             initial={{ y: 100 }}
             animate={{ y: 0 }}
-            className="absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-2xl bg-slate-900/80 backdrop-blur-2xl border border-white/10 rounded-3xl p-4 shadow-2xl z-[60] flex items-center gap-6"
+            className="absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-2xl bg-slate-900/80 backdrop-blur-2xl border border-zinc-800 rounded-3xl p-4 shadow-2xl z-[60] flex items-center gap-6"
         >
-            <button onClick={onTogglePlay} className="p-4 bg-accent-orange rounded-2xl text-white shadow-lg shadow-orange-500/20">
+            <button onClick={onTogglePlay} className="p-4 bg-brand-primary rounded-2xl text-white shadow-lg shadow-indigo-500/20">
                 {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" />}
             </button>
             
@@ -30,7 +30,7 @@ const GlobalPlaybackBar = ({
                     step="0.01"
                     value={currentTime}
                     onChange={(e) => onTimeChange(parseFloat(e.target.value))}
-                    className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-accent-orange"
+                    className="w-full h-1.5 bg-zinc-100/10 rounded-lg appearance-none cursor-pointer accent-brand-primary"
                 />
             </div>
         </motion.div>

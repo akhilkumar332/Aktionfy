@@ -76,10 +76,10 @@ const Pricing = () => {
   ];
 
   return (
-    <section id="pricing" className="py-40 bg-obsidian-950 relative overflow-hidden">
+    <section id="pricing" className="py-40 bg-zinc-950 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full pointer-events-none opacity-20">
-         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-brand-primary/5 rounded-full blur-[140px]"></div>
+         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-indigo-600/5 rounded-full blur-[140px]"></div>
       </div>
       
       <div className="container mx-auto px-6 relative z-10">
@@ -90,13 +90,13 @@ const Pricing = () => {
           transition={{ duration: 0.8 }}
           className="max-w-5xl mx-auto text-center mb-32"
         >
-          <div className="inline-flex items-center gap-3 py-2 px-6 mb-8 text-[10px] font-black tracking-[0.4em] text-brand-primary uppercase bg-white/[0.03] border border-white/10 rounded-full backdrop-blur-xl">
+          <div className="inline-flex items-center gap-3 py-2 px-6 mb-8 text-[10px] font-black tracking-[0.4em] text-brand-primary uppercase bg-zinc-900/50 border border-zinc-800 rounded-full backdrop-blur-xl">
              Monetization Protocol
           </div>
           <h2 className="text-5xl md:text-8xl font-black text-white mb-10 tracking-tighter leading-[0.9]">
             Built for <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-primary to-amber-200">Scale.</span>
           </h2>
-          <p className="text-xl md:text-2xl text-slate-500 font-bold max-w-2xl mx-auto leading-relaxed tracking-tight">
+          <p className="text-xl md:text-2xl text-zinc-500 font-bold max-w-2xl mx-auto leading-relaxed tracking-tight">
             Provision the infrastructure required to power your next billion-dollar neural application.
           </p>
         </motion.div>
@@ -111,24 +111,24 @@ const Pricing = () => {
               transition={{ delay: idx * 0.1, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
               className={`group relative p-12 rounded-[4rem] border transition-all duration-700 flex flex-col overflow-hidden shadow-2xl ${
                 plan.highlight
-                  ? 'border-brand-primary/50 bg-white/[0.03] shadow-[0_40px_100px_rgba(0,0,0,0.8)] z-10 scale-105'
-                  : 'border-white/5 bg-white/[0.01] hover:bg-white/[0.03]'
+                  ? 'border-brand-primary/50 bg-zinc-900/50 shadow-[0_40px_100px_rgba(0,0,0,0.8)] z-10 scale-105'
+                  : 'border-zinc-800/50 bg-zinc-900/30 hover:bg-zinc-900/50'
               }`}
             >
               {/* Highlight Glow */}
               {plan.highlight && (
-                <div className="absolute top-0 right-0 w-64 h-64 bg-brand-primary/5 blur-[80px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/5 blur-[80px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
               )}
 
               {plan.highlight && (
-                <div className="absolute top-6 right-10 flex items-center gap-2 px-3 py-1 bg-brand-primary text-white text-[8px] font-black uppercase tracking-widest rounded-full shadow-2xl z-20">
+                <div className="absolute top-6 right-10 flex items-center gap-2 px-3 py-1 bg-indigo-600 text-white text-[8px] font-black uppercase tracking-widest rounded-full shadow-2xl z-20">
                   Recommended
                 </div>
               )}
 
               <div className="mb-12 flex-1">
-                <div className={`w-20 h-20 rounded-[2rem] flex items-center justify-center mb-10 bg-black/40 border border-white/5 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-2xl ${
-                  plan.highlight ? 'text-brand-primary shadow-[0_0_40px_rgba(217,119,6,0.3)]' : 'text-slate-600'
+                <div className={`w-20 h-20 rounded-[2rem] flex items-center justify-center mb-10 bg-black/40 border border-zinc-800/50 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-2xl ${
+                  plan.highlight ? 'text-brand-primary shadow-[0_0_40px_rgba(217,119,6,0.3)]' : 'text-zinc-600'
                 }`}>
                   <plan.icon size={36} />
                 </div>
@@ -136,16 +136,16 @@ const Pricing = () => {
                 <h3 className="text-3xl font-black text-white mb-4 tracking-tighter uppercase">{plan.name}</h3>
                 <div className="flex items-baseline gap-3 mb-8">
                   <span className="text-6xl font-black text-white tracking-tighter">{plan.price}</span>
-                  {plan.period && <span className="text-slate-600 font-black text-sm tracking-widest uppercase">{plan.period}</span>}
+                  {plan.period && <span className="text-zinc-600 font-black text-sm tracking-widest uppercase">{plan.period}</span>}
                 </div>
-                <p className="text-slate-500 text-sm font-medium leading-relaxed mb-12 opacity-80 group-hover:opacity-100 transition-opacity">
+                <p className="text-zinc-500 text-sm font-medium leading-relaxed mb-12 opacity-80 group-hover:opacity-100 transition-opacity">
                   {plan.description}
                 </p>
                 
                 <ul className="space-y-6">
                   {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-4 text-sm font-bold text-slate-400 group-hover:text-slate-200 transition-colors">
-                      <div className="p-1 bg-brand-primary/10 rounded-lg mt-0.5">
+                    <li key={feature} className="flex items-start gap-4 text-sm font-bold text-zinc-400 group-hover:text-slate-200 transition-colors">
+                      <div className="p-1 bg-indigo-600/10 rounded-lg mt-0.5">
                          <Check size={14} className="text-brand-primary" strokeWidth={4} />
                       </div>
                       <span className="tracking-tight">{feature}</span>
@@ -159,10 +159,10 @@ const Pricing = () => {
                 onClick={plan.onClick}
                 className={`w-full py-6 rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] transition-all active:scale-[0.98] mt-auto shadow-2xl border flex items-center justify-center gap-3 overflow-hidden group/btn ${
                   plan.active
-                    ? 'bg-white/5 text-slate-600 cursor-not-allowed border-white/5'
+                    ? 'bg-zinc-100/5 text-zinc-600 cursor-not-allowed border-zinc-800/50'
                     : plan.highlight
-                    ? 'shimmer-button bg-brand-primary text-white border-brand-primary hover:brightness-110 shadow-orange-950/40'
-                    : 'bg-white text-obsidian-950 border-white hover:brightness-90 shadow-white/5'
+                    ? ' bg-indigo-600 text-white border-brand-primary hover:brightness-110 shadow-orange-950/40'
+                    : 'bg-zinc-100 text-zinc-950 border-white hover:brightness-90 shadow-white/5'
                 }`}
               >
                 {plan.active ? <Shield size={14} /> : (plan.highlight ? <Crown size={14} /> : <Command size={14} />)}

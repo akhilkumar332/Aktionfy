@@ -23,7 +23,7 @@ const Signup = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-obsidian-950 relative overflow-hidden px-6">
+    <div className="min-h-screen flex items-center justify-center bg-zinc-950 relative overflow-hidden px-6">
       {/* Background Decor */}
       <div className="absolute top-0 left-0 w-full h-full bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none"></div>
       <div className="absolute bottom-0 right-0 w-[800px] h-[800px] bg-brand-primary/5 rounded-full blur-[160px] pointer-events-none translate-x-1/4 translate-y-1/4"></div>
@@ -33,7 +33,7 @@ const Signup = () => {
         animate={{ opacity: 1, y: 0 }}
         className="relative z-10 w-full max-w-lg"
       >
-        <div className="glass-card p-12 md:p-16 rounded-[4rem] border-white/5 relative overflow-hidden">
+        <div className="glass-card p-12 md:p-16 rounded-[4rem] border-zinc-800/50 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-brand-primary/5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
           
           <div className="flex flex-col items-center mb-16">
@@ -64,7 +64,7 @@ const Signup = () => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-black/40 px-8 py-6 rounded-[2rem] border border-white/5 text-white focus:border-brand-primary/50 outline-none transition-all placeholder:text-slate-800 font-medium shadow-inner"
+                className="w-full bg-black/40 px-8 py-6 rounded-[2rem] border border-zinc-800/50 text-white focus:border-brand-primary/50 outline-none transition-all placeholder:text-slate-800 font-medium shadow-inner"
                 placeholder="identity@network.io"
                 required
               />
@@ -75,7 +75,7 @@ const Signup = () => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-black/40 px-8 py-6 rounded-[2rem] border border-white/5 text-white focus:border-brand-primary/50 outline-none transition-all placeholder:text-slate-800 font-medium shadow-inner"
+                className="w-full bg-black/40 px-8 py-6 rounded-[2rem] border border-zinc-800/50 text-white focus:border-brand-primary/50 outline-none transition-all placeholder:text-slate-800 font-medium shadow-inner"
                 placeholder="••••••••••••"
                 required
               />
@@ -89,14 +89,14 @@ const Signup = () => {
             </button>
           </form>
 
-          <div className="mt-16 pt-10 border-t border-white/5 flex flex-col items-center gap-6">
+          <div className="mt-16 pt-10 border-t border-zinc-800/50 flex flex-col items-center gap-6">
              <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em]">
                Already initialized?{' '}
                <Link to="/login" className="text-white hover:text-brand-primary transition-colors underline underline-offset-8">
                  Authenticate
                </Link>
              </p>
-             <div className="flex items-center gap-2 text-slate-700 text-[9px] font-bold uppercase tracking-widest bg-white/[0.02] px-4 py-2 rounded-full border border-white/5">
+             <div className="flex items-center gap-2 text-slate-700 text-[9px] font-bold uppercase tracking-widest bg-zinc-100/[0.02] px-4 py-2 rounded-full border border-zinc-800/50">
                 <Command size={12} className="text-brand-primary" /> Multi-Region Deployment
              </div>
           </div>

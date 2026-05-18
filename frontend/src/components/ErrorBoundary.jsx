@@ -18,8 +18,8 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-ai-black flex items-center justify-center p-6 text-center">
-          <div className="max-w-md w-full p-10 bg-white/5 border border-white/10 rounded-[2.5rem] backdrop-blur-xl shadow-2xl relative overflow-hidden">
+        <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-6 text-center">
+          <div className="max-w-md w-full p-10 bg-zinc-100/5 border border-zinc-800 rounded-[2.5rem] backdrop-blur-xl shadow-2xl relative overflow-hidden">
             {/* Background Accent */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full -translate-x-[-20%] -translate-y-[20%] blur-2xl"></div>
             
@@ -37,7 +37,7 @@ class ErrorBoundary extends React.Component {
               <div className="flex flex-col gap-3">
                 <button
                   onClick={() => window.location.reload()}
-                  className="w-full flex items-center justify-center gap-3 py-4 bg-white text-ink-900 font-bold rounded-2xl hover:bg-slate-100 transition-all active:scale-95 shadow-[0_0_30px_rgba(255,255,255,0.1)]"
+                  className="w-full flex items-center justify-center gap-3 py-4 bg-zinc-100 text-zinc-950 font-bold rounded-2xl hover:bg-slate-100 transition-all active:scale-95 shadow-[0_0_30px_rgba(255,255,255,0.1)]"
                 >
                   <RefreshCw size={18} />
                   Re-initialize Interface
@@ -45,7 +45,7 @@ class ErrorBoundary extends React.Component {
                 
                 <a
                   href="/"
-                  className="w-full flex items-center justify-center gap-3 py-4 bg-white/5 text-slate-300 font-bold rounded-2xl hover:bg-white/10 transition-all border border-white/5"
+                  className="w-full flex items-center justify-center gap-3 py-4 bg-zinc-100/5 text-slate-300 font-bold rounded-2xl hover:bg-zinc-100/10 transition-all border border-zinc-800/50"
                 >
                   <Home size={18} />
                   Return to Origin
@@ -53,7 +53,7 @@ class ErrorBoundary extends React.Component {
               </div>
               
               {import.meta.env.DEV && (
-                <div className="mt-8 pt-8 border-t border-white/5">
+                <div className="mt-8 pt-8 border-t border-zinc-800/50">
                   <p className="text-[10px] font-mono text-red-400/50 break-words text-left overflow-hidden uppercase tracking-widest">
                     {this.state.error?.toString()}
                   </p>

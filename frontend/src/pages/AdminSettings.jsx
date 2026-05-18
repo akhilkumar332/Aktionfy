@@ -120,11 +120,11 @@ const AdminSettings = () => {
                 </motion.div>
               )}
 
-              <form onSubmit={handleSave} className="bg-obsidian-900 border border-white/5 rounded-[3.5rem] p-12 shadow-2xl relative overflow-hidden backdrop-blur-3xl">
+              <form onSubmit={handleSave} className="bg-zinc-950 border border-zinc-800/50 rounded-[3.5rem] p-12 shadow-2xl relative overflow-hidden backdrop-blur-3xl">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-brand-primary/5 blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
                 
                 <div className="flex items-center gap-4 mb-12">
-                   <div className="p-3 bg-white/5 rounded-xl border border-white/5 text-slate-400">
+                   <div className="p-3 bg-zinc-100/5 rounded-xl border border-zinc-800/50 text-slate-400">
                       <Settings size={20} />
                    </div>
                    <div>
@@ -140,7 +140,7 @@ const AdminSettings = () => {
                       type="number"
                       value={settings.worker_prune_days}
                       onChange={(e) => setSettings({ ...settings, worker_prune_days: parseInt(e.target.value) || 0 })}
-                      className="w-full bg-black/40 border border-white/5 rounded-[2rem] p-6 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner"
+                      className="w-full bg-black/40 border border-zinc-800/50 rounded-[2rem] p-6 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner"
                     />
                     <p className="text-[10px] text-slate-600 font-medium ml-4 leading-relaxed max-w-lg">
                       Inactive reaper nodes will be automatically purged from the global registry after this period. Minimum 1 day recommended.

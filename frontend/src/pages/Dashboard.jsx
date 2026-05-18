@@ -194,7 +194,7 @@ const Dashboard = () => {
         {/* Stream Metrics */}
         <Link to="/tasks" className="pro-card p-8 group hover:bg-zinc-800/40 transition-all border-zinc-800/50">
            <div className="flex items-center justify-between mb-8">
-              <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-500 group-hover:text-brand-primary transition-colors shadow-inner">
+              <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-500 group-hover:text-indigo-400 transition-colors shadow-inner">
                  <Layers size={20} />
               </div>
               <ArrowUpRight size={18} className="text-zinc-700 group-hover:text-zinc-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
@@ -224,7 +224,7 @@ const Dashboard = () => {
               <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Access Privilege Level</p>
            </div>
            {user?.tier === 'free' && (
-             <button onClick={handleUpgrade} className="pro-button-primary w-full mt-8 !bg-zinc-100 !text-black hover:!bg-white text-[11px] uppercase tracking-[0.2em] font-black">Elevate Tier</button>
+             <button onClick={handleUpgrade} className="pro-button-primary w-full mt-8 !bg-zinc-100 !text-black hover:!bg-zinc-100 text-[11px] uppercase tracking-[0.2em] font-black">Elevate Tier</button>
            )}
         </div>
 
@@ -232,10 +232,10 @@ const Dashboard = () => {
         <div className="pro-card p-8 group">
            <div className="flex items-center justify-between mb-8">
               <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-500 shadow-inner">
-                 <Zap size={20} className="text-brand-primary/50" />
+                 <Zap size={20} className="text-indigo-400/50" />
               </div>
               <div className="flex items-center gap-1.5 px-3 py-1 bg-zinc-950 border border-zinc-800 rounded-md">
-                 <div className="w-1 h-1 rounded-full bg-brand-primary"></div>
+                 <div className="w-1 h-1 rounded-full bg-indigo-600"></div>
                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-tighter">Peak_Cap</span>
               </div>
            </div>
@@ -245,7 +245,7 @@ const Dashboard = () => {
                  <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-none mt-1">Infrastructure Uptime</p>
               </div>
               <div className="h-1 w-full bg-zinc-900 rounded-full overflow-hidden border border-zinc-800/50">
-                 <motion.div initial={{ width: 0 }} animate={{ width: '85%' }} className="h-full bg-brand-primary" />
+                 <motion.div initial={{ width: 0 }} animate={{ width: '85%' }} className="h-full bg-indigo-600" />
               </div>
            </div>
         </div>
@@ -297,7 +297,7 @@ const Dashboard = () => {
          ].map((nav) => (
            <Link key={nav.sub} to={nav.path} className="pro-card p-5 group hover:bg-zinc-900/80 transition-all flex items-center justify-between border-zinc-800/30">
               <div className="flex items-center gap-4">
-                 <div className="w-10 h-10 rounded-lg bg-zinc-950 border border-zinc-800 flex items-center justify-center text-zinc-600 group-hover:text-brand-primary transition-colors">
+                 <div className="w-10 h-10 rounded-lg bg-zinc-950 border border-zinc-800 flex items-center justify-center text-zinc-600 group-hover:text-indigo-400 transition-colors">
                     <nav.icon size={18} />
                  </div>
                  <div className="hidden sm:block">

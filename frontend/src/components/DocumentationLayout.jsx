@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Book, Code, Terminal, FileJson, Info, Zap, Shield, Workflow } from 'lucide-react';
+import { Book, Code, Terminal, FileJson, Info, Zap, Shield, Workflow, Command } from 'lucide-react';
 
 const DocumentationLayout = ({ children }) => {
   const sections = [
@@ -29,35 +29,35 @@ const DocumentationLayout = ({ children }) => {
   ];
 
   return (
-    <div className="flex min-h-screen bg-[#faf9f5]">
-      {/* Docs Sidebar */}
-      <aside className="w-80 border-r border-slate-200 bg-white hidden lg:block sticky top-0 h-screen overflow-y-auto">
+    <div className="flex min-h-screen bg-zinc-950 text-zinc-100">
+      {/* Docs Sidebar - High Density */}
+      <aside className="w-72 border-r border-zinc-800 bg-zinc-950 hidden lg:block sticky top-0 h-screen overflow-y-auto custom-scrollbar">
         <div className="p-8">
-          <NavLink to="/" className="flex items-center gap-2 mb-10 group">
-            <div className="bg-accent-orange p-1 rounded text-white group-hover:scale-110 transition-transform">
-              <Zap size={18} fill="currentColor" />
+          <NavLink to="/" className="flex items-center gap-2 mb-12 group">
+            <div className="w-8 h-8 bg-zinc-800 border border-zinc-700 rounded-md flex items-center justify-center group-hover:border-brand-primary/50 transition-all">
+              <Command size={18} className="text-brand-primary" />
             </div>
-            <span className="font-bold text-lg tracking-tight text-ink-900">Aktionfy</span>
+            <span className="font-bold text-lg tracking-tight text-white">Aktionfy</span>
           </NavLink>
 
-          <nav className="space-y-8">
+          <nav className="space-y-10">
             {sections.map((section) => (
               <div key={section.title}>
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">{section.title}</h4>
+                <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4 ml-3">{section.title}</h4>
                 <ul className="space-y-1">
                   {section.links.map((link) => (
                     <li key={link.path}>
                       <NavLink
                         to={link.path}
                         className={({ isActive }) =>
-                          `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                          `flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all ${
                             isActive
-                              ? 'bg-accent-orange/10 text-accent-orange shadow-sm'
-                              : 'text-slate-600 hover:text-ink-900 hover:bg-slate-50'
+                              ? 'bg-zinc-800 text-white shadow-sm ring-1 ring-zinc-700'
+                              : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
                           }`
                         }
                       >
-                        <link.icon size={16} />
+                        <link.icon size={16} className="text-zinc-500" />
                         {link.name}
                       </NavLink>
                     </li>
@@ -69,9 +69,9 @@ const DocumentationLayout = ({ children }) => {
         </div>
       </aside>
 
-      {/* Docs Content */}
+      {/* Docs Content - Dark Mode Optimized */}
       <main className="flex-1 p-8 md:p-16 lg:p-24 overflow-y-auto">
-        <div className="max-w-3xl mx-auto prose prose-slate prose-headings:font-bold prose-headings:tracking-tight prose-a:text-accent-orange prose-pre:bg-ink-900 prose-pre:border prose-pre:border-white/10 prose-code:text-accent-orange">
+        <div className="max-w-3xl mx-auto prose prose-invert prose-zinc prose-headings:font-bold prose-headings:tracking-tighter prose-a:text-brand-primary prose-pre:bg-zinc-900 prose-pre:border prose-pre:border-zinc-800 prose-code:text-brand-primary prose-code:bg-zinc-900 prose-code:px-1 prose-code:rounded prose-img:rounded-2xl">
           {children}
         </div>
       </main>

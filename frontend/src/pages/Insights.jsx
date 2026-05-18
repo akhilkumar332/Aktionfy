@@ -76,11 +76,11 @@ const Insights = () => {
         <div className="flex items-center gap-4">
            <button 
              onClick={fetchInsights}
-             className="bg-white/5 border border-white/10 p-5 rounded-[2rem] text-slate-400 hover:text-white transition-all active:scale-95"
+             className="bg-zinc-100/5 border border-zinc-800 p-5 rounded-[2rem] text-slate-400 hover:text-white transition-all active:scale-95"
            >
              <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
            </button>
-           <div className="flex items-center gap-6 bg-white/[0.02] border border-white/5 px-8 py-5 rounded-[2rem] backdrop-blur-xl relative overflow-hidden group">
+           <div className="flex items-center gap-6 bg-zinc-100/[0.02] border border-zinc-800/50 px-8 py-5 rounded-[2rem] backdrop-blur-xl relative overflow-hidden group">
               <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
               <div className="flex flex-col">
                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Growth Index</span>
@@ -146,13 +146,13 @@ const Insights = () => {
               <motion.div 
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="bg-obsidian-900 border border-white/5 rounded-[3.5rem] p-10 shadow-2xl backdrop-blur-3xl relative overflow-hidden"
+                className="bg-zinc-950 border border-zinc-800/50 rounded-[3.5rem] p-10 shadow-2xl backdrop-blur-3xl relative overflow-hidden"
               >
                 <div className="absolute top-0 right-0 w-48 h-48 bg-brand-primary/5 blur-[80px] -translate-y-1/2 translate-x-1/2"></div>
                 
                 <div className="flex items-center justify-between mb-12 relative z-10">
                   <div className="flex items-center gap-4">
-                    <div className="p-3 bg-white/5 rounded-xl border border-white/5 text-slate-400">
+                    <div className="p-3 bg-zinc-100/5 rounded-xl border border-zinc-800/50 text-slate-400">
                       <BarChart3 size={20} />
                     </div>
                     <div>
@@ -209,13 +209,13 @@ const Insights = () => {
               <motion.div 
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="bg-obsidian-900 border border-white/5 rounded-[3.5rem] p-10 shadow-2xl backdrop-blur-3xl relative overflow-hidden"
+                className="bg-zinc-950 border border-zinc-800/50 rounded-[3.5rem] p-10 shadow-2xl backdrop-blur-3xl relative overflow-hidden"
               >
                 <div className="absolute bottom-0 left-0 w-48 h-48 bg-emerald-500/5 blur-[80px] translate-y-1/2 -translate-x-1/2"></div>
                 
                 <div className="flex items-center justify-between mb-12 relative z-10">
                   <div className="flex items-center gap-4">
-                    <div className="p-3 bg-white/5 rounded-xl border border-white/5 text-slate-400">
+                    <div className="p-3 bg-zinc-100/5 rounded-xl border border-zinc-800/50 text-slate-400">
                       <ShieldCheck size={20} />
                     </div>
                     <div>
@@ -251,12 +251,12 @@ const Insights = () => {
               <motion.div 
                 whileHover={{ y: -5 }}
                 onClick={() => navigate('/admin/workers')}
-                className="bg-white/[0.02] border border-white/5 rounded-[3.5rem] p-10 backdrop-blur-3xl cursor-pointer hover:bg-white/[0.04] transition-all flex items-center justify-between group shadow-2xl"
+                className="bg-zinc-100/[0.02] border border-zinc-800/50 rounded-[3.5rem] p-10 backdrop-blur-3xl cursor-pointer hover:bg-zinc-100/[0.04] transition-all flex items-center justify-between group shadow-2xl"
               >
                 <div className="flex items-center gap-8">
                   <div className="relative">
                      <div className="absolute inset-0 bg-blue-500/10 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                     <div className="bg-obsidian-950 p-6 rounded-[2rem] text-blue-400 border border-white/5 group-hover:border-blue-400/30 transition-all relative z-10">
+                     <div className="bg-zinc-950 p-6 rounded-[2rem] text-blue-400 border border-zinc-800/50 group-hover:border-blue-400/30 transition-all relative z-10">
                        <Server size={32} />
                      </div>
                   </div>
@@ -282,16 +282,16 @@ const Insights = () => {
 const MetricCard = ({ icon: Icon, label, value, trend, color, bg }) => (
   <motion.div 
     whileHover={{ y: -8 }}
-    className="bg-obsidian-900 border border-white/5 rounded-[3rem] p-10 backdrop-blur-3xl relative overflow-hidden group shadow-2xl"
+    className="bg-zinc-950 border border-zinc-800/50 rounded-[3rem] p-10 backdrop-blur-3xl relative overflow-hidden group shadow-2xl"
   >
     <div className="absolute top-0 right-0 p-10 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-700 pointer-events-none">
       <Icon size={120} />
     </div>
     <div className="flex items-start justify-between mb-8 relative z-10">
-      <div className={`p-4 rounded-2xl ${bg} border border-white/5 group-hover:scale-110 transition-transform`}>
+      <div className={`p-4 rounded-2xl ${bg} border border-zinc-800/50 group-hover:scale-110 transition-transform`}>
         <Icon size={24} className={color} />
       </div>
-      <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/5">
+      <div className="flex items-center gap-2 px-3 py-1 bg-zinc-100/5 rounded-full border border-zinc-800/50">
          <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest">{trend}</span>
          <Activity size={10} className="text-emerald-500 animate-pulse" />
       </div>

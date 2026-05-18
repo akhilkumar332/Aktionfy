@@ -101,11 +101,11 @@ const AdminSEO = () => {
                 </motion.div>
               )}
 
-              <form onSubmit={handleSave} className="bg-obsidian-900 border border-white/5 rounded-[3.5rem] p-12 shadow-2xl relative overflow-hidden backdrop-blur-3xl">
+              <form onSubmit={handleSave} className="bg-zinc-950 border border-zinc-800/50 rounded-[3.5rem] p-12 shadow-2xl relative overflow-hidden backdrop-blur-3xl">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-brand-primary/5 blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
                 
                 <div className="flex items-center gap-4 mb-12 relative z-10">
-                   <div className="p-3 bg-white/5 rounded-xl border border-white/5 text-slate-400">
+                   <div className="p-3 bg-zinc-100/5 rounded-xl border border-zinc-800/50 text-slate-400">
                       <Layout size={20} />
                    </div>
                    <div>
@@ -121,7 +121,7 @@ const AdminSEO = () => {
                       type="text"
                       value={data.title}
                       onChange={(e) => setData({ ...data, title: e.target.value })}
-                      className="w-full bg-black/40 border border-white/5 rounded-[2rem] p-6 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner"
+                      className="w-full bg-black/40 border border-zinc-800/50 rounded-[2rem] p-6 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner"
                       placeholder="Aktionfy | Autonomous Task Orchestration"
                     />
                   </div>
@@ -132,7 +132,7 @@ const AdminSEO = () => {
                       value={data.description}
                       onChange={(e) => setData({ ...data, description: e.target.value })}
                       rows={4}
-                      className="w-full bg-black/40 border border-white/5 rounded-[2.5rem] p-8 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner resize-none custom-scrollbar"
+                      className="w-full bg-black/40 border border-zinc-800/50 rounded-[2.5rem] p-8 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner resize-none custom-scrollbar"
                       placeholder="Establish a high-performance state machine for your AI workflows..."
                     />
                   </div>
@@ -143,7 +143,7 @@ const AdminSEO = () => {
                       type="text"
                       value={data.keywords}
                       onChange={(e) => setData({ ...data, keywords: e.target.value })}
-                      className="w-full bg-black/40 border border-white/5 rounded-[2rem] p-6 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner"
+                      className="w-full bg-black/40 border border-zinc-800/50 rounded-[2rem] p-6 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner"
                       placeholder="ai, mcp, automation, orchestration"
                     />
                   </div>
@@ -159,8 +159,8 @@ const AdminSEO = () => {
                 </div>
               </form>
 
-              <div className="bg-white/[0.01] border border-dashed border-white/10 rounded-[3rem] p-10 flex flex-col items-center justify-center text-center gap-6">
-                 <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center border border-white/5 text-slate-700">
+              <div className="bg-zinc-100/[0.01] border border-dashed border-zinc-800 rounded-[3rem] p-10 flex flex-col items-center justify-center text-center gap-6">
+                 <div className="w-16 h-16 bg-zinc-100/5 rounded-full flex items-center justify-center border border-zinc-800/50 text-slate-700">
                     <Search size={32} />
                  </div>
                  <div>

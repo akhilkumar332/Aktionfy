@@ -36,13 +36,13 @@ const ManualRouteModal = ({ isOpen, onClose, task, tasks, onRouted }) => {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-zinc-900 border border-white/10 rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden">
-        <div className="px-8 py-6 border-b border-white/5 flex justify-between items-center bg-zinc-900/50">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden">
+        <div className="px-8 py-6 border-b border-zinc-800/50 flex justify-between items-center bg-zinc-900/50">
           <div>
             <h3 className="text-xl font-black text-white uppercase tracking-tighter">Manual Resolution</h3>
             <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Routing required</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-xl text-slate-500 hover:text-white transition-colors">
+          <button onClick={onClose} className="p-2 hover:bg-zinc-100/5 rounded-xl text-slate-500 hover:text-white transition-colors">
             <X size={20} />
           </button>
         </div>
@@ -69,7 +69,7 @@ const ManualRouteModal = ({ isOpen, onClose, task, tasks, onRouted }) => {
                   key={branch.id}
                   onClick={() => handleRoute(branch.id)}
                   disabled={loading}
-                  className="w-full flex items-center justify-between p-5 bg-white/5 border border-white/10 rounded-2xl hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all group disabled:opacity-50 disabled:cursor-not-allowed text-left"
+                  className="w-full flex items-center justify-between p-5 bg-zinc-100/5 border border-zinc-800 rounded-2xl hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all group disabled:opacity-50 disabled:cursor-not-allowed text-left"
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center group-hover:bg-indigo-500 group-hover:text-white transition-all">
@@ -87,7 +87,7 @@ const ManualRouteModal = ({ isOpen, onClose, task, tasks, onRouted }) => {
           </div>
         </div>
 
-        <div className="px-8 py-6 bg-black/20 border-t border-white/5 flex justify-end gap-4">
+        <div className="px-8 py-6 bg-black/20 border-t border-zinc-800/50 flex justify-end gap-4">
           <button
             onClick={onClose}
             className="px-6 py-3 text-xs font-black text-slate-500 hover:text-white uppercase tracking-widest transition-colors"

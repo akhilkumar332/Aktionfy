@@ -15,7 +15,7 @@ const DecisionNode = ({ data, selected }) => {
           w-32 h-32 rotate-45 flex items-center justify-center
           backdrop-blur-xl transition-all duration-300
           ${selected ? `ring-2 ${isSwarm ? 'ring-purple-500' : 'ring-indigo-500'} ring-offset-4 ring-offset-zinc-900` : ''}
-          ${isProcessing ? (isSwarm ? 'bg-purple-600/30 border-2 border-purple-400 shadow-[0_0_30px_rgba(168,85,247,0.4)]' : 'bg-indigo-600/30 border-2 border-indigo-400 shadow-[0_0_30px_rgba(99,102,241,0.4)]') : 'bg-zinc-900/80 border border-white/10'}
+          ${isProcessing ? (isSwarm ? 'bg-purple-600/30 border-2 border-purple-400 shadow-[0_0_30px_rgba(168,85,247,0.4)]' : 'bg-indigo-600/30 border-2 border-indigo-400 shadow-[0_0_30px_rgba(99,102,241,0.4)]') : 'bg-zinc-900/80 border border-zinc-800'}
           ${isHalted ? 'bg-rose-500/20 border-2 border-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.3)]' : ''}
           rounded-xl
         `}

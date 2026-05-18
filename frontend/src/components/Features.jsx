@@ -71,14 +71,14 @@ const Features = () => {
        title: 'Encrypted Identity',
        description: 'End-to-end identity verification and RBAC. Secure your neural infrastructure with professional-grade access controls.',
        icon: Fingerprint,
-       color: 'text-slate-400',
-       bg: 'bg-white/5',
-       border: 'border-white/10'
+       color: 'text-zinc-400',
+       bg: 'bg-zinc-900/50',
+       border: 'border-zinc-800'
     }
   ];
 
   return (
-    <section id="features" className="py-40 bg-obsidian-950 relative overflow-hidden">
+    <section id="features" className="py-40 bg-zinc-950 relative overflow-hidden">
       {/* Dynamic Background decor */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full pointer-events-none opacity-30">
         <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-brand-primary/10 rounded-full blur-[160px] animate-pulse"></div>
@@ -93,14 +93,14 @@ const Features = () => {
           transition={{ duration: 0.8 }}
           className="max-w-5xl mx-auto text-center mb-32"
         >
-          <div className="inline-flex items-center gap-3 py-2 px-6 mb-8 text-[10px] font-black tracking-[0.4em] text-brand-primary uppercase bg-white/[0.03] border border-white/10 rounded-full backdrop-blur-xl">
+          <div className="inline-flex items-center gap-3 py-2 px-6 mb-8 text-[10px] font-black tracking-[0.4em] text-brand-primary uppercase bg-zinc-900/50 border border-zinc-800 rounded-full backdrop-blur-xl">
              Autonomous Capabilities
           </div>
           <h2 className="text-5xl md:text-8xl font-black text-white mb-10 tracking-tighter leading-[0.9]">
             The Backbone of <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-400 to-slate-700">Decentralized Intelligence.</span>
           </h2>
-          <p className="text-xl md:text-2xl text-slate-500 font-bold max-w-3xl mx-auto leading-relaxed tracking-tight">
+          <p className="text-xl md:text-2xl text-zinc-500 font-bold max-w-3xl mx-auto leading-relaxed tracking-tight">
             Industrial-grade orchestration engineered for developers who demand absolute reliability from their AI automation layer.
           </p>
         </motion.div>
@@ -113,23 +113,23 @@ const Features = () => {
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.05, duration: 0.5 }}
-              className={`group relative p-12 rounded-[3.5rem] border bg-white/[0.02] backdrop-blur-3xl ${f.border} hover:bg-white/[0.04] hover:border-white/20 transition-all duration-700 overflow-hidden shadow-2xl`}
+              className={`group relative p-12 rounded-[3.5rem] border bg-zinc-900/30 backdrop-blur-3xl ${f.border} hover:bg-zinc-800/50 hover:border-zinc-700 transition-all duration-700 overflow-hidden shadow-2xl`}
             >
               {/* Card Glow */}
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-zinc-900/50 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
               
               <div className="relative z-10">
-                <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center mb-12 ${f.bg} border border-white/5 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-2xl`}>
+                <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center mb-12 ${f.bg} border border-zinc-800/50 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-2xl`}>
                   <f.icon className={`w-8 h-8 ${f.color}`} />
                 </div>
                 <h3 className="text-2xl font-black text-white mb-6 tracking-tight uppercase">{f.title}</h3>
-                <p className="text-slate-400 leading-relaxed font-medium text-base opacity-80 group-hover:opacity-100 transition-opacity">
+                <p className="text-zinc-400 leading-relaxed font-medium text-base opacity-80 group-hover:opacity-100 transition-opacity">
                   {f.description}
                 </p>
               </div>
               
-              <div className="mt-12 pt-8 border-t border-white/5 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
-                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Protocol V3.4</span>
+              <div className="mt-12 pt-8 border-t border-zinc-800/50 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
+                 <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Protocol V3.4</span>
                  <div className="w-1.5 h-1.5 rounded-full bg-brand-primary"></div>
               </div>
             </motion.div>
