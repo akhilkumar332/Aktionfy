@@ -36,7 +36,7 @@ const ManualRouteModal = ({ isOpen, onClose, task, tasks, onRouted }) => {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-xl shadow-lg w-full max-w-md overflow-hidden">
         <div className="px-8 py-6 border-b border-zinc-800/50 flex justify-between items-center bg-zinc-900">
           <div>
             <h3 className="text-xl font-black text-white uppercase tracking-tighter">Manual Resolution</h3>

@@ -113,13 +113,13 @@ const Features = () => {
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.05, duration: 0.5 }}
-              className={`group relative p-12 rounded-[3.5rem] border bg-zinc-900/30 backdrop-blur-3xl ${f.border} hover:bg-zinc-800/50 hover:border-zinc-700 transition-all duration-700 overflow-hidden shadow-2xl`}
+              className={`group relative p-12 rounded-3xl border bg-zinc-900/30 backdrop-blur-xl ${f.border} hover:bg-zinc-800/50 hover:border-zinc-700 transition-all duration-700 overflow-hidden shadow-lg`}
             >
               {/* Card Glow */}
               <div className="absolute top-0 right-0 w-32 h-32 bg-zinc-900 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
               
               <div className="relative z-10">
-                <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center mb-12 ${f.bg} border border-zinc-800/50 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-2xl`}>
+                <div className={`w-16 h-16 rounded-xl flex items-center justify-center mb-12 ${f.bg} border border-zinc-800/50 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg`}>
                   <f.icon className={`w-8 h-8 ${f.color}`} />
                 </div>
                 <h3 className="text-2xl font-black text-white mb-6 tracking-tight uppercase">{f.title}</h3>

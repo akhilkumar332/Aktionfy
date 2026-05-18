@@ -53,9 +53,9 @@ const PageWrapper = ({ children }) => {
 const PublicLayout = () => {
   const location = useLocation();
   return (
-    <div className="flex flex-col min-h-screen bg-zinc-950 text-zinc-100">
+    <div className="flex flex-col min-h-screen bg-zinc-950 text-zinc-100 font-sans">
       <Navbar />
-      <main className="flex-1 flex flex-col pt-16">
+      <main className="flex-1 flex flex-col pt-16 relative">
         <AnimatePresence mode="wait">
           <PageWrapper key={location.pathname}>
             <Outlet />
@@ -76,7 +76,7 @@ const ProtectedRoute = ({ roles }) => {
       <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-white font-sans">
         <div className="flex flex-col items-center gap-4">
            <div className="w-10 h-10 border-2 border-brand-primary/20 border-t-brand-primary rounded-full animate-spin"></div>
-           <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 animate-pulse">Establishing Connection...</span>
+           <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 animate-pulse">Establishing Connection...</span>
         </div>
       </div>
     );
@@ -123,7 +123,7 @@ const AppRoutes = () => {
         </Route>
       </Route>
 
-      {/* 2. Universal Protected Layout Group (Stable Sidebar) */}
+      {/* 2. User Protected Routes Group */}
       <Route element={<ProtectedRoute roles={['user', 'staff', 'admin']} />}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/tasks" element={<Tasks />} />
@@ -133,9 +133,15 @@ const AppRoutes = () => {
         <Route path="/workspaces" element={<Workspaces />} />
         <Route path="/templates" element={<Templates />} />
         <Route path="/canvas" element={<WorkflowCanvas />} />
-        
-        {/* Nested Staff/Admin Access within the same Layout */}
+      </Route>
+      
+      {/* 3. Staff/Admin Routes Group */}
+      <Route element={<ProtectedRoute roles={['staff', 'admin']} />}>
         <Route path="/monitor" element={<Monitor />} />
+      </Route>
+      
+      {/* 4. Admin Only Routes Group */}
+      <Route element={<ProtectedRoute roles={['admin']} />}>
         <Route path="/admin/users" element={<AdminUsers />} />
         <Route path="/admin/seo" element={<AdminSEO />} />
         <Route path="/admin/settings" element={<AdminSettings />} />

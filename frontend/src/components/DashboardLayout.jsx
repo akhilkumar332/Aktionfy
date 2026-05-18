@@ -160,7 +160,7 @@ const DashboardLayout = ({ children }) => {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="absolute left-0 top-0 bottom-0 w-80 bg-zinc-950 shadow-2xl flex flex-col"
+              className="absolute left-0 top-0 bottom-0 w-80 bg-zinc-950 shadow-lg flex flex-col"
             >
               <Sidebar mobile user={user} location={location} setIsSidebarOpen={setIsSidebarOpen} handleLogout={handleLogout} />
             </motion.aside>

@@ -110,7 +110,7 @@ const Webhooks = () => {
               initial={{ opacity: 0, scale: 0.98, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.98, y: 10 }}
-              className="bg-zinc-950 border border-zinc-800 p-8 rounded-lg shadow-2xl w-full max-w-md relative z-10 overflow-hidden"
+              className="bg-zinc-950 border border-zinc-800 p-8 rounded-lg shadow-lg w-full max-w-md relative z-10 overflow-hidden"
             >
               <div className="flex items-center justify-between mb-8">
                 <div>
@@ -234,7 +234,7 @@ const Webhooks = () => {
               initial={{ opacity: 0, x: 20, scale: 0.95 }}
               animate={{ opacity: 1, x: 0, scale: 1 }}
               exit={{ opacity: 0, x: 10, scale: 0.95 }}
-              className={`pointer-events-auto px-6 py-4 rounded-xl shadow-2xl border flex items-center gap-4 min-w-[320px] backdrop-blur-md bg-zinc-900/90 ${
+              className={`pointer-events-auto px-6 py-4 rounded-xl shadow-lg border flex items-center gap-4 min-w-[320px] backdrop-blur-md bg-zinc-900/90 ${
                 toast.type === 'success' ? 'border-emerald-500/20' : 'border-red-500/20'
               }`}
             >

@@ -138,7 +138,7 @@ const WorkflowCanvas = () => {
                 {task.status}
               </div>
               {isProcessing && (
-                <div className="absolute -inset-4 bg-indigo-600/5 rounded-[2rem] -z-10 animate-ping duration-[3000ms]" />
+                <div className="absolute -inset-4 bg-indigo-600/5 rounded-xl -z-10 animate-ping duration-[3000ms]" />
               )}
             </div>
           )
@@ -420,7 +420,7 @@ const WorkflowCanvas = () => {
                             {updatedTask.status}
                           </div>
                           {isProcessing && (
-                            <div className="absolute -inset-4 bg-indigo-600/5 rounded-[2rem] -z-10 animate-ping duration-[3000ms]" />
+                            <div className="absolute -inset-4 bg-indigo-600/5 rounded-xl -z-10 animate-ping duration-[3000ms]" />
                           )}
                         </div>
                     )
@@ -588,7 +588,7 @@ const WorkflowCanvas = () => {
 
   return (
     <div className="h-screen w-full flex flex-col bg-zinc-950 text-white overflow-hidden selection:bg-indigo-600">
-      <header className="px-10 py-8 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-zinc-950 backdrop-blur-3xl border-b border-zinc-800/50 z-20">
+      <header className="px-10 py-8 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-zinc-950 backdrop-blur-xl border-b border-zinc-800/50 z-20">
         <div>
           <motion.h1 
             initial={{ opacity: 0, x: -20 }}
@@ -658,7 +658,7 @@ const WorkflowCanvas = () => {
                 <p className="text-zinc-400 text-xs font-bold uppercase tracking-widest leading-relaxed">No orchestration streams identified in this environment.</p>
                 <button 
                   onClick={() => setIsSidebarOpen(true)}
-                  className="mt-8 px-10 py-5 bg-indigo-600 text-white rounded-[2rem] font-black uppercase text-[10px] tracking-[0.2em] shadow-2xl"
+                  className="mt-8 px-10 py-5 bg-indigo-600 text-white rounded-xl font-black uppercase text-[10px] tracking-[0.2em] shadow-lg"
                 >
                   Fire First Orchestration
                 </button>
@@ -678,7 +678,7 @@ const WorkflowCanvas = () => {
             colorMode="dark"
             fitView
           >
-            <Controls className="!bg-zinc-950 !border-zinc-800 !rounded-xl !shadow-2xl" />
+            <Controls className="!bg-zinc-950 !border-zinc-800 !rounded-xl !shadow-lg" />
             <MiniMap 
               style={{
                 backgroundColor: 'rgba(5, 5, 5, 0.9)',

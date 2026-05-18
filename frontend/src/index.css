@@ -34,7 +34,7 @@ body {
 }
 
 .pro-table-header {
-  @apply bg-zinc-900/80 border-b border-zinc-800 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider;
+  @apply bg-zinc-900/80 border-b border-zinc-800 text-[11px] font-semibold text-zinc-400 uppercase tracking-wider;
 }
 
 .pro-table-row {

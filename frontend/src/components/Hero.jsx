@@ -34,7 +34,7 @@ const Hero = () => {
             initial={{ opacity: 0, scale: 0.8, filter: 'blur(10px)' }}
             animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
             transition={{ duration: 1, ease: 'easeOut' }}
-            className="inline-flex items-center gap-3 py-2.5 px-6 mb-12 text-[10px] font-black tracking-[0.4em] text-brand-primary uppercase bg-zinc-900/30 border border-zinc-800 rounded-full backdrop-blur-xl shadow-2xl"
+            className="inline-flex items-center gap-3 py-2.5 px-6 mb-12 text-[10px] font-black tracking-[0.4em] text-brand-primary uppercase bg-zinc-900/30 border border-zinc-800 rounded-full backdrop-blur-xl shadow-lg"
           >
             <div className="relative">
                <Sparkles size={14} className="animate-pulse" />
@@ -74,13 +74,13 @@ const Hero = () => {
           >
             <Link 
               to="/signup" 
-              className=" group relative px-14 py-6 text-white font-black uppercase tracking-[0.2em] text-xs bg-indigo-600 rounded-[2rem] hover:brightness-110 transition-all shadow-[0_20px_60px_rgba(217,119,6,0.4)] flex items-center gap-4 active:scale-95 overflow-hidden"
+              className=" group relative px-14 py-6 text-white font-black uppercase tracking-[0.2em] text-xs bg-indigo-600 rounded-xl hover:brightness-110 transition-all shadow-[0_20px_60px_rgba(217,119,6,0.4)] flex items-center gap-4 active:scale-95 overflow-hidden"
             >
               Initialize Node <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
             </Link>
             <a 
               href="#installation" 
-              className="px-14 py-6 text-zinc-400 font-black uppercase tracking-[0.2em] text-xs bg-zinc-900 border border-zinc-800 rounded-[2rem] hover:bg-zinc-100/10 hover:text-white transition-all flex items-center gap-4 backdrop-blur-xl active:scale-95 shadow-2xl"
+              className="px-14 py-6 text-zinc-400 font-black uppercase tracking-[0.2em] text-xs bg-zinc-900 border border-zinc-800 rounded-xl hover:bg-zinc-100/10 hover:text-white transition-all flex items-center gap-4 backdrop-blur-xl active:scale-95 shadow-lg"
             >
               <Terminal size={18} className="text-brand-primary" /> Integration Guide
             </a>

@@ -8,7 +8,7 @@ const Sidebar = ({ sections, setIsMobileMenuOpen }) => (
     <nav className="space-y-10 flex-1">
       {sections.map((section) => (
         <div key={section.title}>
-          <h4 className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] mb-4 ml-3">{section.title}</h4>
+          <h4 className="text-[10px] font-black text-zinc-300 uppercase tracking-[0.2em] mb-4 ml-3">{section.title}</h4>
           <ul className="space-y-1">
             {section.links.map((link) => (
               <li key={link.path}>
@@ -19,11 +19,11 @@ const Sidebar = ({ sections, setIsMobileMenuOpen }) => (
                     `flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all ${
                       isActive
                         ? 'bg-zinc-800 text-white shadow-sm ring-1 ring-zinc-700'
-                        : 'text-zinc-500 hover:text-white hover:bg-zinc-800/50'
+                        : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
                     }`
                   }
                 >
-                  <link.icon size={16} className="text-zinc-600 group-hover:text-zinc-400 shrink-0" />
+                  <link.icon size={16} className="text-zinc-300 group-hover:text-zinc-400 shrink-0" />
                   <span className="truncate">{link.name}</span>
                 </NavLink>
               </li>
@@ -39,7 +39,7 @@ const Sidebar = ({ sections, setIsMobileMenuOpen }) => (
              <Command size={16} />
           </div>
           <div>
-             <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest leading-none">Version</p>
+             <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest leading-none">Version</p>
              <p className="text-xs font-bold text-zinc-200 mt-1">v3.4.2-PRO</p>
           </div>
        </div>
@@ -81,7 +81,7 @@ const DocumentationLayout = () => {
       {/* Mobile Docs Header */}
       <div className="lg:hidden flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-950/50 backdrop-blur-md sticky top-16 z-30">
         <div className="flex items-center gap-2">
-           <Book size={18} className="text-zinc-500" />
+           <Book size={18} className="text-zinc-400" />
            <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">Documentation</span>
         </div>
         <button 

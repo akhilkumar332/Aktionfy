@@ -28,15 +28,15 @@ const Overview = () => (
       </section>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 not-prose">
-        <div className="p-8 rounded-3xl bg-blue-950 border border-blue-500/20 shadow-sm">
-          <Database className="text-blue-400 mb-4" size={32} />
-          <h3 className="font-bold text-xl text-blue-400 mb-2">Linear Scalability</h3>
-          <p className="text-blue-300 text-sm">Distributed orchestration via Redis Pub/Sub ensures performance remains constant across nodes.</p>
+        <div className="p-8 rounded-3xl bg-zinc-900 border border-zinc-800 shadow-sm">
+          <Database className="text-brand-primary mb-4" size={32} />
+          <h3 className="font-bold text-xl text-brand-primary mb-2">Linear Scalability</h3>
+          <p className="text-zinc-300 text-sm">Distributed orchestration via Redis Pub/Sub ensures performance remains constant across nodes.</p>
         </div>
-        <div className="p-8 rounded-3xl bg-indigo-950 border border-indigo-500/20 shadow-sm">
-          <Layers className="text-indigo-400 mb-4" size={32} />
-          <h3 className="font-bold text-xl text-indigo-400 mb-2">Agentic Chaining</h3>
-          <p className="text-indigo-300 text-sm">Link tasks together to build complex, self-executing AI multi-step workflows.</p>
+        <div className="p-8 rounded-3xl bg-zinc-900 border border-zinc-800 shadow-sm">
+          <Layers className="text-brand-primary mb-4" size={32} />
+          <h3 className="font-bold text-xl text-brand-primary mb-2">Agentic Chaining</h3>
+          <p className="text-zinc-300 text-sm">Link tasks together to build complex, self-executing AI multi-step workflows.</p>
         </div>
       </div>
     </div>
@@ -60,11 +60,11 @@ const QuickStart = () => (
         <h2 className="text-2xl font-bold text-zinc-100 mb-6">2. Connect your Client</h2>
         <p className="mb-4">Install the global CLI client using <code>npx</code> and copy your API key from the Dashboard:</p>
         <div className="space-y-4">
-          <pre className="p-6 rounded-2xl bg-zinc-950 text-emerald-400 font-mono text-sm shadow-xl">
+          <pre className="p-6 rounded-2xl bg-zinc-900/50 text-emerald-400 font-mono text-sm shadow-xl">
             $ npx @aktionfy/mcp install --api-key YOUR_KEY
           </pre>
           <p className="text-sm text-zinc-300 italic">Alternatively, manually configure your <code>mcp_config.json</code>:</p>
-          <pre className="p-6 rounded-2xl bg-zinc-950 text-emerald-400 font-mono text-sm shadow-xl">
+          <pre className="p-6 rounded-2xl bg-zinc-900/50 text-emerald-400 font-mono text-sm shadow-xl">
 {`{
   "mcpServers": {
     "schedule": {
@@ -81,7 +81,7 @@ const QuickStart = () => (
       <section>
         <h2 className="text-2xl font-bold text-zinc-100 mb-6">3. Schedule a Task</h2>
         <p>Use your LLM (Claude/Cursor) to create a task via the <code>create_task</code> tool:</p>
-        <div className="bg-zinc-900/80 p-6 rounded-2xl font-medium border border-zinc-800">
+        <div className="bg-zinc-900 p-6 rounded-2xl font-medium border border-zinc-800">
           "Create a task named 'Check News' that runs every hour at minute 0 using cron '0 * * * *' and asks me 'What's happening in AI today?'"
         </div>
       </section>
@@ -103,11 +103,11 @@ const InstallationDocs = () => (
         </h2>
         <p className="mb-6">The fastest way to install the Aktionfy client on any machine with Node.js installed.</p>
         <div className="space-y-4">
-          <div className="p-4 bg-zinc-900/80 rounded-xl font-mono text-sm">
+          <div className="p-4 bg-zinc-900 rounded-xl font-mono text-sm">
             $ npx @aktionfy/mcp install
           </div>
           <p className="text-sm text-zinc-300">For non-NPM environments, use the standard shell installer:</p>
-          <div className="p-4 bg-zinc-900/80 rounded-xl font-mono text-sm">
+          <div className="p-4 bg-zinc-900 rounded-xl font-mono text-sm">
             $ curl -sL https://github.com/akhilkumar332/aktionfy/install.sh | bash
           </div>
         </div>
@@ -119,16 +119,16 @@ const InstallationDocs = () => (
         </h2>
         <p className="mb-6">Deploy your own private Aktionfy server using Docker Compose.</p>
         <div className="space-y-4">
-          <div className="p-4 bg-zinc-900/80 rounded-xl font-mono text-sm">
+          <div className="p-4 bg-zinc-900 rounded-xl font-mono text-sm">
             $ git clone https://github.com/akhilkumar332/aktionfy.git
           </div>
-          <div className="p-4 bg-zinc-900/80 rounded-xl font-mono text-sm">
+          <div className="p-4 bg-zinc-900 rounded-xl font-mono text-sm">
             $ cd aktionfy && docker-compose up -d
           </div>
         </div>
       </section>
 
-      <section className="bg-zinc-900/80 p-8 rounded-3xl border border-zinc-800 shadow-sm not-prose">
+      <section className="bg-zinc-900 p-8 rounded-3xl border border-zinc-800 shadow-sm not-prose">
         <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
           <Settings size={20} className="text-zinc-300" /> Environment Configuration
         </h3>
@@ -180,7 +180,7 @@ const CoreConcepts = () => (
 
       <div className="space-y-10">
         <div className="flex gap-8 group">
-          <div className="flex-shrink-0 w-12 h-12 bg-zinc-900/80 border border-zinc-800 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-brand-primary group-hover:text-white transition-colors duration-500">
+          <div className="flex-shrink-0 w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-brand-primary group-hover:text-white transition-colors duration-500">
             <Zap size={24} />
           </div>
           <div>
@@ -194,7 +194,7 @@ const CoreConcepts = () => (
         </div>
 
         <div className="flex gap-8 group">
-          <div className="flex-shrink-0 w-12 h-12 bg-zinc-900/80 border border-zinc-800 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-blue-600 group-hover:text-white transition-colors duration-500">
+          <div className="flex-shrink-0 w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-blue-600 group-hover:text-white transition-colors duration-500">
             <History size={24} />
           </div>
           <div>
@@ -208,7 +208,7 @@ const CoreConcepts = () => (
         </div>
 
         <div className="flex gap-8 group">
-          <div className="flex-shrink-0 w-12 h-12 bg-zinc-900/80 border border-zinc-800 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-500">
+          <div className="flex-shrink-0 w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-500">
             <Globe size={24} />
           </div>
           <div>
@@ -222,7 +222,7 @@ const CoreConcepts = () => (
         </div>
 
         <div className="flex gap-8 group">
-          <div className="flex-shrink-0 w-12 h-12 bg-zinc-900/80 border border-zinc-800 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-500">
+          <div className="flex-shrink-0 w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-500">
             <Layers size={24} />
           </div>
           <div>
@@ -236,7 +236,7 @@ const CoreConcepts = () => (
         </div>
 
         <div className="flex gap-8 group">
-          <div className="flex-shrink-0 w-12 h-12 bg-zinc-900/80 border border-zinc-800 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-500">
+          <div className="flex-shrink-0 w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-500">
             <Shield size={24} />
           </div>
           <div>
@@ -250,7 +250,7 @@ const CoreConcepts = () => (
         </div>
 
         <div className="flex gap-8 group">
-          <div className="flex-shrink-0 w-12 h-12 bg-zinc-900/80 border border-zinc-800 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-brand-primary group-hover:text-white transition-colors duration-500">
+          <div className="flex-shrink-0 w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-brand-primary group-hover:text-white transition-colors duration-500">
             <Database size={24} />
           </div>
           <div>
@@ -280,8 +280,8 @@ const ApiReference = () => (
           <Code size={24} className="text-brand-primary" /> MCP Tools
         </h2>
         <div className="space-y-6">
-          <div className="border border-zinc-800/50 rounded-2xl overflow-hidden shadow-sm bg-zinc-900/80">
-            <div className="px-6 py-4 bg-zinc-900/80 border-b border-zinc-800/50 flex items-center justify-between">
+          <div className="border border-zinc-800/50 rounded-2xl overflow-hidden shadow-sm bg-zinc-900">
+            <div className="px-6 py-4 bg-zinc-900 border-b border-zinc-800/50 flex items-center justify-between">
               <span className="font-mono font-bold text-zinc-100">create_task</span>
               <span className="text-[10px] font-bold uppercase tracking-widest bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">Core Tool</span>
             </div>
@@ -290,18 +290,18 @@ const ApiReference = () => (
               <div className="grid grid-cols-2 gap-4 text-xs">
                 <div className="space-y-1">
                   <p className="font-bold text-zinc-300">Arguments</p>
-                  <p className="font-mono text-zinc-600">name, trigger_type, agent_prompt, secrets (optional), requires_approval (bool)</p>
+                  <p className="font-mono text-zinc-300">name, trigger_type, agent_prompt, secrets (optional), requires_approval (bool)</p>
                 </div>
                 <div className="space-y-1 text-right">
                   <p className="font-bold text-zinc-300">Trigger Types</p>
-                  <p className="font-mono text-zinc-600">interval, cron, date</p>
+                  <p className="font-mono text-zinc-300">interval, cron, date</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="border border-zinc-800/50 rounded-2xl overflow-hidden shadow-sm bg-zinc-900/80">
-            <div className="px-6 py-4 bg-zinc-900/80 border-b border-zinc-800/50 flex items-center justify-between">
+          <div className="border border-zinc-800/50 rounded-2xl overflow-hidden shadow-sm bg-zinc-900">
+            <div className="px-6 py-4 bg-zinc-900 border-b border-zinc-800/50 flex items-center justify-between">
               <span className="font-mono font-bold text-zinc-100">store_secret</span>
               <span className="text-[10px] font-bold uppercase tracking-widest bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">V3 Tool</span>
             </div>
@@ -310,8 +310,8 @@ const ApiReference = () => (
             </div>
           </div>
 
-          <div className="border border-zinc-800/50 rounded-2xl overflow-hidden shadow-sm bg-zinc-900/80">
-            <div className="px-6 py-4 bg-zinc-900/80 border-b border-zinc-800/50 flex items-center justify-between">
+          <div className="border border-zinc-800/50 rounded-2xl overflow-hidden shadow-sm bg-zinc-900">
+            <div className="px-6 py-4 bg-zinc-900 border-b border-zinc-800/50 flex items-center justify-between">
               <span className="font-mono font-bold text-zinc-100">list_secrets</span>
               <span className="text-[10px] font-bold uppercase tracking-widest bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">V3 Tool</span>
             </div>
@@ -320,8 +320,8 @@ const ApiReference = () => (
             </div>
           </div>
 
-          <div className="border border-zinc-800/50 rounded-2xl overflow-hidden shadow-sm bg-zinc-900/80">
-            <div className="px-6 py-4 bg-zinc-900/80 border-b border-zinc-800/50 flex items-center justify-between">
+          <div className="border border-zinc-800/50 rounded-2xl overflow-hidden shadow-sm bg-zinc-900">
+            <div className="px-6 py-4 bg-zinc-900 border-b border-zinc-800/50 flex items-center justify-between">
               <span className="font-mono font-bold text-zinc-100">list_tasks</span>
               <span className="text-[10px] font-bold uppercase tracking-widest bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">Core Tool</span>
             </div>
@@ -337,14 +337,14 @@ const ApiReference = () => (
           <Globe size={24} className="text-blue-500" /> Outbound Webhooks
         </h2>
         <p className="mb-6">Integrate Aktionfy with your external systems via event-driven callbacks.</p>
-        <div className="bg-zinc-900/80 p-8 rounded-3xl border border-zinc-800/50 space-y-4">
+        <div className="bg-zinc-900 p-8 rounded-3xl border border-zinc-800/50 space-y-4">
            <h4 className="font-bold text-zinc-100">Supported Events</h4>
            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-zinc-900/80 p-4 rounded-xl border border-zinc-800">
+              <div className="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
                  <p className="font-mono text-xs font-bold text-brand-primary">task_executed</p>
                  <p className="text-[11px] text-zinc-300">Fires when a task completes successfully with LLM output.</p>
               </div>
-              <div className="bg-zinc-900/80 p-4 rounded-xl border border-zinc-800">
+              <div className="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
                  <p className="font-mono text-xs font-bold text-red-500">task_failed</p>
                  <p className="text-[11px] text-zinc-300">Fires when a task exceeds max retries or errors out.</p>
               </div>
@@ -354,9 +354,9 @@ const ApiReference = () => (
 
       <section>
         <h2 className="text-2xl font-bold text-zinc-100 mb-6">REST Endpoints</h2>
-        <div className="bg-zinc-950 p-6 rounded-2xl space-y-4 font-mono text-xs">
+        <div className="bg-zinc-900/50 p-6 rounded-2xl space-y-4 font-mono text-xs">
           <div className="flex gap-4">
-            <span className="text-blue-400 font-bold w-12">GET</span>
+            <span className="text-brand-primary font-bold w-12">GET</span>
             <span className="text-zinc-300">/api/v1/dashboard</span>
             <span className="text-zinc-300 ml-auto">Retrieve account stats</span>
           </div>
@@ -379,28 +379,28 @@ const WorkerArchitecture = () => (
         <p className="text-xl text-zinc-300 font-medium">Inside the distributed execution engine.</p>
       </header>
 
-      <section className="bg-zinc-900/80 p-10 rounded-3xl border border-zinc-800 shadow-sm relative overflow-hidden not-prose">
+      <section className="bg-zinc-900 p-10 rounded-3xl border border-zinc-800 shadow-sm relative overflow-hidden not-prose">
         <div className="absolute top-0 right-0 w-32 h-32 bg-brand-primary/5 rounded-full -translate-x-[-20%] -translate-y-[20%] blur-2xl"></div>
         <h2 className="text-2xl font-bold mb-8">The Lifecycle of a Task</h2>
         <div className="space-y-12 relative z-10">
           <div className="flex items-center gap-6">
-            <div className="w-8 h-8 rounded-full bg-zinc-950 text-white flex items-center justify-center font-bold">1</div>
-            <div className="h-px flex-1 bg-zinc-900/80"></div>
+            <div className="w-8 h-8 rounded-full bg-zinc-900/50 text-white flex items-center justify-center font-bold">1</div>
+            <div className="h-px flex-1 bg-zinc-900"></div>
             <div className="text-sm font-bold text-zinc-300">Claimed via SQL Lock</div>
           </div>
           <div className="flex items-center gap-6">
-            <div className="w-8 h-8 rounded-full bg-zinc-950 text-white flex items-center justify-center font-bold">2</div>
-            <div className="h-px flex-1 bg-zinc-900/80"></div>
+            <div className="w-8 h-8 rounded-full bg-zinc-900/50 text-white flex items-center justify-center font-bold">2</div>
+            <div className="h-px flex-1 bg-zinc-900"></div>
             <div className="text-sm font-bold text-zinc-300">Published to Redis Pub/Sub</div>
           </div>
           <div className="flex items-center gap-6">
             <div className="w-8 h-8 rounded-full bg-brand-primary text-white flex items-center justify-center font-bold">3</div>
-            <div className="h-px flex-1 bg-zinc-900/80"></div>
-            <div className="text-sm font-bold text-zinc-900 italic">Execution Node Triggers SSE</div>
+            <div className="h-px flex-1 bg-zinc-900"></div>
+            <div className="text-sm font-bold text-brand-primary">Execution Node Triggers SSE</div>
           </div>
           <div className="flex items-center gap-6">
-            <div className="w-8 h-8 rounded-full bg-zinc-950 text-white flex items-center justify-center font-bold">4</div>
-            <div className="h-px flex-1 bg-zinc-900/80"></div>
+            <div className="w-8 h-8 rounded-full bg-zinc-900/50 text-white flex items-center justify-center font-bold">4</div>
+            <div className="h-px flex-1 bg-zinc-900"></div>
             <div className="text-sm font-bold text-zinc-300">Result Logged & Re-scheduled</div>
           </div>
         </div>
@@ -449,7 +449,7 @@ const ProtocolSpecDoc = () => (
           This is our core innovation. When the server decides a task is due, it crafts a <code>sampling/createMessage</code> 
           JSON-RPC notification.
         </p>
-        <pre className="p-6 rounded-2xl bg-zinc-950 text-emerald-400 font-mono text-sm overflow-x-auto">
+        <pre className="p-6 rounded-2xl bg-zinc-900/50 text-emerald-400 font-mono text-sm overflow-x-auto">
 {`{
   "jsonrpc": "2.0",
   "method": "sampling/createMessage",
@@ -473,12 +473,12 @@ const SecurityDocs = () => (
       </header>
 
       <section className="grid grid-cols-1 md:grid-cols-2 gap-8 not-prose">
-        <div className="p-8 rounded-3xl bg-zinc-900/80 border border-zinc-800 shadow-sm">
+        <div className="p-8 rounded-3xl bg-zinc-900 border border-zinc-800 shadow-sm">
           <Shield size={32} className="text-emerald-500 mb-4" />
           <h3 className="font-bold text-xl mb-2">Zero-Trust Vault</h3>
           <p className="text-zinc-300 text-sm">Task secrets are encrypted using AES-256-GCM at rest. We never store plain-text credentials; they are decrypted only in-memory during task execution.</p>
         </div>
-        <div className="p-8 rounded-3xl bg-zinc-900/80 border border-zinc-800 shadow-sm">
+        <div className="p-8 rounded-3xl bg-zinc-900 border border-zinc-800 shadow-sm">
           <Zap size={32} className="text-amber-500 mb-4" />
           <h3 className="font-bold text-xl mb-2">CSRF Protection</h3>
           <p className="text-zinc-300 text-sm">Every mutation request is protected by double-submit cookie tokens and strictly validated Origins, mitigating cross-site scripting risks.</p>
@@ -494,11 +494,11 @@ const SecurityDocs = () => (
         </p>
       </section>
 
-      <section className="p-8 bg-red-950 border border-red-500/20 rounded-3xl not-prose">
-        <h3 className="text-red-400 font-bold flex items-center gap-2 mb-4">
+      <section className="p-8 bg-zinc-900 border border-zinc-800 rounded-3xl not-prose">
+        <h3 className="text-brand-primary font-bold flex items-center gap-2 mb-4">
           <ShieldCheck size={20} /> Data Privacy
         </h3>
-        <p className="text-red-400 text-sm">
+        <p className="text-brand-primary text-sm">
           Aktionfy never logs the actual contents of your API keys or passwords. Even our Staff monitoring 
           views (Pass 5) only display masked identifiers and high-level execution metadata.
         </p>

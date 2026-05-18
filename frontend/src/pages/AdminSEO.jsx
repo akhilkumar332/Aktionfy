@@ -92,7 +92,7 @@ const AdminSEO = () => {
                 <motion.div 
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className={`p-6 rounded-[2rem] border flex items-center gap-4 ${
+                  className={`p-6 rounded-xl border flex items-center gap-4 ${
                     message.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'
                   }`}
                 >
@@ -101,7 +101,7 @@ const AdminSEO = () => {
                 </motion.div>
               )}
 
-              <form onSubmit={handleSave} className="bg-zinc-950 border border-zinc-800/50 rounded-[3.5rem] p-12 shadow-2xl relative overflow-hidden backdrop-blur-3xl">
+              <form onSubmit={handleSave} className="bg-zinc-950 border border-zinc-800/50 rounded-3xl p-12 shadow-lg relative overflow-hidden backdrop-blur-xl">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-brand-primary/5 blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
                 
                 <div className="flex items-center gap-4 mb-12 relative z-10">
@@ -121,7 +121,7 @@ const AdminSEO = () => {
                       type="text"
                       value={data.title}
                       onChange={(e) => setData({ ...data, title: e.target.value })}
-                      className="w-full bg-black/40 border border-zinc-800/50 rounded-[2rem] p-6 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner"
+                      className="w-full bg-black/40 border border-zinc-800/50 rounded-xl p-6 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner"
                       placeholder="Aktionfy | Autonomous Task Orchestration"
                     />
                   </div>
@@ -132,7 +132,7 @@ const AdminSEO = () => {
                       value={data.description}
                       onChange={(e) => setData({ ...data, description: e.target.value })}
                       rows={4}
-                      className="w-full bg-black/40 border border-zinc-800/50 rounded-[2.5rem] p-8 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner resize-none custom-scrollbar"
+                      className="w-full bg-black/40 border border-zinc-800/50 rounded-2xl p-8 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner resize-none custom-scrollbar"
                       placeholder="Establish a high-performance state machine for your AI workflows..."
                     />
                   </div>
@@ -143,7 +143,7 @@ const AdminSEO = () => {
                       type="text"
                       value={data.keywords}
                       onChange={(e) => setData({ ...data, keywords: e.target.value })}
-                      className="w-full bg-black/40 border border-zinc-800/50 rounded-[2rem] p-6 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner"
+                      className="w-full bg-black/40 border border-zinc-800/50 rounded-xl p-6 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner"
                       placeholder="ai, mcp, automation, orchestration"
                     />
                   </div>
@@ -151,7 +151,7 @@ const AdminSEO = () => {
                   <button 
                     type="submit"
                     disabled={saving}
-                    className="shimmer-button bg-brand-primary text-white px-12 py-5 rounded-[2rem] text-[10px] font-black uppercase tracking-widest shadow-[0_20px_50px_rgba(217,119,6,0.3)] hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                    className=" bg-brand-primary text-white px-12 py-5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-[0_20px_50px_rgba(217,119,6,0.3)] hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
                   >
                     {saving ? <RefreshCw size={16} className="animate-spin" /> : <Zap size={16} />}
                     Broadcast Manifest
@@ -159,7 +159,7 @@ const AdminSEO = () => {
                 </div>
               </form>
 
-              <div className="bg-zinc-100/[0.01] border border-dashed border-zinc-800 rounded-[3rem] p-10 flex flex-col items-center justify-center text-center gap-6">
+              <div className="bg-zinc-100/[0.01] border border-dashed border-zinc-800 rounded-2xl p-10 flex flex-col items-center justify-center text-center gap-6">
                  <div className="w-16 h-16 bg-zinc-100/5 rounded-full flex items-center justify-center border border-zinc-800/50 text-zinc-700">
                     <Search size={32} />
                  </div>

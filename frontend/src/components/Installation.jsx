@@ -77,7 +77,7 @@ const Installation = () => {
                 >
                   <div className="flex-shrink-0 relative">
                      <div className="absolute inset-0 bg-brand-primary/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                     <div className="w-16 h-16 bg-zinc-900 border border-zinc-800/50 rounded-[1.5rem] flex items-center justify-center shadow-2xl group-hover:border-brand-primary/30 transition-all duration-500 relative z-10 text-zinc-300 group-hover:text-brand-primary">
+                     <div className="w-16 h-16 bg-zinc-900 border border-zinc-800/50 rounded-xl flex items-center justify-center shadow-lg group-hover:border-brand-primary/30 transition-all duration-500 relative z-10 text-zinc-300 group-hover:text-brand-primary">
                         <step.icon size={28} />
                      </div>
                   </div>
@@ -129,7 +129,7 @@ const Installation = () => {
           >
             {/* Terminal Container */}
             <div className="absolute inset-0 bg-brand-primary/5 blur-[120px] rounded-full animate-pulse"></div>
-            <div className="relative bg-zinc-900/80 backdrop-blur-3xl rounded-[3.5rem] border border-zinc-800/50 shadow-[0_40px_100px_rgba(0,0,0,0.8)] overflow-hidden">
+            <div className="relative bg-zinc-900/80 backdrop-blur-xl rounded-3xl border border-zinc-800/50 shadow-[0_40px_100px_rgba(0,0,0,0.8)] overflow-hidden">
               <div className="flex items-center justify-between px-10 py-8 border-b border-zinc-800/50 bg-zinc-900/30">
                 <div className="flex gap-2.5">
                   <div className="w-3 h-3 rounded-full bg-red-500/20 border border-red-500/20"></div>

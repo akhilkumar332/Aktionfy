@@ -33,13 +33,13 @@ const Login = () => {
         animate={{ opacity: 1, y: 0 }}
         className="relative z-10 w-full max-w-lg"
       >
-        <div className="glass-card p-12 md:p-16 rounded-[4rem] border-zinc-800/50 relative overflow-hidden">
+        <div className="glass-card p-12 md:p-16 rounded-3xl border-zinc-800/50 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-brand-primary/5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
           
           <div className="flex flex-col items-center mb-16">
             <Link to="/" className="group relative mb-10">
                <div className="absolute inset-0 bg-brand-primary/20 blur-2xl rounded-full group-hover:scale-150 transition-transform duration-1000"></div>
-               <div className="bg-brand-primary p-4 rounded-3xl text-white relative z-10 shadow-2xl group-hover:rotate-[360deg] transition-transform duration-1000">
+               <div className="bg-brand-primary p-4 rounded-3xl text-white relative z-10 shadow-lg group-hover:rotate-[360deg] transition-transform duration-1000">
                  <Command size={32} />
                </div>
             </Link>
@@ -64,7 +64,7 @@ const Login = () => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-black/40 px-8 py-6 rounded-[2rem] border border-zinc-800/50 text-white focus:border-brand-primary/50 outline-none transition-all placeholder:text-zinc-800 font-medium"
+                className="w-full bg-black/40 px-8 py-6 rounded-xl border border-zinc-800/50 text-white focus:border-brand-primary/50 outline-none transition-all placeholder:text-zinc-800 font-medium"
                 placeholder="identity@network.io"
                 required
               />
@@ -75,7 +75,7 @@ const Login = () => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-black/40 px-8 py-6 rounded-[2rem] border border-zinc-800/50 text-white focus:border-brand-primary/50 outline-none transition-all placeholder:text-zinc-800 font-medium"
+                className="w-full bg-black/40 px-8 py-6 rounded-xl border border-zinc-800/50 text-white focus:border-brand-primary/50 outline-none transition-all placeholder:text-zinc-800 font-medium"
                 placeholder="••••••••••••"
                 required
               />
@@ -83,7 +83,7 @@ const Login = () => {
             
             <button
               type="submit"
-              className="shimmer-button w-full bg-zinc-100 text-zinc-950 py-6 rounded-[2rem] font-black uppercase tracking-[0.2em] text-[10px] hover:brightness-110 transition-all shadow-[0_0_50px_rgba(255,255,255,0.1)] active:scale-[0.98] flex items-center justify-center gap-3"
+              className=" w-full bg-zinc-100 text-zinc-950 py-6 rounded-xl font-black uppercase tracking-[0.2em] text-[10px] hover:brightness-110 transition-all shadow-[0_0_50px_rgba(255,255,255,0.1)] active:scale-[0.98] flex items-center justify-center gap-3"
             >
               Establish Connection <ArrowRight size={16} />
             </button>

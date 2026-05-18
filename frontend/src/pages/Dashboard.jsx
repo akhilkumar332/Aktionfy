@@ -319,7 +319,7 @@ const Dashboard = () => {
               initial={{ opacity: 0, x: 20, scale: 0.95 }}
               animate={{ opacity: 1, x: 0, scale: 1 }}
               exit={{ opacity: 0, x: 10, scale: 0.95 }}
-              className={`pointer-events-auto px-6 py-4 rounded-xl shadow-2xl border flex items-center gap-4 min-w-[320px] backdrop-blur-md ${
+              className={`pointer-events-auto px-6 py-4 rounded-xl shadow-lg border flex items-center gap-4 min-w-[320px] backdrop-blur-md ${
                 toast.type === 'success' 
                   ? 'bg-zinc-900/90 border-emerald-500/20 text-zinc-100' 
                   : 'bg-zinc-900/90 border-red-500/20 text-zinc-100'

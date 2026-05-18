@@ -109,7 +109,7 @@ const Pricing = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: idx * 0.1, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-              className={`group relative p-12 rounded-[4rem] border transition-all duration-700 flex flex-col overflow-hidden shadow-2xl ${
+              className={`group relative p-12 rounded-3xl border transition-all duration-700 flex flex-col overflow-hidden shadow-lg ${
                 plan.highlight
                   ? 'border-brand-primary/50 bg-zinc-900 shadow-[0_40px_100px_rgba(0,0,0,0.8)] z-10 scale-105'
                   : 'border-zinc-800/50 bg-zinc-900/30 hover:bg-zinc-900'
@@ -121,13 +121,13 @@ const Pricing = () => {
               )}
 
               {plan.highlight && (
-                <div className="absolute top-6 right-10 flex items-center gap-2 px-3 py-1 bg-indigo-600 text-white text-[8px] font-black uppercase tracking-widest rounded-full shadow-2xl z-20">
+                <div className="absolute top-6 right-10 flex items-center gap-2 px-3 py-1 bg-indigo-600 text-white text-[8px] font-black uppercase tracking-widest rounded-full shadow-lg z-20">
                   Recommended
                 </div>
               )}
 
               <div className="mb-12 flex-1">
-                <div className={`w-20 h-20 rounded-[2rem] flex items-center justify-center mb-10 bg-black/40 border border-zinc-800/50 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-2xl ${
+                <div className={`w-20 h-20 rounded-xl flex items-center justify-center mb-10 bg-black/40 border border-zinc-800/50 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg ${
                   plan.highlight ? 'text-brand-primary shadow-[0_0_40px_rgba(217,119,6,0.3)]' : 'text-zinc-300'
                 }`}>
                   <plan.icon size={36} />
@@ -157,11 +157,11 @@ const Pricing = () => {
               <button
                 disabled={plan.active}
                 onClick={plan.onClick}
-                className={`w-full py-6 rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] transition-all active:scale-[0.98] mt-auto shadow-2xl border flex items-center justify-center gap-3 overflow-hidden group/btn ${
+                className={`w-full py-6 rounded-xl font-black text-xs uppercase tracking-[0.2em] transition-all active:scale-[0.98] mt-auto shadow-lg border flex items-center justify-center gap-3 overflow-hidden group/btn ${
                   plan.active
                     ? 'bg-zinc-100/5 text-zinc-300 cursor-not-allowed border-zinc-800/50'
                     : plan.highlight
-                    ? ' bg-indigo-600 text-white border-brand-primary hover:brightness-110 shadow-orange-950/40'
+                    ? ' bg-indigo-600 text-white border-brand-primary hover:brightness-110 shadow-indigo-950/40'
                     : 'bg-zinc-100 text-zinc-950 border-white hover:brightness-90 shadow-white/5'
                 }`}
               >

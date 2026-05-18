@@ -229,7 +229,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
       initial={isInline ? { opacity: 0, x: 20 } : { opacity: 0, scale: 0.95, y: 20 }}
       animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
       exit={isInline ? { opacity: 0, x: 20 } : { opacity: 0, scale: 0.95, y: 20 }}
-      className={`${isInline ? 'h-full w-full flex flex-col' : 'bg-zinc-950 border border-zinc-800/50 rounded-[3rem] shadow-[0_40px_100px_rgba(0,0,0,0.8)] w-full max-w-3xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]'}`}
+      className={`${isInline ? 'h-full w-full flex flex-col' : 'bg-zinc-950 border border-zinc-800/50 rounded-2xl shadow-[0_40px_100px_rgba(0,0,0,0.8)] w-full max-w-3xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]'}`}
     >
       {/* Background Decor */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/5 blur-[100px] pointer-events-none -z-0"></div>
@@ -284,7 +284,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
                   value={formData.name}
                   onChange={(e) => updateFormData('name', e.target.value)}
                   placeholder="e.g. CORE_LOG_ANALYZER_v1"
-                  className="w-full bg-black/40 border border-zinc-800/50 rounded-[2rem] p-6 text-white font-mono text-sm focus:outline-none focus:border-indigo-500/50 transition-all shadow-inner"
+                  className="w-full bg-black/40 border border-zinc-800/50 rounded-xl p-6 text-white font-mono text-sm focus:outline-none focus:border-indigo-500/50 transition-all shadow-inner"
                   autoFocus
                 />
               </div>
@@ -302,7 +302,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
                       <div 
                         key={w.id}
                         onClick={() => updateFormData('workspace_id', w.id)}
-                        className={`p-6 rounded-[2rem] border transition-all cursor-pointer flex items-center justify-between group relative overflow-hidden ${formData.workspace_id === w.id ? 'bg-indigo-600/10 border-indigo-500/40 shadow-2xl' : 'bg-zinc-900 border-zinc-800 hover:border-white/20'}`}
+                        className={`p-6 rounded-xl border transition-all cursor-pointer flex items-center justify-between group relative overflow-hidden ${formData.workspace_id === w.id ? 'bg-indigo-600/10 border-indigo-500/40 shadow-lg' : 'bg-zinc-900 border-zinc-800 hover:border-white/20'}`}
                       >
                         <div className="flex items-center gap-4 relative z-10">
                           <div className={`p-3 rounded-2xl ${formData.workspace_id === w.id ? 'bg-indigo-600 text-white' : 'bg-zinc-900 text-zinc-400 group-hover:text-white'} transition-colors`}>
@@ -342,7 +342,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
                     <button 
                       key={type.id}
                       onClick={() => updateFormData('task_type', type.id)}
-                      className={`p-6 rounded-[2rem] border transition-all flex flex-col items-center gap-4 text-center group relative overflow-hidden ${formData.task_type === type.id ? `bg-${type.color}/10 border-${type.color}/50 shadow-2xl` : 'bg-zinc-900 border-zinc-800 hover:border-white/20'}`}
+                      className={`p-6 rounded-xl border transition-all flex flex-col items-center gap-4 text-center group relative overflow-hidden ${formData.task_type === type.id ? `bg-${type.color}/10 border-${type.color}/50 shadow-lg` : 'bg-zinc-900 border-zinc-800 hover:border-white/20'}`}
                     >
                       <type.icon size={28} className={formData.task_type === type.id ? `text-${type.color}` : 'text-zinc-300 group-hover:text-zinc-400'} />
                       <div>
@@ -410,7 +410,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
                 </div>
 
                 {formData.task_type === 'swarm_router' ? (
-                  <div className="space-y-8 bg-black/40 border border-zinc-800/50 p-8 rounded-[2.5rem]">
+                  <div className="space-y-8 bg-black/40 border border-zinc-800/50 p-8 rounded-2xl">
                     <div className="grid grid-cols-2 gap-4">
                       {[
                         { id: 'voting', label: 'Democratic', sub: 'Majority Wins', icon: Check, color: 'purple-500' },
@@ -419,7 +419,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
                         <button 
                           key={mode.id}
                           onClick={() => updateFormData('swarm_config', { ...formData.swarm_config, consensus_mode: mode.id })}
-                          className={`p-6 rounded-[2rem] border transition-all flex flex-col items-center gap-3 text-center ${formData.swarm_config.consensus_mode === mode.id ? `bg-${mode.color}/10 border-${mode.color}/50 shadow-2xl` : 'bg-zinc-900 border-zinc-800 hover:border-white/20'}`}
+                          className={`p-6 rounded-xl border transition-all flex flex-col items-center gap-3 text-center ${formData.swarm_config.consensus_mode === mode.id ? `bg-${mode.color}/10 border-${mode.color}/50 shadow-lg` : 'bg-zinc-900 border-zinc-800 hover:border-white/20'}`}
                         >
                           <mode.icon size={24} className={formData.swarm_config.consensus_mode === mode.id ? `text-${mode.color}` : 'text-zinc-300'} />
                           <div>
@@ -436,7 +436,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
                         <textarea 
                           value={formData.swarm_config.supervisor_prompt}
                           onChange={(e) => updateFormData('swarm_config', { ...formData.swarm_config, supervisor_prompt: e.target.value })}
-                          className="w-full bg-black/60 border border-zinc-800/50 rounded-[1.5rem] p-5 text-white text-sm focus:outline-none focus:border-purple-500/50 transition-all h-28 resize-none shadow-inner"
+                          className="w-full bg-black/60 border border-zinc-800/50 rounded-xl p-5 text-white text-sm focus:outline-none focus:border-purple-500/50 transition-all h-28 resize-none shadow-inner"
                         />
                       </div>
                     )}
@@ -463,7 +463,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
                             layout
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
-                            className="p-6 bg-zinc-100/[0.02] border border-zinc-800/50 rounded-[2rem] space-y-4 relative group"
+                            className="p-6 bg-zinc-100/[0.02] border border-zinc-800/50 rounded-xl space-y-4 relative group"
                           >
                             <div className="flex items-center gap-3">
                               <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-500 text-[10px] font-black font-mono">
@@ -497,7 +497,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
                                 updateFormData('swarm_config', { ...formData.swarm_config, council: newCouncil });
                               }}
                               placeholder="Define specialized intelligence..."
-                              className="w-full bg-black/40 border border-zinc-800/50 rounded-[1.5rem] p-4 text-xs text-zinc-300 focus:outline-none focus:border-purple-500/30 transition-all h-24 resize-none"
+                              className="w-full bg-black/40 border border-zinc-800/50 rounded-xl p-4 text-xs text-zinc-300 focus:outline-none focus:border-purple-500/30 transition-all h-24 resize-none"
                             />
                           </motion.div>
                         ))}
@@ -517,7 +517,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
                         formData.task_type === 'decision_router' ? "Define Neural Routing Criteria..." : 
                         "// Initialize Custom Subroutine..."
                       }
-                      className="w-full bg-black/40 border border-zinc-800/50 rounded-[2.5rem] p-8 text-white font-mono text-sm focus:outline-none focus:border-indigo-500/50 transition-all h-64 resize-none shadow-inner custom-scrollbar"
+                      className="w-full bg-black/40 border border-zinc-800/50 rounded-2xl p-8 text-white font-mono text-sm focus:outline-none focus:border-indigo-500/50 transition-all h-64 resize-none shadow-inner custom-scrollbar"
                     />
                     <div className="flex items-center gap-3 text-zinc-400 ml-4">
                       <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 opacity-50"></div>
@@ -550,7 +550,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
                    <select 
                     value={formData.depends_on_task_id || ''}
                     onChange={(e) => updateFormData('depends_on_task_id', e.target.value)}
-                    className="w-full bg-black/40 border border-zinc-800/50 rounded-[2rem] pl-16 pr-8 py-6 text-white font-mono text-sm focus:outline-none focus:border-indigo-500/50 transition-all appearance-none cursor-pointer shadow-inner"
+                    className="w-full bg-black/40 border border-zinc-800/50 rounded-xl pl-16 pr-8 py-6 text-white font-mono text-sm focus:outline-none focus:border-indigo-500/50 transition-all appearance-none cursor-pointer shadow-inner"
                   >
                     <option value="" className="bg-zinc-950">Standalone (No Neural Link)</option>
                     {userTasks.map(t => (
@@ -568,9 +568,9 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
                     exit={{ opacity: 0, scale: 0.95 }}
                     className="space-y-8"
                   >
-                    <div className="flex items-center justify-between p-8 bg-zinc-900/30 rounded-[2.5rem] border border-zinc-800/50 group hover:border-indigo-500/20 transition-all">
+                    <div className="flex items-center justify-between p-8 bg-zinc-900/30 rounded-2xl border border-zinc-800/50 group hover:border-indigo-500/20 transition-all">
                       <div className="flex items-center gap-6">
-                        <div className={`p-4 rounded-2xl transition-all duration-500 ${formData.trigger_on_completion ? 'bg-indigo-600 text-white shadow-2xl' : 'bg-zinc-900 text-zinc-300'}`}>
+                        <div className={`p-4 rounded-2xl transition-all duration-500 ${formData.trigger_on_completion ? 'bg-indigo-600 text-white shadow-lg' : 'bg-zinc-900 text-zinc-300'}`}>
                           <Zap size={24} className={formData.trigger_on_completion ? 'animate-pulse' : ''} />
                         </div>
                         <div>
@@ -590,7 +590,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
                       </button>
                     </div>
 
-                    <div className="p-8 bg-zinc-900/30 rounded-[2.5rem] border border-zinc-800/50 space-y-8 group hover:border-brand-secondary/20 transition-all">
+                    <div className="p-8 bg-zinc-900/30 rounded-2xl border border-zinc-800/50 space-y-8 group hover:border-brand-secondary/20 transition-all">
                       <div className="flex items-center gap-6">
                         <div className="p-4 bg-zinc-900 rounded-2xl text-zinc-400 group-hover:text-brand-secondary transition-colors">
                           <GitBranch size={24} />
@@ -657,7 +657,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
                         const defaultConfig = type.id === 'cron' ? { cron: '0 * * * *' } : type.id === 'interval' ? { minutes: 10 } : { manual: true };
                         setFormData(prev => ({ ...prev, trigger_type: type.id, trigger_config: defaultConfig }));
                       }}
-                      className={`p-6 rounded-[2rem] border transition-all flex flex-col items-center gap-3 text-center ${formData.trigger_type === type.id ? 'bg-zinc-900 border-indigo-500 shadow-2xl text-white' : 'bg-zinc-900/30 border-zinc-800/50 text-zinc-300 hover:border-white/20'}`}
+                      className={`p-6 rounded-xl border transition-all flex flex-col items-center gap-3 text-center ${formData.trigger_type === type.id ? 'bg-zinc-900 border-indigo-500 shadow-lg text-white' : 'bg-zinc-900/30 border-zinc-800/50 text-zinc-300 hover:border-white/20'}`}
                     >
                       <type.icon size={24} className={formData.trigger_type === type.id ? 'text-indigo-400 animate-pulse' : 'opacity-40'} />
                       <div>
@@ -678,9 +678,9 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
                       value={formData.trigger_config.cron}
                       onChange={(e) => updateFormData('trigger_config', { cron: e.target.value })}
                       placeholder="* * * * *"
-                      className="w-full bg-black/40 border border-zinc-800/50 rounded-[2rem] p-6 text-white font-mono text-sm focus:outline-none focus:border-indigo-500/50 transition-all shadow-inner"
+                      className="w-full bg-black/40 border border-zinc-800/50 rounded-xl p-6 text-white font-mono text-sm focus:outline-none focus:border-indigo-500/50 transition-all shadow-inner"
                     />
-                    <div className="p-5 bg-brand-secondary/5 border border-brand-secondary/10 rounded-[1.5rem] ml-2">
+                    <div className="p-5 bg-brand-secondary/5 border border-brand-secondary/10 rounded-xl ml-2">
                       <p className="text-[9px] text-brand-secondary/80 font-black uppercase tracking-[0.1em]">Protocol: Standard 5-field UNIX expression supported.</p>
                     </div>
                   </div>
@@ -694,7 +694,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
                       value={formData.trigger_config.minutes}
                       onChange={(e) => updateFormData('trigger_config', { minutes: parseInt(e.target.value) })}
                       placeholder="10"
-                      className="w-full bg-black/40 border border-zinc-800/50 rounded-[2rem] p-6 text-white font-mono text-sm focus:outline-none focus:border-indigo-500/50 transition-all shadow-inner"
+                      className="w-full bg-black/40 border border-zinc-800/50 rounded-xl p-6 text-white font-mono text-sm focus:outline-none focus:border-indigo-500/50 transition-all shadow-inner"
                     />
                   </div>
                 )}
@@ -703,7 +703,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
                   <motion.div 
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="p-10 border border-dashed border-zinc-800 rounded-[3rem] text-center space-y-6 bg-zinc-900/30"
+                    className="p-10 border border-dashed border-zinc-800 rounded-2xl text-center space-y-6 bg-zinc-900/30"
                   >
                     <div className="relative w-fit mx-auto">
                        <Zap size={48} className="text-indigo-400" />
@@ -717,9 +717,9 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
                 )}
 
                 <div className="pt-10 border-t border-zinc-800/50 space-y-8">
-                  <div className="flex items-center justify-between p-8 bg-zinc-900/30 rounded-[2.5rem] border border-zinc-800/50 group hover:border-amber-500/20 transition-all">
+                  <div className="flex items-center justify-between p-8 bg-zinc-900/30 rounded-2xl border border-zinc-800/50 group hover:border-amber-500/20 transition-all">
                     <div className="flex items-center gap-6">
-                      <div className={`p-4 rounded-2xl transition-all duration-500 ${formData.requires_approval ? 'bg-amber-500 text-white shadow-2xl' : 'bg-zinc-900 text-zinc-300'}`}>
+                      <div className={`p-4 rounded-2xl transition-all duration-500 ${formData.requires_approval ? 'bg-amber-500 text-white shadow-lg' : 'bg-zinc-900 text-zinc-300'}`}>
                         <Shield size={24} />
                       </div>
                       <div>
@@ -749,7 +749,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
                           <button 
                             key={policy.id}
                             onClick={() => updateFormData('missed_task_policy', policy.id)}
-                            className={`flex-1 p-6 rounded-[2rem] border transition-all text-center group ${formData.missed_task_policy === policy.id ? 'bg-zinc-900 border-white/40 text-white shadow-2xl' : 'bg-zinc-900/30 border-zinc-800/50 text-zinc-300 hover:border-white/20'}`}
+                            className={`flex-1 p-6 rounded-xl border transition-all text-center group ${formData.missed_task_policy === policy.id ? 'bg-zinc-900 border-white/40 text-white shadow-lg' : 'bg-zinc-900/30 border-zinc-800/50 text-zinc-300 hover:border-white/20'}`}
                           >
                             <div className="text-[10px] font-black uppercase tracking-widest mb-1">{policy.label}</div>
                             <div className="text-[8px] font-bold uppercase tracking-tighter opacity-50">{policy.desc}</div>
@@ -770,7 +770,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
               exit={{ opacity: 0, y: -10 }}
               className="space-y-10"
             >
-              <div className="bg-black/40 border border-zinc-800 rounded-[3rem] p-10 space-y-10 relative overflow-hidden">
+              <div className="bg-black/40 border border-zinc-800 rounded-2xl p-10 space-y-10 relative overflow-hidden">
                  <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-600/5 blur-[80px] pointer-events-none"></div>
 
                  <div className="grid grid-cols-2 md:grid-cols-3 gap-10 relative z-10">
@@ -806,7 +806,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
                 <motion.div 
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="p-6 bg-red-500/10 border border-red-500/20 rounded-[2rem] flex items-center gap-4 text-red-400"
+                  className="p-6 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-4 text-red-400"
                 >
                   <Shield size={20} className="shrink-0" />
                   <span className="text-[10px] font-black uppercase tracking-[0.1em]">{error}</span>
@@ -832,7 +832,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
              <button 
                onClick={handleNext}
                disabled={!formData.name || (step === 1 && !formData.workspace_id)}
-               className="bg-zinc-100 text-zinc-950 px-12 py-5 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.3em] shadow-[0_20px_40px_rgba(255,255,255,0.1)] hover:scale-105 active:scale-95 transition-all disabled:opacity-20 flex items-center gap-3 group"
+               className="bg-zinc-100 text-zinc-950 px-12 py-5 rounded-xl text-[10px] font-black uppercase tracking-[0.3em] shadow-[0_20px_40px_rgba(255,255,255,0.1)] hover:scale-105 active:scale-95 transition-all disabled:opacity-20 flex items-center gap-3 group"
              >
                {isInline ? 'Next Phase' : 'Continue'} <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
              </button>
@@ -840,7 +840,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
              <button 
                onClick={handleSubmit}
                disabled={submitting}
-               className=" bg-indigo-600 text-white px-14 py-5 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.3em] shadow-[0_20px_50px_rgba(217,119,6,0.4)] hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+               className=" bg-indigo-600 text-white px-14 py-5 rounded-xl text-[10px] font-black uppercase tracking-[0.3em] shadow-[0_20px_50px_rgba(217,119,6,0.4)] hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
              >
                {submitting ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
                {initialData?.id ? 'Synchronize' : 'Fire Orchestration'}
