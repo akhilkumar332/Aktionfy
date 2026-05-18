@@ -28,12 +28,12 @@ const Overview = () => (
       </section>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 not-prose">
-        <div className="p-8 rounded-3xl bg-blue-900/10 border border-blue-500/20 shadow-sm">
+        <div className="p-8 rounded-3xl bg-blue-900/20 border border-blue-500/20 shadow-sm">
           <Database className="text-blue-600 mb-4" size={32} />
           <h3 className="font-bold text-xl text-blue-400 mb-2">Linear Scalability</h3>
           <p className="text-blue-700/70 text-sm">Distributed orchestration via Redis Pub/Sub ensures performance remains constant across nodes.</p>
         </div>
-        <div className="p-8 rounded-3xl bg-indigo-900/10 border border-indigo-500/20 shadow-sm">
+        <div className="p-8 rounded-3xl bg-indigo-900/20 border border-indigo-500/20 shadow-sm">
           <Layers className="text-indigo-600 mb-4" size={32} />
           <h3 className="font-bold text-xl text-indigo-400 mb-2">Agentic Chaining</h3>
           <p className="text-indigo-700/70 text-sm">Link tasks together to build complex, self-executing AI multi-step workflows.</p>
@@ -128,7 +128,7 @@ const InstallationDocs = () => (
         </div>
       </section>
 
-      <section className="bg-zinc-900/50 p-8 rounded-3xl border border-zinc-800 shadow-sm not-prose">
+      <section className="bg-zinc-900 p-8 rounded-3xl border border-zinc-800 shadow-sm not-prose">
         <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
           <Settings size={20} className="text-slate-400" /> Environment Configuration
         </h3>
@@ -180,7 +180,7 @@ const CoreConcepts = () => (
 
       <div className="space-y-10">
         <div className="flex gap-8 group">
-          <div className="flex-shrink-0 w-12 h-12 bg-zinc-900/50 border border-zinc-800 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-brand-primary group-hover:text-white transition-colors duration-500">
+          <div className="flex-shrink-0 w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-brand-primary group-hover:text-white transition-colors duration-500">
             <Zap size={24} />
           </div>
           <div>
@@ -194,7 +194,7 @@ const CoreConcepts = () => (
         </div>
 
         <div className="flex gap-8 group">
-          <div className="flex-shrink-0 w-12 h-12 bg-zinc-900/50 border border-zinc-800 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-blue-600 group-hover:text-white transition-colors duration-500">
+          <div className="flex-shrink-0 w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-blue-600 group-hover:text-white transition-colors duration-500">
             <History size={24} />
           </div>
           <div>
@@ -208,7 +208,7 @@ const CoreConcepts = () => (
         </div>
 
         <div className="flex gap-8 group">
-          <div className="flex-shrink-0 w-12 h-12 bg-zinc-900/50 border border-zinc-800 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-500">
+          <div className="flex-shrink-0 w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-500">
             <Globe size={24} />
           </div>
           <div>
@@ -222,7 +222,7 @@ const CoreConcepts = () => (
         </div>
 
         <div className="flex gap-8 group">
-          <div className="flex-shrink-0 w-12 h-12 bg-zinc-900/50 border border-zinc-800 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-500">
+          <div className="flex-shrink-0 w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-500">
             <Layers size={24} />
           </div>
           <div>
@@ -236,7 +236,7 @@ const CoreConcepts = () => (
         </div>
 
         <div className="flex gap-8 group">
-          <div className="flex-shrink-0 w-12 h-12 bg-zinc-900/50 border border-zinc-800 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-500">
+          <div className="flex-shrink-0 w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-500">
             <Shield size={24} />
           </div>
           <div>
@@ -250,7 +250,7 @@ const CoreConcepts = () => (
         </div>
 
         <div className="flex gap-8 group">
-          <div className="flex-shrink-0 w-12 h-12 bg-zinc-900/50 border border-zinc-800 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-brand-primary group-hover:text-white transition-colors duration-500">
+          <div className="flex-shrink-0 w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-brand-primary group-hover:text-white transition-colors duration-500">
             <Database size={24} />
           </div>
           <div>
@@ -280,8 +280,8 @@ const ApiReference = () => (
           <Code size={24} className="text-brand-primary" /> MCP Tools
         </h2>
         <div className="space-y-6">
-          <div className="border border-zinc-800/50 rounded-2xl overflow-hidden shadow-sm bg-zinc-900/50">
-            <div className="px-6 py-4 bg-zinc-900/50 border-b border-zinc-800/50 flex items-center justify-between">
+          <div className="border border-zinc-800/50 rounded-2xl overflow-hidden shadow-sm bg-zinc-900">
+            <div className="px-6 py-4 bg-zinc-900 border-b border-zinc-800/50 flex items-center justify-between">
               <span className="font-mono font-bold text-zinc-100">create_task</span>
               <span className="text-[10px] font-bold uppercase tracking-widest bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">Core Tool</span>
             </div>
@@ -300,8 +300,8 @@ const ApiReference = () => (
             </div>
           </div>
 
-          <div className="border border-zinc-800/50 rounded-2xl overflow-hidden shadow-sm bg-zinc-900/50">
-            <div className="px-6 py-4 bg-zinc-900/50 border-b border-zinc-800/50 flex items-center justify-between">
+          <div className="border border-zinc-800/50 rounded-2xl overflow-hidden shadow-sm bg-zinc-900">
+            <div className="px-6 py-4 bg-zinc-900 border-b border-zinc-800/50 flex items-center justify-between">
               <span className="font-mono font-bold text-zinc-100">store_secret</span>
               <span className="text-[10px] font-bold uppercase tracking-widest bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">V3 Tool</span>
             </div>
@@ -310,8 +310,8 @@ const ApiReference = () => (
             </div>
           </div>
 
-          <div className="border border-zinc-800/50 rounded-2xl overflow-hidden shadow-sm bg-zinc-900/50">
-            <div className="px-6 py-4 bg-zinc-900/50 border-b border-zinc-800/50 flex items-center justify-between">
+          <div className="border border-zinc-800/50 rounded-2xl overflow-hidden shadow-sm bg-zinc-900">
+            <div className="px-6 py-4 bg-zinc-900 border-b border-zinc-800/50 flex items-center justify-between">
               <span className="font-mono font-bold text-zinc-100">list_secrets</span>
               <span className="text-[10px] font-bold uppercase tracking-widest bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">V3 Tool</span>
             </div>
@@ -320,8 +320,8 @@ const ApiReference = () => (
             </div>
           </div>
 
-          <div className="border border-zinc-800/50 rounded-2xl overflow-hidden shadow-sm bg-zinc-900/50">
-            <div className="px-6 py-4 bg-zinc-900/50 border-b border-zinc-800/50 flex items-center justify-between">
+          <div className="border border-zinc-800/50 rounded-2xl overflow-hidden shadow-sm bg-zinc-900">
+            <div className="px-6 py-4 bg-zinc-900 border-b border-zinc-800/50 flex items-center justify-between">
               <span className="font-mono font-bold text-zinc-100">list_tasks</span>
               <span className="text-[10px] font-bold uppercase tracking-widest bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">Core Tool</span>
             </div>
@@ -337,14 +337,14 @@ const ApiReference = () => (
           <Globe size={24} className="text-blue-500" /> Outbound Webhooks
         </h2>
         <p className="mb-6">Integrate Aktionfy with your external systems via event-driven callbacks.</p>
-        <div className="bg-zinc-900/50 p-8 rounded-3xl border border-zinc-800/50 space-y-4">
+        <div className="bg-zinc-900 p-8 rounded-3xl border border-zinc-800/50 space-y-4">
            <h4 className="font-bold text-zinc-100">Supported Events</h4>
            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800">
+              <div className="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
                  <p className="font-mono text-xs font-bold text-brand-primary">task_executed</p>
                  <p className="text-[11px] text-zinc-500">Fires when a task completes successfully with LLM output.</p>
               </div>
-              <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800">
+              <div className="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
                  <p className="font-mono text-xs font-bold text-red-500">task_failed</p>
                  <p className="text-[11px] text-zinc-500">Fires when a task exceeds max retries or errors out.</p>
               </div>
@@ -379,7 +379,7 @@ const WorkerArchitecture = () => (
         <p className="text-xl text-zinc-500 font-medium">Inside the distributed execution engine.</p>
       </header>
 
-      <section className="bg-zinc-900/50 p-10 rounded-3xl border border-zinc-800 shadow-sm relative overflow-hidden not-prose">
+      <section className="bg-zinc-900 p-10 rounded-3xl border border-zinc-800 shadow-sm relative overflow-hidden not-prose">
         <div className="absolute top-0 right-0 w-32 h-32 bg-brand-primary/5 rounded-full -translate-x-[-20%] -translate-y-[20%] blur-2xl"></div>
         <h2 className="text-2xl font-bold mb-8">The Lifecycle of a Task</h2>
         <div className="space-y-12 relative z-10">
@@ -473,12 +473,12 @@ const SecurityDocs = () => (
       </header>
 
       <section className="grid grid-cols-1 md:grid-cols-2 gap-8 not-prose">
-        <div className="p-8 rounded-3xl bg-zinc-900/50 border border-zinc-800 shadow-sm">
+        <div className="p-8 rounded-3xl bg-zinc-900 border border-zinc-800 shadow-sm">
           <Shield size={32} className="text-emerald-500 mb-4" />
           <h3 className="font-bold text-xl mb-2">Zero-Trust Vault</h3>
           <p className="text-zinc-500 text-sm">Task secrets are encrypted using AES-256-GCM at rest. We never store plain-text credentials; they are decrypted only in-memory during task execution.</p>
         </div>
-        <div className="p-8 rounded-3xl bg-zinc-900/50 border border-zinc-800 shadow-sm">
+        <div className="p-8 rounded-3xl bg-zinc-900 border border-zinc-800 shadow-sm">
           <Zap size={32} className="text-amber-500 mb-4" />
           <h3 className="font-bold text-xl mb-2">CSRF Protection</h3>
           <p className="text-zinc-500 text-sm">Every mutation request is protected by double-submit cookie tokens and strictly validated Origins, mitigating cross-site scripting risks.</p>
@@ -494,7 +494,7 @@ const SecurityDocs = () => (
         </p>
       </section>
 
-      <section className="p-8 bg-red-900/10 border border-red-500/20 rounded-3xl not-prose">
+      <section className="p-8 bg-red-900/20 border border-red-500/20 rounded-3xl not-prose">
         <h3 className="text-red-400 font-bold flex items-center gap-2 mb-4">
           <ShieldCheck size={20} /> Data Privacy
         </h3>

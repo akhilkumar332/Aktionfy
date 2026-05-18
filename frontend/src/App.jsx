@@ -36,13 +36,15 @@ import {
 
 // Premium Page Wrapper for transitions
 const PageWrapper = ({ children }) => {
+  const location = useLocation();
   return (
     <motion.div
+      key={location.pathname}
       initial={{ opacity: 0, y: 5 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -5 }}
       transition={{ duration: 0.2, ease: 'easeOut' }}
-      className="h-full w-full"
+      className="w-full h-full flex flex-col"
     >
       {children}
     </motion.div>
@@ -50,15 +52,12 @@ const PageWrapper = ({ children }) => {
 };
 
 const PublicLayout = () => {
-  const location = useLocation();
   return (
     <div className="flex flex-col min-h-screen bg-zinc-950">
       <Navbar />
-      <main className="flex-1">
+      <main className="flex-1 flex flex-col pt-20">
         <AnimatePresence mode="wait">
-          <PageWrapper key={location.pathname}>
-            <Outlet />
-          </PageWrapper>
+          <Outlet />
         </AnimatePresence>
       </main>
       <Footer />
@@ -89,9 +88,7 @@ const ProtectedLayout = ({ roles }) => {
   return (
     <DashboardLayout>
       <AnimatePresence mode="wait">
-        <PageWrapper key={location.pathname}>
-          <Outlet />
-        </PageWrapper>
+        <Outlet />
       </AnimatePresence>
     </DashboardLayout>
   );
@@ -102,45 +99,45 @@ const AppRoutes = () => {
     <Routes>
       {/* Public Routes */}
       <Route element={<PublicLayout />}>
-        <Route path="/" element={<Landing />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
+        <Route path="/" element={<PageWrapper><Landing /></PageWrapper>} />
+        <Route path="/login" element={<PageWrapper><Login /></PageWrapper>} />
+        <Route path="/signup" element={<PageWrapper><Signup /></PageWrapper>} />
         
         {/* Documentation Routes */}
-        <Route path="/docs/overview" element={<Overview />} />
-        <Route path="/docs/quickstart" element={<QuickStart />} />
-        <Route path="/docs/installation" element={<InstallationDocs />} />
-        <Route path="/docs/concepts" element={<CoreConcepts />} />
-        <Route path="/docs/api-reference" element={<ApiReference />} />
-        <Route path="/docs/architecture" element={<WorkerArchitecture />} />
-        <Route path="/docs/protocol-spec" element={<ProtocolSpecDoc />} />
-        <Route path="/docs/security" element={<SecurityDocs />} />
+        <Route path="/docs/overview" element={<PageWrapper><Overview /></PageWrapper>} />
+        <Route path="/docs/quickstart" element={<PageWrapper><QuickStart /></PageWrapper>} />
+        <Route path="/docs/installation" element={<PageWrapper><InstallationDocs /></PageWrapper>} />
+        <Route path="/docs/concepts" element={<PageWrapper><CoreConcepts /></PageWrapper>} />
+        <Route path="/docs/api-reference" element={<PageWrapper><ApiReference /></PageWrapper>} />
+        <Route path="/docs/architecture" element={<PageWrapper><WorkerArchitecture /></PageWrapper>} />
+        <Route path="/docs/protocol-spec" element={<PageWrapper><ProtocolSpecDoc /></PageWrapper>} />
+        <Route path="/docs/security" element={<PageWrapper><SecurityDocs /></PageWrapper>} />
       </Route>
 
       {/* User Protected Routes */}
       <Route element={<ProtectedLayout roles={['user', 'staff', 'admin']} />}>
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/tasks" element={<Tasks />} />
-        <Route path="/tasks/:id/history" element={<TaskHistory />} />
-        <Route path="/vault" element={<Vault />} />
-        <Route path="/webhooks" element={<Webhooks />} />
-        <Route path="/workspaces" element={<Workspaces />} />
-        <Route path="/templates" element={<Templates />} />
-        <Route path="/canvas" element={<WorkflowCanvas />} />
+        <Route path="/dashboard" element={<PageWrapper><Dashboard /></PageWrapper>} />
+        <Route path="/tasks" element={<PageWrapper><Tasks /></PageWrapper>} />
+        <Route path="/tasks/:id/history" element={<PageWrapper><TaskHistory /></PageWrapper>} />
+        <Route path="/vault" element={<PageWrapper><Vault /></PageWrapper>} />
+        <Route path="/webhooks" element={<PageWrapper><Webhooks /></PageWrapper>} />
+        <Route path="/workspaces" element={<PageWrapper><Workspaces /></PageWrapper>} />
+        <Route path="/templates" element={<PageWrapper><Templates /></PageWrapper>} />
+        <Route path="/canvas" element={<PageWrapper><WorkflowCanvas /></PageWrapper>} />
       </Route>
       
       {/* Staff/Admin Routes */}
       <Route element={<ProtectedLayout roles={['staff', 'admin']} />}>
-        <Route path="/monitor" element={<Monitor />} />
+        <Route path="/monitor" element={<PageWrapper><Monitor /></PageWrapper>} />
       </Route>
       
       {/* Admin Only Routes */}
       <Route element={<ProtectedLayout roles={['admin']} />}>
-        <Route path="/admin/users" element={<AdminUsers />} />
-        <Route path="/admin/seo" element={<AdminSEO />} />
-        <Route path="/admin/settings" element={<AdminSettings />} />
-        <Route path="/admin/insights" element={<Insights />} />
-        <Route path="/admin/workers" element={<Workers />} />
+        <Route path="/admin/users" element={<PageWrapper><AdminUsers /></PageWrapper>} />
+        <Route path="/admin/seo" element={<PageWrapper><AdminSEO /></PageWrapper>} />
+        <Route path="/admin/settings" element={<PageWrapper><AdminSettings /></PageWrapper>} />
+        <Route path="/admin/insights" element={<PageWrapper><Insights /></PageWrapper>} />
+        <Route path="/admin/workers" element={<PageWrapper><Workers /></PageWrapper>} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

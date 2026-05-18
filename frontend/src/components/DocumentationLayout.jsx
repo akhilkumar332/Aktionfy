@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Book, Code, Terminal, FileJson, Info, Zap, Shield, Workflow, Command } from 'lucide-react';
+import { Book, Code, Terminal, FileJson, Info, Zap, Shield, Workflow } from 'lucide-react';
 
 const DocumentationLayout = ({ children }) => {
   const sections = [
@@ -29,16 +29,11 @@ const DocumentationLayout = ({ children }) => {
   ];
 
   return (
-    <div className="flex min-h-screen bg-zinc-950 text-zinc-100">
+    <div className="flex min-h-[calc(100vh-80px)] bg-zinc-950 text-zinc-100">
       {/* Docs Sidebar - High Density */}
-      <aside className="w-72 border-r border-zinc-800 bg-zinc-950 hidden lg:block sticky top-0 h-screen overflow-y-auto custom-scrollbar">
-        <div className="p-8">
-          <NavLink to="/" className="flex items-center gap-2 mb-12 group">
-            <div className="w-8 h-8 bg-zinc-800 border border-zinc-700 rounded-md flex items-center justify-center group-hover:border-brand-primary/50 transition-all">
-              <Command size={18} className="text-brand-primary" />
-            </div>
-            <span className="font-bold text-lg tracking-tight text-white">Aktionfy</span>
-          </NavLink>
+      <aside className="w-72 border-r border-zinc-800 bg-zinc-950 hidden lg:block sticky top-20 h-[calc(100vh-80px)] overflow-y-auto custom-scrollbar">
+        <div className="p-8 pt-12">
+          {/* Logo removed to prevent overlap with Navbar */}
 
           <nav className="space-y-10">
             {sections.map((section) => (

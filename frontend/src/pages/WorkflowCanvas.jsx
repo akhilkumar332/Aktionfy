@@ -716,46 +716,46 @@ const WorkflowCanvas = () => {
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
                 transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className="absolute right-0 top-0 h-full w-full max-w-xl bg-zinc-950 border-l border-zinc-800/50 z-50 shadow-[0_0_100px_rgba(0,0,0,0.8)] flex flex-col"
+                className="absolute right-0 top-0 h-full w-full max-w-2xl bg-zinc-950 border-l border-zinc-800/50 z-50 shadow-[0_0_100px_rgba(0,0,0,0.8)] flex flex-col"
               >
-                <div className="p-10 border-b border-zinc-800/50 flex items-center justify-between bg-zinc-900/30">
+                <div className="p-8 border-b border-zinc-800/50 flex items-center justify-between bg-zinc-900/30 shrink-0">
                   <div>
-                    <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Neural Inspector</h3>
-                    <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.3em] mt-1">Core Logic & Telemetry</p>
+                    <h3 className="text-xl font-bold text-white tracking-tight uppercase">Neural Inspector</h3>
+                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">Core Logic & Telemetry</p>
                   </div>
                   <div className="flex items-center gap-3">
                     <button 
                       onClick={() => setPlaybackMode(!playbackMode)}
-                      className={`p-4 rounded-2xl transition-all border ${playbackMode ? 'bg-indigo-600 border-indigo-500 text-white shadow-2xl shadow-indigo-500/20' : 'bg-zinc-900/50 border-zinc-800 text-zinc-500'}`}
+                      className={`p-3 rounded-xl transition-all border ${playbackMode ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-950/40' : 'bg-zinc-900 border-zinc-800 text-zinc-500'}`}
                       title="Toggle Simulation"
                     >
-                      <Activity size={20} />
+                      <Activity size={18} />
                     </button>
                     <button 
                       onClick={() => handleDeleteTask(selectedTask?.id)}
-                      className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-500 hover:bg-red-500/20 transition-all"
+                      className="p-3 bg-red-950/20 border border-red-900/30 rounded-xl text-red-500 hover:bg-red-900/40 transition-all"
                       title="Terminate Node"
                     >
-                      <Trash2 size={20} />
+                      <Trash2 size={18} />
                     </button>
                     <button 
                       onClick={() => setIsSidebarOpen(false)}
-                      className="p-4 bg-zinc-900/50 border border-zinc-800 rounded-2xl text-zinc-500 hover:text-white transition-all"
+                      className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-500 hover:text-white transition-all"
                     >
-                      <X size={20} />
+                      <X size={18} />
                     </button>
                   </div>
                 </div>
                 
-                <div className="flex-1 overflow-y-auto relative custom-scrollbar">
+                <div className="flex-1 overflow-hidden relative flex flex-col min-h-0">
                    {playbackMode ? (
-                     <div className="p-10 space-y-10">
-                       <div className="space-y-4">
-                         <label className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 ml-2">Historical Lifecycles</label>
+                     <div className="p-8 space-y-8 flex flex-col h-full overflow-y-auto custom-scrollbar">
+                       <div className="space-y-3 shrink-0">
+                         <label className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 ml-1">Historical Lifecycles</label>
                          <select 
                            value={selectedExecutionId}
                            onChange={(e) => setSelectedExecutionId(e.target.value)}
-                           className="w-full bg-black/40 border border-zinc-800/50 rounded-[2rem] p-6 text-sm text-white focus:outline-none focus:border-indigo-500/50 shadow-inner appearance-none font-mono"
+                           className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-indigo-500/50 shadow-inner appearance-none font-mono"
                          >
                            {executions.map(ex => (
                              <option key={ex.id} value={ex.id} className="bg-zinc-950">
@@ -766,8 +766,8 @@ const WorkflowCanvas = () => {
                        </div>
 
                        {traces.length > 0 ? (
-                         <div className="space-y-10">
-                           <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-[3rem] p-10 space-y-10 relative overflow-hidden">
+                         <div className="space-y-8 flex-1 flex flex-col min-h-0">
+                           <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-8 space-y-8 shrink-0">
                              <div className="flex items-center justify-between">
                                <div className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400">Telemetry Deck</div>
                                <div className="text-[10px] font-black font-mono text-zinc-500 opacity-60">FRM_{currentTraceIndex + 1} // TOTAL_{traces.length}</div>
@@ -776,21 +776,21 @@ const WorkflowCanvas = () => {
                              <div className="flex items-center justify-center gap-6">
                                <button 
                                  onClick={() => setCurrentTraceIndex(prev => Math.max(0, prev - 1))}
-                                 className="p-4 bg-zinc-900/50 rounded-2xl text-white hover:bg-zinc-100/10 transition-colors border border-zinc-800/50"
+                                 className="p-3 bg-zinc-900/50 rounded-xl text-white hover:bg-zinc-800 transition-colors border border-zinc-800/50"
                                >
-                                 <Rewind size={24} />
+                                 <Rewind size={20} />
                                </button>
                                <button 
                                  onClick={() => setIsPlaying(!isPlaying)}
-                                 className="p-8 bg-indigo-600 rounded-[2.5rem] text-white hover:scale-110 transition-transform shadow-[0_20px_60px_rgba(217,119,6,0.3)] active:scale-95"
+                                 className="p-6 bg-indigo-600 rounded-2xl text-white hover:scale-105 transition-transform shadow-xl shadow-indigo-900/20 active:scale-95"
                                >
-                                 {isPlaying ? <Pause size={32} /> : <Play size={32} className="translate-x-1" />}
+                                 {isPlaying ? <Pause size={28} /> : <Play size={28} className="translate-x-1" />}
                                </button>
                                <button 
                                  onClick={() => setCurrentTraceIndex(prev => Math.min(traces.length - 1, prev + 1))}
-                                 className="p-4 bg-zinc-900/50 rounded-2xl text-white hover:bg-zinc-100/10 transition-colors border border-zinc-800/50"
+                                 className="p-3 bg-zinc-900/50 rounded-xl text-white hover:bg-zinc-800 transition-colors border border-zinc-800/50"
                                >
-                                 <FastForward size={24} />
+                                 <FastForward size={20} />
                                </button>
                              </div>
 
@@ -806,32 +806,32 @@ const WorkflowCanvas = () => {
                              </div>
                            </div>
 
-                           <div className="space-y-6">
-                             <div className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 ml-2">Neural Frame Details</div>
-                             <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-[3rem] p-10 space-y-10">
-                               <div>
-                                 <div className="text-[9px] font-black uppercase text-zinc-600 tracking-widest mb-2">Step Designation</div>
-                                 <div className="text-xl font-black text-white tracking-tight italic">{traces[currentTraceIndex].step_name}</div>
+                           <div className="space-y-4 flex-1 flex flex-col min-h-0 overflow-hidden">
+                             <div className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 ml-1 shrink-0">Neural Frame Details</div>
+                             <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-8 space-y-8 flex-1 flex flex-col min-h-0">
+                               <div className="shrink-0">
+                                 <div className="text-[9px] font-black uppercase text-zinc-600 tracking-widest mb-1.5">Step Designation</div>
+                                 <div className="text-xl font-bold text-white tracking-tight italic">{traces[currentTraceIndex].step_name}</div>
                                </div>
-                               <div className="grid grid-cols-1 gap-8">
-                                 <div>
-                                   <div className="flex items-center gap-3 mb-3">
-                                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]"></div>
+                               <div className="grid grid-cols-1 gap-6 flex-1 min-h-0 overflow-hidden">
+                                 <div className="flex flex-col min-h-0 overflow-hidden">
+                                   <div className="flex items-center gap-2 mb-2">
+                                      <div className="w-1 h-1 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]"></div>
                                       <div className="text-[9px] font-black uppercase text-zinc-600 tracking-widest">Inbound Payload</div>
                                    </div>
-                                   <pre className="text-[11px] bg-black/40 p-6 rounded-[2rem] text-emerald-400/80 overflow-x-auto border border-zinc-800/50 shadow-inner custom-scrollbar max-h-48 font-mono">
+                                   <pre className="text-[11px] bg-black/40 p-4 rounded-xl text-emerald-400/80 overflow-auto border border-zinc-800/50 font-mono flex-1 custom-scrollbar">
                                      {traces[currentTraceIndex].input_data ? 
                                        (typeof safeParseJSON(traces[currentTraceIndex].input_data) === 'object' ? 
                                          JSON.stringify(safeParseJSON(traces[currentTraceIndex].input_data), null, 2) : 
                                          traces[currentTraceIndex].input_data) : 'NULL'}
                                    </pre>
                                  </div>
-                                 <div>
-                                   <div className="flex items-center gap-3 mb-3">
+                                 <div className="flex flex-col min-h-0 overflow-hidden">
+                                   <div className="flex items-center gap-2 mb-2">
                                       <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 shadow-[0_0_10px_#d97706]"></div>
                                       <div className="text-[9px] font-black uppercase text-zinc-600 tracking-widest">Outbound Result</div>
                                    </div>
-                                   <pre className="text-[11px] bg-black/40 p-6 rounded-[2rem] text-indigo-400/80 overflow-x-auto border border-zinc-800/50 shadow-inner custom-scrollbar max-h-64 font-mono">
+                                   <pre className="text-[11px] bg-black/40 p-4 rounded-xl text-indigo-400/80 overflow-auto border border-zinc-800/50 font-mono flex-1 custom-scrollbar">
                                      {traces[currentTraceIndex].output_data ? 
                                        (typeof safeParseJSON(traces[currentTraceIndex].output_data) === 'object' ? 
                                          JSON.stringify(safeParseJSON(traces[currentTraceIndex].output_data), null, 2) : 
@@ -839,9 +839,9 @@ const WorkflowCanvas = () => {
                                    </pre>
                                  </div>
                                </div>
-                               <div className="flex items-center justify-between pt-8 border-t border-zinc-800/50">
+                               <div className="flex items-center justify-between pt-6 border-t border-zinc-800/50 shrink-0">
                                  <div className="text-[9px] font-black uppercase text-zinc-600 tracking-widest">Temporal Duration</div>
-                                 <div className="text-xs font-black text-white font-mono bg-zinc-900/50 px-4 py-2 rounded-xl border border-zinc-800/50">
+                                 <div className="text-xs font-black text-white font-mono bg-zinc-900/50 px-3 py-1.5 rounded-lg border border-zinc-800/50">
                                    {((new Date(traces[currentTraceIndex].end_time) - new Date(traces[currentTraceIndex].start_time)) / 1000).toFixed(3)}s
                                  </div>
                                </div>
@@ -849,7 +849,7 @@ const WorkflowCanvas = () => {
                            </div>
                          </div>
                        ) : (
-                         <div className="flex flex-col items-center justify-center py-24 text-center space-y-6">
+                         <div className="flex-1 flex flex-col items-center justify-center py-24 text-center space-y-6 opacity-30">
                            <div className="w-20 h-20 bg-zinc-900/50 border border-zinc-800/50 rounded-full flex items-center justify-center">
                               <Activity size={32} className="text-zinc-700 animate-pulse" />
                            </div>
@@ -858,16 +858,18 @@ const WorkflowCanvas = () => {
                        )}
                      </div>
                    ) : (
-                     <TaskWizard 
-                        isOpen={isSidebarOpen} 
-                        onClose={() => setIsSidebarOpen(false)} 
-                        initialData={selectedTask}
-                        onTaskCreated={() => {
-                          fetchTasks();
-                          setIsSidebarOpen(false);
-                        }}
-                        isInline={true}
-                     />
+                     <div className="flex-1 flex flex-col h-full overflow-hidden min-h-0">
+                        <TaskWizard 
+                            isOpen={isSidebarOpen} 
+                            onClose={() => setIsSidebarOpen(false)} 
+                            initialData={selectedTask}
+                            onTaskCreated={() => {
+                              fetchTasks();
+                              setIsSidebarOpen(false);
+                            }}
+                            isInline={true}
+                        />
+                     </div>
                    )}
                 </div>
               </motion.div>
