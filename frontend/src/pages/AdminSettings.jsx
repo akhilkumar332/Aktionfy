@@ -76,7 +76,7 @@ const AdminSettings = () => {
              <div className="w-8 h-8 bg-brand-primary/10 border border-brand-primary/20 rounded-lg flex items-center justify-center text-brand-primary">
                 <Shield size={16} />
              </div>
-             <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Operational Plane</span>
+             <span className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.3em]">Operational Plane</span>
           </motion.div>
           <motion.h1 
             initial={{ opacity: 0, y: 10 }}
@@ -85,7 +85,7 @@ const AdminSettings = () => {
           >
             Control Center.
           </motion.h1>
-          <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.2em] mt-2 ml-1">System-Wide Protocol & Node Governance</p>
+          <p className="text-zinc-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-2 ml-1">System-Wide Protocol & Node Governance</p>
         </div>
       </header>
 
@@ -99,7 +99,7 @@ const AdminSettings = () => {
               className="py-40 flex flex-col items-center justify-center gap-6"
             >
               <RefreshCw className="animate-spin text-brand-primary" size={48} />
-              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 animate-pulse">Syncing Control Plane...</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-400 animate-pulse">Syncing Control Plane...</p>
             </motion.div>
           ) : (
             <motion.div 
@@ -124,25 +124,25 @@ const AdminSettings = () => {
                 <div className="absolute top-0 right-0 w-64 h-64 bg-brand-primary/5 blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
                 
                 <div className="flex items-center gap-4 mb-12">
-                   <div className="p-3 bg-zinc-100/5 rounded-xl border border-zinc-800/50 text-slate-400">
+                   <div className="p-3 bg-zinc-100/5 rounded-xl border border-zinc-800/50 text-zinc-400">
                       <Settings size={20} />
                    </div>
                    <div>
                       <h2 className="text-xl font-black text-white uppercase tracking-tighter">Infrastructure Tuning</h2>
-                      <p className="text-[9px] text-slate-600 font-bold uppercase tracking-widest mt-0.5">Core Performance Parameters</p>
+                      <p className="text-[9px] text-zinc-300 font-bold uppercase tracking-widest mt-0.5">Core Performance Parameters</p>
                    </div>
                 </div>
 
                 <div className="space-y-10">
                   <div className="space-y-4">
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] ml-2">Node Termination Threshold (Days)</label>
+                    <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.3em] ml-2">Node Termination Threshold (Days)</label>
                     <input 
                       type="number"
                       value={settings.worker_prune_days}
                       onChange={(e) => setSettings({ ...settings, worker_prune_days: parseInt(e.target.value) || 0 })}
                       className="w-full bg-black/40 border border-zinc-800/50 rounded-[2rem] p-6 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner"
                     />
-                    <p className="text-[10px] text-slate-600 font-medium ml-4 leading-relaxed max-w-lg">
+                    <p className="text-[10px] text-zinc-300 font-medium ml-4 leading-relaxed max-w-lg">
                       Inactive reaper nodes will be automatically purged from the global registry after this period. Minimum 1 day recommended.
                     </p>
                   </div>
@@ -166,7 +166,7 @@ const AdminSettings = () => {
                     </div>
                     <div>
                       <h2 className="text-xl font-black text-white uppercase tracking-tighter mb-1 text-red-500/80">Manual Node Reaper</h2>
-                      <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Execute instantaneous cluster cleanup</p>
+                      <p className="text-[10px] font-bold text-zinc-300 uppercase tracking-widest">Execute instantaneous cluster cleanup</p>
                     </div>
                   </div>
                   <button 

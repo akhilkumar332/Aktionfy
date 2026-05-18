@@ -54,14 +54,14 @@ const Installation = () => {
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
           >
-            <div className="inline-flex items-center gap-3 py-2 px-6 mb-8 text-[10px] font-black tracking-[0.4em] text-brand-primary uppercase bg-zinc-900/50 border border-zinc-800 rounded-full backdrop-blur-xl">
+            <div className="inline-flex items-center gap-3 py-2 px-6 mb-8 text-[10px] font-black tracking-[0.4em] text-brand-primary uppercase bg-zinc-900 border border-zinc-800 rounded-full backdrop-blur-xl">
                Integration Protocol
             </div>
             <h2 className="text-5xl md:text-8xl font-black text-white mb-10 tracking-tighter leading-[0.9]">
               Deployment in <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-primary to-amber-200 italic">Seconds.</span>
             </h2>
-            <p className="text-xl md:text-2xl text-zinc-500 font-bold mb-16 leading-relaxed max-w-xl tracking-tight">
+            <p className="text-xl md:text-2xl text-zinc-300 font-bold mb-16 leading-relaxed max-w-xl tracking-tight">
               Optimized for high-frequency synchronization with Claude Desktop, Cursor, and custom neural clients.
             </p>
 
@@ -77,13 +77,13 @@ const Installation = () => {
                 >
                   <div className="flex-shrink-0 relative">
                      <div className="absolute inset-0 bg-brand-primary/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                     <div className="w-16 h-16 bg-zinc-900 border border-zinc-800/50 rounded-[1.5rem] flex items-center justify-center shadow-2xl group-hover:border-brand-primary/30 transition-all duration-500 relative z-10 text-zinc-500 group-hover:text-brand-primary">
+                     <div className="w-16 h-16 bg-zinc-900 border border-zinc-800/50 rounded-[1.5rem] flex items-center justify-center shadow-2xl group-hover:border-brand-primary/30 transition-all duration-500 relative z-10 text-zinc-300 group-hover:text-brand-primary">
                         <step.icon size={28} />
                      </div>
                   </div>
                   <div>
                     <h4 className="text-xl font-black text-white mb-3 tracking-tight uppercase">{step.title}</h4>
-                    <p className="text-zinc-500 font-medium leading-relaxed max-w-sm opacity-80 group-hover:opacity-100 transition-opacity">{step.description}</p>
+                    <p className="text-zinc-300 font-medium leading-relaxed max-w-sm opacity-80 group-hover:opacity-100 transition-opacity">{step.description}</p>
                     {step.title === 'Deploy CLI Bridge' && (
                        <motion.div 
                          initial={{ opacity: 0, y: 10 }}
@@ -91,7 +91,7 @@ const Installation = () => {
                          className="mt-6 bg-black/60 border border-zinc-800/50 rounded-2xl p-5 flex items-center justify-between group/cmd shadow-inner"
                        >
                           <code className="text-emerald-400 font-mono text-xs tracking-wider">{installCommand}</code>
-                          <button onClick={() => handleCopy(installCommand, 'install')} className="p-2 bg-zinc-900/50 border border-zinc-800 rounded-lg text-zinc-600 hover:text-white transition-all">
+                          <button onClick={() => handleCopy(installCommand, 'install')} className="p-2 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-300 hover:text-white transition-all">
                              {copied === 'install' ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
                           </button>
                        </motion.div>
@@ -108,12 +108,12 @@ const Installation = () => {
               >
                 Protocol Documentation <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
               </a>
-              <div className="h-4 w-px bg-zinc-900/50"></div>
+              <div className="h-4 w-px bg-zinc-900"></div>
               <a 
                 href="https://modelcontextprotocol.io" 
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-3 text-xs font-black text-zinc-600 uppercase tracking-[0.2em] hover:text-white transition-all"
+                className="inline-flex items-center gap-3 text-xs font-black text-zinc-300 uppercase tracking-[0.2em] hover:text-white transition-all"
               >
                 Official Spec <ExternalLink size={14} />
               </a>
@@ -137,9 +137,9 @@ const Installation = () => {
                   <div className="w-3 h-3 rounded-full bg-emerald-500/20 border border-emerald-500/20"></div>
                 </div>
                 <div className="flex items-center gap-4">
-                   <div className="flex items-center gap-2 px-3 py-1 bg-zinc-900/50 rounded-lg border border-zinc-800/50">
-                      <Command size={10} className="text-zinc-600" />
-                      <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">mcp_config.json</span>
+                   <div className="flex items-center gap-2 px-3 py-1 bg-zinc-900 rounded-lg border border-zinc-800/50">
+                      <Command size={10} className="text-zinc-300" />
+                      <span className="text-[9px] font-black text-zinc-300 uppercase tracking-widest">mcp_config.json</span>
                    </div>
                    <button 
                     onClick={() => handleCopy(configSnippet, 'config')}
@@ -152,26 +152,26 @@ const Installation = () => {
               
               <div className="p-12 font-mono text-sm leading-relaxed overflow-x-auto min-h-[400px] flex items-center bg-black/40 shadow-inner">
                 <pre className="text-emerald-400/80 w-full tracking-wide">
-                  <span className="text-zinc-600">{"{"}</span> <br />
-                  <span className="text-purple-400">  "mcpServers"</span>: <span className="text-zinc-600">{"{"}</span> <br />
-                  <span className="text-purple-400">    "aktionfy"</span>: <span className="text-zinc-600">{"{"}</span> <br />
+                  <span className="text-zinc-300">{"{"}</span> <br />
+                  <span className="text-purple-400">  "mcpServers"</span>: <span className="text-zinc-300">{"{"}</span> <br />
+                  <span className="text-purple-400">    "aktionfy"</span>: <span className="text-zinc-300">{"{"}</span> <br />
                   <span className="text-brand-primary">      "command"</span>: <span className="text-emerald-500">"aktionfy"</span>, <br />
-                  <span className="text-brand-primary">      "args"</span>: <span className="text-zinc-600">[</span><span className="text-emerald-500">"run"</span><span className="text-zinc-600">]</span>, <br />
-                  <span className="text-brand-primary">      "env"</span>: <span className="text-zinc-600">{"{"}</span> <br />
+                  <span className="text-brand-primary">      "args"</span>: <span className="text-zinc-300">[</span><span className="text-emerald-500">"run"</span><span className="text-zinc-300">]</span>, <br />
+                  <span className="text-brand-primary">      "env"</span>: <span className="text-zinc-300">{"{"}</span> <br />
                   <span className="text-blue-400">        "X-API-KEY"</span>: <span className="text-emerald-500">"NEURAL_TOKEN"</span> <br />
-                  <span className="text-zinc-600">      {"}"}</span> <br />
-                  <span className="text-zinc-600">    {"}"}</span> <br />
-                  <span className="text-zinc-600">  {"}"}</span> <br />
-                  <span className="text-zinc-600">{"}"}</span>
+                  <span className="text-zinc-300">      {"}"}</span> <br />
+                  <span className="text-zinc-300">    {"}"}</span> <br />
+                  <span className="text-zinc-300">  {"}"}</span> <br />
+                  <span className="text-zinc-300">{"}"}</span>
                 </pre>
               </div>
 
               <div className="px-10 py-6 bg-brand-primary/5 border-t border-zinc-800/50 flex items-center justify-between">
                  <div className="flex items-center gap-3">
                     <Zap size={14} className="text-brand-primary animate-pulse" />
-                    <span className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em]">Neural Sync Enabled</span>
+                    <span className="text-[9px] font-black text-zinc-300 uppercase tracking-[0.2em]">Neural Sync Enabled</span>
                  </div>
-                 <span className="text-[9px] font-mono text-slate-700">AES_256_GCM_ENCRYPTED</span>
+                 <span className="text-[9px] font-mono text-zinc-700">AES_256_GCM_ENCRYPTED</span>
               </div>
             </div>
           </motion.div>

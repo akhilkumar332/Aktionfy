@@ -29,7 +29,7 @@ const MetricsGrid = ({ usage }) => {
           </div>
           <div className="relative z-10">
             <p className="text-2xl font-bold text-white tracking-tighter tabular-nums">{m.value}</p>
-            <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest leading-none mt-1">{m.label}</p>
+            <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest leading-none mt-1">{m.label}</p>
           </div>
         </div>
       ))}
@@ -55,14 +55,14 @@ const LogsView = ({ logs }) => (
             <tr>
               <td colSpan="5" className="px-6 py-32 text-center">
                  <div className="flex flex-col items-center gap-3 opacity-30">
-                    <ShieldAlert size={32} className="text-zinc-600" />
-                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Audit stream synchronized. No events detected.</span>
+                    <ShieldAlert size={32} className="text-zinc-300" />
+                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Audit stream synchronized. No events detected.</span>
                  </div>
               </td>
             </tr>
           ) : logs.map((log) => (
             <tr key={log.id} className="pro-table-row group">
-              <td className="px-6 py-4 text-zinc-500 whitespace-nowrap tabular-nums">
+              <td className="px-6 py-4 text-zinc-400 whitespace-nowrap tabular-nums">
                 {new Date(log.created_at).toLocaleTimeString()}
               </td>
               <td className="px-6 py-4">
@@ -72,10 +72,10 @@ const LogsView = ({ logs }) => (
                 <span className="text-zinc-100 font-bold uppercase tracking-widest px-2 py-0.5 bg-zinc-800 rounded border border-zinc-700">{log.action}</span>
               </td>
               <td className="px-6 py-4">
-                <span className="text-zinc-500 uppercase font-bold text-[10px] tracking-widest">{log.resource_type}</span>
+                <span className="text-zinc-400 uppercase font-bold text-[10px] tracking-widest">{log.resource_type}</span>
               </td>
               <td className="px-6 py-4 text-right">
-                <code className="text-zinc-600 group-hover:text-zinc-400 transition-colors truncate block max-w-[200px] ml-auto font-mono text-[10px]">
+                <code className="text-zinc-300 group-hover:text-zinc-400 transition-colors truncate block max-w-[200px] ml-auto font-mono text-[10px]">
                   {JSON.stringify(log.metadata)}
                 </code>
               </td>
@@ -127,13 +127,13 @@ const Monitor = () => {
       <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">System Monitor</h1>
-          <p className="text-zinc-500 text-xs font-medium mt-1">Real-time infrastructure telemetry and security audit stream.</p>
+          <p className="text-zinc-400 text-xs font-medium mt-1">Real-time infrastructure telemetry and security audit stream.</p>
         </div>
         
         <div className="flex items-center gap-2">
            <button 
              onClick={() => fetchData()}
-             className="p-2 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-500 hover:text-white transition-all"
+             className="p-2 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-400 hover:text-white transition-all"
              aria-label="Refresh telemetry"
            >
              <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
@@ -156,7 +156,7 @@ const Monitor = () => {
             className={`px-4 py-2 rounded-md text-[11px] font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${
               activeTab === tab.id 
                 ? 'bg-zinc-800 text-white shadow-sm ring-1 ring-zinc-700' 
-                : 'text-zinc-500 hover:text-zinc-300'
+                : 'text-zinc-400 hover:text-zinc-300'
             }`}
           >
             <tab.icon size={14} className={activeTab === tab.id ? 'text-brand-primary' : ''} />
@@ -173,8 +173,8 @@ const Monitor = () => {
             exit={{ opacity: 0 }}
             className="flex flex-col items-center justify-center py-40 gap-4 opacity-50"
           >
-            <RefreshCw className="animate-spin text-zinc-600" size={32} />
-            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest animate-pulse">Establishing Signal...</p>
+            <RefreshCw className="animate-spin text-zinc-300" size={32} />
+            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest animate-pulse">Establishing Signal...</p>
           </motion.div>
         ) : (
           <motion.div
@@ -190,7 +190,7 @@ const Monitor = () => {
                  <div className="pro-card p-8 min-h-[300px] flex items-center justify-center border-dashed opacity-50">
                     <div className="flex flex-col items-center gap-4">
                        <BarChart3 size={40} className="text-zinc-700" />
-                       <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest italic text-center">Historical analytics buffer synchronized.<br/>Switch to "Audit Trail" for event granularity.</span>
+                       <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest italic text-center">Historical analytics buffer synchronized.<br/>Switch to "Audit Trail" for event granularity.</span>
                     </div>
                  </div>
               </div>

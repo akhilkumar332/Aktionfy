@@ -42,13 +42,13 @@ const Workers = () => {
       <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Reaper Registry</h1>
-          <p className="text-zinc-500 text-xs font-medium mt-1">Operational status of distributed execution nodes.</p>
+          <p className="text-zinc-400 text-xs font-medium mt-1">Operational status of distributed execution nodes.</p>
         </div>
         
         <div className="flex items-center gap-2">
            <button 
              onClick={fetchWorkers}
-             className="p-2 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-500 hover:text-white transition-all"
+             className="p-2 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-400 hover:text-white transition-all"
              aria-label="Refresh registry"
            >
              <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
@@ -56,7 +56,7 @@ const Workers = () => {
            <div className="bg-zinc-900 border border-zinc-800 px-3 py-1.5 rounded-md flex items-center gap-3">
               <div className="flex flex-col">
                  <span className="text-[10px] font-black text-white tabular-nums leading-none">{workers.length}</span>
-                 <span className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest leading-none mt-0.5">ACTIVE_NODES</span>
+                 <span className="text-[8px] font-bold text-zinc-400 uppercase tracking-widest leading-none mt-0.5">ACTIVE_NODES</span>
               </div>
            </div>
         </div>
@@ -71,8 +71,8 @@ const Workers = () => {
               exit={{ opacity: 0 }}
               className="py-40 flex flex-col items-center justify-center gap-4 opacity-50"
             >
-              <RefreshCw className="animate-spin text-zinc-600" size={32} />
-              <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest animate-pulse">Syncing Cluster...</p>
+              <RefreshCw className="animate-spin text-zinc-300" size={32} />
+              <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest animate-pulse">Syncing Cluster...</p>
             </motion.div>
           ) : workers.length === 0 ? (
             <motion.div 
@@ -81,8 +81,8 @@ const Workers = () => {
               className="py-32 text-center pro-card border-dashed bg-zinc-900/10"
             >
                <Server size={32} className="text-zinc-800 mx-auto mb-4" />
-               <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest">No Active Reapers Identified</h3>
-               <p className="text-[10px] text-zinc-600 font-medium mt-1 uppercase tracking-tighter">Check cluster deployment status.</p>
+               <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-widest">No Active Reapers Identified</h3>
+               <p className="text-[10px] text-zinc-300 font-medium mt-1 uppercase tracking-tighter">Check cluster deployment status.</p>
             </motion.div>
           ) : (
             workers.map((worker) => (
@@ -95,19 +95,19 @@ const Workers = () => {
               >
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                   <div className="flex items-center gap-5">
-                    <div className="w-10 h-10 rounded-lg bg-zinc-950 border border-zinc-800 flex items-center justify-center text-zinc-500 group-hover:border-brand-primary/40 transition-all">
+                    <div className="w-10 h-10 rounded-lg bg-zinc-950 border border-zinc-800 flex items-center justify-center text-zinc-400 group-hover:border-brand-primary/40 transition-all">
                        <Server size={20} />
                     </div>
                     <div>
                       <div className="flex items-center gap-3 mb-1">
                         <h2 className="text-lg font-bold text-zinc-100 tracking-tight uppercase">{worker.hostname}</h2>
                         <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${
-                          worker.status === 'online' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-zinc-800 border-zinc-700 text-zinc-500'
+                          worker.status === 'online' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-zinc-800 border-zinc-700 text-zinc-400'
                         }`}>
                           {worker.status}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 text-[10px] font-mono text-zinc-500 uppercase tracking-wider opacity-60">
+                      <div className="flex items-center gap-2 text-[10px] font-mono text-zinc-400 uppercase tracking-wider opacity-60">
                          <Command size={10} /> {worker.worker_id}
                       </div>
                     </div>
@@ -115,20 +115,20 @@ const Workers = () => {
 
                   <div className="flex items-center gap-8 ml-14 lg:ml-0">
                     <div className="space-y-1">
-                      <div className="flex items-center gap-2 text-[9px] font-bold text-zinc-500 uppercase tracking-widest">
-                         <Activity size={10} className="text-zinc-600" /> Current Load
+                      <div className="flex items-center gap-2 text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
+                         <Activity size={10} className="text-zinc-300" /> Current Load
                       </div>
                       <p className="text-lg font-bold text-white tabular-nums flex items-baseline gap-1.5">
                         {worker.task_count}
-                        <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">threads</span>
+                        <span className="text-[10px] text-zinc-300 font-bold uppercase tracking-widest">threads</span>
                       </p>
                     </div>
                     
                     <div className="h-8 w-px bg-zinc-800/50"></div>
 
                     <div className="space-y-1">
-                      <div className="flex items-center gap-2 text-[9px] font-bold text-zinc-500 uppercase tracking-widest">
-                         <Clock size={10} className="text-zinc-600" /> Heartbeat
+                      <div className="flex items-center gap-2 text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
+                         <Clock size={10} className="text-zinc-300" /> Heartbeat
                       </div>
                       <p className="text-xs font-semibold text-zinc-300 tabular-nums">
                         {new Date(worker.last_heartbeat).toLocaleTimeString()}

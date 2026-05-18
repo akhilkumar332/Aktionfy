@@ -21,7 +21,7 @@ const SidebarItem = ({ icon: Icon, label, path, isActive, onClick, roles, userRo
           : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50'
       }`}
     >
-      <Icon size={18} className={isActive ? 'text-brand-primary' : 'text-zinc-500 group-hover:text-zinc-300'} />
+      <Icon size={18} className={isActive ? 'text-brand-primary' : 'text-zinc-400 group-hover:text-zinc-300'} />
       <span className="truncate">{label}</span>
       {isActive && (
         <motion.div 
@@ -73,7 +73,7 @@ const Sidebar = ({ mobile = false, user, location, setIsSidebarOpen, handleLogou
         <span className="font-bold text-lg tracking-tight text-white">Aktionfy</span>
       </Link>
       {mobile && (
-        <button onClick={() => setIsSidebarOpen(false)} className="p-2 text-zinc-500 hover:text-white">
+        <button onClick={() => setIsSidebarOpen(false)} className="p-2 text-zinc-400 hover:text-white">
           <X size={20} />
         </button>
       )}
@@ -86,7 +86,7 @@ const Sidebar = ({ mobile = false, user, location, setIsSidebarOpen, handleLogou
         
         return (
           <div key={group.title} className="space-y-2">
-            <h3 className="px-3 text-[11px] font-bold text-zinc-500 uppercase tracking-widest">{group.title}</h3>
+            <h3 className="px-3 text-[11px] font-bold text-zinc-400 uppercase tracking-widest">{group.title}</h3>
             <div className="space-y-1">
               {visibleItems.map((item) => (
                 <SidebarItem 
@@ -110,12 +110,12 @@ const Sidebar = ({ mobile = false, user, location, setIsSidebarOpen, handleLogou
         </div>
         <div className="flex flex-col min-w-0">
           <span className="text-sm font-bold text-white truncate">{user?.email}</span>
-          <span className="text-[10px] text-zinc-500 uppercase font-black tracking-tight truncate">{user?.role} • {user?.tier}</span>
+          <span className="text-[10px] text-zinc-400 uppercase font-black tracking-tight truncate">{user?.role} • {user?.tier}</span>
         </div>
       </div>
       <button
         onClick={handleLogout}
-        className="flex items-center gap-3 w-full px-3 py-2 text-zinc-500 hover:text-red-400 hover:bg-red-950/20 rounded-md transition-all text-sm font-medium"
+        className="flex items-center gap-3 w-full px-3 py-2 text-zinc-400 hover:text-red-400 hover:bg-red-950/20 rounded-md transition-all text-sm font-medium"
       >
         <LogOut size={16} />
         <span>Sign Out</span>
@@ -172,7 +172,7 @@ const DashboardLayout = ({ children }) => {
       <div className={`flex-1 lg:pl-64 flex flex-col min-w-0 min-h-screen`}>
         {/* Header Action Bar - Hide on full bleed if page has its own */}
         {!isFullBleed && (
-          <header className="h-16 border-b border-zinc-800 bg-zinc-950/50 backdrop-blur-md sticky top-0 z-40 px-6 flex items-center justify-between">
+          <header className="h-16 border-b border-zinc-800 bg-zinc-950 backdrop-blur-md sticky top-0 z-40 px-6 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button 
                 onClick={() => setIsSidebarOpen(true)} 
@@ -182,18 +182,18 @@ const DashboardLayout = ({ children }) => {
                 <Menu size={20} />
               </button>
               <div className="flex items-center gap-2 text-sm font-medium">
-                <span className="text-zinc-500">Root</span>
+                <span className="text-zinc-400">Root</span>
                 <ChevronRight size={14} className="text-zinc-700" />
                 <span className="text-zinc-200 capitalize">{location.pathname.split('/').pop().replace(/-/g, ' ')}</span>
               </div>
             </div>
 
             <div className="flex items-center gap-4">
-              <div className="hidden md:flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-md px-3 py-1.5 text-[11px] text-zinc-500 font-bold uppercase tracking-widest">
+              <div className="hidden md:flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-md px-3 py-1.5 text-[11px] text-zinc-400 font-bold uppercase tracking-widest">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
                   System Active
               </div>
-              <button className="p-2 text-zinc-500 hover:text-white bg-zinc-900 border border-zinc-800 rounded-md transition-all">
+              <button className="p-2 text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-800 rounded-md transition-all">
                   <Search size={18} />
               </button>
             </div>

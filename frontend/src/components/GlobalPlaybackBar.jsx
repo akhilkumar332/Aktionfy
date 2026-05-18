@@ -12,14 +12,14 @@ const GlobalPlaybackBar = ({
         <motion.div 
             initial={{ y: 100 }}
             animate={{ y: 0 }}
-            className="absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-2xl bg-slate-900/80 backdrop-blur-2xl border border-zinc-800 rounded-3xl p-4 shadow-2xl z-[60] flex items-center gap-6"
+            className="absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-2xl bg-zinc-900/80 backdrop-blur-2xl border border-zinc-800 rounded-3xl p-4 shadow-2xl z-[60] flex items-center gap-6"
         >
             <button onClick={onTogglePlay} className="p-4 bg-brand-primary rounded-2xl text-white shadow-lg shadow-indigo-500/20">
                 {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" />}
             </button>
             
             <div className="flex-1 space-y-2">
-                <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-500">
+                <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-zinc-400">
                     <div className="flex items-center gap-2"><Clock size={12}/> Time-Travel</div>
                     <div>{currentTime.toFixed(2)}s / {duration.toFixed(2)}s</div>
                 </div>

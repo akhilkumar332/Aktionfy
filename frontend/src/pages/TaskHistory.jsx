@@ -52,7 +52,7 @@ const TaskHistory = () => {
         <div>
           <button 
             onClick={() => navigate('/tasks')}
-            className="flex items-center gap-2 text-slate-500 hover:text-white transition-all text-[10px] font-black uppercase tracking-[0.3em] mb-6 group"
+            className="flex items-center gap-2 text-zinc-400 hover:text-white transition-all text-[10px] font-black uppercase tracking-[0.3em] mb-6 group"
           >
             <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> Back to Schedules
           </button>
@@ -68,7 +68,7 @@ const TaskHistory = () => {
                 >
                   Neural Timeline.
                 </motion.h1>
-                <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.2em] mt-1 ml-1">Version State Archive</p>
+                <p className="text-zinc-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-1 ml-1">Version State Archive</p>
              </div>
           </div>
         </div>
@@ -76,7 +76,7 @@ const TaskHistory = () => {
         <div className="flex items-center gap-6 bg-zinc-100/[0.02] border border-zinc-800/50 px-8 py-5 rounded-[2rem] backdrop-blur-xl relative overflow-hidden group">
            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none group-hover:scale-150 transition-transform duration-700"></div>
            <div className="flex flex-col">
-              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Node ID</span>
+              <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Node ID</span>
               <span className="text-xs font-black text-white font-mono uppercase tracking-widest opacity-80">{id?.substring(0, 13)}</span>
            </div>
         </div>
@@ -86,7 +86,7 @@ const TaskHistory = () => {
         {loading ? (
           <div className="py-40 flex flex-col items-center justify-center gap-6">
             <div className="w-12 h-12 border-2 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
-            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 animate-pulse">Querying Timeline Buffer...</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-400 animate-pulse">Querying Timeline Buffer...</p>
           </div>
         ) : history.length === 0 ? (
           <motion.div 
@@ -94,12 +94,12 @@ const TaskHistory = () => {
             animate={{ opacity: 1, scale: 1 }}
             className="py-40 flex flex-col items-center justify-center text-center gap-8 bg-zinc-100/[0.01] border border-dashed border-zinc-800 rounded-[4rem]"
           >
-            <div className="w-24 h-24 bg-zinc-100/5 rounded-full flex items-center justify-center border border-zinc-800/50 text-slate-700">
+            <div className="w-24 h-24 bg-zinc-100/5 rounded-full flex items-center justify-center border border-zinc-800/50 text-zinc-700">
               <AlertCircle size={48} />
             </div>
             <div>
               <p className="text-white font-black text-xl uppercase tracking-tighter mb-2">No State Changes Detected</p>
-              <p className="text-slate-500 text-xs font-bold uppercase tracking-widest max-w-xs leading-relaxed opacity-60">This orchestration node is operating on its baseline configuration.</p>
+              <p className="text-zinc-400 text-xs font-bold uppercase tracking-widest max-w-xs leading-relaxed opacity-60">This orchestration node is operating on its baseline configuration.</p>
             </div>
           </motion.div>
         ) : (
@@ -118,7 +118,7 @@ const TaskHistory = () => {
                 >
                   {/* Timeline Dot */}
                   <div className={`absolute left-0 w-16 h-16 flex items-center justify-center rounded-[1.5rem] border backdrop-blur-3xl z-10 transition-all duration-500 ${
-                    index === 0 ? 'bg-blue-500 border-blue-400 text-white shadow-[0_0_30px_rgba(59,130,246,0.4)]' : 'bg-zinc-950 border-zinc-800 text-slate-600'
+                    index === 0 ? 'bg-blue-500 border-blue-400 text-white shadow-[0_0_30px_rgba(59,130,246,0.4)]' : 'bg-zinc-950 border-zinc-800 text-zinc-300'
                   }`}>
                     {index === 0 ? <CheckCircle2 size={24} /> : <Clock size={24} />}
                   </div>
@@ -133,8 +133,8 @@ const TaskHistory = () => {
                             {index === 0 ? 'Active Deployment' : `State Archive Alpha-${history.length - index}`}
                           </span>
                           <div className="bg-black/40 px-3 py-1 rounded-lg border border-zinc-800/50 shadow-inner flex items-center gap-2">
-                             <Command size={10} className="text-slate-600" />
-                             <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest tabular-nums">
+                             <Command size={10} className="text-zinc-300" />
+                             <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest tabular-nums">
                                {version.id.substring(0, 13)}
                              </span>
                           </div>
@@ -142,10 +142,10 @@ const TaskHistory = () => {
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                           <div className="space-y-4">
-                            <div className="flex items-center gap-2 text-[9px] font-black text-slate-500 uppercase tracking-widest ml-2">
+                            <div className="flex items-center gap-2 text-[9px] font-black text-zinc-400 uppercase tracking-widest ml-2">
                                <Terminal size={10} /> Logic Snapshot
                             </div>
-                            <div className="bg-black/40 p-6 rounded-[2rem] border border-zinc-800/50 font-mono text-xs text-slate-400 leading-relaxed max-h-48 overflow-y-auto custom-scrollbar shadow-inner group-hover:text-slate-200 transition-colors">
+                            <div className="bg-black/40 p-6 rounded-[2rem] border border-zinc-800/50 font-mono text-xs text-zinc-400 leading-relaxed max-h-48 overflow-y-auto custom-scrollbar shadow-inner group-hover:text-zinc-200 transition-colors">
                               {version.agent_prompt || version.native_code || "// Baseline configuration identified."}
                             </div>
                           </div>
@@ -153,12 +153,12 @@ const TaskHistory = () => {
                           <div className="flex flex-col justify-center gap-8">
                              <div className="flex items-center gap-8">
                                 <div>
-                                  <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Synchronization</p>
-                                  <p className="text-xs font-bold text-slate-300 tabular-nums uppercase">{new Date(version.created_at).toLocaleString()}</p>
+                                  <p className="text-[9px] font-black text-zinc-300 uppercase tracking-widest mb-1">Synchronization</p>
+                                  <p className="text-xs font-bold text-zinc-300 tabular-nums uppercase">{new Date(version.created_at).toLocaleString()}</p>
                                 </div>
                                 <div>
-                                  <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Vector Type</p>
-                                  <div className="flex items-center gap-2 px-3 py-1 bg-zinc-100/5 rounded-lg border border-zinc-800/50 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                                  <p className="text-[9px] font-black text-zinc-300 uppercase tracking-widest mb-1">Vector Type</p>
+                                  <div className="flex items-center gap-2 px-3 py-1 bg-zinc-100/5 rounded-lg border border-zinc-800/50 text-[9px] font-black text-zinc-400 uppercase tracking-widest">
                                      <GitBranch size={10} /> {version.trigger_type}
                                   </div>
                                 </div>

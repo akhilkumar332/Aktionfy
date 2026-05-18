@@ -37,18 +37,18 @@ const ManualRouteModal = ({ isOpen, onClose, task, tasks, onRouted }) => {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="bg-zinc-900 border border-zinc-800 rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden">
-        <div className="px-8 py-6 border-b border-zinc-800/50 flex justify-between items-center bg-zinc-900/50">
+        <div className="px-8 py-6 border-b border-zinc-800/50 flex justify-between items-center bg-zinc-900">
           <div>
             <h3 className="text-xl font-black text-white uppercase tracking-tighter">Manual Resolution</h3>
-            <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Routing required</p>
+            <p className="text-[10px] text-zinc-400 font-black uppercase tracking-widest">Routing required</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-zinc-100/5 rounded-xl text-slate-500 hover:text-white transition-colors">
+          <button onClick={onClose} className="p-2 hover:bg-zinc-100/5 rounded-xl text-zinc-400 hover:text-white transition-colors">
             <X size={20} />
           </button>
         </div>
 
         <div className="p-8">
-          <p className="text-sm text-slate-400 mb-8 leading-relaxed">
+          <p className="text-sm text-zinc-400 mb-8 leading-relaxed">
             {task?.task_type === 'swarm_router' ? 'Swarm' : 'Decision'} Node <span className={`font-bold ${task?.task_type === 'swarm_router' ? 'text-purple-400' : 'text-indigo-400'}`}>"{task?.name}"</span> could not automatically determine the next path. Please select a branch to continue execution.
           </p>
 
@@ -61,7 +61,7 @@ const ManualRouteModal = ({ isOpen, onClose, task, tasks, onRouted }) => {
           <div className="space-y-4">
             {branches.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center space-y-4">
-                <div className="text-[10px] font-black uppercase tracking-widest text-slate-600 italic">No downstream branches found.</div>
+                <div className="text-[10px] font-black uppercase tracking-widest text-zinc-300 italic">No downstream branches found.</div>
               </div>
             ) : (
               branches.map(branch => (
@@ -77,10 +77,10 @@ const ManualRouteModal = ({ isOpen, onClose, task, tasks, onRouted }) => {
                     </div>
                     <div>
                       <span className="block font-bold text-white text-sm">{branch.name}</span>
-                      <span className="block text-[10px] text-slate-500 font-black uppercase tracking-widest mt-0.5">Trigger manually</span>
+                      <span className="block text-[10px] text-zinc-400 font-black uppercase tracking-widest mt-0.5">Trigger manually</span>
                     </div>
                   </div>
-                  <Play size={18} className="text-slate-600 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all" />
+                  <Play size={18} className="text-zinc-300 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all" />
                 </button>
               ))
             )}
@@ -90,7 +90,7 @@ const ManualRouteModal = ({ isOpen, onClose, task, tasks, onRouted }) => {
         <div className="px-8 py-6 bg-black/20 border-t border-zinc-800/50 flex justify-end gap-4">
           <button
             onClick={onClose}
-            className="px-6 py-3 text-xs font-black text-slate-500 hover:text-white uppercase tracking-widest transition-colors"
+            className="px-6 py-3 text-xs font-black text-zinc-400 hover:text-white uppercase tracking-widest transition-colors"
           >
             Cancel
           </button>

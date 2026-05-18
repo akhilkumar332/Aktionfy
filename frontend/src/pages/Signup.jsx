@@ -44,7 +44,7 @@ const Signup = () => {
                </div>
             </Link>
             <h1 className="text-4xl font-black text-white tracking-tighter mb-3 text-center">Join the Network.</h1>
-            <p className="text-slate-500 font-black uppercase tracking-[0.3em] text-[10px] text-center">Initialize Neural Identity</p>
+            <p className="text-zinc-400 font-black uppercase tracking-[0.3em] text-[10px] text-center">Initialize Neural Identity</p>
           </div>
 
           {error && (
@@ -59,23 +59,23 @@ const Signup = () => {
 
           <form onSubmit={handleSubmit} className="space-y-8">
             <div className="space-y-3">
-              <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Desired Identity</label>
+              <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ml-2">Desired Identity</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-black/40 px-8 py-6 rounded-[2rem] border border-zinc-800/50 text-white focus:border-brand-primary/50 outline-none transition-all placeholder:text-slate-800 font-medium shadow-inner"
+                className="w-full bg-black/40 px-8 py-6 rounded-[2rem] border border-zinc-800/50 text-white focus:border-brand-primary/50 outline-none transition-all placeholder:text-zinc-800 font-medium shadow-inner"
                 placeholder="identity@network.io"
                 required
               />
             </div>
             <div className="space-y-3">
-              <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Generate Key</label>
+              <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ml-2">Generate Key</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-black/40 px-8 py-6 rounded-[2rem] border border-zinc-800/50 text-white focus:border-brand-primary/50 outline-none transition-all placeholder:text-slate-800 font-medium shadow-inner"
+                className="w-full bg-black/40 px-8 py-6 rounded-[2rem] border border-zinc-800/50 text-white focus:border-brand-primary/50 outline-none transition-all placeholder:text-zinc-800 font-medium shadow-inner"
                 placeholder="••••••••••••"
                 required
               />
@@ -90,13 +90,13 @@ const Signup = () => {
           </form>
 
           <div className="mt-16 pt-10 border-t border-zinc-800/50 flex flex-col items-center gap-6">
-             <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em]">
+             <p className="text-[10px] font-black text-zinc-300 uppercase tracking-[0.2em]">
                Already initialized?{' '}
                <Link to="/login" className="text-white hover:text-brand-primary transition-colors underline underline-offset-8">
                  Authenticate
                </Link>
              </p>
-             <div className="flex items-center gap-2 text-slate-700 text-[9px] font-bold uppercase tracking-widest bg-zinc-100/[0.02] px-4 py-2 rounded-full border border-zinc-800/50">
+             <div className="flex items-center gap-2 text-zinc-700 text-[9px] font-bold uppercase tracking-widest bg-zinc-100/[0.02] px-4 py-2 rounded-full border border-zinc-800/50">
                 <Command size={12} className="text-brand-primary" /> Multi-Region Deployment
              </div>
           </div>

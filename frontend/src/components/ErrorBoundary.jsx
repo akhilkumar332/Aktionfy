@@ -29,7 +29,7 @@ class ErrorBoundary extends React.Component {
               </div>
               
               <h1 className="text-3xl font-black text-white mb-4 tracking-tighter italic">NEURAL_FAULT_DETECTED</h1>
-              <p className="text-slate-400 text-sm leading-relaxed mb-10 font-medium">
+              <p className="text-zinc-400 text-sm leading-relaxed mb-10 font-medium">
                 The orchestration interface encountered a critical state error. 
                 System stability has been maintained, but this view requires a reset.
               </p>
@@ -37,7 +37,7 @@ class ErrorBoundary extends React.Component {
               <div className="flex flex-col gap-3">
                 <button
                   onClick={() => window.location.reload()}
-                  className="w-full flex items-center justify-center gap-3 py-4 bg-zinc-100 text-zinc-950 font-bold rounded-2xl hover:bg-slate-100 transition-all active:scale-95 shadow-[0_0_30px_rgba(255,255,255,0.1)]"
+                  className="w-full flex items-center justify-center gap-3 py-4 bg-zinc-100 text-zinc-950 font-bold rounded-2xl hover:bg-zinc-100 transition-all active:scale-95 shadow-[0_0_30px_rgba(255,255,255,0.1)]"
                 >
                   <RefreshCw size={18} />
                   Re-initialize Interface
@@ -45,7 +45,7 @@ class ErrorBoundary extends React.Component {
                 
                 <a
                   href="/"
-                  className="w-full flex items-center justify-center gap-3 py-4 bg-zinc-100/5 text-slate-300 font-bold rounded-2xl hover:bg-zinc-100/10 transition-all border border-zinc-800/50"
+                  className="w-full flex items-center justify-center gap-3 py-4 bg-zinc-100/5 text-zinc-300 font-bold rounded-2xl hover:bg-zinc-100/10 transition-all border border-zinc-800/50"
                 >
                   <Home size={18} />
                   Return to Origin

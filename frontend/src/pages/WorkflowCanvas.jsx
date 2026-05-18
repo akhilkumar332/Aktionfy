@@ -123,17 +123,17 @@ const WorkflowCanvas = () => {
           task,
           label: isRouter ? undefined : (
             <div className={`flex flex-col items-center gap-2 transition-all duration-500 ${isProcessing ? 'scale-110' : ''}`}>
-              <div className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-500 opacity-60">{task.trigger_type}</div>
+              <div className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-400 opacity-60">{task.trigger_type}</div>
               <div className="font-black text-white text-xs tracking-tight uppercase">{task.name}</div>
               <div className={`flex items-center gap-2 text-[8px] font-black uppercase px-3 py-1 rounded-full border transition-all ${
                 task.status === 'active' ? 'bg-emerald-500/5 text-emerald-400 border-emerald-500/20' : 
                 task.status === 'processing' ? 'bg-indigo-600/10 text-indigo-400 border-indigo-500/20 animate-pulse' :
-                'bg-zinc-900/50 text-zinc-500 border-zinc-800/50'
+                'bg-zinc-900 text-zinc-400 border-zinc-800/50'
               }`}>
                 <div className={`w-1 h-1 rounded-full ${
                   task.status === 'active' ? 'bg-emerald-500' : 
                   task.status === 'processing' ? 'bg-indigo-600 animate-ping' :
-                  'bg-slate-700'
+                  'bg-zinc-700'
                 }`} />
                 {task.status}
               </div>
@@ -405,17 +405,17 @@ const WorkflowCanvas = () => {
                     task: updatedTask,
                     label: (
                         <div className={`flex flex-col items-center gap-2 transition-all duration-500 ${isProcessing ? 'scale-110' : ''}`}>
-                          <div className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-500 opacity-60">{updatedTask.trigger_type}</div>
+                          <div className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-400 opacity-60">{updatedTask.trigger_type}</div>
                           <div className="font-black text-white text-xs tracking-tight uppercase">{updatedTask.name}</div>
                           <div className={`flex items-center gap-2 text-[8px] font-black uppercase px-3 py-1 rounded-full border transition-all ${
                             updatedTask.status === 'active' ? 'bg-emerald-500/5 text-emerald-400 border-emerald-500/20' : 
                             updatedTask.status === 'processing' ? 'bg-indigo-600/10 text-indigo-400 border-indigo-500/20 animate-pulse' :
-                            'bg-zinc-900/50 text-zinc-500 border-zinc-800/50'
+                            'bg-zinc-900 text-zinc-400 border-zinc-800/50'
                           }`}>
                             <div className={`w-1 h-1 rounded-full ${
                               updatedTask.status === 'active' ? 'bg-emerald-500' : 
                               updatedTask.status === 'processing' ? 'bg-indigo-600 animate-ping' :
-                              'bg-slate-700'
+                              'bg-zinc-700'
                             }`} />
                             {updatedTask.status}
                           </div>
@@ -588,7 +588,7 @@ const WorkflowCanvas = () => {
 
   return (
     <div className="h-screen w-full flex flex-col bg-zinc-950 text-white overflow-hidden selection:bg-indigo-600">
-      <header className="px-10 py-8 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-zinc-950/50 backdrop-blur-3xl border-b border-zinc-800/50 z-20">
+      <header className="px-10 py-8 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-zinc-950 backdrop-blur-3xl border-b border-zinc-800/50 z-20">
         <div>
           <motion.h1 
             initial={{ opacity: 0, x: -20 }}
@@ -602,21 +602,21 @@ const WorkflowCanvas = () => {
           </motion.h1>
           <div className="flex items-center gap-3 mt-1 ml-14">
              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-             <p className="text-zinc-500 font-black uppercase text-[9px] tracking-[0.2em]">Neural Interconnect Active</p>
+             <p className="text-zinc-400 font-black uppercase text-[9px] tracking-[0.2em]">Neural Interconnect Active</p>
           </div>
         </div>
         <div className="flex gap-3">
           <button 
             onClick={fetchTasks}
             disabled={loading}
-            className="p-4 bg-zinc-900/50 text-slate-400 rounded-2xl border border-zinc-800/50 hover:bg-zinc-100/10 hover:text-white transition-all disabled:opacity-50"
+            className="p-4 bg-zinc-900 text-zinc-400 rounded-2xl border border-zinc-800/50 hover:bg-zinc-100/10 hover:text-white transition-all disabled:opacity-50"
             title="Sync Core"
           >
             <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
           </button>
           <button 
             onClick={onLayout}
-            className="bg-zinc-900/50 text-slate-300 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] border border-zinc-800/50 hover:bg-zinc-100/10 hover:text-white transition-all flex items-center gap-3"
+            className="bg-zinc-900 text-zinc-300 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] border border-zinc-800/50 hover:bg-zinc-100/10 hover:text-white transition-all flex items-center gap-3"
           >
             <Activity size={14} className="text-brand-secondary" />
             Auto-Sync
@@ -631,7 +631,7 @@ const WorkflowCanvas = () => {
           </button>
           <Link 
             to="/dashboard"
-            className="p-4 bg-zinc-900/50 text-slate-400 rounded-2xl border border-zinc-800/50 hover:bg-zinc-100/10 hover:text-white transition-all"
+            className="p-4 bg-zinc-900 text-zinc-400 rounded-2xl border border-zinc-800/50 hover:bg-zinc-100/10 hover:text-white transition-all"
           >
             <X size={18} />
           </Link>
@@ -645,17 +645,17 @@ const WorkflowCanvas = () => {
           <div className="h-full w-full flex items-center justify-center bg-zinc-950">
              <div className="flex flex-col items-center gap-6">
                 <div className="w-16 h-16 border-2 border-indigo-500/20 border-t-brand-primary rounded-full animate-spin"></div>
-                <div className="text-zinc-500 font-black uppercase tracking-[0.3em] text-[10px] animate-pulse">Initializing Virtual Workspace...</div>
+                <div className="text-zinc-400 font-black uppercase tracking-[0.3em] text-[10px] animate-pulse">Initializing Virtual Workspace...</div>
              </div>
           </div>
         ) : nodes.length === 0 ? (
           <div className="h-full w-full flex items-center justify-center bg-zinc-950">
              <div className="text-center max-w-sm">
-                <div className="w-24 h-24 bg-zinc-900/50 rounded-full flex items-center justify-center mx-auto mb-8 border border-zinc-800/50">
+                <div className="w-24 h-24 bg-zinc-900 rounded-full flex items-center justify-center mx-auto mb-8 border border-zinc-800/50">
                    <Layers size={40} className="text-zinc-700" />
                 </div>
                 <h2 className="text-xl font-black text-white uppercase tracking-widest mb-4">Neural Void</h2>
-                <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest leading-relaxed">No orchestration streams identified in this environment.</p>
+                <p className="text-zinc-400 text-xs font-bold uppercase tracking-widest leading-relaxed">No orchestration streams identified in this environment.</p>
                 <button 
                   onClick={() => setIsSidebarOpen(true)}
                   className="mt-8 px-10 py-5 bg-indigo-600 text-white rounded-[2rem] font-black uppercase text-[10px] tracking-[0.2em] shadow-2xl"
@@ -721,12 +721,12 @@ const WorkflowCanvas = () => {
                 <div className="p-8 border-b border-zinc-800/50 flex items-center justify-between bg-zinc-900/30 shrink-0">
                   <div>
                     <h3 className="text-xl font-bold text-white tracking-tight uppercase">Neural Inspector</h3>
-                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">Core Logic & Telemetry</p>
+                    <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-1">Core Logic & Telemetry</p>
                   </div>
                   <div className="flex items-center gap-3">
                     <button 
                       onClick={() => setPlaybackMode(!playbackMode)}
-                      className={`p-3 rounded-xl transition-all border ${playbackMode ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-950/40' : 'bg-zinc-900 border-zinc-800 text-zinc-500'}`}
+                      className={`p-3 rounded-xl transition-all border ${playbackMode ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-950/40' : 'bg-zinc-900 border-zinc-800 text-zinc-400'}`}
                       title="Toggle Simulation"
                     >
                       <Activity size={18} />
@@ -740,7 +740,7 @@ const WorkflowCanvas = () => {
                     </button>
                     <button 
                       onClick={() => setIsSidebarOpen(false)}
-                      className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-500 hover:text-white transition-all"
+                      className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white transition-all"
                     >
                       <X size={18} />
                     </button>
@@ -751,7 +751,7 @@ const WorkflowCanvas = () => {
                    {playbackMode ? (
                      <div className="p-8 space-y-8 flex flex-col h-full overflow-y-auto custom-scrollbar">
                        <div className="space-y-3 shrink-0">
-                         <label className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 ml-1">Historical Lifecycles</label>
+                         <label className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 ml-1">Historical Lifecycles</label>
                          <select 
                            value={selectedExecutionId}
                            onChange={(e) => setSelectedExecutionId(e.target.value)}
@@ -767,16 +767,16 @@ const WorkflowCanvas = () => {
 
                        {traces.length > 0 ? (
                          <div className="space-y-8 flex-1 flex flex-col min-h-0">
-                           <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-8 space-y-8 shrink-0">
+                           <div className="bg-zinc-900 border border-zinc-800/50 rounded-2xl p-8 space-y-8 shrink-0">
                              <div className="flex items-center justify-between">
                                <div className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400">Telemetry Deck</div>
-                               <div className="text-[10px] font-black font-mono text-zinc-500 opacity-60">FRM_{currentTraceIndex + 1} // TOTAL_{traces.length}</div>
+                               <div className="text-[10px] font-black font-mono text-zinc-400 opacity-60">FRM_{currentTraceIndex + 1} // TOTAL_{traces.length}</div>
                              </div>
                              
                              <div className="flex items-center justify-center gap-6">
                                <button 
                                  onClick={() => setCurrentTraceIndex(prev => Math.max(0, prev - 1))}
-                                 className="p-3 bg-zinc-900/50 rounded-xl text-white hover:bg-zinc-800 transition-colors border border-zinc-800/50"
+                                 className="p-3 bg-zinc-900 rounded-xl text-white hover:bg-zinc-800 transition-colors border border-zinc-800/50"
                                >
                                  <Rewind size={20} />
                                </button>
@@ -788,7 +788,7 @@ const WorkflowCanvas = () => {
                                </button>
                                <button 
                                  onClick={() => setCurrentTraceIndex(prev => Math.min(traces.length - 1, prev + 1))}
-                                 className="p-3 bg-zinc-900/50 rounded-xl text-white hover:bg-zinc-800 transition-colors border border-zinc-800/50"
+                                 className="p-3 bg-zinc-900 rounded-xl text-white hover:bg-zinc-800 transition-colors border border-zinc-800/50"
                                >
                                  <FastForward size={20} />
                                </button>
@@ -801,23 +801,23 @@ const WorkflowCanvas = () => {
                                  max={Math.max(0, traces.length - 1)} 
                                  value={currentTraceIndex}
                                  onChange={(e) => setCurrentTraceIndex(parseInt(e.target.value))}
-                                 className="w-full h-1 bg-zinc-900/50 rounded-full appearance-none cursor-pointer accent-brand-primary"
+                                 className="w-full h-1 bg-zinc-900 rounded-full appearance-none cursor-pointer accent-brand-primary"
                                />
                              </div>
                            </div>
 
                            <div className="space-y-4 flex-1 flex flex-col min-h-0 overflow-hidden">
-                             <div className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 ml-1 shrink-0">Neural Frame Details</div>
-                             <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-8 space-y-8 flex-1 flex flex-col min-h-0">
+                             <div className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 ml-1 shrink-0">Neural Frame Details</div>
+                             <div className="bg-zinc-900 border border-zinc-800/50 rounded-2xl p-8 space-y-8 flex-1 flex flex-col min-h-0">
                                <div className="shrink-0">
-                                 <div className="text-[9px] font-black uppercase text-zinc-600 tracking-widest mb-1.5">Step Designation</div>
+                                 <div className="text-[9px] font-black uppercase text-zinc-300 tracking-widest mb-1.5">Step Designation</div>
                                  <div className="text-xl font-bold text-white tracking-tight italic">{traces[currentTraceIndex].step_name}</div>
                                </div>
                                <div className="grid grid-cols-1 gap-6 flex-1 min-h-0 overflow-hidden">
                                  <div className="flex flex-col min-h-0 overflow-hidden">
                                    <div className="flex items-center gap-2 mb-2">
                                       <div className="w-1 h-1 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]"></div>
-                                      <div className="text-[9px] font-black uppercase text-zinc-600 tracking-widest">Inbound Payload</div>
+                                      <div className="text-[9px] font-black uppercase text-zinc-300 tracking-widest">Inbound Payload</div>
                                    </div>
                                    <pre className="text-[11px] bg-black/40 p-4 rounded-xl text-emerald-400/80 overflow-auto border border-zinc-800/50 font-mono flex-1 custom-scrollbar">
                                      {traces[currentTraceIndex].input_data ? 
@@ -829,7 +829,7 @@ const WorkflowCanvas = () => {
                                  <div className="flex flex-col min-h-0 overflow-hidden">
                                    <div className="flex items-center gap-2 mb-2">
                                       <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 shadow-[0_0_10px_#d97706]"></div>
-                                      <div className="text-[9px] font-black uppercase text-zinc-600 tracking-widest">Outbound Result</div>
+                                      <div className="text-[9px] font-black uppercase text-zinc-300 tracking-widest">Outbound Result</div>
                                    </div>
                                    <pre className="text-[11px] bg-black/40 p-4 rounded-xl text-indigo-400/80 overflow-auto border border-zinc-800/50 font-mono flex-1 custom-scrollbar">
                                      {traces[currentTraceIndex].output_data ? 
@@ -840,8 +840,8 @@ const WorkflowCanvas = () => {
                                  </div>
                                </div>
                                <div className="flex items-center justify-between pt-6 border-t border-zinc-800/50 shrink-0">
-                                 <div className="text-[9px] font-black uppercase text-zinc-600 tracking-widest">Temporal Duration</div>
-                                 <div className="text-xs font-black text-white font-mono bg-zinc-900/50 px-3 py-1.5 rounded-lg border border-zinc-800/50">
+                                 <div className="text-[9px] font-black uppercase text-zinc-300 tracking-widest">Temporal Duration</div>
+                                 <div className="text-xs font-black text-white font-mono bg-zinc-900 px-3 py-1.5 rounded-lg border border-zinc-800/50">
                                    {((new Date(traces[currentTraceIndex].end_time) - new Date(traces[currentTraceIndex].start_time)) / 1000).toFixed(3)}s
                                  </div>
                                </div>
@@ -850,10 +850,10 @@ const WorkflowCanvas = () => {
                          </div>
                        ) : (
                          <div className="flex-1 flex flex-col items-center justify-center py-24 text-center space-y-6 opacity-30">
-                           <div className="w-20 h-20 bg-zinc-900/50 border border-zinc-800/50 rounded-full flex items-center justify-center">
+                           <div className="w-20 h-20 bg-zinc-900 border border-zinc-800/50 rounded-full flex items-center justify-center">
                               <Activity size={32} className="text-zinc-700 animate-pulse" />
                            </div>
-                           <div className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 max-w-xs leading-relaxed">No telemetry data recorded for this execution cycle.</div>
+                           <div className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-300 max-w-xs leading-relaxed">No telemetry data recorded for this execution cycle.</div>
                          </div>
                        )}
                      </div>

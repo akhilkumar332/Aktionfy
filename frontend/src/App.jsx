@@ -21,6 +21,7 @@ import Workers from './pages/Workers';
 import DashboardLayout from './components/DashboardLayout';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import DocumentationLayout from './components/DocumentationLayout';
 import { AnimatePresence, motion } from 'framer-motion';
 
 import { 
@@ -36,15 +37,13 @@ import {
 
 // Premium Page Wrapper for transitions
 const PageWrapper = ({ children }) => {
-  const location = useLocation();
   return (
     <motion.div
-      key={location.pathname}
       initial={{ opacity: 0, y: 5 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -5 }}
-      transition={{ duration: 0.2, ease: 'easeOut' }}
-      className="w-full h-full flex flex-col"
+      transition={{ duration: 0.15, ease: 'easeOut' }}
+      className="flex-1 w-full flex flex-col min-h-0 bg-zinc-950"
     >
       {children}
     </motion.div>
@@ -52,12 +51,15 @@ const PageWrapper = ({ children }) => {
 };
 
 const PublicLayout = () => {
+  const location = useLocation();
   return (
-    <div className="flex flex-col min-h-screen bg-zinc-950">
+    <div className="flex flex-col min-h-screen bg-zinc-950 text-zinc-100">
       <Navbar />
-      <main className="flex-1 flex flex-col pt-20">
+      <main className="flex-1 flex flex-col pt-16">
         <AnimatePresence mode="wait">
-          <Outlet />
+          <PageWrapper key={location.pathname}>
+            <Outlet />
+          </PageWrapper>
         </AnimatePresence>
       </main>
       <Footer />
@@ -65,14 +67,17 @@ const PublicLayout = () => {
   );
 };
 
-const ProtectedLayout = ({ roles }) => {
+const ProtectedRoute = ({ roles }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-white">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary"></div>
+      <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-white font-sans">
+        <div className="flex flex-col items-center gap-4">
+           <div className="w-10 h-10 border-2 border-brand-primary/20 border-t-brand-primary rounded-full animate-spin"></div>
+           <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 animate-pulse">Establishing Connection...</span>
+        </div>
       </div>
     );
   }
@@ -88,7 +93,9 @@ const ProtectedLayout = ({ roles }) => {
   return (
     <DashboardLayout>
       <AnimatePresence mode="wait">
-        <Outlet />
+        <PageWrapper key={location.pathname}>
+          <Outlet />
+        </PageWrapper>
       </AnimatePresence>
     </DashboardLayout>
   );
@@ -97,47 +104,43 @@ const ProtectedLayout = ({ roles }) => {
 const AppRoutes = () => {
   return (
     <Routes>
-      {/* Public Routes */}
+      {/* 1. Public Routes Group */}
       <Route element={<PublicLayout />}>
-        <Route path="/" element={<PageWrapper><Landing /></PageWrapper>} />
-        <Route path="/login" element={<PageWrapper><Login /></PageWrapper>} />
-        <Route path="/signup" element={<PageWrapper><Signup /></PageWrapper>} />
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
         
-        {/* Documentation Routes */}
-        <Route path="/docs/overview" element={<PageWrapper><Overview /></PageWrapper>} />
-        <Route path="/docs/quickstart" element={<PageWrapper><QuickStart /></PageWrapper>} />
-        <Route path="/docs/installation" element={<PageWrapper><InstallationDocs /></PageWrapper>} />
-        <Route path="/docs/concepts" element={<PageWrapper><CoreConcepts /></PageWrapper>} />
-        <Route path="/docs/api-reference" element={<PageWrapper><ApiReference /></PageWrapper>} />
-        <Route path="/docs/architecture" element={<PageWrapper><WorkerArchitecture /></PageWrapper>} />
-        <Route path="/docs/protocol-spec" element={<PageWrapper><ProtocolSpecDoc /></PageWrapper>} />
-        <Route path="/docs/security" element={<PageWrapper><SecurityDocs /></PageWrapper>} />
+        {/* Documentation Nested Routes (Inside PublicLayout) */}
+        <Route path="/docs" element={<DocumentationLayout />}>
+          <Route path="overview" element={<Overview />} />
+          <Route path="quickstart" element={<QuickStart />} />
+          <Route path="installation" element={<InstallationDocs />} />
+          <Route path="concepts" element={<CoreConcepts />} />
+          <Route path="api-reference" element={<ApiReference />} />
+          <Route path="architecture" element={<WorkerArchitecture />} />
+          <Route path="protocol-spec" element={<ProtocolSpecDoc />} />
+          <Route path="security" element={<SecurityDocs />} />
+        </Route>
       </Route>
 
-      {/* User Protected Routes */}
-      <Route element={<ProtectedLayout roles={['user', 'staff', 'admin']} />}>
-        <Route path="/dashboard" element={<PageWrapper><Dashboard /></PageWrapper>} />
-        <Route path="/tasks" element={<PageWrapper><Tasks /></PageWrapper>} />
-        <Route path="/tasks/:id/history" element={<PageWrapper><TaskHistory /></PageWrapper>} />
-        <Route path="/vault" element={<PageWrapper><Vault /></PageWrapper>} />
-        <Route path="/webhooks" element={<PageWrapper><Webhooks /></PageWrapper>} />
-        <Route path="/workspaces" element={<PageWrapper><Workspaces /></PageWrapper>} />
-        <Route path="/templates" element={<PageWrapper><Templates /></PageWrapper>} />
-        <Route path="/canvas" element={<PageWrapper><WorkflowCanvas /></PageWrapper>} />
-      </Route>
-      
-      {/* Staff/Admin Routes */}
-      <Route element={<ProtectedLayout roles={['staff', 'admin']} />}>
-        <Route path="/monitor" element={<PageWrapper><Monitor /></PageWrapper>} />
-      </Route>
-      
-      {/* Admin Only Routes */}
-      <Route element={<ProtectedLayout roles={['admin']} />}>
-        <Route path="/admin/users" element={<PageWrapper><AdminUsers /></PageWrapper>} />
-        <Route path="/admin/seo" element={<PageWrapper><AdminSEO /></PageWrapper>} />
-        <Route path="/admin/settings" element={<PageWrapper><AdminSettings /></PageWrapper>} />
-        <Route path="/admin/insights" element={<PageWrapper><Insights /></PageWrapper>} />
-        <Route path="/admin/workers" element={<PageWrapper><Workers /></PageWrapper>} />
+      {/* 2. Universal Protected Layout Group (Stable Sidebar) */}
+      <Route element={<ProtectedRoute roles={['user', 'staff', 'admin']} />}>
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/tasks" element={<Tasks />} />
+        <Route path="/tasks/:id/history" element={<TaskHistory />} />
+        <Route path="/vault" element={<Vault />} />
+        <Route path="/webhooks" element={<Webhooks />} />
+        <Route path="/workspaces" element={<Workspaces />} />
+        <Route path="/templates" element={<Templates />} />
+        <Route path="/canvas" element={<WorkflowCanvas />} />
+        
+        {/* Nested Staff/Admin Access within the same Layout */}
+        <Route path="/monitor" element={<Monitor />} />
+        <Route path="/admin/users" element={<AdminUsers />} />
+        <Route path="/admin/seo" element={<AdminSEO />} />
+        <Route path="/admin/settings" element={<AdminSettings />} />
+        <Route path="/admin/insights" element={<Insights />} />
+        <Route path="/admin/workers" element={<Workers />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

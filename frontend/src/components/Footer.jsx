@@ -52,7 +52,7 @@ const Footer = () => {
                </div>
                <div className="flex gap-2">
                   {[Globe, Shield, Mail].map((Icon, i) => (
-                    <a key={i} href="#" className="p-2 bg-zinc-900 border border-zinc-800 rounded-lg hover:border-zinc-700 transition-all text-zinc-500 hover:text-white">
+                    <a key={i} href="#" className="p-2 bg-zinc-900 border border-zinc-800 rounded-lg hover:border-zinc-700 transition-all text-zinc-400 hover:text-white">
                       <Icon size={14} />
                     </a>
                   ))}
@@ -66,14 +66,14 @@ const Footer = () => {
             <p className="text-[10px] font-bold uppercase tracking-widest opacity-50">
               &copy; {new Date().getFullYear()} Aktionfy Labs
             </p>
-            <div className="hidden md:flex items-center gap-2 text-zinc-600 text-[9px] font-bold uppercase tracking-widest">
+            <div className="hidden md:flex items-center gap-2 text-zinc-300 text-[9px] font-bold uppercase tracking-widest">
                <Zap size={10} className="text-brand-primary" /> Multi-Region Deployment Active
             </div>
           </div>
           
           <div className="flex gap-8">
             {['Privacy', 'Terms', 'Legal'].map((link) => (
-              <a key={link} href="#" className="text-zinc-600 hover:text-zinc-400 text-[10px] font-bold uppercase tracking-widest transition-colors">
+              <a key={link} href="#" className="text-zinc-300 hover:text-zinc-400 text-[10px] font-bold uppercase tracking-widest transition-colors">
                 {link}
               </a>
             ))}

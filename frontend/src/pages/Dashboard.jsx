@@ -135,12 +135,12 @@ const Dashboard = () => {
       <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white tracking-tight">Command Hub</h1>
-          <p className="text-zinc-500 text-sm font-medium mt-1">Global orchestration overview and system health.</p>
+          <p className="text-zinc-400 text-sm font-medium mt-1">Global orchestration overview and system health.</p>
         </div>
         
         <div className="flex items-center gap-4 bg-zinc-900 border border-zinc-800 px-4 py-2.5 rounded-lg shadow-sm">
            <div className="flex flex-col">
-              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-none">Cluster Status</span>
+              <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-none">Cluster Status</span>
               <span className="text-xs font-bold text-emerald-500 flex items-center gap-1.5 mt-1">
                  <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse"></div>
                  Nominal
@@ -148,7 +148,7 @@ const Dashboard = () => {
            </div>
            <div className="h-6 w-px bg-zinc-800 mx-2"></div>
            <div className="flex flex-col">
-              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-none">Latency</span>
+              <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-none">Latency</span>
               <span className="text-xs font-bold text-zinc-200 mt-1 tabular-nums font-mono">14ms</span>
            </div>
         </div>
@@ -176,7 +176,7 @@ const Dashboard = () => {
                       </div>
                       <div>
                         <h4 className="text-white font-bold text-base">{approval.task_name}</h4>
-                        <p className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest mt-0.5">AUTH_REQ // {approval.execution_id?.slice(0, 13)}</p>
+                        <p className="text-[10px] font-mono text-zinc-300 uppercase tracking-widest mt-0.5">AUTH_REQ // {approval.execution_id?.slice(0, 13)}</p>
                       </div>
                    </div>
                    <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -194,16 +194,16 @@ const Dashboard = () => {
         {/* Stream Metrics */}
         <Link to="/tasks" className="pro-card p-8 group hover:bg-zinc-800/40 transition-all border-zinc-800/50">
            <div className="flex items-center justify-between mb-8">
-              <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-500 group-hover:text-indigo-400 transition-colors shadow-inner">
+              <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-400 group-hover:text-indigo-400 transition-colors shadow-inner">
                  <Layers size={20} />
               </div>
               <ArrowUpRight size={18} className="text-zinc-700 group-hover:text-zinc-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
            </div>
            <div className="space-y-1">
               <p className="text-4xl font-bold text-white tabular-nums tracking-tighter">{taskCount}</p>
-              <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Active Neural Streams</p>
+              <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Active Neural Streams</p>
            </div>
-           <p className="text-xs text-zinc-500 mt-6 leading-relaxed opacity-80">Persistent orchestration threads executing across the cluster.</p>
+           <p className="text-xs text-zinc-400 mt-6 leading-relaxed opacity-80">Persistent orchestration threads executing across the cluster.</p>
         </Link>
 
         {/* Tier Status */}
@@ -212,16 +212,16 @@ const Dashboard = () => {
               <Crown size={100} />
            </div>
            <div className="flex items-center justify-between mb-8 relative z-10">
-              <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-500 shadow-inner">
+              <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-400 shadow-inner">
                  <Crown size={20} className="text-amber-500/50" />
               </div>
-              <span className={`pro-badge ${user?.tier === 'pro' ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' : 'bg-zinc-800 border-zinc-700 text-zinc-500'}`}>
+              <span className={`pro-badge ${user?.tier === 'pro' ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' : 'bg-zinc-800 border-zinc-700 text-zinc-400'}`}>
                  {user?.tier}
               </span>
            </div>
            <div className="space-y-1 relative z-10">
               <p className="text-3xl font-bold text-white uppercase tracking-tight">{user?.tier} Node</p>
-              <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Access Privilege Level</p>
+              <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Access Privilege Level</p>
            </div>
            {user?.tier === 'free' && (
              <button onClick={handleUpgrade} className="pro-button-primary w-full mt-8 !bg-zinc-100 !text-black hover:!bg-zinc-100 text-[11px] uppercase tracking-[0.2em] font-black">Elevate Tier</button>
@@ -231,18 +231,18 @@ const Dashboard = () => {
         {/* System Load */}
         <div className="pro-card p-8 group">
            <div className="flex items-center justify-between mb-8">
-              <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-500 shadow-inner">
+              <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-400 shadow-inner">
                  <Zap size={20} className="text-indigo-400/50" />
               </div>
               <div className="flex items-center gap-1.5 px-3 py-1 bg-zinc-950 border border-zinc-800 rounded-md">
                  <div className="w-1 h-1 rounded-full bg-indigo-600"></div>
-                 <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-tighter">Peak_Cap</span>
+                 <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter">Peak_Cap</span>
               </div>
            </div>
            <div className="space-y-4">
               <div>
                  <p className="text-2xl font-bold text-white tabular-nums tracking-tighter">99.9%</p>
-                 <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-none mt-1">Infrastructure Uptime</p>
+                 <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-none mt-1">Infrastructure Uptime</p>
               </div>
               <div className="h-1 w-full bg-zinc-900 rounded-full overflow-hidden border border-zinc-800/50">
                  <motion.div initial={{ width: 0 }} animate={{ width: '85%' }} className="h-full bg-indigo-600" />
@@ -254,12 +254,12 @@ const Dashboard = () => {
         <div className="pro-card p-8 md:col-span-2 lg:col-span-3 space-y-8 relative overflow-hidden">
            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
-                 <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-500 shadow-inner">
+                 <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-400 shadow-inner">
                     <Key size={20} />
                  </div>
                  <div>
                     <h3 className="text-lg font-bold text-white tracking-tight">Neural Access Key</h3>
-                    <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mt-0.5">Private Protocol Token</p>
+                    <p className="text-[10px] font-bold text-zinc-300 uppercase tracking-widest mt-0.5">Private Protocol Token</p>
                  </div>
               </div>
               <button 
@@ -274,7 +274,7 @@ const Dashboard = () => {
            <div className="flex flex-col sm:flex-row gap-3">
               <div className="flex-1 bg-zinc-950 border border-zinc-800 rounded-lg p-5 flex items-center justify-between shadow-inner group/key">
                  <code className="text-sm font-mono text-emerald-500 tracking-[0.1em] opacity-80 truncate select-all">{user?.api_key}</code>
-                 <button onClick={handleCopy} className="ml-4 p-2.5 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-500 hover:text-white transition-all shadow-xl">
+                 <button onClick={handleCopy} className="ml-4 p-2.5 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-400 hover:text-white transition-all shadow-xl">
                    {copied ? <Check size={16} className="text-emerald-500" /> : <Copy size={16} />}
                  </button>
               </div>
@@ -282,7 +282,7 @@ const Dashboard = () => {
 
            <div className="flex items-center gap-3 bg-red-500/[0.02] border border-red-500/10 px-5 py-3 rounded-lg w-fit">
               <ShieldCheck size={14} className="text-red-900" />
-              <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest italic">Security Notice: Key rotation will invalidate all active client integrations.</span>
+              <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-widest italic">Security Notice: Key rotation will invalidate all active client integrations.</span>
            </div>
         </div>
       </div>
@@ -297,15 +297,15 @@ const Dashboard = () => {
          ].map((nav) => (
            <Link key={nav.sub} to={nav.path} className="pro-card p-5 group hover:bg-zinc-900/80 transition-all flex items-center justify-between border-zinc-800/30">
               <div className="flex items-center gap-4">
-                 <div className="w-10 h-10 rounded-lg bg-zinc-950 border border-zinc-800 flex items-center justify-center text-zinc-600 group-hover:text-indigo-400 transition-colors">
+                 <div className="w-10 h-10 rounded-lg bg-zinc-950 border border-zinc-800 flex items-center justify-center text-zinc-300 group-hover:text-indigo-400 transition-colors">
                     <nav.icon size={18} />
                  </div>
                  <div className="hidden sm:block">
-                    <span className="block text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-0.5">{nav.label}</span>
+                    <span className="block text-[8px] font-bold text-zinc-300 uppercase tracking-widest mb-0.5">{nav.label}</span>
                     <span className="block text-sm font-bold text-zinc-200 tracking-tight">{nav.sub}</span>
                  </div>
               </div>
-              <ArrowUpRight size={16} className="text-zinc-800 group-hover:text-zinc-500 transition-colors" />
+              <ArrowUpRight size={16} className="text-zinc-800 group-hover:text-zinc-400 transition-colors" />
            </Link>
          ))}
       </section>

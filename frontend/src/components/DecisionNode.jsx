@@ -32,7 +32,7 @@ const DecisionNode = ({ data, selected }) => {
             task.status === 'active' ? 'bg-emerald-500/20 text-emerald-400' : 
             task.status === 'processing' ? (isSwarm ? 'bg-purple-500/20 text-purple-400 animate-pulse' : 'bg-indigo-500/20 text-indigo-400 animate-pulse') :
             task.status === 'halted' ? 'bg-rose-500/20 text-rose-400' :
-            'bg-slate-500/20 text-slate-400'
+            'bg-zinc-500/20 text-zinc-400'
           }`}>
             {task.status}
           </div>

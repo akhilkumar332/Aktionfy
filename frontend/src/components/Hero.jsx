@@ -59,7 +59,7 @@ const Hero = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5, duration: 1.5 }}
-            className="mb-16 text-xl md:text-3xl text-zinc-500 font-bold leading-relaxed max-w-4xl text-balance tracking-tight"
+            className="mb-16 text-xl md:text-3xl text-zinc-400 font-bold leading-relaxed max-w-4xl text-balance tracking-tight"
           >
             A world-class state machine for Model Context Protocol. <br className="hidden md:block" />
             <span className="text-zinc-300">Durable scheduling. High-fidelity observability. Autonomous swarm logic.</span>
@@ -80,7 +80,7 @@ const Hero = () => {
             </Link>
             <a 
               href="#installation" 
-              className="px-14 py-6 text-slate-400 font-black uppercase tracking-[0.2em] text-xs bg-zinc-900/50 border border-zinc-800 rounded-[2rem] hover:bg-zinc-100/10 hover:text-white transition-all flex items-center gap-4 backdrop-blur-xl active:scale-95 shadow-2xl"
+              className="px-14 py-6 text-zinc-400 font-black uppercase tracking-[0.2em] text-xs bg-zinc-900 border border-zinc-800 rounded-[2rem] hover:bg-zinc-100/10 hover:text-white transition-all flex items-center gap-4 backdrop-blur-xl active:scale-95 shadow-2xl"
             >
               <Terminal size={18} className="text-brand-primary" /> Integration Guide
             </a>
@@ -102,15 +102,15 @@ const Hero = () => {
       <div className="absolute bottom-12 left-0 right-0 z-30">
         <div className="container mx-auto px-6">
           <div className="flex flex-wrap justify-center items-center gap-12 md:gap-24">
-             <div className="flex items-center gap-4 text-[10px] font-black tracking-[0.3em] text-zinc-600 uppercase group hover:text-white transition-colors">
+             <div className="flex items-center gap-4 text-[10px] font-black tracking-[0.3em] text-zinc-300 uppercase group hover:text-white transition-colors">
                <ShieldCheck size={16} className="text-brand-primary group-hover:animate-pulse" /> Distributed Consensus
              </div>
-             <div className="h-4 w-px bg-zinc-900/50 hidden md:block"></div>
-             <div className="flex items-center gap-4 text-[10px] font-black tracking-[0.3em] text-zinc-600 uppercase group hover:text-white transition-colors">
+             <div className="h-4 w-px bg-zinc-900 hidden md:block"></div>
+             <div className="flex items-center gap-4 text-[10px] font-black tracking-[0.3em] text-zinc-300 uppercase group hover:text-white transition-colors">
                 <Command size={16} className="text-brand-primary group-hover:rotate-90 transition-transform" /> Model Agnostic
              </div>
-             <div className="h-4 w-px bg-zinc-900/50 hidden md:block"></div>
-             <div className="flex items-center gap-4 text-[10px] font-black tracking-[0.3em] text-zinc-600 uppercase group hover:text-white transition-colors">
+             <div className="h-4 w-px bg-zinc-900 hidden md:block"></div>
+             <div className="flex items-center gap-4 text-[10px] font-black tracking-[0.3em] text-zinc-300 uppercase group hover:text-white transition-colors">
                <Activity size={16} className="text-brand-primary group-hover:scale-125 transition-transform" /> Real-time Telemetry
              </div>
           </div>

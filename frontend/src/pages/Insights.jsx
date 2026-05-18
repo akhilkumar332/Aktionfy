@@ -61,7 +61,7 @@ const Insights = () => {
              <div className="w-8 h-8 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-center justify-center text-blue-400">
                 <BarChart3 size={16} />
              </div>
-             <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Analytics Sector</span>
+             <span className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.3em]">Analytics Sector</span>
           </motion.div>
           <motion.h1 
             initial={{ opacity: 0, y: 10 }}
@@ -70,20 +70,20 @@ const Insights = () => {
           >
             System Insights.
           </motion.h1>
-          <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.2em] mt-2 ml-1">Global Performance Telemetry & Trends</p>
+          <p className="text-zinc-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-2 ml-1">Global Performance Telemetry & Trends</p>
         </div>
         
         <div className="flex items-center gap-4">
            <button 
              onClick={fetchInsights}
-             className="bg-zinc-100/5 border border-zinc-800 p-5 rounded-[2rem] text-slate-400 hover:text-white transition-all active:scale-95"
+             className="bg-zinc-100/5 border border-zinc-800 p-5 rounded-[2rem] text-zinc-400 hover:text-white transition-all active:scale-95"
            >
              <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
            </button>
            <div className="flex items-center gap-6 bg-zinc-100/[0.02] border border-zinc-800/50 px-8 py-5 rounded-[2rem] backdrop-blur-xl relative overflow-hidden group">
               <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
               <div className="flex flex-col">
-                 <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Growth Index</span>
+                 <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Growth Index</span>
                  <span className="text-xs font-black text-blue-400 flex items-center gap-2">
                     <Activity size={10} className="animate-pulse" />
                     POSITIVE_SIGMA
@@ -105,7 +105,7 @@ const Insights = () => {
                <div className="w-16 h-16 border-2 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
                <div className="absolute inset-0 bg-blue-500 blur-2xl opacity-10 animate-pulse"></div>
             </div>
-            <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] animate-pulse">Synthesizing Data Streams...</p>
+            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.4em] animate-pulse">Synthesizing Data Streams...</p>
           </motion.div>
         ) : (
           <motion.div 
@@ -152,12 +152,12 @@ const Insights = () => {
                 
                 <div className="flex items-center justify-between mb-12 relative z-10">
                   <div className="flex items-center gap-4">
-                    <div className="p-3 bg-zinc-100/5 rounded-xl border border-zinc-800/50 text-slate-400">
+                    <div className="p-3 bg-zinc-100/5 rounded-xl border border-zinc-800/50 text-zinc-400">
                       <BarChart3 size={20} />
                     </div>
                     <div>
                       <h2 className="text-xl font-black text-white uppercase tracking-tighter">Neural Throughput</h2>
-                      <p className="text-[9px] text-slate-600 font-bold uppercase tracking-widest mt-0.5">24-Hour Execution Frequency</p>
+                      <p className="text-[9px] text-zinc-300 font-bold uppercase tracking-widest mt-0.5">24-Hour Execution Frequency</p>
                     </div>
                   </div>
                 </div>
@@ -215,12 +215,12 @@ const Insights = () => {
                 
                 <div className="flex items-center justify-between mb-12 relative z-10">
                   <div className="flex items-center gap-4">
-                    <div className="p-3 bg-zinc-100/5 rounded-xl border border-zinc-800/50 text-slate-400">
+                    <div className="p-3 bg-zinc-100/5 rounded-xl border border-zinc-800/50 text-zinc-400">
                       <ShieldCheck size={20} />
                     </div>
                     <div>
                       <h2 className="text-xl font-black text-white uppercase tracking-tighter">Protocol Integrity</h2>
-                      <p className="text-[9px] text-slate-600 font-bold uppercase tracking-widest mt-0.5">Execution Result Distribution</p>
+                      <p className="text-[9px] text-zinc-300 font-bold uppercase tracking-widest mt-0.5">Execution Result Distribution</p>
                     </div>
                   </div>
                 </div>
@@ -262,7 +262,7 @@ const Insights = () => {
                   </div>
                   <div>
                     <h2 className="text-3xl font-black text-white uppercase tracking-tighter mb-1">Infrastructure Health</h2>
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2">
+                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] flex items-center gap-2">
                        <Globe size={12} className="text-brand-primary" /> Active Multi-Region Cluster Monitoring
                     </p>
                   </div>
@@ -297,7 +297,7 @@ const MetricCard = ({ icon: Icon, label, value, trend, color, bg }) => (
       </div>
     </div>
     <div className="relative z-10">
-      <p className="text-slate-500 font-black uppercase text-[10px] tracking-[0.3em] mb-2 ml-1">{label}</p>
+      <p className="text-zinc-400 font-black uppercase text-[10px] tracking-[0.3em] mb-2 ml-1">{label}</p>
       <p className="text-4xl font-black text-white tracking-tighter tabular-nums">{value}</p>
     </div>
   </motion.div>

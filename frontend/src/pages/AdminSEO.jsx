@@ -57,7 +57,7 @@ const AdminSEO = () => {
              <div className="w-8 h-8 bg-brand-primary/10 border border-brand-primary/20 rounded-lg flex items-center justify-center text-brand-primary">
                 <Globe size={16} />
              </div>
-             <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Identity Broadcast</span>
+             <span className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.3em]">Identity Broadcast</span>
           </motion.div>
           <motion.h1 
             initial={{ opacity: 0, y: 10 }}
@@ -66,7 +66,7 @@ const AdminSEO = () => {
           >
             Neural SEO.
           </motion.h1>
-          <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.2em] mt-2 ml-1">Meta-Data Configuration & Global Search Presence</p>
+          <p className="text-zinc-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-2 ml-1">Meta-Data Configuration & Global Search Presence</p>
         </div>
       </header>
 
@@ -80,7 +80,7 @@ const AdminSEO = () => {
               className="py-40 flex flex-col items-center justify-center gap-6"
             >
               <RefreshCw className="animate-spin text-brand-primary" size={48} />
-              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 animate-pulse">Syncing Broadcast Manifest...</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-400 animate-pulse">Syncing Broadcast Manifest...</p>
             </motion.div>
           ) : (
             <motion.div 
@@ -105,18 +105,18 @@ const AdminSEO = () => {
                 <div className="absolute top-0 right-0 w-64 h-64 bg-brand-primary/5 blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
                 
                 <div className="flex items-center gap-4 mb-12 relative z-10">
-                   <div className="p-3 bg-zinc-100/5 rounded-xl border border-zinc-800/50 text-slate-400">
+                   <div className="p-3 bg-zinc-100/5 rounded-xl border border-zinc-800/50 text-zinc-400">
                       <Layout size={20} />
                    </div>
                    <div>
                       <h2 className="text-xl font-black text-white uppercase tracking-tighter">Manifest Logic</h2>
-                      <p className="text-[9px] text-slate-600 font-bold uppercase tracking-widest mt-0.5">Neural Metadata Calibration</p>
+                      <p className="text-[9px] text-zinc-300 font-bold uppercase tracking-widest mt-0.5">Neural Metadata Calibration</p>
                    </div>
                 </div>
 
                 <div className="space-y-10 relative z-10">
                   <div className="space-y-4">
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] ml-2">Neural Title (Meta Title)</label>
+                    <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.3em] ml-2">Neural Title (Meta Title)</label>
                     <input 
                       type="text"
                       value={data.title}
@@ -127,7 +127,7 @@ const AdminSEO = () => {
                   </div>
 
                   <div className="space-y-4">
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] ml-2">Broadcast Description (Meta Description)</label>
+                    <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.3em] ml-2">Broadcast Description (Meta Description)</label>
                     <textarea 
                       value={data.description}
                       onChange={(e) => setData({ ...data, description: e.target.value })}
@@ -138,7 +138,7 @@ const AdminSEO = () => {
                   </div>
 
                   <div className="space-y-4">
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] ml-2">Signal Keywords (Separated by comma)</label>
+                    <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.3em] ml-2">Signal Keywords (Separated by comma)</label>
                     <input 
                       type="text"
                       value={data.keywords}
@@ -160,12 +160,12 @@ const AdminSEO = () => {
               </form>
 
               <div className="bg-zinc-100/[0.01] border border-dashed border-zinc-800 rounded-[3rem] p-10 flex flex-col items-center justify-center text-center gap-6">
-                 <div className="w-16 h-16 bg-zinc-100/5 rounded-full flex items-center justify-center border border-zinc-800/50 text-slate-700">
+                 <div className="w-16 h-16 bg-zinc-100/5 rounded-full flex items-center justify-center border border-zinc-800/50 text-zinc-700">
                     <Search size={32} />
                  </div>
                  <div>
-                    <h3 className="text-lg font-black text-slate-600 uppercase tracking-widest">Signal Preview</h3>
-                    <p className="text-[10px] text-slate-700 font-bold uppercase tracking-widest mt-2 max-w-sm">Changes will propagate to global search indexes within 24-48 neural cycles.</p>
+                    <h3 className="text-lg font-black text-zinc-300 uppercase tracking-widest">Signal Preview</h3>
+                    <p className="text-[10px] text-zinc-700 font-bold uppercase tracking-widest mt-2 max-w-sm">Changes will propagate to global search indexes within 24-48 neural cycles.</p>
                  </div>
               </div>
             </motion.div>

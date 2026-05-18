@@ -59,13 +59,13 @@ const Tasks = () => {
       <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Neural Streams</h1>
-          <p className="text-zinc-500 text-xs font-medium mt-1">Distributed task scheduling and autonomous dependency hub.</p>
+          <p className="text-zinc-400 text-xs font-medium mt-1">Distributed task scheduling and autonomous dependency hub.</p>
         </div>
         
         <div className="flex items-center gap-3">
            <button 
              onClick={fetchTasks}
-             className="p-2 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-500 hover:text-white transition-all"
+             className="p-2 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-400 hover:text-white transition-all"
              aria-label="Refresh streams"
            >
              <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
@@ -107,7 +107,7 @@ const Tasks = () => {
                   <td colSpan="5" className="px-6 py-32">
                      <div className="flex flex-col items-center gap-3">
                         <RefreshCw className="w-6 h-6 text-zinc-700 animate-spin" />
-                        <span className="text-[11px] font-semibold text-zinc-600 uppercase tracking-widest">Querying Registry...</span>
+                        <span className="text-[11px] font-semibold text-zinc-300 uppercase tracking-widest">Querying Registry...</span>
                      </div>
                   </td>
                 </tr>
@@ -115,8 +115,8 @@ const Tasks = () => {
                 <tr>
                   <td colSpan="5" className="px-6 py-32 text-center">
                      <div className="flex flex-col items-center gap-4 opacity-30">
-                        <Activity size={32} className="text-zinc-600" />
-                        <span className="text-xs font-medium text-zinc-500 italic">No active orchestration streams identified. Initialize your first node to begin.</span>
+                        <Activity size={32} className="text-zinc-300" />
+                        <span className="text-xs font-medium text-zinc-400 italic">No active orchestration streams identified. Initialize your first node to begin.</span>
                      </div>
                   </td>
                 </tr>
@@ -125,17 +125,17 @@ const Tasks = () => {
                   <tr key={task.id} className="pro-table-row group">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-4">
-                        <div className="w-8 h-8 rounded-md bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-500 group-hover:border-brand-primary/50 transition-all">
+                        <div className="w-8 h-8 rounded-md bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-400 group-hover:border-brand-primary/50 transition-all">
                            <Cpu size={16} />
                         </div>
                         <div className="flex flex-col min-w-0">
                           <div className="flex items-center gap-2">
                              <span className="text-sm font-semibold text-zinc-100 truncate">{task.name}</span>
                              {task.version_count > 1 && (
-                               <span className="text-[9px] font-bold text-zinc-600">v{task.version_count}</span>
+                               <span className="text-[9px] font-bold text-zinc-300">v{task.version_count}</span>
                              )}
                           </div>
-                          <div className="flex items-center gap-2 text-[10px] text-zinc-500 font-mono tracking-tighter opacity-60">
+                          <div className="flex items-center gap-2 text-[10px] text-zinc-400 font-mono tracking-tighter opacity-60">
                              <Command size={10} /> {task.id.substring(0, 13)}
                              {task.depends_on_task_id && <LinkIcon size={10} className="ml-1 text-brand-primary/50" />}
                           </div>
@@ -157,7 +157,7 @@ const Tasks = () => {
                     <td className="px-6 py-4 text-center">
                        <div className="flex flex-col items-center">
                           <span className="text-xs font-semibold text-zinc-300 tabular-nums">{new Date(task.next_run).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                          <span className="text-[9px] text-zinc-600 font-bold uppercase tracking-tighter">{new Date(task.next_run).toLocaleDateString()}</span>
+                          <span className="text-[9px] text-zinc-300 font-bold uppercase tracking-tighter">{new Date(task.next_run).toLocaleDateString()}</span>
                        </div>
                     </td>
                     <td className="px-6 py-4 text-right">

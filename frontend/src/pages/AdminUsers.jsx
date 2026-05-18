@@ -46,12 +46,12 @@ const AdminUsers = () => {
       <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Identity Nexus</h1>
-          <p className="text-zinc-500 text-xs font-medium mt-1">Manage and audit neural actor privileges and access signatures.</p>
+          <p className="text-zinc-400 text-xs font-medium mt-1">Manage and audit neural actor privileges and access signatures.</p>
         </div>
         
         <div className="flex items-center gap-2">
            <div className="relative group">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-indigo-400 transition-colors" />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-300 group-focus-within:text-indigo-400 transition-colors" />
               <input 
                 type="text" 
                 placeholder="Query ID or Email..." 
@@ -62,7 +62,7 @@ const AdminUsers = () => {
            </div>
            <button 
              onClick={() => fetchUsers(search)}
-             className="p-2 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-500 hover:text-white transition-all"
+             className="p-2 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-400 hover:text-white transition-all"
              aria-label="Refresh list"
            >
              <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
@@ -88,7 +88,7 @@ const AdminUsers = () => {
                   <td colSpan="5" className="px-6 py-32">
                      <div className="flex flex-col items-center gap-3">
                         <RefreshCw className="w-6 h-6 text-zinc-700 animate-spin" />
-                        <span className="text-[11px] font-semibold text-zinc-600 uppercase tracking-widest">Synchronizing Buffer...</span>
+                        <span className="text-[11px] font-semibold text-zinc-300 uppercase tracking-widest">Synchronizing Buffer...</span>
                      </div>
                   </td>
                 </tr>
@@ -96,8 +96,8 @@ const AdminUsers = () => {
                 <tr>
                   <td colSpan="5" className="px-6 py-32 text-center">
                      <div className="flex flex-col items-center gap-2 opacity-40">
-                        <UserCircle size={32} className="text-zinc-600" />
-                        <span className="text-xs font-medium text-zinc-500 italic">No matching identities identified.</span>
+                        <UserCircle size={32} className="text-zinc-300" />
+                        <span className="text-xs font-medium text-zinc-400 italic">No matching identities identified.</span>
                      </div>
                   </td>
                 </tr>
@@ -106,12 +106,12 @@ const AdminUsers = () => {
                   <tr key={u.id} className="pro-table-row group">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-md bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-500 group-hover:border-brand-primary/50 transition-all">
+                        <div className="w-8 h-8 rounded-md bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-400 group-hover:border-brand-primary/50 transition-all">
                            <UserCircle size={18} />
                         </div>
                         <div className="flex flex-col min-w-0">
                           <span className="text-sm font-semibold text-zinc-100 truncate">{u.email}</span>
-                          <span className="text-[10px] text-zinc-500 font-mono tracking-tighter uppercase truncate opacity-60 font-bold tracking-widest">{u.id}</span>
+                          <span className="text-[10px] text-zinc-400 font-mono tracking-tighter uppercase truncate opacity-60 font-bold tracking-widest">{u.id}</span>
                         </div>
                       </div>
                     </td>
@@ -135,7 +135,7 @@ const AdminUsers = () => {
                       {u.tier === 'pro' ? (
                         <span className="pro-badge bg-indigo-600/10 border-brand-primary/20 text-indigo-400">Pro Node</span>
                       ) : (
-                        <span className="pro-badge bg-zinc-800 border-zinc-700 text-zinc-500">Lite</span>
+                        <span className="pro-badge bg-zinc-800 border-zinc-700 text-zinc-400">Lite</span>
                       )}
                     </td>
                     <td className="px-6 py-4 text-right">

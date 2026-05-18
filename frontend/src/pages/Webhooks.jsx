@@ -76,12 +76,12 @@ const Webhooks = () => {
       <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Outbound Hooks</h1>
-          <p className="text-zinc-500 text-xs font-medium mt-1">Industrial event-driven synchronization with external neural clients.</p>
+          <p className="text-zinc-400 text-xs font-medium mt-1">Industrial event-driven synchronization with external neural clients.</p>
         </div>
         <div className="flex items-center gap-3">
            <button 
              onClick={fetchData}
-             className="p-2 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-500 hover:text-white transition-all"
+             className="p-2 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-400 hover:text-white transition-all"
              aria-label="Refresh hooks"
            >
              <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
@@ -115,16 +115,16 @@ const Webhooks = () => {
               <div className="flex items-center justify-between mb-8">
                 <div>
                   <h2 className="text-lg font-bold text-white uppercase tracking-tight">Initialize Hook</h2>
-                  <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-0.5">WEBHOOK_LINK_ESTABLISH</p>
+                  <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-0.5">WEBHOOK_LINK_ESTABLISH</p>
                 </div>
-                <button onClick={() => setShowAddForm(false)} className="text-zinc-500 hover:text-white p-2">
+                <button onClick={() => setShowAddForm(false)} className="text-zinc-400 hover:text-white p-2">
                   <X size={20} />
                 </button>
               </div>
 
               <form onSubmit={handleCreate} className="space-y-6">
                 <div className="space-y-2">
-                  <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Neural Endpoint (URL)</label>
+                  <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-1">Neural Endpoint (URL)</label>
                   <input 
                     type="url"
                     value={newWebhook.endpoint_url}
@@ -165,7 +165,7 @@ const Webhooks = () => {
                   <td colSpan="4" className="px-6 py-32">
                      <div className="flex flex-col items-center gap-3">
                         <RefreshCw className="w-6 h-6 text-zinc-700 animate-spin" />
-                        <span className="text-[11px] font-semibold text-zinc-600 uppercase tracking-widest">Querying Integrations...</span>
+                        <span className="text-[11px] font-semibold text-zinc-300 uppercase tracking-widest">Querying Integrations...</span>
                      </div>
                   </td>
                 </tr>
@@ -173,8 +173,8 @@ const Webhooks = () => {
                 <tr>
                   <td colSpan="4" className="px-6 py-32 text-center">
                      <div className="flex flex-col items-center gap-4 opacity-30">
-                        <Webhook size={32} className="text-zinc-600" />
-                        <span className="text-xs font-medium text-zinc-500 italic">No active outbound hooks identified.</span>
+                        <Webhook size={32} className="text-zinc-300" />
+                        <span className="text-xs font-medium text-zinc-400 italic">No active outbound hooks identified.</span>
                      </div>
                   </td>
                 </tr>
@@ -183,12 +183,12 @@ const Webhooks = () => {
                   <tr key={webhook.id} className="pro-table-row group">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-4">
-                        <div className="w-8 h-8 rounded-md bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-500 group-hover:border-brand-primary/50 transition-all">
+                        <div className="w-8 h-8 rounded-md bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-400 group-hover:border-brand-primary/50 transition-all">
                            <Activity size={16} />
                         </div>
                         <div className="flex flex-col min-w-0">
                            <span className="text-sm font-semibold text-zinc-100 truncate font-mono tracking-tight">{webhook.endpoint_url}</span>
-                           <div className="flex items-center gap-2 text-[9px] text-zinc-600 font-mono tracking-tighter uppercase opacity-60">
+                           <div className="flex items-center gap-2 text-[9px] text-zinc-300 font-mono tracking-tighter uppercase opacity-60">
                               <Command size={10} /> {webhook.id.substring(0, 13)}
                            </div>
                         </div>
@@ -200,11 +200,11 @@ const Webhooks = () => {
                            <Zap size={8} className="animate-pulse" /> active
                         </span>
                       ) : (
-                        <span className="pro-badge bg-zinc-800 border-zinc-700 text-zinc-500 w-fit mx-auto">inactive</span>
+                        <span className="pro-badge bg-zinc-800 border-zinc-700 text-zinc-400 w-fit mx-auto">inactive</span>
                       )}
                     </td>
                     <td className="px-6 py-4 text-center">
-                      <span className="text-[11px] text-zinc-500 font-semibold tabular-nums uppercase">{new Date(webhook.created_at).toLocaleDateString()}</span>
+                      <span className="text-[11px] text-zinc-400 font-semibold tabular-nums uppercase">{new Date(webhook.created_at).toLocaleDateString()}</span>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">

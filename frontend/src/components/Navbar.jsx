@@ -110,7 +110,7 @@ const Navbar = () => {
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   {link.name}
-                  <ChevronRight size={18} className="text-zinc-600" />
+                  <ChevronRight size={18} className="text-zinc-300" />
                 </Link>
               ))}
               <div className="h-px bg-zinc-800 my-2"></div>

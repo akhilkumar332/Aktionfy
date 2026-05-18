@@ -72,7 +72,7 @@ const Features = () => {
        description: 'End-to-end identity verification and RBAC. Secure your neural infrastructure with professional-grade access controls.',
        icon: Fingerprint,
        color: 'text-zinc-400',
-       bg: 'bg-zinc-900/50',
+       bg: 'bg-zinc-900',
        border: 'border-zinc-800'
     }
   ];
@@ -93,14 +93,14 @@ const Features = () => {
           transition={{ duration: 0.8 }}
           className="max-w-5xl mx-auto text-center mb-32"
         >
-          <div className="inline-flex items-center gap-3 py-2 px-6 mb-8 text-[10px] font-black tracking-[0.4em] text-brand-primary uppercase bg-zinc-900/50 border border-zinc-800 rounded-full backdrop-blur-xl">
+          <div className="inline-flex items-center gap-3 py-2 px-6 mb-8 text-[10px] font-black tracking-[0.4em] text-brand-primary uppercase bg-zinc-900 border border-zinc-800 rounded-full backdrop-blur-xl">
              Autonomous Capabilities
           </div>
           <h2 className="text-5xl md:text-8xl font-black text-white mb-10 tracking-tighter leading-[0.9]">
             The Backbone of <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-400 to-slate-700">Decentralized Intelligence.</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-zinc-400 to-zinc-700">Decentralized Intelligence.</span>
           </h2>
-          <p className="text-xl md:text-2xl text-zinc-500 font-bold max-w-3xl mx-auto leading-relaxed tracking-tight">
+          <p className="text-xl md:text-2xl text-zinc-400 font-bold max-w-3xl mx-auto leading-relaxed tracking-tight">
             Industrial-grade orchestration engineered for developers who demand absolute reliability from their AI automation layer.
           </p>
         </motion.div>
@@ -116,7 +116,7 @@ const Features = () => {
               className={`group relative p-12 rounded-[3.5rem] border bg-zinc-900/30 backdrop-blur-3xl ${f.border} hover:bg-zinc-800/50 hover:border-zinc-700 transition-all duration-700 overflow-hidden shadow-2xl`}
             >
               {/* Card Glow */}
-              <div className="absolute top-0 right-0 w-32 h-32 bg-zinc-900/50 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-zinc-900 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
               
               <div className="relative z-10">
                 <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center mb-12 ${f.bg} border border-zinc-800/50 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-2xl`}>
@@ -129,7 +129,7 @@ const Features = () => {
               </div>
               
               <div className="mt-12 pt-8 border-t border-zinc-800/50 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
-                 <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Protocol V3.4</span>
+                 <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Protocol V3.4</span>
                  <div className="w-1.5 h-1.5 rounded-full bg-brand-primary"></div>
               </div>
             </motion.div>

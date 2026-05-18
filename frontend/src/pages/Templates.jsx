@@ -119,12 +119,12 @@ const Templates = () => {
             <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <h1 className="text-2xl font-bold text-white tracking-tight">Intelligence Marketplace</h1>
-                  <p className="text-zinc-500 text-xs font-medium mt-1">Industrial blueprints for high-frequency neural orchestration.</p>
+                  <p className="text-zinc-400 text-xs font-medium mt-1">Industrial blueprints for high-frequency neural orchestration.</p>
                 </div>
                 
                 <div className="flex items-center gap-2">
                    <div className="relative group">
-                      <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-brand-primary transition-colors" />
+                      <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-300 group-focus-within:text-brand-primary transition-colors" />
                       <input 
                         type="text" 
                         placeholder="Search Blueprints..." 
@@ -135,7 +135,7 @@ const Templates = () => {
                    </div>
                    <button 
                      onClick={() => fetchTemplates(search)}
-                     className="p-2 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-500 hover:text-white transition-all"
+                     className="p-2 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-400 hover:text-white transition-all"
                    >
                      <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
                    </button>
@@ -145,13 +145,13 @@ const Templates = () => {
             <AnimatePresence mode="wait">
               {loading && templates.length === 0 ? (
                 <div className="py-40 flex flex-col items-center justify-center gap-4 opacity-50">
-                  <RefreshCw className="animate-spin text-zinc-600" size={32} />
-                  <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest animate-pulse">Syncing Marketplace...</p>
+                  <RefreshCw className="animate-spin text-zinc-300" size={32} />
+                  <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest animate-pulse">Syncing Marketplace...</p>
                 </div>
               ) : templates.length === 0 ? (
                 <div className="py-32 flex flex-col items-center justify-center text-center gap-4 pro-card border-dashed bg-zinc-900/10 opacity-50">
                    <Layout size={32} className="text-zinc-700" />
-                   <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest italic">Registry synchronized. No blueprints matching query.</span>
+                   <span className="text-[10px] text-zinc-300 font-bold uppercase tracking-widest italic">Registry synchronized. No blueprints matching query.</span>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -161,7 +161,7 @@ const Templates = () => {
                       className="pro-card p-6 flex flex-col h-full hover:bg-zinc-900/40 transition-all group"
                     >
                       <div className="flex items-start justify-between mb-6">
-                        <div className="w-10 h-10 rounded-lg bg-zinc-950 border border-zinc-800 flex items-center justify-center text-zinc-600 group-hover:border-brand-primary/40 group-hover:text-brand-primary transition-all">
+                        <div className="w-10 h-10 rounded-lg bg-zinc-950 border border-zinc-800 flex items-center justify-center text-zinc-300 group-hover:border-brand-primary/40 group-hover:text-brand-primary transition-all">
                           <Sparkles size={20} />
                         </div>
                         {t.is_premium && (
@@ -172,12 +172,12 @@ const Templates = () => {
                       </div>
 
                       <h3 className="text-base font-bold text-white uppercase tracking-tight mb-2 group-hover:text-brand-primary transition-colors">{t.name}</h3>
-                      <p className="text-xs text-zinc-500 leading-relaxed font-medium mb-8 flex-grow">
+                      <p className="text-xs text-zinc-400 leading-relaxed font-medium mb-8 flex-grow">
                         {t.description || "Baseline neural configuration for autonomous task orchestration."}
                       </p>
 
                       <div className="flex items-center justify-between pt-6 border-t border-zinc-800/50">
-                        <div className="flex items-center gap-2 text-[10px] font-bold text-zinc-600 uppercase tracking-widest">
+                        <div className="flex items-center gap-2 text-[10px] font-bold text-zinc-300 uppercase tracking-widest">
                            <Download size={12} />
                            {t.uses_count || 0} Syncs
                         </div>
