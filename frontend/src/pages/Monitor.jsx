@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 
 import axios from 'axios';
 import { 
@@ -92,32 +92,61 @@ const Monitor = () => {
   const [activeTab, setActiveTab] = useState('stats');
   const [usage, setUsage] = useState(null);
   const [auditLogs, setAuditLogs] = useState([]);
+  const [systemStatus, setSystemStatus] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const isMounted = useRef(true);
   const { notify } = useNotify();
 
-  const fetchData = useCallback(async (isMounted = { current: true }) => {
+  const fetchData = useCallback(async (isUserInitiated = false) => {
+    if (isUserInitiated) setRefreshing(true);
+    
     try {
-      const [usageRes, auditRes] = await Promise.all([
+      const results = await Promise.allSettled([
         axios.get('/api/v1/admin/usage'),
-        axios.get('/api/v1/admin/audit-logs?limit=100')
+        axios.get('/api/v1/admin/audit-logs?limit=100'),
+        axios.get('/api/v1/system/status')
       ]);
+
       if (!isMounted.current) return;
-      if (usageRes.data.success) setUsage(usageRes.data.data);
-      if (auditRes.data.success) setAuditLogs(auditRes.data.data);
+
+      const [usageRes, auditRes, statusRes] = results;
+
+      if (usageRes.status === 'fulfilled' && usageRes.value.data.success) {
+        setUsage(usageRes.value.data.data);
+      } else if (usageRes.status === 'rejected' && isUserInitiated) {
+        notify('ERROR', 'Failed to fetch usage metrics', usageRes.reason.response?.data?.error || usageRes.reason.message);
+      }
+
+      if (auditRes.status === 'fulfilled' && auditRes.value.data.success) {
+        setAuditLogs(auditRes.value.data.data);
+      } else if (auditRes.status === 'rejected' && isUserInitiated) {
+        notify('ERROR', 'Failed to fetch audit logs', auditRes.reason.response?.data?.error || auditRes.reason.message);
+      }
+
+      if (statusRes.status === 'fulfilled' && statusRes.value.data.success) {
+        setSystemStatus(statusRes.value.data.data);
+      } else if (statusRes.status === 'rejected' && isUserInitiated) {
+        notify('ERROR', 'Failed to fetch system status', statusRes.reason.response?.data?.error || statusRes.reason.message);
+      }
+
     } catch (err) {
-      notify('ERROR', 'Failed to fetch monitor data', err.response?.data?.error || err.message);
+      if (isUserInitiated) {
+        notify('ERROR', 'Unexpected error during monitor refresh', err.message);
+      }
+      console.error('Monitor fetch error:', err);
     } finally {
-      if (isMounted.current) setLoading(false);
+      if (isMounted.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   }, [notify]);
 
   useEffect(() => {
-    const isMounted = { current: true };
-    const init = async () => {
-      await fetchData(isMounted);
-    };
-    init();
-    const interval = setInterval(() => fetchData(isMounted), 60000);
+    isMounted.current = true;
+    fetchData();
+    const interval = setInterval(() => fetchData(false), 60000);
     return () => {
       isMounted.current = false;
       clearInterval(interval);
@@ -134,15 +163,18 @@ const Monitor = () => {
         
         <div className="flex items-center gap-2">
            <button 
-             onClick={() => fetchData()}
-             className="p-2 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-400 hover:text-white transition-all"
+             onClick={() => fetchData(true)}
+             disabled={refreshing}
+             className="p-2 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-400 hover:text-white transition-all disabled:opacity-50"
              aria-label="Refresh telemetry"
            >
-             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+             <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
            </button>
            <div className="bg-zinc-900 border border-zinc-800 px-3 py-1.5 rounded-md flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
-              <span className="text-[10px] font-black text-emerald-500/80 uppercase tracking-widest">LIVE_LINK: NOMINAL</span>
+              <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${systemStatus?.bridge_active ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'}`}></div>
+              <span className={`text-[10px] font-black uppercase tracking-widest ${systemStatus?.bridge_active ? 'text-emerald-500/80' : 'text-red-500/80'}`}>
+                LIVE_LINK: {systemStatus?.bridge_active ? 'NOMINAL' : 'INTERRUPTED'}
+              </span>
            </div>
         </div>
       </header>
