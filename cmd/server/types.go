@@ -11,6 +11,7 @@ const (
 	userIDKey   contextKey = "user_id"
 	userRoleKey contextKey = "user_role"
 	userTierKey contextKey = "user_tier"
+	isBridgeKey contextKey = "is_bridge"
 )
 
 type TaskLog struct {

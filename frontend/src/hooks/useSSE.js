@@ -19,7 +19,7 @@ export const useSSE = (onEvent) => {
       // Close existing if any
       if (eventSource) eventSource.close();
 
-      eventSource = new EventSource('/sse', { withCredentials: true });
+      eventSource = new EventSource('/api/v1/events', { withCredentials: true });
 
       eventSource.onmessage = (event) => {
         try {

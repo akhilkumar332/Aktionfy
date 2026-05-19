@@ -182,6 +182,7 @@ func NetHttpAuthMiddleware(next http.Handler, mcpServer *server.MCPServer) http.
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userID := ""
 		userTier := ""
+		isBridge := false
 
 		// 1. Try API Key Header
 		apiKey := r.Header.Get("X-API-Key")
@@ -190,6 +191,7 @@ func NetHttpAuthMiddleware(next http.Handler, mcpServer *server.MCPServer) http.
 			if err == nil {
 				userID = u.ID
 				userTier = u.Tier.String
+				isBridge = true
 			}
 		}
 
@@ -223,6 +225,7 @@ func NetHttpAuthMiddleware(next http.Handler, mcpServer *server.MCPServer) http.
 
 		ctx := context.WithValue(r.Context(), userIDKey, userID)
 		ctx = context.WithValue(ctx, userTierKey, userTier)
+		ctx = context.WithValue(ctx, isBridgeKey, isBridge)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

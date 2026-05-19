@@ -36,7 +36,8 @@ func (sm *SessionManager) GetActiveSessionCount(ctx context.Context) (int, error
 	if sm.redisClient == nil {
 		return 0, nil
 	}
-	iter := sm.redisClient.Scan(ctx, 0, "session:*", 0).Iterator()
+	// Only count bridge sessions as active actors
+	iter := sm.redisClient.Scan(ctx, 0, "bridge:session:*", 0).Iterator()
 	count := 0
 	for iter.Next(ctx) {
 		count++
@@ -45,14 +46,19 @@ func (sm *SessionManager) GetActiveSessionCount(ctx context.Context) (int, error
 }
 
 // AddUser sets a heartbeat in Redis that expires after 30 seconds
-func (sm *SessionManager) AddUser(ctx context.Context, userID string) {
+func (sm *SessionManager) AddUser(ctx context.Context, userID string, isBridge bool) {
 	if sm.redisClient == nil {
 		return
 	}
 	ctx, span := otel.Tracer("session").Start(ctx, "AddUser")
 	defer span.End()
 
-	err := sm.redisClient.Set(ctx, fmt.Sprintf("session:%s", userID), "active", 30*time.Second).Err()
+	key := fmt.Sprintf("session:%s", userID)
+	if isBridge {
+		key = fmt.Sprintf("bridge:session:%s", userID)
+	}
+
+	err := sm.redisClient.Set(ctx, key, "active", 30*time.Second).Err()
 	if err != nil {
 		log.Printf("Failed to set session for user %s: %v", userID, err)
 		span.RecordError(err)
@@ -60,17 +66,22 @@ func (sm *SessionManager) AddUser(ctx context.Context, userID string) {
 }
 
 // RemoveUser removes the heartbeat from Redis
-func (sm *SessionManager) RemoveUser(ctx context.Context, userID string) {
+func (sm *SessionManager) RemoveUser(ctx context.Context, userID string, isBridge bool) {
 	if sm.redisClient == nil {
 		return
 	}
 	ctx, span := otel.Tracer("session").Start(ctx, "RemoveUser")
 	defer span.End()
 
-	sm.redisClient.Del(ctx, fmt.Sprintf("session:%s", userID))
+	key := fmt.Sprintf("session:%s", userID)
+	if isBridge {
+		key = fmt.Sprintf("bridge:session:%s", userID)
+	}
+
+	sm.redisClient.Del(ctx, key)
 }
 
-// IsOnline checks if a user has an active heartbeat in Redis
+// IsOnline checks if a user has an active bridge heartbeat in Redis
 func (sm *SessionManager) IsOnline(ctx context.Context, userID string) bool {
 	if sm.redisClient == nil {
 		return false
@@ -78,7 +89,8 @@ func (sm *SessionManager) IsOnline(ctx context.Context, userID string) bool {
 	ctx, span := otel.Tracer("session").Start(ctx, "IsOnline")
 	defer span.End()
 
-	val, err := sm.redisClient.Get(ctx, fmt.Sprintf("session:%s", userID)).Result()
+	// Only bridge connections count as being "online" for the neural link status
+	val, err := sm.redisClient.Get(ctx, fmt.Sprintf("bridge:session:%s", userID)).Result()
 	if err == redis.Nil {
 		return false
 	} else if err != nil {
@@ -91,7 +103,7 @@ func (sm *SessionManager) IsOnline(ctx context.Context, userID string) bool {
 
 // Heartbeat Loop - Keeps the session active in Redis while the SSE connection is open
 // Also subscribes to Pub/Sub to listen for remote task triggers
-func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, mcpServer *server.MCPServer) {
+func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, mcpServer *server.MCPServer, isBridge bool) {
 	if sm.redisClient == nil {
 		log.Printf("Redis client not initialized in SessionManager")
 		return
@@ -120,7 +132,23 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 	activeSSEConnections.Inc()
 	defer activeSSEConnections.Dec()
 
-	sm.AddUser(ctx, userID)
+	sm.AddUser(ctx, userID, isBridge)
+
+	if !isBridge {
+		// Non-bridge connections just stay open to keep the session alive
+		// but don't subscribe to task triggers.
+		ticker := time.NewTicker(15 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				sm.RemoveUser(context.Background(), userID, isBridge)
+				return
+			case <-ticker.C:
+				sm.AddUser(ctx, userID, isBridge)
+			}
+		}
+	}
 
 	var backoff time.Duration = 1 * time.Second
 	for {
@@ -157,10 +185,10 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 				select {
 				case <-ctx.Done():
 					// The HTTP request was cancelled (connection closed)
-					sm.RemoveUser(context.Background(), userID)
+					sm.RemoveUser(context.Background(), userID, isBridge)
 					return
 				case <-ticker.C:
-					sm.AddUser(ctx, userID)
+					sm.AddUser(ctx, userID, isBridge)
 					// Refresh connection count expiry
 					sm.redisClient.Expire(ctx, connCountKey, 1*time.Minute)
 				case msg, ok := <-ch:

@@ -377,7 +377,8 @@ func main() {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
-		go GlobalSessionManager.MaintainHeartbeat(r.Context(), userID, mcpServer)
+		isBridge, _ := r.Context().Value(isBridgeKey).(bool)
+		go GlobalSessionManager.MaintainHeartbeat(r.Context(), userID, mcpServer, isBridge)
 		sseServer.SSEHandler().ServeHTTP(w, r)
 	}), mcpServer)))
 	e.POST("/message", echo.WrapHandler(NetHttpAuthMiddleware(sseServer.MessageHandler(), mcpServer)))
