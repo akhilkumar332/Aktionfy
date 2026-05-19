@@ -51,6 +51,14 @@ const Insights = () => {
     text: '#475569' 
   };
 
+  const getTrendDisplay = (trend) => {
+    if (!trend || trend === '0%') return 'STABLE';
+    if (trend === '+100%') return 'NEW';
+    return trend;
+  };
+
+  const p99Latency = data?.p99_latency === 0 ? '---' : `${data?.p99_latency || 0}ms`;
+
   return (
     <>
       <header className="mb-12 flex flex-col md:flex-row md:items-center justify-between gap-8">
@@ -82,16 +90,18 @@ const Insights = () => {
            >
              <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
            </button>
-           <div className="flex items-center gap-6 bg-zinc-100/[0.02] border border-zinc-800/50 px-8 py-5 rounded-xl backdrop-blur-xl relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
-              <div className="flex flex-col">
-                 <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Growth Index</span>
-                 <span className="text-xs font-black text-blue-400 flex items-center gap-2">
-                    <Activity size={10} className="animate-pulse" />
-                    POSITIVE_SIGMA
-                 </span>
-              </div>
-           </div>
+           {trends?.tasks_growth && trends.tasks_growth !== '0%' && (
+             <div className="flex items-center gap-6 bg-zinc-100/[0.02] border border-zinc-800/50 px-8 py-5 rounded-xl backdrop-blur-xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+                <div className="flex flex-col">
+                   <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Growth Index</span>
+                   <span className="text-xs font-black text-blue-400 flex items-center gap-2">
+                      <Activity size={10} className="animate-pulse" />
+                      {trends.tasks_growth.startsWith('+') ? 'ACCELERATING' : 'REDUCING'}
+                   </span>
+                </div>
+             </div>
+           )}
         </div>
       </header>
 
@@ -120,8 +130,8 @@ const Insights = () => {
               <MetricCard 
                 icon={Zap} 
                 label="P99 Latency" 
-                value={`${data?.p99_latency || 0}ms`} 
-                trend={trends?.tasks_growth || 'STABLE'} 
+                value={p99Latency} 
+                trend={getTrendDisplay(trends?.tasks_growth)} 
                 color="text-brand-primary"
                 bg="bg-brand-primary/10"
               />
@@ -129,7 +139,7 @@ const Insights = () => {
                 icon={ShieldCheck} 
                 label="Protocol Fidelity" 
                 value={`${data?.success_rate || 0}%`} 
-                trend={trends?.success_growth || 'NOMINAL'} 
+                trend={getTrendDisplay(trends?.success_growth)} 
                 color="text-emerald-400"
                 bg="bg-emerald-500/10"
               />
@@ -137,7 +147,7 @@ const Insights = () => {
                 icon={Users} 
                 label="Active Actors" 
                 value={data?.active_workers || 0} 
-                trend={trends?.users_growth || 'EXPANDING'} 
+                trend={getTrendDisplay(trends?.users_growth)} 
                 color="text-blue-400"
                 bg="bg-blue-500/10"
               />

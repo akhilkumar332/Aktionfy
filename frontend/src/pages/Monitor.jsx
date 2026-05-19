@@ -145,7 +145,10 @@ const Monitor = () => {
 
   useEffect(() => {
     isMounted.current = true;
-    fetchData();
+    const init = async () => {
+      await fetchData();
+    };
+    init();
     const interval = setInterval(() => fetchData(false), 60000);
     return () => {
       isMounted.current = false;

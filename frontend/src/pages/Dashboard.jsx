@@ -20,6 +20,7 @@ const Dashboard = () => {
   const [rotating, setRotating] = useState(false);
   const [confirmRotate, setConfirmRotate] = useState(false);
   const [pendingApprovals, setPendingApprovals] = useState([]);
+  const [systemStatus, setSystemStatus] = useState(null);
 
   useEffect(() => {
     return () => {
@@ -38,12 +39,26 @@ const Dashboard = () => {
     }
   }, [notify]);
 
+  const fetchSystemStatus = useCallback(async () => {
+    try {
+      const res = await axios.get('/api/v1/system/status');
+      if (res.data.success && isMounted.current) {
+        setSystemStatus(res.data.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch system status', err);
+    }
+  }, []);
+
   useEffect(() => {
     const init = async () => {
       await fetchData();
+      await fetchSystemStatus();
     };
     init();
-  }, [fetchData]);
+    const interval = setInterval(fetchSystemStatus, 30000);
+    return () => clearInterval(interval);
+  }, [fetchData, fetchSystemStatus]);
 
   useSSE(useCallback((event) => {
     if (event.event_type === 'task_executed') {
@@ -152,15 +167,15 @@ const Dashboard = () => {
         <div className="flex items-center gap-4 bg-zinc-900 border border-zinc-800 px-4 py-2.5 rounded-lg shadow-sm">
            <div className="flex flex-col">
               <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-none">Cluster Status</span>
-              <span className="text-xs font-bold text-emerald-500 flex items-center gap-1.5 mt-1">
-                 <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse"></div>
-                 Nominal
+              <span className={`text-xs font-bold flex items-center gap-1.5 mt-1 ${systemStatus?.bridge_active ? 'text-emerald-500' : 'text-red-500'}`}>
+                 <div className={`w-1 h-1 rounded-full animate-pulse ${systemStatus?.bridge_active ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
+                 {systemStatus?.bridge_active ? 'Nominal' : 'Signal Lost'}
               </span>
            </div>
            <div className="h-6 w-px bg-zinc-800 mx-2"></div>
            <div className="flex flex-col">
               <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-none">Latency</span>
-              <span className="text-xs font-bold text-zinc-200 mt-1 tabular-nums font-mono">14ms</span>
+              <span className="text-xs font-bold text-zinc-200 mt-1 tabular-nums font-mono">{systemStatus?.p99_latency_ms || 0}ms</span>
            </div>
         </div>
       </header>
@@ -252,11 +267,17 @@ const Dashboard = () => {
            </div>
            <div className="space-y-4">
               <div>
-                 <p className="text-2xl font-bold text-white tabular-nums tracking-tighter">99.9%</p>
-                 <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-none mt-1">Infrastructure Uptime</p>
+                 <p className="text-2xl font-bold text-white tabular-nums tracking-tighter">
+                   {systemStatus?.bridge_active ? 'NOMINAL_STABLE' : 'UNSTABLE_RECOVERING'}
+                 </p>
+                 <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-none mt-1">System Reliability</p>
               </div>
               <div className="h-1 w-full bg-zinc-900 rounded-full overflow-hidden border border-zinc-800/50">
-                 <motion.div initial={{ width: 0 }} animate={{ width: '85%' }} className="h-full bg-indigo-600" />
+                 <motion.div 
+                    initial={{ width: 0 }} 
+                    animate={{ width: `${Math.min(((systemStatus?.active_sessions || 0) / 50) * 100, 100)}%` }} 
+                    className="h-full bg-indigo-600" 
+                 />
               </div>
            </div>
         </div>
