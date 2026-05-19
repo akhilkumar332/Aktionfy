@@ -155,18 +155,16 @@ const DashboardLayout = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    // Initial fetch
-    const initFetch = async () => {
-      await fetchStatus();
-    };
-    initFetch();
-
-    const interval = setInterval(() => {
+    // Wrap in setTimeout to avoid cascading render warning in strict environments
+    setTimeout(() => {
       void fetchStatus();
-    }, 30000);
-
+    }, 0);
+    
+    // Poll faster when bridge assistant is open for immediate feedback
+    const intervalTime = isBridgeAssistantOpen ? 5000 : 30000;
+    const interval = setInterval(fetchStatus, intervalTime);
     return () => clearInterval(interval);
-  }, [fetchStatus]);
+  }, [fetchStatus, isBridgeAssistantOpen]);
 
   const handleLogout = async () => {
     await logout();
@@ -324,7 +322,8 @@ const DashboardLayout = ({ children }) => {
       <BridgeAssistant 
         isOpen={isBridgeAssistantOpen} 
         onClose={() => setIsBridgeAssistantOpen(false)} 
-        systemStatus={systemStatus} 
+        systemStatus={systemStatus}
+        fetchStatus={fetchStatus}
       />
     </div>
   );

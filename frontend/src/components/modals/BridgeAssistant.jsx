@@ -3,19 +3,26 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, ChevronRight, ChevronLeft, Command, Cpu, Terminal, 
   Copy, Check, ExternalLink, Activity, Wifi, WifiOff,
-  Monitor, Code, Globe
+  Monitor, Code, Globe, RefreshCw
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/AuthContext';
 
-const BridgeAssistant = ({ isOpen, onClose, systemStatus }) => {
+const BridgeAssistant = ({ isOpen, onClose, systemStatus, fetchStatus }) => {
   const { user } = useAuth();
   const [step, setStep] = useState(1);
   const [selectedClient, setSelectedClient] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const apiKey = user?.api_key || 'YOUR_API_KEY';
   const installCommand = `npx @aktionfy/mcp install --api-key ${apiKey}`;
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    if (fetchStatus) await fetchStatus();
+    setTimeout(() => setRefreshing(false), 1000);
+  };
 
   const claudeConfig = {
     "mcpServers": {
@@ -301,23 +308,34 @@ const BridgeAssistant = ({ isOpen, onClose, systemStatus }) => {
                 }`}>
                   {systemStatus?.bridge_active ? 'SIGNAL_ESTABLISHED' : 'WAITING_FOR_SIGNAL...'}
                 </h3>
-                <p className="text-sm text-zinc-500 max-w-xs mx-auto">
+                <p className="text-sm text-zinc-500 max-w-xs mx-auto leading-relaxed">
                   {systemStatus?.bridge_active 
                     ? 'Handshake successful. The neural bridge is now active and ready for orchestration.' 
                     : 'Please ensure your MCP client is running and configured with your API key.'}
                 </p>
               </div>
 
-              {systemStatus?.bridge_active && (
-                <motion.button
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  onClick={onClose}
-                  className="bg-emerald-600 text-white px-10 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-900/20 hover:bg-emerald-500 transition-all"
-                >
-                  Return to Command
-                </motion.button>
-              )}
+              <div className="flex flex-col items-center gap-4">
+                {systemStatus?.bridge_active ? (
+                  <motion.button
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    onClick={onClose}
+                    className="bg-emerald-600 text-white px-10 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-900/20 hover:bg-emerald-500 transition-all"
+                  >
+                    Return to Command
+                  </motion.button>
+                ) : (
+                   <button 
+                    onClick={handleRefresh}
+                    disabled={refreshing}
+                    className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] hover:text-white transition-all flex items-center gap-2 disabled:opacity-50"
+                   >
+                     <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} /> 
+                     {refreshing ? 'SYNCHRONIZING...' : 'Force Protocol Sync'}
+                   </button>
+                )}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
