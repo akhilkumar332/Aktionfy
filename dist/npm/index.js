@@ -99,7 +99,13 @@ async function main() {
                 stdioTransport.send({
                      jsonrpc: "2.0",
                      id: message.id,
-                     result: { tools: tools.tools }
+                     result: tools
+                 });
+            } else if (message.method === "ping") {
+                 stdioTransport.send({
+                     jsonrpc: "2.0",
+                     id: message.id,
+                     result: {}
                  });
             } else if (message.method === "initialize") {
                 // Respond to initialize locally
