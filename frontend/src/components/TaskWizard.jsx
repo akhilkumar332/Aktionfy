@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, ChevronRight, ChevronLeft, Loader2, Command, Cpu, GitBranch, Zap, Sparkles
@@ -22,6 +22,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
   const [submitting, setSubmitting] = useState(false);
   const [showVariableSelector, setShowVariableSelector] = useState(false);
   const [error, setError] = useState(null);
+  const isMounted = useRef(true);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -42,6 +43,13 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
       council: [{ name: 'AGENT_1', prompt: 'Analyze this data.' }]
     }
   });
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   const resetForm = useCallback(() => {
     setStep(1);
@@ -71,7 +79,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
     setLoadingWorkspaces(true);
     try {
       const res = await axios.get('/api/v1/workspaces');
-      if (res.data.success) {
+      if (res.data.success && isMounted.current) {
         setWorkspaces(res.data.data || []);
         if (res.data.data?.length > 0) {
           setFormData(prev => ({ ...prev, workspace_id: prev.workspace_id || res.data.data[0].id }));
@@ -80,14 +88,14 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
     } catch (err) {
       console.error('Failed to fetch workspaces', err);
     } finally {
-      setLoadingWorkspaces(false);
+      if (isMounted.current) setLoadingWorkspaces(false);
     }
   }, []);
 
   const fetchUserTasks = useCallback(async () => {
     try {
       const res = await axios.get('/api/v1/tasks');
-      if (res.data.success) {
+      if (res.data.success && isMounted.current) {
         const filteredTasks = initialData 
           ? (res.data.data || []).filter(t => t.id !== initialData.id)
           : (res.data.data || []);
@@ -112,13 +120,15 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
     if (isOpen) {
       const applyInitialData = async () => {
         if (initialData) {
-          setFormData(prev => ({
-            ...prev,
-            ...initialData,
-            trigger_config: parseJSONField(initialData.trigger_config, prev.trigger_config),
-            branch_condition: parseJSONField(initialData.branch_condition, prev.branch_condition),
-            swarm_config: parseJSONField(initialData.swarm_config, prev.swarm_config)
-          }));
+          if (isMounted.current) {
+            setFormData(prev => ({
+              ...prev,
+              ...initialData,
+              trigger_config: parseJSONField(initialData.trigger_config, prev.trigger_config),
+              branch_condition: parseJSONField(initialData.branch_condition, prev.branch_condition),
+              swarm_config: parseJSONField(initialData.swarm_config, prev.swarm_config)
+            }));
+          }
         } else {
           resetForm();
         }
@@ -162,15 +172,21 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
       }
 
       if (res.data.success) {
-        onTaskCreated(res.data.data);
-        onClose();
+        if (isMounted.current) {
+          onTaskCreated(res.data.data);
+          onClose();
+        }
       } else {
-        setError(res.data.error || `Failed to ${initialData?.id ? 'update' : 'create'} task`);
+        if (isMounted.current) {
+          setError(res.data.error || `Failed to ${initialData?.id ? 'update' : 'create'} task`);
+        }
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'An error occurred during submission');
+      if (isMounted.current) {
+        setError(err.response?.data?.error || 'An error occurred during submission');
+      }
     } finally {
-      setSubmitting(false);
+      if (isMounted.current) setSubmitting(false);
     }
   };
 

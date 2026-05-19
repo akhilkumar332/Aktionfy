@@ -5,17 +5,20 @@ import axios from 'axios';
 import { 
   Play, Pause, Trash2,
   Cpu, Link as LinkIcon, History, Plus, 
-  Activity, Command, RefreshCw
+  Activity, Command, RefreshCw, X, Check
 } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useNotify } from '../context/NotificationContext';
 
 const Tasks = () => {
   const navigate = useNavigate();
+  const { notify } = useNotify();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(null);
 
   const fetchTasks = useCallback(async () => {
     setRefreshing(true);
@@ -40,17 +43,19 @@ const Tasks = () => {
   }, [fetchTasks]);
 
   const handleAction = async (taskId, action) => {
-    if (action === 'delete' && !confirm('Authorize neural termination? All state data will be purged.')) return;
-    
     try {
       if (action === 'delete') {
         await axios.delete(`/api/v1/tasks/${taskId}`);
+        notify('SUCCESS', 'Neural node terminated');
       } else {
         await axios.post(`/api/v1/tasks/${taskId}/${action}`);
+        notify('SUCCESS', `Node ${action}d successfully`);
       }
       fetchTasks();
-    } catch {
-      alert(`Failed to ${action} task`);
+    } catch (err) {
+      notify('ERROR', `Failed to ${action} node`, err.response?.data?.error || err.message);
+    } finally {
+      if (action === 'delete') setConfirmDelete(null);
     }
   };
 
@@ -174,7 +179,27 @@ const Tasks = () => {
                         ) : (
                           <button onClick={() => handleAction(task.id, 'resume')} className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-emerald-500 transition-all shadow-sm" title="Thaw Node"><Play size={14} /></button>
                         )}
-                        <button onClick={() => handleAction(task.id, 'delete')} className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-red-500 transition-all shadow-sm" title="Purge Node"><Trash2 size={14} /></button>
+                        
+                        {confirmDelete === task.id ? (
+                          <div className="flex items-center gap-1 bg-red-500/10 border border-red-500/20 rounded-md p-0.5">
+                            <button 
+                              onClick={() => handleAction(task.id, 'delete')}
+                              className="p-1 text-red-500 hover:bg-red-500 hover:text-white rounded transition-all"
+                              title="Confirm Terminate"
+                            >
+                              <Check size={14} />
+                            </button>
+                            <button 
+                              onClick={() => setConfirmDelete(null)}
+                              className="p-1 text-zinc-400 hover:bg-zinc-700 hover:text-white rounded transition-all"
+                              title="Cancel"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        ) : (
+                          <button onClick={() => setConfirmDelete(task.id)} className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-red-500 transition-all shadow-sm" title="Purge Node"><Trash2 size={14} /></button>
+                        )}
                       </div>
                     </td>
                   </tr>

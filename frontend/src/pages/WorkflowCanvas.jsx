@@ -14,11 +14,12 @@ import 'reactflow/dist/style.css';
 import TaskWizard from '../components/TaskWizard';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
-import { Save, RefreshCw, Layers, X, Trash2, Play, Pause, FastForward, Rewind, Activity } from 'lucide-react';
+import { Save, RefreshCw, Layers, X, Trash2, Play, Pause, FastForward, Rewind, Activity, Check } from 'lucide-react';
 import DecisionNode from '../components/DecisionNode';
 import ManualRouteModal from '../components/ManualRouteModal';
 import GlobalPlaybackBar from '../components/GlobalPlaybackBar';
 import { useSSE } from '../hooks/useSSE';
+import { useNotify } from '../context/NotificationContext';
 
 const nodeTypes = {
   decision: DecisionNode,
@@ -59,6 +60,7 @@ const safeParseJSON = (data, defaultValue = {}) => {
 };
 
 const WorkflowCanvas = () => {
+  const { notify } = useNotify();
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [loading, setLoading] = useState(true);
@@ -66,6 +68,7 @@ const WorkflowCanvas = () => {
   const [selectedTask, setSelectedTask] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isManualRouteOpen, setIsManualRouteOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [rawTasks, setRawTasks] = useState([]);
   
   // Playback states
@@ -383,14 +386,10 @@ const WorkflowCanvas = () => {
         };
       }));
     } else if (!playbackMode && traces.length > 0) {
-      // Reset styles when leaving playback mode
-      setTimeout(() => {
-        if (isMountedRef.current) {
-          fetchTasks();
-        }
-      }, 0);
+      // Reset styles synchronously when leaving playback mode to avoid flash
+      mapTasksToFlow(rawTasks);
     }
-  }, [playbackMode, globalTime, traces, rawTasks, fetchTasks, setNodes, setEdges, taskMap]);
+  }, [playbackMode, globalTime, traces, rawTasks, fetchTasks, mapTasksToFlow, setNodes, setEdges, taskMap]);
 
   const updateTaskStatusLocally = useCallback((taskId, status) => {
     if (!isMountedRef.current) return;
@@ -510,12 +509,13 @@ const WorkflowCanvas = () => {
         setEdges((eds) => addEdge({ ...params, type: 'smoothstep', animated: true, style: { stroke: '#d97706' } }, eds));
         // Refresh tasks to get updated dependency state
         fetchTasks();
+        notify('SUCCESS', 'Neural links established');
       }
     } catch (err) {
       console.error("Failed to link tasks", err);
-      alert("Failed to link tasks: " + (err.response?.data?.error || err.message));
+      notify('ERROR', 'Failed to link tasks', err.response?.data?.error || err.message);
     }
-  }, [setEdges, fetchTasks]);
+  }, [setEdges, fetchTasks, notify]);
 
   const onNodesDelete = useCallback(async (deletedNodes) => {
     for (const node of deletedNodes) {
@@ -554,19 +554,19 @@ const WorkflowCanvas = () => {
   }, []);
 
   const handleDeleteTask = useCallback(async (taskId) => {
-    if (!window.confirm('Are you sure you want to delete this task?')) return;
-    
     try {
       const res = await axios.delete(`/api/v1/tasks/${taskId}`);
       if (res.data.success) {
         setIsSidebarOpen(false);
+        setIsDeleting(false);
         fetchTasks();
+        notify('SUCCESS', 'Neural node terminated');
       }
     } catch (err) {
       console.error("Failed to delete task", err);
-      alert("Failed to delete task: " + (err.response?.data?.error || err.message));
+      notify('ERROR', 'Failed to delete task', err.response?.data?.error || err.message);
     }
-  }, [fetchTasks]);
+  }, [fetchTasks, notify]);
 
   const saveLayout = async () => {
     setSaving(true);
@@ -577,10 +577,10 @@ const WorkflowCanvas = () => {
         });
       });
       await Promise.all(promises);
-      alert('Layout saved successfully!');
+      notify('SUCCESS', 'Canvas layout persisted');
     } catch (err) {
       console.error('Failed to save layout', err);
-      alert('Failed to save layout');
+      notify('ERROR', 'Failed to save layout');
     } finally {
       setSaving(false);
     }
@@ -731,13 +731,32 @@ const WorkflowCanvas = () => {
                     >
                       <Activity size={18} />
                     </button>
-                    <button 
-                      onClick={() => handleDeleteTask(selectedTask?.id)}
-                      className="p-3 bg-red-950/20 border border-red-900/30 rounded-xl text-red-500 hover:bg-red-900/40 transition-all"
-                      title="Terminate Node"
-                    >
-                      <Trash2 size={18} />
-                    </button>
+                    {isDeleting ? (
+                      <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl p-1">
+                        <button 
+                          onClick={() => handleDeleteTask(selectedTask?.id)}
+                          className="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all"
+                          title="Confirm Termination"
+                        >
+                          <Check size={16} />
+                        </button>
+                        <button 
+                          onClick={() => setIsDeleting(false)}
+                          className="p-2 bg-zinc-800 text-zinc-400 rounded-lg hover:text-white transition-all"
+                          title="Cancel"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    ) : (
+                      <button 
+                        onClick={() => setIsDeleting(true)}
+                        className="p-3 bg-red-950/20 border border-red-900/30 rounded-xl text-red-500 hover:bg-red-900/40 transition-all"
+                        title="Terminate Node"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    )}
                     <button 
                       onClick={() => setIsSidebarOpen(false)}
                       className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white transition-all"
