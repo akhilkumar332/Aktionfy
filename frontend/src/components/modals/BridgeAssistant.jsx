@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, ChevronRight, ChevronLeft, Command, Cpu, Terminal, 
   Copy, Check, ExternalLink, Activity, Wifi, WifiOff,
-  Monitor, Code, Globe, RefreshCw, Zap, Shield
+  Monitor, Code, Globe, RefreshCw, Zap, Shield, Eye, EyeOff
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -14,6 +14,7 @@ const BridgeAssistant = ({ isOpen, onClose, systemStatus, fetchStatus }) => {
   const [selectedClient, setSelectedClient] = useState(null);
   const [copied, setCopied] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [showKey, setShowKey] = useState(false);
 
   const apiKey = user?.api_key || 'YOUR_API_KEY';
   const installCommand = `npx @aktionfy/mcp install --api-key ${apiKey}`;
@@ -124,10 +125,21 @@ const BridgeAssistant = ({ isOpen, onClose, systemStatus, fetchStatus }) => {
               <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 space-y-4">
                 <p className="text-xs text-zinc-300">Run the following command to add Actionfy as a persistent MCP server to Claude Code:</p>
                 <div className="bg-black/40 border border-zinc-800 rounded-md p-3 flex items-center gap-3">
-                   <code className="text-xs text-emerald-500 font-mono flex-1">claude mcp add actionfy -- {installCommand}</code>
-                   <button onClick={() => handleCopy(`claude mcp add actionfy -- ${installCommand}`)} className="text-zinc-500 hover:text-white transition-all">
-                     {copied ? <Check size={14} /> : <Copy size={14} />}
-                   </button>
+                   <code className="text-xs text-emerald-500 font-mono flex-1">
+                     {showKey ? `claude mcp add actionfy -- ${installCommand}` : `claude mcp add actionfy -- npx @aktionfy/mcp install --api-key ${'•'.repeat(24)}`}
+                   </code>
+                   <div className="flex items-center gap-2">
+                     <button 
+                       onClick={() => setShowKey(!showKey)}
+                       className="text-zinc-500 hover:text-white transition-all"
+                       title={showKey ? "Hide Signature" : "Show Signature"}
+                     >
+                       {showKey ? <EyeOff size={14} /> : <Eye size={14} />}
+                     </button>
+                     <button onClick={() => handleCopy(`claude mcp add actionfy -- ${installCommand}`)} className="text-zinc-500 hover:text-white transition-all">
+                       {copied ? <Check size={14} /> : <Copy size={14} />}
+                     </button>
+                   </div>
                 </div>
               </div>
             </div>
@@ -141,10 +153,21 @@ const BridgeAssistant = ({ isOpen, onClose, systemStatus, fetchStatus }) => {
               <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 space-y-4">
                 <p className="text-xs text-zinc-300">Authorize the Gemini CLI to access your neural streams by establishing a process proxy:</p>
                 <div className="bg-black/40 border border-zinc-800 rounded-md p-3 flex items-center gap-3">
-                   <code className="text-xs text-emerald-500 font-mono flex-1">{installCommand} --proxy gemini</code>
-                   <button onClick={() => handleCopy(`${installCommand} --proxy gemini`)} className="text-zinc-500 hover:text-white transition-all">
-                     {copied ? <Check size={14} /> : <Copy size={14} />}
-                   </button>
+                   <code className="text-xs text-emerald-500 font-mono flex-1">
+                     {showKey ? `${installCommand} --proxy gemini` : `npx @aktionfy/mcp install --api-key ${'•'.repeat(24)} --proxy gemini`}
+                   </code>
+                   <div className="flex items-center gap-2">
+                     <button 
+                       onClick={() => setShowKey(!showKey)}
+                       className="text-zinc-500 hover:text-white transition-all"
+                       title={showKey ? "Hide Signature" : "Show Signature"}
+                     >
+                       {showKey ? <EyeOff size={14} /> : <Eye size={14} />}
+                     </button>
+                     <button onClick={() => handleCopy(`${installCommand} --proxy gemini`)} className="text-zinc-500 hover:text-white transition-all">
+                       {copied ? <Check size={14} /> : <Copy size={14} />}
+                     </button>
+                   </div>
                 </div>
                 <p className="text-[10px] text-zinc-500 italic">This establishes a secure IPC bridge between the Gemini runtime and the Aktionfy engine.</p>
               </div>
@@ -160,7 +183,16 @@ const BridgeAssistant = ({ isOpen, onClose, systemStatus, fetchStatus }) => {
                 <li>Open Settings {'>'} Features {'>'} MCP</li>
                 <li>Add New MCP Server: <span className="text-zinc-200">Actionfy</span></li>
                 <li>Command: <span className="text-zinc-200 font-mono text-[10px]">npx</span></li>
-                <li>Args: <span className="text-zinc-200 font-mono text-[10px]">-y @aktionfy/mcp start --api-key {apiKey.slice(0, 8)}...</span></li>
+                <li>
+                  Args: <span className="text-zinc-200 font-mono text-[10px]">-y @aktionfy/mcp start --api-key {showKey ? apiKey : apiKey.slice(0, 8) + '••••••••'}</span>
+                  <button 
+                    onClick={() => setShowKey(!showKey)}
+                    className="ml-2 text-zinc-500 hover:text-white transition-all align-middle"
+                    title={showKey ? "Hide Signature" : "Show Signature"}
+                  >
+                    {showKey ? <EyeOff size={12} /> : <Eye size={12} />}
+                  </button>
+                </li>
               </ul>
             </div>
           </div>
@@ -173,10 +205,21 @@ const BridgeAssistant = ({ isOpen, onClose, systemStatus, fetchStatus }) => {
               <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 space-y-4">
                 <p className="text-xs text-zinc-300">Inject the Aktionfy bridge into your Codex/Copilot CLI environment:</p>
                 <div className="bg-black/40 border border-zinc-800 rounded-md p-3 flex items-center gap-3">
-                   <code className="text-xs text-emerald-500 font-mono flex-1">copilot-cli mcp link -- {installCommand}</code>
-                   <button onClick={() => handleCopy(`copilot-cli mcp link -- ${installCommand}`)} className="text-zinc-500 hover:text-white transition-all">
-                     {copied ? <Check size={14} /> : <Copy size={14} />}
-                   </button>
+                   <code className="text-xs text-emerald-500 font-mono flex-1">
+                     {showKey ? `copilot-cli mcp link -- ${installCommand}` : `copilot-cli mcp link -- npx @aktionfy/mcp install --api-key ${'•'.repeat(24)}`}
+                   </code>
+                   <div className="flex items-center gap-2">
+                     <button 
+                       onClick={() => setShowKey(!showKey)}
+                       className="text-zinc-500 hover:text-white transition-all"
+                       title={showKey ? "Hide Signature" : "Show Signature"}
+                     >
+                       {showKey ? <EyeOff size={14} /> : <Eye size={14} />}
+                     </button>
+                     <button onClick={() => handleCopy(`copilot-cli mcp link -- ${installCommand}`)} className="text-zinc-500 hover:text-white transition-all">
+                       {copied ? <Check size={14} /> : <Copy size={14} />}
+                     </button>
+                   </div>
                 </div>
               </div>
             </div>

@@ -5,7 +5,7 @@ import axios from 'axios';
 import { 
   Crown, Key, RefreshCw, Copy, Check, 
   ShieldCheck, Zap, ShieldAlert, 
-  Terminal, Cpu, Globe, ArrowUpRight, Layers, X
+  Terminal, Cpu, Globe, ArrowUpRight, Layers, X, Eye, EyeOff
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSSE } from '../hooks/useSSE';
@@ -21,6 +21,7 @@ const Dashboard = () => {
   const [confirmRotate, setConfirmRotate] = useState(false);
   const [pendingApprovals, setPendingApprovals] = useState([]);
   const [systemStatus, setSystemStatus] = useState(null);
+  const [showKey, setShowKey] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -326,10 +327,21 @@ const Dashboard = () => {
 
            <div className="flex flex-col sm:flex-row gap-3">
               <div className="flex-1 bg-zinc-950 border border-zinc-800 rounded-lg p-5 flex items-center justify-between shadow-inner group/key">
-                 <code className="text-sm font-mono text-emerald-500 tracking-[0.1em] opacity-80 truncate select-all">{user?.api_key}</code>
-                 <button onClick={handleCopy} className="ml-4 p-2.5 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-400 hover:text-white transition-all shadow-xl">
-                   {copied ? <Check size={16} className="text-emerald-500" /> : <Copy size={16} />}
-                 </button>
+                 <code className="text-sm font-mono text-emerald-500 tracking-[0.1em] opacity-80 truncate select-all">
+                   {showKey ? user?.api_key : '•'.repeat(24)}
+                 </code>
+                 <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => setShowKey(!showKey)}
+                      className="p-2.5 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-400 hover:text-white transition-all shadow-xl"
+                      title={showKey ? "Hide Signature" : "Show Signature"}
+                    >
+                      {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                    <button onClick={handleCopy} className="p-2.5 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-400 hover:text-white transition-all shadow-xl">
+                      {copied ? <Check size={16} className="text-emerald-500" /> : <Copy size={16} />}
+                    </button>
+                 </div>
               </div>
            </div>
 

@@ -120,7 +120,7 @@ const AdminUsers = () => {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <code className="text-[10px] bg-zinc-950 px-2 py-1 rounded border border-zinc-800 text-emerald-500 font-mono tracking-wider">
-                          {u.api_key.substring(0, 8)}••••••••
+                          {u.api_key}
                         </code>
                       </div>
                     </td>

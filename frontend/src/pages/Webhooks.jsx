@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 
 import axios from 'axios';
-import { Webhook, Trash2, Plus, ShieldCheck, Zap, Loader2, X, Activity, RefreshCw, Command, Check } from 'lucide-react';
+import { Webhook, Trash2, Plus, ShieldCheck, Zap, Loader2, X, Activity, RefreshCw, Command, Check, Copy } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNotify } from '../context/NotificationContext';
 
@@ -14,6 +14,7 @@ const Webhooks = () => {
   const [newWebhook, setNewWebhook] = useState({ endpoint_url: '', event_types: ['task_executed'] });
   const [submitting, setSubmitting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [createdSecret, setCreatedSecret] = useState(null);
 
   useEffect(() => {
     return () => {
@@ -61,9 +62,10 @@ const Webhooks = () => {
     }
     setSubmitting(true);
     try {
-      await axios.post('/api/v1/webhooks', newWebhook);
+      const res = await axios.post('/api/v1/webhooks', newWebhook);
       notify('SUCCESS', 'Webhook link established successfully');
       if (isMounted.current) {
+        setCreatedSecret(res.data.data.signing_secret);
         setNewWebhook({ endpoint_url: '', event_types: ['task_executed'] });
         setShowAddForm(false);
       }
@@ -247,6 +249,67 @@ const Webhooks = () => {
           </table>
         </div>
       </div>
+
+      {/* Secret Display Modal */}
+      <AnimatePresence>
+        {createdSecret && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-6">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setCreatedSecret(null)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-zinc-950 border border-emerald-500/30 p-10 rounded-2xl shadow-2xl w-full max-w-lg relative z-10 overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 p-10 opacity-5 pointer-events-none">
+                 <ShieldCheck size={120} className="text-emerald-500" />
+              </div>
+              
+              <div className="flex items-center gap-4 mb-8">
+                 <div className="w-12 h-12 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-500">
+                    <ShieldCheck size={24} />
+                 </div>
+                 <div>
+                    <h2 className="text-xl font-bold text-white uppercase tracking-tight">Signing Secret Generated</h2>
+                    <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-0.5">PROTOCOL: AUTH_INTEGRITY_HANDSHAKE</p>
+                 </div>
+              </div>
+
+              <div className="space-y-6">
+                <p className="text-sm text-zinc-300 leading-relaxed">
+                  The following secret is used to sign outbound payloads. Store it securely; it will not be displayed again.
+                </p>
+
+                <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 flex items-center justify-between group shadow-inner">
+                   <code className="text-sm font-mono text-emerald-500 tracking-wider truncate mr-4">{createdSecret}</code>
+                   <button 
+                     onClick={() => {
+                        navigator.clipboard.writeText(createdSecret);
+                        notify('SUCCESS', 'Secret copied to clipboard');
+                     }}
+                     className="p-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-400 hover:text-white transition-all shadow-xl"
+                   >
+                      <Copy size={18} />
+                   </button>
+                </div>
+
+                <button 
+                  onClick={() => setCreatedSecret(null)}
+                  className="pro-button-primary w-full !py-3 !text-[11px] uppercase tracking-[0.2em] flex items-center justify-center gap-2"
+                >
+                  <Check size={16} /> I have saved the secret
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </>
   );
 };

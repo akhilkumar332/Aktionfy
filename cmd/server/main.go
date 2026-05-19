@@ -384,7 +384,7 @@ func main() {
 	e.POST("/message", echo.WrapHandler(NetHttpAuthMiddleware(sseServer.MessageHandler(), mcpServer)))
 
 	// Telemetry & Observability
-	e.GET("/metrics", echo.WrapHandler(promhttp.Handler()))
+	e.GET("/metrics", echo.WrapHandler(promhttp.Handler()), EchoSessionMiddleware, EchoRequireRole("admin"))
 	e.GET("/api/healthz", func(c echo.Context) error {
 		if err := dbPool.Ping(c.Request().Context()); err != nil {
 			return c.JSON(http.StatusServiceUnavailable, APIResponse{Success: false, Error: "Database unavailable"})
@@ -393,7 +393,7 @@ func main() {
 			return c.JSON(http.StatusServiceUnavailable, APIResponse{Success: false, Error: "Redis unavailable"})
 		}
 		return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "OK"})
-	})
+	}, IPRateLimitMiddleware)
 
 	// Static files
 	e.Static("/static", "static")
@@ -408,7 +408,7 @@ func main() {
 
 	// Unified V1 API
 	v1 := e.Group("/api/v1")
-	v1.POST("/webhooks/inbound/:token", handleInboundWebhook)
+	v1.POST("/webhooks/inbound/:token", handleInboundWebhook, IPRateLimitMiddleware)
 
 	// Protected API Handlers (v1)
 	api := v1.Group("", csrfMiddleware, EchoSessionMiddleware, EchoRateLimitMiddleware)
