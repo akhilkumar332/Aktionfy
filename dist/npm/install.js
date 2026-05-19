@@ -11,21 +11,20 @@ if (platform === 'win32') githubPlatform = 'windows';
 const BINARY_NAME = platform === 'win32' ? 'aktionfy.exe' : 'aktionfy';
 const GITHUB_BINARY_NAME = platform === 'win32' ? `aktionfy-${githubPlatform}-${arch}.exe` : `aktionfy-${githubPlatform}-${arch}`;
 const DEST_PATH = path.join(__dirname, BINARY_NAME);
-
-const REPO_OWNER = 'akhilkumar332';
-const REPO_NAME = 'aktionfy';
-const DOWNLOAD_URL = `https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/latest/download/${GITHUB_BINARY_NAME}`;
+const LOCAL_BIN_PATH = path.join(__dirname, '..', 'bin', GITHUB_BINARY_NAME);
 
 console.log(`Installing Aktionfy MCP for ${platform}-${arch}...`);
 
 async function install() {
-    console.log(`Mocking download from: ${DOWNLOAD_URL}`);
+    console.log(`Looking for local binary at: ${LOCAL_BIN_PATH}`);
     
-    // For now, we mock the binary by creating a placeholder if it doesn't exist
-    // In a real scenario, this would be an https.get() call
-    if (!fs.existsSync(DEST_PATH)) {
-        console.log('Creating mock binary for demonstration...');
-        fs.writeFileSync(DEST_PATH, '#!/usr/bin/env node\nconsole.log("Mock Go binary executed");');
+    if (fs.existsSync(LOCAL_BIN_PATH)) {
+        console.log('Found local binary, copying to npm package directory...');
+        fs.copyFileSync(LOCAL_BIN_PATH, DEST_PATH);
+    } else {
+        console.error(`Error: Local binary not found at ${LOCAL_BIN_PATH}.`);
+        console.error('Please build the Go binaries first using the provided build scripts.');
+        process.exit(1);
     }
 
     if (platform !== 'win32') {
