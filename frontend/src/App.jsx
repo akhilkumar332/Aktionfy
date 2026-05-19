@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { NotificationProvider } from './context/NotificationContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
@@ -22,6 +23,7 @@ import DashboardLayout from './components/DashboardLayout';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import DocumentationLayout from './components/DocumentationLayout';
+import NotificationHub from './components/NotificationHub';
 import { AnimatePresence, motion } from 'framer-motion';
 
 import { 
@@ -158,9 +160,12 @@ function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <Router>
-          <AppRoutes />
-        </Router>
+        <NotificationProvider>
+          <Router>
+            <AppRoutes />
+          </Router>
+          <NotificationHub />
+        </NotificationProvider>
       </AuthProvider>
     </ErrorBoundary>
   );
