@@ -45,8 +45,8 @@ const Dashboard = () => {
       if (res.data.success && isMounted.current) {
         setSystemStatus(res.data.data);
       }
-    } catch (err) {
-      console.error('Failed to fetch system status', err);
+    } catch {
+      // Fail silently for background telemetry polling to avoid console/UI noise
     }
   }, []);
 

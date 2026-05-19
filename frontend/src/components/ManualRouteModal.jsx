@@ -1,34 +1,30 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import axios from 'axios';
 import { X, ArrowRight, Play } from 'lucide-react';
+import { useNotify } from '../context/NotificationContext';
 
 const ManualRouteModal = ({ isOpen, onClose, task, tasks, onRouted }) => {
+  const { notify } = useNotify();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [branches, setBranches] = useState([]);
 
-  useEffect(() => {
-    if (isOpen && task?.id && tasks) {
-      // Find all tasks that depend on this task
-      const dependentTasks = tasks.filter(t => t.depends_on_task_id === task.id);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setBranches(dependentTasks);
-    }
-  }, [isOpen, task?.id, tasks]);
+  const branches = useMemo(() => {
+    if (!isOpen || !task?.id || !tasks) return [];
+    return tasks.filter(t => t.depends_on_task_id === task.id);
+  }, [isOpen, task, tasks]);
 
   if (!isOpen) return null;
 
   const handleRoute = async (targetTaskId) => {
     setLoading(true);
-    setError(null);
     try {
       await axios.post(`/api/v1/tasks/${task.id}/route`, {
         target_task_id: targetTaskId
       });
       if (onRouted) onRouted();
       onClose();
+      notify('SUCCESS', 'Neural routing committed');
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to route task');
+      notify('ERROR', 'Routing protocol failed', err.response?.data?.error || err.message);
     } finally {
       setLoading(false);
     }
@@ -51,12 +47,6 @@ const ManualRouteModal = ({ isOpen, onClose, task, tasks, onRouted }) => {
           <p className="text-sm text-zinc-400 mb-8 leading-relaxed">
             {task?.task_type === 'swarm_router' ? 'Swarm' : 'Decision'} Node <span className={`font-bold ${task?.task_type === 'swarm_router' ? 'text-purple-400' : 'text-indigo-400'}`}>"{task?.name}"</span> could not automatically determine the next path. Please select a branch to continue execution.
           </p>
-
-          {error && (
-            <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-bold rounded-xl uppercase tracking-wider">
-              {error}
-            </div>
-          )}
 
           <div className="space-y-4">
             {branches.length === 0 ? (

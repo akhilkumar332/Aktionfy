@@ -20,43 +20,10 @@ import ManualRouteModal from '../components/ManualRouteModal';
 import GlobalPlaybackBar from '../components/GlobalPlaybackBar';
 import { useSSE } from '../hooks/useSSE';
 import { useNotify } from '../context/NotificationContext';
+import { decodeBase64, parseJSONField as safeParseJSON } from '../utils/wizardUtils';
 
 const nodeTypes = {
   decision: DecisionNode,
-};
-
-const decodeBase64 = (str) => {
-  if (!str) return '';
-  try {
-    const binary = atob(str);
-    try {
-      return decodeURIComponent(binary.split('').map(function(c) {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-      }).join(''));
-    } catch {
-      return binary;
-    }
-  } catch {
-    return str;
-  }
-};
-
-const safeParseJSON = (data, defaultValue = {}) => {
-  if (!data) return defaultValue;
-  if (typeof data === 'object') return data;
-  try {
-    return JSON.parse(data);
-  } catch {
-    try {
-      const decoded = decodeBase64(data);
-      if (decoded.startsWith('{') || decoded.startsWith('[')) {
-        return JSON.parse(decoded);
-      }
-    } catch {
-      // ignore
-    }
-    return defaultValue;
-  }
 };
 
 const WorkflowCanvas = () => {
@@ -110,8 +77,8 @@ const WorkflowCanvas = () => {
           } else {
             position = task.ui_coordinates;
           }
-        } catch (e) {
-          console.warn("Failed to parse coordinates for task", task.id, e);
+        } catch {
+          // Fail silently for visual layout errors
         }
       }
 
