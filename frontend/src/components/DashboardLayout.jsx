@@ -8,6 +8,7 @@ import {
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
+import BridgeAssistant from './modals/BridgeAssistant';
 
 const SidebarItem = ({ icon: Icon, label, path, isActive, onClick, roles, userRole }) => {
   if (roles && !roles.includes(userRole)) return null;
@@ -131,6 +132,7 @@ const DashboardLayout = ({ children }) => {
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isBridgeAssistantOpen, setIsBridgeAssistantOpen] = useState(false);
   const [systemStatus, setSystemStatus] = useState(null);
   const isMounted = useRef(true);
 
@@ -229,12 +231,16 @@ const DashboardLayout = ({ children }) => {
             </div>
 
             <div className="flex items-center gap-4">
-              <div className="hidden md:flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-md px-3 py-1.5 text-[10px] font-black uppercase tracking-widest shadow-inner transition-colors duration-500">
+              <button 
+                onClick={() => setIsBridgeAssistantOpen(true)}
+                title="Neural Link Assistance"
+                className="hidden md:flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-md px-3 py-1.5 text-[10px] font-black uppercase tracking-widest shadow-inner transition-all hover:border-brand-primary/50 group cursor-pointer"
+              >
                   <div className={`w-1 h-1 rounded-full animate-signal transition-colors duration-500 ${systemStatus?.bridge_active ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'}`}></div>
-                  <span className={systemStatus?.bridge_active ? 'text-zinc-500' : 'text-red-500'}>
+                  <span className={systemStatus?.bridge_active ? 'text-zinc-500 group-hover:text-zinc-300' : 'text-red-500 group-hover:text-red-400'}>
                     {systemStatus?.bridge_active ? 'System Active' : 'Bridge Lost'}
                   </span>
-              </div>
+              </button>
               <button 
                 onClick={() => setIsSearchOpen(true)}
                 className="p-2 text-zinc-500 hover:text-white bg-zinc-900 border border-zinc-800 rounded-md transition-all pro-focus group relative"
@@ -306,6 +312,12 @@ const DashboardLayout = ({ children }) => {
           </div>
         )}
       </AnimatePresence>
+
+      <BridgeAssistant 
+        isOpen={isBridgeAssistantOpen} 
+        onClose={() => setIsBridgeAssistantOpen(false)} 
+        systemStatus={systemStatus} 
+      />
     </div>
   );
 };
