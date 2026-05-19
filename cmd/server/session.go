@@ -32,6 +32,18 @@ func (sm *SessionManager) Init(client *redis.Client) {
 	sm.redisClient = client
 }
 
+func (sm *SessionManager) GetActiveSessionCount(ctx context.Context) (int, error) {
+	if sm.redisClient == nil {
+		return 0, nil
+	}
+	iter := sm.redisClient.Scan(ctx, 0, "session:*", 0).Iterator()
+	count := 0
+	for iter.Next(ctx) {
+		count++
+	}
+	return count, iter.Err()
+}
+
 // AddUser sets a heartbeat in Redis that expires after 30 seconds
 func (sm *SessionManager) AddUser(ctx context.Context, userID string) {
 	if sm.redisClient == nil {

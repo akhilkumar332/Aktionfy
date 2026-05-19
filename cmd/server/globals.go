@@ -58,6 +58,7 @@ var (
 	dbPool            *pgxpool.Pool
 	queries           *db.Queries
 	RedisClient       *redis.Client
+	ServerStartTime   time.Time
 	appConfig         runtimeConfig
 	workerID          string
 	workerWG          sync.WaitGroup
