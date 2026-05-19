@@ -24,9 +24,9 @@ func handleGetSystemInsights(c echo.Context) error {
 		successRateRaw = 100.0
 	}
 
-	workerCount, err := queries.GetActiveWorkerCount(ctx)
+	activeSessions, err := GlobalSessionManager.GetActiveSessionCount(ctx)
 	if err != nil {
-		workerCount = 0
+		activeSessions = 0
 	}
 
 	trends, err := queries.GetDailyExecutionTrends(ctx)
@@ -61,7 +61,7 @@ func handleGetSystemInsights(c echo.Context) error {
 	data := map[string]interface{}{
 		"p99_latency":    int64(p99),
 		"success_rate":   successRate,
-		"active_workers": workerCount,
+		"active_workers": activeSessions,
 		"daily_tasks":    dailyTasks,
 	}
 

@@ -187,6 +187,11 @@ func apiDashboardHandler(c echo.Context) error {
 }
 
 func apiSystemStatusHandler(c echo.Context) error {
+	user := getUserFromEcho(c)
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
+
 	activeSessions, err := GlobalSessionManager.GetActiveSessionCount(c.Request().Context())
 	if err != nil {
 		log.Printf("Error counting active sessions: %v", err)
@@ -208,7 +213,7 @@ func apiSystemStatusHandler(c echo.Context) error {
 			"uptime_seconds":  time.Since(ServerStartTime).Seconds(),
 			"active_sessions": activeSessions,
 			"worker_count":    workerCount,
-			"bridge_active":   workerCount > 0,
+			"bridge_active":   GlobalSessionManager.IsOnline(c.Request().Context(), user.ID),
 			"p99_latency_ms":  p99,
 		},
 	})

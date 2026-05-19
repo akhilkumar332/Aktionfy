@@ -244,7 +244,7 @@ const DashboardLayout = ({ children }) => {
               >
                   <div className={`w-1 h-1 rounded-full animate-signal transition-colors duration-500 ${systemStatus?.bridge_active ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'}`}></div>
                   <span className={systemStatus?.bridge_active ? 'text-zinc-500 group-hover:text-zinc-300' : 'text-red-500 group-hover:text-red-400'}>
-                    {systemStatus?.bridge_active ? 'System Active' : 'Bridge Lost'}
+                    {systemStatus?.bridge_active ? 'Neural Link Active' : 'Bridge Lost'}
                   </span>
               </button>
               <button 
