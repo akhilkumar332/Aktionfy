@@ -56,8 +56,9 @@ func initRedis(redisUrl string) {
 
 func initTracer(ctx context.Context) func(context.Context) error {
 	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
-	if endpoint == "" {
-		endpoint = "jaeger:4317"
+	if endpoint == "" || endpoint == "off" {
+		log.Println("OTEL_EXPORTER_OTLP_ENDPOINT not set or off. Tracing disabled.")
+		return func(context.Context) error { return nil }
 	}
 
 	exporter, err := otlptracegrpc.New(ctx,
