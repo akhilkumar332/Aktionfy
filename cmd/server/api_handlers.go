@@ -186,6 +186,28 @@ func apiDashboardHandler(c echo.Context) error {
 	})
 }
 
+func apiSystemStatusHandler(c echo.Context) error {
+	activeSessions, err := GlobalSessionManager.GetActiveSessionCount(c.Request().Context())
+	if err != nil {
+		log.Printf("Error counting active sessions: %v", err)
+	}
+
+	p99, err := queries.GetP99ExecutionLatency(c.Request().Context())
+	if err != nil {
+		log.Printf("Error fetching P99 latency: %v", err)
+	}
+
+	return c.JSON(http.StatusOK, APIResponse{
+		Success: true,
+		Data: map[string]interface{}{
+			"uptime_seconds": time.Since(ServerStartTime).Seconds(),
+			"active_sessions": activeSessions,
+			"bridge_active":   activeSessions > 0,
+			"p99_latency_ms":  p99,
+		},
+	})
+}
+
 func apiRotateAPIKeyHandler(c echo.Context) error {
 	user := getUserFromEcho(c)
 	if user == nil {

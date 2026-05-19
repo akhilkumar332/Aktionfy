@@ -121,6 +121,7 @@ func syncSettings(ctx context.Context) {
 }
 
 func main() {
+	ServerStartTime = time.Now().UTC()
 	hostname, _ := os.Hostname()
 	workerID = fmt.Sprintf("%s-%d", hostname, time.Now().UTC().UnixNano())
 
@@ -411,6 +412,7 @@ func main() {
 	// Protected API Handlers (v1)
 	api := v1.Group("", csrfMiddleware, EchoSessionMiddleware, EchoRateLimitMiddleware)
 	api.GET("/dashboard", apiDashboardHandler)
+	api.GET("/system/status", apiSystemStatusHandler)
 	api.POST("/rotate-api-key", apiRotateAPIKeyHandler)
 	api.GET("/tasks", apiListTasksHandler)
 	api.POST("/tasks", apiCreateTaskHandler)
