@@ -5,8 +5,9 @@ import {
   ListTodo, Webhook, Folder, FileText, Share2, BarChart3, 
   Settings, Menu, X, Zap, ChevronRight, Search, Command
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import axios from 'axios';
 
 const SidebarItem = ({ icon: Icon, label, path, isActive, onClick, roles, userRole }) => {
   if (roles && !roles.includes(userRole)) return null;
@@ -130,6 +131,32 @@ const DashboardLayout = ({ children }) => {
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [systemStatus, setSystemStatus] = useState(null);
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  const fetchStatus = useCallback(async () => {
+    try {
+      const res = await axios.get('/api/v1/system/status');
+      if (res.data.success && isMounted.current) {
+        setSystemStatus(res.data.data);
+      }
+    } catch {
+      // Background telemetry fails silently
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchStatus();
+    const interval = setInterval(fetchStatus, 30000);
+    return () => clearInterval(interval);
+  }, [fetchStatus]);
 
   const handleLogout = async () => {
     await logout();
@@ -202,9 +229,11 @@ const DashboardLayout = ({ children }) => {
             </div>
 
             <div className="flex items-center gap-4">
-              <div className="hidden md:flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-md px-3 py-1.5 text-[10px] text-zinc-500 font-black uppercase tracking-widest shadow-inner">
-                  <div className="w-1 h-1 rounded-full bg-emerald-500 animate-signal shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
-                  System Active
+              <div className="hidden md:flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-md px-3 py-1.5 text-[10px] font-black uppercase tracking-widest shadow-inner transition-colors duration-500">
+                  <div className={`w-1 h-1 rounded-full animate-signal transition-colors duration-500 ${systemStatus?.bridge_active ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'}`}></div>
+                  <span className={systemStatus?.bridge_active ? 'text-zinc-500' : 'text-red-500'}>
+                    {systemStatus?.bridge_active ? 'System Active' : 'Bridge Lost'}
+                  </span>
               </div>
               <button 
                 onClick={() => setIsSearchOpen(true)}
