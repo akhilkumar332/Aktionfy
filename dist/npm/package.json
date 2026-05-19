@@ -7,7 +7,7 @@
     "aktionfy": "index.js"
   },
   "scripts": {
-    "install": "node install.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
     "mcp",
@@ -16,5 +16,10 @@
     "actions"
   ],
   "author": "Google",
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "type": "commonjs",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "eventsource": "^4.1.0"
+  }
 }
