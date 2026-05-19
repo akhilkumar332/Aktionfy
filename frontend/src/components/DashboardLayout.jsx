@@ -155,8 +155,16 @@ const DashboardLayout = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    fetchStatus();
-    const interval = setInterval(fetchStatus, 30000);
+    // Initial fetch
+    const initFetch = async () => {
+      await fetchStatus();
+    };
+    initFetch();
+
+    const interval = setInterval(() => {
+      void fetchStatus();
+    }, 30000);
+
     return () => clearInterval(interval);
   }, [fetchStatus]);
 

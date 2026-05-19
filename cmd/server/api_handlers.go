@@ -192,6 +192,11 @@ func apiSystemStatusHandler(c echo.Context) error {
 		log.Printf("Error counting active sessions: %v", err)
 	}
 
+	workerCount, err := queries.GetActiveWorkerCount(c.Request().Context())
+	if err != nil {
+		log.Printf("Error counting active workers: %v", err)
+	}
+
 	p99, err := queries.GetP99ExecutionLatency(c.Request().Context())
 	if err != nil {
 		log.Printf("Error fetching P99 latency: %v", err)
@@ -200,9 +205,10 @@ func apiSystemStatusHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, APIResponse{
 		Success: true,
 		Data: map[string]interface{}{
-			"uptime_seconds": time.Since(ServerStartTime).Seconds(),
+			"uptime_seconds":  time.Since(ServerStartTime).Seconds(),
 			"active_sessions": activeSessions,
-			"bridge_active":   activeSessions > 0,
+			"worker_count":    workerCount,
+			"bridge_active":   workerCount > 0,
 			"p99_latency_ms":  p99,
 		},
 	})
