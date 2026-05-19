@@ -1,29 +1,39 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Globe, ChevronDown, Trash2, Plus, Loader2, X, Command, Zap, RefreshCw, Key } from 'lucide-react';
+import { Globe, ChevronDown, Trash2, Plus, Loader2, X, Command, Zap, RefreshCw, Key, Check } from 'lucide-react';
+import { useNotify } from '../context/NotificationContext';
 
 const WorkspaceEnvSection = ({ workspaceId }) => {
+  const { notify } = useNotify();
+  const isMounted = useRef(true);
   const [envs, setEnvs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [newName, setNewName] = useState('');
   const [newValue, setNewValue] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(null);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   const fetchEnvs = useCallback(async () => {
     setLoading(true);
     try {
       const res = await axios.get(`/api/v1/workspaces/${workspaceId}/env`);
-      if (res.data.success) {
+      if (res.data.success && isMounted.current) {
         setEnvs(res.data.data || []);
       }
-    } catch {
-      console.error('Failed to fetch env vars');
+    } catch (err) {
+      notify('ERROR', 'Failed to fetch env vars', err.response?.data?.error || err.message);
     } finally {
-      setLoading(false);
+      if (isMounted.current) setLoading(false);
     }
-  }, [workspaceId]);
+  }, [workspaceId, notify]);
 
   useEffect(() => {
     const init = async () => {
@@ -41,23 +51,28 @@ const WorkspaceEnvSection = ({ workspaceId }) => {
         name: newName,
         value: newValue
       });
-      setNewName('');
-      setNewValue('');
+      if (isMounted.current) {
+        setNewName('');
+        setNewValue('');
+      }
+      notify('SUCCESS', 'Environment variable injected successfully');
       fetchEnvs();
-    } catch {
-      console.error('Failed to add environment variable');
+    } catch (err) {
+      notify('ERROR', 'Failed to add environment variable', err.response?.data?.error || err.message);
     } finally {
-      setSubmitting(false);
+      if (isMounted.current) setSubmitting(false);
     }
   };
 
   const handleDelete = async (name) => {
-    if (!confirm(`Terminate variable ${name}?`)) return;
     try {
       await axios.delete(`/api/v1/workspaces/${workspaceId}/env/${name}`);
+      notify('SUCCESS', 'Environment variable terminated');
       fetchEnvs();
-    } catch {
-      console.error('Failed to delete environment variable');
+    } catch (err) {
+      notify('ERROR', 'Failed to delete environment variable', err.response?.data?.error || err.message);
+    } finally {
+      if (isMounted.current) setConfirmDelete(null);
     }
   };
 
@@ -93,12 +108,31 @@ const WorkspaceEnvSection = ({ workspaceId }) => {
                   </span>
                   <span className="text-[9px] font-mono text-zinc-400 truncate max-w-[150px] sm:max-w-xs uppercase">VALUE: {env.value.substring(0, 20)}{env.value.length > 20 ? '...' : ''}</span>
                 </div>
-                <button 
-                  onClick={() => handleDelete(env.name)}
-                  className="p-2 bg-zinc-900 text-zinc-300 border border-zinc-800 rounded-md transition-all opacity-0 group-hover:opacity-100 hover:text-red-500"
-                >
-                  <Trash2 size={14} />
-                </button>
+                <div className="flex items-center gap-1">
+                  {confirmDelete === env.name ? (
+                    <div className="flex items-center gap-1 bg-red-500/10 border border-red-500/20 rounded-md p-0.5">
+                      <button 
+                        onClick={() => handleDelete(env.name)}
+                        className="p-1.5 text-red-500 hover:bg-red-500 hover:text-white rounded transition-all"
+                      >
+                        <Check size={12} />
+                      </button>
+                      <button 
+                        onClick={() => setConfirmDelete(null)}
+                        className="p-1.5 text-zinc-400 hover:bg-zinc-700 hover:text-white rounded transition-all"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={() => setConfirmDelete(env.name)}
+                      className="p-2 bg-zinc-900 text-zinc-300 border border-zinc-800 rounded-md transition-all opacity-0 group-hover:opacity-100 hover:text-red-500 shadow-sm"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
               </motion.div>
             ))
           )}
@@ -133,6 +167,8 @@ const WorkspaceEnvSection = ({ workspaceId }) => {
 };
 
 const Workspaces = () => {
+  const { notify } = useNotify();
+  const isMounted = useRef(true);
   const [workspaces, setWorkspaces] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState(null);
@@ -140,16 +176,24 @@ const Workspaces = () => {
   const [newWorkspaceName, setNewWorkspaceName] = useState('');
   const [creating, setCreating] = useState(false);
 
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
   const fetchWorkspaces = useCallback(async () => {
     try {
       const res = await axios.get('/api/v1/workspaces');
-      if (res.data.success) setWorkspaces(res.data.data || []);
+      if (res.data.success && isMounted.current) {
+        setWorkspaces(res.data.data || []);
+      }
     } catch (err) {
-      console.error('Failed to fetch workspaces', err);
+      notify('ERROR', 'Failed to fetch workspaces', err.response?.data?.error || err.message);
     } finally {
-      setLoading(false);
+      if (isMounted.current) setLoading(false);
     }
-  }, []);
+  }, [notify]);
 
   useEffect(() => {
     const init = async () => {
@@ -165,14 +209,17 @@ const Workspaces = () => {
     try {
       const res = await axios.post('/api/v1/workspaces', { name: newWorkspaceName });
       if (res.data.success) {
-        setNewWorkspaceName('');
-        setShowCreateForm(false);
+        if (isMounted.current) {
+          setNewWorkspaceName('');
+          setShowCreateForm(false);
+        }
+        notify('SUCCESS', 'Compute cluster enlisted successfully');
         fetchWorkspaces();
       }
     } catch (err) {
-      console.error('Failed to create workspace', err);
+      notify('ERROR', 'Failed to create workspace', err.response?.data?.error || err.message);
     } finally {
-      setCreating(false);
+      if (isMounted.current) setCreating(false);
     }
   };
 

@@ -1,5 +1,6 @@
 import { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { useNotify } from './NotificationContext';
 
 const AuthContext = createContext(null);
 
@@ -10,6 +11,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [csrfToken, setCsrfToken] = useState(null);
+  const { notify } = useNotify();
 
   const fetchCsrfToken = useCallback(async () => {
     try {
@@ -20,10 +22,10 @@ export const AuthProvider = ({ children }) => {
         return res.data.csrfToken;
       }
     } catch {
-      console.error('Failed to fetch CSRF token');
+      notify('ERROR', 'Failed to fetch CSRF token');
     }
     return null;
-  }, []);
+  }, [notify]);
 
   const checkAuth = useCallback(async () => {
     try {
@@ -102,7 +104,7 @@ export const AuthProvider = ({ children }) => {
     try {
       await axios.post('/api/auth/logout');
     } catch (err) {
-      console.error('Logout error', err);
+      notify('ERROR', 'Logout error', err.response?.data?.error || err.message);
     } finally {
       setUser(null);
       setCsrfToken(null);

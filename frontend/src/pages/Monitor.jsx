@@ -6,6 +6,7 @@ import {
   AlertTriangle, Database, Zap, RefreshCw, ShieldAlert, BarChart3
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNotify } from '../context/NotificationContext';
 
 const MetricsGrid = ({ usage }) => {
   if (!usage) return null;
@@ -92,6 +93,7 @@ const Monitor = () => {
   const [usage, setUsage] = useState(null);
   const [auditLogs, setAuditLogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { notify } = useNotify();
 
   const fetchData = useCallback(async (isMounted = { current: true }) => {
     try {
@@ -103,11 +105,11 @@ const Monitor = () => {
       if (usageRes.data.success) setUsage(usageRes.data.data);
       if (auditRes.data.success) setAuditLogs(auditRes.data.data);
     } catch (err) {
-      console.error('Failed to fetch monitor data', err);
+      notify('ERROR', 'Failed to fetch monitor data', err.response?.data?.error || err.message);
     } finally {
       if (isMounted.current) setLoading(false);
     }
-  }, []);
+  }, [notify]);
 
   useEffect(() => {
     const isMounted = { current: true };

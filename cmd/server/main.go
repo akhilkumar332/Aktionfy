@@ -572,10 +572,6 @@ func main() {
 		log.Printf("Reverted tasks for worker %s", workerID)
 	}
 
-	if err := e.Shutdown(shutdownCtx); err != nil {
-		log.Fatalf("Server Shutdown Failed: %+v", err)
-	}
-
 	if dbPool != nil {
 		dbPool.Close()
 	}

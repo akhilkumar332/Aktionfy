@@ -226,36 +226,42 @@ const WorkflowCanvas = () => {
   const fetchTasks = useCallback(async () => {
     try {
       const res = await axios.get('/api/v1/tasks');
-      if (res.data.success) {
+      if (res.data.success && isMountedRef.current) {
         const tasksData = res.data.data || [];
         setRawTasks(tasksData);
         mapTasksToFlow(tasksData);
       }
     } catch (err) {
-      console.error('Failed to fetch tasks', err);
+      if (isMountedRef.current) {
+        notify('ERROR', 'Failed to fetch tasks', err.response?.data?.error || err.message);
+      }
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
-  }, [mapTasksToFlow]);
+  }, [mapTasksToFlow, notify]);
 
   const fetchExecutions = useCallback(async (taskId) => {
     try {
       const res = await axios.get(`/api/v1/tasks/${taskId}/executions`);
-      if (res.data.success) {
+      if (res.data.success && isMountedRef.current) {
         setExecutions(res.data.data || []);
         if (res.data.data?.length > 0) {
           setSelectedExecutionId(res.data.data[0].id);
         }
       }
     } catch (err) {
-      console.error('Failed to fetch executions', err);
+      if (isMountedRef.current) {
+        notify('ERROR', 'Failed to fetch executions', err.response?.data?.error || err.message);
+      }
     }
-  }, []);
+  }, [notify]);
 
   const fetchTraces = useCallback(async (taskId, executionId) => {
     try {
       const res = await axios.get(`/api/v1/tasks/${taskId}/traces/${executionId}`);
-      if (res.data.success) {
+      if (res.data.success && isMountedRef.current) {
         const tracesData = res.data.data || [];
         setTraces(tracesData);
         setCurrentTraceIndex(0);
@@ -269,9 +275,11 @@ const WorkflowCanvas = () => {
         }
       }
     } catch (err) {
-      console.error('Failed to fetch traces', err);
+      if (isMountedRef.current) {
+        notify('ERROR', 'Failed to fetch traces', err.response?.data?.error || err.message);
+      }
     }
-  }, []);
+  }, [notify]);
 
   useEffect(() => {
     const loadExecutions = async () => {
@@ -452,8 +460,8 @@ const WorkflowCanvas = () => {
       try {
         const payload = typeof event.payload === 'string' ? JSON.parse(event.payload) : event.payload;
         updateTaskStatusLocally(payload.task_id, payload.status);
-      } catch (err) {
-        console.error("Failed to parse task status change", err);
+      } catch {
+        // Silently fail for real-time updates to avoid spamming the user
       }
     }
   }, [updateTaskStatusLocally]));
@@ -512,7 +520,6 @@ const WorkflowCanvas = () => {
         notify('SUCCESS', 'Neural links established');
       }
     } catch (err) {
-      console.error("Failed to link tasks", err);
       notify('ERROR', 'Failed to link tasks', err.response?.data?.error || err.message);
     }
   }, [setEdges, fetchTasks, notify]);
@@ -522,11 +529,11 @@ const WorkflowCanvas = () => {
       try {
         await axios.delete(`/api/v1/tasks/${node.id}`);
       } catch (err) {
-        console.error(`Failed to delete task ${node.id}`, err);
+        notify('ERROR', `Failed to delete task ${node.id}`, err.response?.data?.error || err.message);
       }
     }
     fetchTasks();
-  }, [fetchTasks]);
+  }, [fetchTasks, notify]);
 
   const onEdgesDelete = useCallback(async (deletedEdges) => {
     for (const edge of deletedEdges) {
@@ -536,11 +543,11 @@ const WorkflowCanvas = () => {
           depends_on_task_id: null
         });
       } catch (err) {
-        console.error(`Failed to remove dependency for task ${edge.target}`, err);
+        notify('ERROR', `Failed to remove dependency for task ${edge.target}`, err.response?.data?.error || err.message);
       }
     }
     fetchTasks();
-  }, [fetchTasks]);
+  }, [fetchTasks, notify]);
 
   const onNodeClick = useCallback((event, node) => {
     const task = node.data.task;
@@ -563,7 +570,6 @@ const WorkflowCanvas = () => {
         notify('SUCCESS', 'Neural node terminated');
       }
     } catch (err) {
-      console.error("Failed to delete task", err);
       notify('ERROR', 'Failed to delete task', err.response?.data?.error || err.message);
     }
   }, [fetchTasks, notify]);
@@ -579,8 +585,7 @@ const WorkflowCanvas = () => {
       await Promise.all(promises);
       notify('SUCCESS', 'Canvas layout persisted');
     } catch (err) {
-      console.error('Failed to save layout', err);
-      notify('ERROR', 'Failed to save layout');
+      notify('ERROR', 'Failed to save layout', err.response?.data?.error || err.message);
     } finally {
       setSaving(false);
     }

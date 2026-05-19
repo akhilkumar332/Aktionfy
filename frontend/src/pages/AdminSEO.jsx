@@ -3,8 +3,10 @@ import { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import { Search, Globe, RefreshCw, AlertCircle, CheckCircle2, Layout, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNotify } from '../context/NotificationContext';
 
 const AdminSEO = () => {
+  const { notify } = useNotify();
   const [data, setData] = useState({ title: '', description: '', keywords: '' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -17,11 +19,11 @@ const AdminSEO = () => {
         setData(res.data.data || { title: 'Aktionfy', description: '', keywords: '' });
       }
     } catch (err) {
-      console.error('Failed to fetch SEO data', err);
+      notify('ERROR', 'Failed to fetch SEO data', err.response?.data?.error || err.message);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [notify]);
 
   useEffect(() => {
     const init = async () => {
@@ -38,7 +40,7 @@ const AdminSEO = () => {
       await axios.post('/api/v1/admin/seo', data);
       setMessage({ type: 'success', text: 'Neural identity manifest updated and broadcasted.' });
     } catch (err) {
-      console.error('Failed to save SEO', err);
+      notify('ERROR', 'Failed to save SEO', err.response?.data?.error || err.message);
       setMessage({ type: 'error', text: 'Failed to broadcast manifest updates.' });
     } finally {
       setSaving(false);

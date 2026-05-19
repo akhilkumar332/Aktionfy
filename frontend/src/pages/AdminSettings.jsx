@@ -1,29 +1,37 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 
 import axios from 'axios';
-import { Settings, Save, Trash2, RefreshCw, AlertCircle, CheckCircle2, Zap, Shield } from 'lucide-react';
+import { Settings, Save, Trash2, RefreshCw, Zap, Shield, X, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNotify } from '../context/NotificationContext';
 
 const AdminSettings = () => {
+  const { notify } = useNotify();
+  const isMounted = useRef(true);
   const [settings, setSettings] = useState({ worker_prune_days: 7 });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [pruning, setPruning] = useState(false);
-  const [message, setMessage] = useState({ type: '', text: '' });
+  const [confirmPrune, setConfirmPrune] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   const fetchSettings = useCallback(async () => {
     try {
       const res = await axios.get('/api/v1/admin/settings');
-      if (res.data.success) {
+      if (res.data.success && isMounted.current) {
         setSettings(res.data.data || { worker_prune_days: 7 });
       }
     } catch (err) {
-      console.error('Failed to fetch settings', err);
-      setMessage({ type: 'error', text: 'Failed to load system settings.' });
+      notify('ERROR', 'Failed to load system settings', err.response?.data?.error || err.message);
     } finally {
-      setLoading(false);
+      if (isMounted.current) setLoading(false);
     }
-  }, []);
+  }, [notify]);
 
   useEffect(() => {
     const init = async () => {
@@ -35,32 +43,30 @@ const AdminSettings = () => {
   const handleSave = async (e) => {
     e.preventDefault();
     setSaving(true);
-    setMessage({ type: '', text: '' });
     try {
       await axios.post('/api/v1/admin/settings', settings);
-      setMessage({ type: 'success', text: 'System configuration synchronized successfully.' });
+      notify('SUCCESS', 'System configuration synchronized successfully');
     } catch (err) {
-      console.error('Failed to save settings', err);
-      setMessage({ type: 'error', text: 'Failed to synchronize configuration.' });
+      notify('ERROR', 'Failed to synchronize configuration', err.response?.data?.error || err.message);
     } finally {
-      setSaving(false);
+      if (isMounted.current) setSaving(false);
     }
   };
 
   const handlePrune = async () => {
-    if (!confirm('Authorize mass node termination? All zombie workers will be purged from the registry.')) return;
     setPruning(true);
-    setMessage({ type: '', text: '' });
     try {
       const res = await axios.post('/api/v1/admin/workers/prune');
       if (res.data.success) {
-        setMessage({ type: 'success', text: `Cleanup complete. ${res.data.data.pruned_count} zombie nodes terminated.` });
+        notify('SUCCESS', `Cleanup complete. ${res.data.data.pruned_count} zombie nodes terminated.`);
       }
     } catch (err) {
-      console.error('Failed to prune workers', err);
-      setMessage({ type: 'error', text: 'Failed to execute node termination protocol.' });
+      notify('ERROR', 'Failed to execute node termination protocol', err.response?.data?.error || err.message);
     } finally {
-      setPruning(false);
+      if (isMounted.current) {
+        setPruning(false);
+        setConfirmPrune(false);
+      }
     }
   };
 
@@ -107,19 +113,6 @@ const AdminSettings = () => {
               animate={{ opacity: 1, y: 0 }}
               className="space-y-10"
             >
-              {message.text && (
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className={`p-6 rounded-xl border flex items-center gap-4 ${
-                    message.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'
-                  }`}
-                >
-                  {message.type === 'success' ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
-                  <span className="text-[10px] font-black uppercase tracking-widest">{message.text}</span>
-                </motion.div>
-              )}
-
               <form onSubmit={handleSave} className="bg-zinc-950 border border-zinc-800/50 rounded-3xl p-12 shadow-lg relative overflow-hidden backdrop-blur-xl">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-brand-primary/5 blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
                 
@@ -169,14 +162,35 @@ const AdminSettings = () => {
                       <p className="text-[10px] font-bold text-zinc-300 uppercase tracking-widest">Execute instantaneous cluster cleanup</p>
                     </div>
                   </div>
-                  <button 
-                    onClick={handlePrune}
-                    disabled={pruning}
-                    className="bg-red-500 text-white px-10 py-5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-[0_20px_50px_rgba(239,68,68,0.2)] hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50 whitespace-nowrap"
-                  >
-                    {pruning ? <RefreshCw size={16} className="animate-spin" /> : <Zap size={16} />}
-                    Initialize Purge
-                  </button>
+                  <div className="flex items-center gap-3">
+                    {confirmPrune ? (
+                      <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl p-2">
+                        <span className="text-[10px] font-black text-red-400 uppercase tracking-widest px-2">Authorize?</span>
+                        <button 
+                          onClick={handlePrune}
+                          disabled={pruning}
+                          className="p-3 bg-red-500 text-white rounded-lg hover:brightness-110 transition-all"
+                        >
+                          <Check size={18} />
+                        </button>
+                        <button 
+                          onClick={() => setConfirmPrune(false)}
+                          className="p-3 bg-zinc-800 text-zinc-400 rounded-lg hover:text-white transition-all"
+                        >
+                          <X size={18} />
+                        </button>
+                      </div>
+                    ) : (
+                      <button 
+                        onClick={() => setConfirmPrune(true)}
+                        disabled={pruning}
+                        className="bg-red-500 text-white px-10 py-5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-[0_20px_50px_rgba(239,68,68,0.2)] hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50 whitespace-nowrap"
+                      >
+                        {pruning ? <RefreshCw size={16} className="animate-spin" /> : <Zap size={16} />}
+                        Initialize Purge
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </motion.div>

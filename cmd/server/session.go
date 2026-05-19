@@ -196,12 +196,20 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 						ctx, span := otel.Tracer("aktionfy").Start(parentCtx, "Redis Task Trigger")
 						defer span.End()
 
-						taskID, _ := taskData["task_id"].(string)
-						prompt, _ := taskData["prompt"].(string)
-						executionID, _ := taskData["execution_id"].(string)
+						taskID, ok1 := taskData["task_id"].(string)
+						prompt, ok2 := taskData["prompt"].(string)
+						executionID, ok3 := taskData["execution_id"].(string)
 
-						if taskID == "" || prompt == "" || executionID == "" {
-							log.Printf("Missing critical fields in Pub/Sub payload for user %s: %+v", userID, taskData)
+						if !ok1 || !ok2 || !ok3 || taskID == "" || prompt == "" || executionID == "" {
+							missing := []string{}
+							if !ok1 || taskID == "" { missing = append(missing, "task_id") }
+							if !ok2 || prompt == "" { missing = append(missing, "prompt") }
+							if !ok3 || executionID == "" { missing = append(missing, "execution_id") }
+							
+							errMsg := fmt.Sprintf("Missing critical fields in Pub/Sub payload: %v", missing)
+							log.Printf("%s for user %s", errMsg, userID)
+							span.RecordError(errors.New(errMsg))
+							span.SetStatus(codes.Error, errMsg)
 							return
 						}
 
@@ -215,10 +223,10 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 						triggerPayload, _ := taskData["trigger_payload"].(map[string]interface{})
 
 						if triggerType == "" || triggerConfigStr == "" {
-							err := fmt.Errorf("incomplete trigger data in Pub/Sub payload")
-							log.Printf("Incomplete trigger data for user %s: %+v", userID, taskData)
-							span.RecordError(err)
-							span.SetStatus(codes.Error, err.Error())
+							errMsg := "Incomplete trigger data in Pub/Sub payload (missing trigger_type or trigger_config)"
+							log.Printf("%s for user %s: %+v", errMsg, userID, taskData)
+							span.RecordError(errors.New(errMsg))
+							span.SetStatus(codes.Error, errMsg)
 							return
 						}
 
@@ -288,16 +296,30 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 						finalPrompt, secretCount, chained, err := resolvePrompt(dbCtx, userID, tid, executionID, prompt, t.DependsOnTaskID, triggerPayload)
 						if err != nil {
 							log.Printf("Prompt resolution failed for task %s: %v", taskID, err)
-							if _, err := queries.CreateExecutionTrace(dbCtx, db.CreateExecutionTraceParams{Metadata: nil, 
+							if _, tErr := queries.CreateExecutionTrace(dbCtx, db.CreateExecutionTraceParams{Metadata: nil, 
 								TaskID:       tid,
 								ExecutionID:  executionID,
 								WorkerID:     workerID,
 								StepName:     "Prompt Resolution Failed",
 								IsError:      pgtype.Bool{Bool: true, Valid: true},
 								ErrorMessage: pgtype.Text{String: err.Error(), Valid: true},
-							}); err != nil {
-								log.Printf("Trace error for task %s: %v", taskID, err)
+							}); tErr != nil {
+								log.Printf("Trace error for task %s: %v", taskID, tErr)
 							}
+
+							// Log failure to DB and update status
+							queries.CreateTaskLog(dbCtx, db.CreateTaskLogParams{
+								TaskID:       tid,
+								UserID:       userID,
+								Status:       "failure",
+								ErrorMessage: pgtype.Text{String: fmt.Sprintf("Prompt resolution failed: %v", err), Valid: true},
+							})
+							queries.UpdateTaskStatusAndFailureCount(dbCtx, db.UpdateTaskStatusAndFailureCountParams{
+								ID:     tid,
+								UserID: userID,
+								Status: pgtype.Text{String: "active", Valid: true}, // Reset to active so it can be retried or fixed
+							})
+							return
 						} else {
 							if _, err := queries.CreateExecutionTrace(dbCtx, db.CreateExecutionTraceParams{Metadata: nil, 
 								TaskID:      tid,

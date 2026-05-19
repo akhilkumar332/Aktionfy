@@ -1,41 +1,42 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import { 
   Crown, Key, RefreshCw, Copy, Check, 
-  ShieldCheck, Zap, Bell, ShieldAlert, 
-  Terminal, Cpu, Globe, ArrowUpRight, Layers
+  ShieldCheck, Zap, ShieldAlert, 
+  Terminal, Cpu, Globe, ArrowUpRight, Layers, X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSSE } from '../hooks/useSSE';
+import { useNotify } from '../context/NotificationContext';
 
 const Dashboard = () => {
   const { user, checkAuth } = useAuth();
+  const { notify } = useNotify();
+  const isMounted = useRef(true);
   const [taskCount, setTaskCount] = useState(0);
   const [copied, setCopied] = useState(false);
   const [rotating, setRotating] = useState(false);
-  const [toasts, setToasts] = useState([]);
+  const [confirmRotate, setConfirmRotate] = useState(false);
   const [pendingApprovals, setPendingApprovals] = useState([]);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   const fetchData = useCallback(async () => {
     try {
       const res = await axios.get('/api/v1/dashboard');
-      if (res.data.success) {
+      if (res.data.success && isMounted.current) {
         setTaskCount(res.data.data.taskCount);
       }
-    } catch {
-      console.error('Failed to fetch dashboard data');
+    } catch (err) {
+      notify('ERROR', 'Failed to fetch dashboard data', err.response?.data?.error || err.message);
     }
-  }, []);
-
-  const addToast = useCallback((message, type = 'success') => {
-    const id = Date.now();
-    setToasts((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 5000);
-  }, []);
+  }, [notify]);
 
   useEffect(() => {
     const init = async () => {
@@ -48,74 +49,84 @@ const Dashboard = () => {
     if (event.event_type === 'task_executed') {
       try {
         const payload = typeof event.payload === 'string' ? JSON.parse(event.payload) : event.payload;
-        addToast(
-          `Task ${payload.task_name || payload.task_id.slice(0, 8)} executed: ${payload.status}`, 
-          payload.status === 'success' ? 'success' : 'error'
+        notify(
+          payload.status === 'success' ? 'SUCCESS' : 'ERROR', 
+          `Task ${payload.task_name || payload.task_id.slice(0, 8)} executed: ${payload.status}`
         );
         fetchData();
-      } catch (e) {
-        console.error('Error parsing task_executed payload', e);
+      } catch {
+        notify('ERROR', 'Error parsing task_executed payload');
       }
     }
 
     if (event.event_type === 'task_status_changed') {
-      addToast('Task status updated');
+      notify('SUCCESS', 'Task status updated');
       fetchData();
     }
 
     if (event.event_type === 'approval_required') {
       try {
         const payload = typeof event.payload === 'string' ? JSON.parse(event.payload) : event.payload;
-        setPendingApprovals(prev => {
-          if (prev.find(a => a.task_id === payload.task_id)) return prev;
-          return [...prev, payload];
-        });
-        addToast(`Manual Approval Required: ${payload.task_name}`, 'error');
-      } catch (e) {
-        console.error('Error parsing approval_required payload', e);
+        if (isMounted.current) {
+          setPendingApprovals(prev => {
+            if (prev.find(a => a.task_id === payload.task_id)) return prev;
+            return [...prev, payload];
+          });
+        }
+        notify('ERROR', `Manual Approval Required: ${payload.task_name}`);
+      } catch {
+        notify('ERROR', 'Error parsing approval_required payload');
       }
     }
-  }, [addToast, fetchData]));
+  }, [notify, fetchData]));
 
   const handleApprove = async (taskId) => {
     try {
       await axios.post(`/api/v1/tasks/${taskId}/approve`);
-      setPendingApprovals(prev => prev.filter(a => a.task_id !== taskId));
-      addToast('Task approved and resumed');
+      if (isMounted.current) {
+        setPendingApprovals(prev => prev.filter(a => a.task_id !== taskId));
+      }
+      notify('SUCCESS', 'Task approved and resumed');
       fetchData();
-    } catch {
-      addToast('Failed to approve task', 'error');
+    } catch (err) {
+      notify('ERROR', 'Failed to approve task', err.response?.data?.error || err.message);
     }
   };
 
   const handleDeny = async (taskId) => {
     try {
       await axios.post(`/api/v1/tasks/${taskId}/deny`);
-      setPendingApprovals(prev => prev.filter(a => a.task_id !== taskId));
-      addToast('Task execution denied');
+      if (isMounted.current) {
+        setPendingApprovals(prev => prev.filter(a => a.task_id !== taskId));
+      }
+      notify('SUCCESS', 'Task execution denied');
       fetchData();
-    } catch {
-      addToast('Failed to deny task', 'error');
+    } catch (err) {
+      notify('ERROR', 'Failed to deny task', err.response?.data?.error || err.message);
     }
   };
 
   const handleCopy = () => {
     navigator.clipboard.writeText(user?.api_key);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => {
+      if (isMounted.current) setCopied(false);
+    }, 2000);
   };
 
   const handleRotate = async () => {
-    if (!confirm('Are you sure you want to rotate your API key? The current key will stop working immediately.')) return;
     setRotating(true);
     try {
       await axios.post('/api/v1/rotate-api-key');
       await checkAuth();
-      addToast('API Key rotated successfully');
-    } catch {
-      addToast('Failed to rotate API Key', 'error');
+      notify('SUCCESS', 'API Key rotated successfully');
+    } catch (err) {
+      notify('ERROR', 'Failed to rotate API Key', err.response?.data?.error || err.message);
     } finally {
-      setRotating(false);
+      if (isMounted.current) {
+        setRotating(false);
+        setConfirmRotate(false);
+      }
     }
   };
 
@@ -125,8 +136,8 @@ const Dashboard = () => {
       if (res.data.success && res.data.data.url) {
         window.location.assign(res.data.data.url);
       }
-    } catch {
-      addToast('Failed to initiate upgrade', 'error');
+    } catch (err) {
+      notify('ERROR', 'Failed to initiate upgrade', err.response?.data?.error || err.message);
     }
   };
 
@@ -262,13 +273,34 @@ const Dashboard = () => {
                     <p className="text-[10px] font-bold text-zinc-300 uppercase tracking-widest mt-0.5">Private Protocol Token</p>
                  </div>
               </div>
-              <button 
-                onClick={handleRotate} 
-                disabled={rotating}
-                className="pro-button-secondary !py-2 !px-6 !border-zinc-800 text-[11px] uppercase tracking-widest flex items-center gap-2"
-              >
-                <RefreshCw size={14} className={rotating ? 'animate-spin' : ''} /> Rotate Signature
-              </button>
+              <div className="flex items-center gap-3">
+                {confirmRotate ? (
+                  <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl p-2 shadow-sm">
+                    <span className="text-[10px] font-black text-red-400 uppercase tracking-widest px-2">Authorize Rotation?</span>
+                    <button 
+                      onClick={handleRotate}
+                      disabled={rotating}
+                      className="p-2 bg-red-500 text-white rounded-md hover:brightness-110 transition-all shadow-md"
+                    >
+                      <Check size={14} />
+                    </button>
+                    <button 
+                      onClick={() => setConfirmRotate(false)}
+                      className="p-2 bg-zinc-800 text-zinc-400 rounded-md hover:text-white transition-all border border-zinc-700 shadow-sm"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <button 
+                    onClick={() => setConfirmRotate(true)} 
+                    disabled={rotating}
+                    className="pro-button-secondary !py-2 !px-6 !border-zinc-800 text-[11px] uppercase tracking-widest flex items-center gap-2"
+                  >
+                    <RefreshCw size={14} className={rotating ? 'animate-spin' : ''} /> Rotate Signature
+                  </button>
+                )}
+              </div>
            </div>
 
            <div className="flex flex-col sm:flex-row gap-3">
@@ -309,33 +341,6 @@ const Dashboard = () => {
            </Link>
          ))}
       </section>
-
-      {/* Notification Toast Stream */}
-      <div className="fixed bottom-8 right-8 z-[100] flex flex-col gap-3 pointer-events-none">
-        <AnimatePresence>
-          {toasts.map((toast) => (
-            <motion.div
-              key={toast.id}
-              initial={{ opacity: 0, x: 20, scale: 0.95 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 10, scale: 0.95 }}
-              className={`pointer-events-auto px-6 py-4 rounded-xl shadow-lg border flex items-center gap-4 min-w-[320px] backdrop-blur-md ${
-                toast.type === 'success' 
-                  ? 'bg-zinc-900/90 border-emerald-500/20 text-zinc-100' 
-                  : 'bg-zinc-900/90 border-red-500/20 text-zinc-100'
-              }`}
-            >
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${toast.type === 'success' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
-                {toast.type === 'success' ? <Zap size={14} /> : <Bell size={14} />}
-              </div>
-              <div className="flex-1 min-w-0">
-                <span className="block text-[10px] font-black uppercase tracking-[0.15em] opacity-40 leading-none mb-1.5">{toast.type === 'success' ? 'Protocol Sync' : 'Terminal Alert'}</span>
-                <span className="block text-xs font-semibold tracking-tight truncate">{toast.message}</span>
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
     </div>
   );
 };

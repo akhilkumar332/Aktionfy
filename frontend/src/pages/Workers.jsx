@@ -1,10 +1,13 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 
 import axios from 'axios';
 import { Activity, RefreshCw, Server, Clock, Command } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNotify } from '../context/NotificationContext';
 
 const Workers = () => {
+  const { notify } = useNotify();
+  const isMounted = useRef(true);
   const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -13,26 +16,36 @@ const Workers = () => {
     setRefreshing(true);
     try {
       const res = await axios.get('/api/v1/admin/workers');
-      if (res.data.success) {
+      if (res.data.success && isMounted.current) {
         setWorkers(res.data.data || []);
       }
     } catch (err) {
-      console.error('Failed to fetch workers', err);
+      if (isMounted.current) {
+        notify('ERROR', 'Failed to fetch workers', err.response?.data?.error || err.message);
+      }
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (isMounted.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
-  }, []);
+  }, [notify]);
 
   useEffect(() => {
-    let isMounted = true;
-    const loadData = async () => {
-      if (isMounted) await fetchWorkers();
-    };
-    loadData();
-    const interval = setInterval(fetchWorkers, 30000);
+    isMounted.current = true;
+    
+    // Use setTimeout to avoid synchronous setState inside effect (cascading render)
+    const initTimeout = setTimeout(() => {
+      if (isMounted.current) fetchWorkers();
+    }, 0);
+
+    const interval = setInterval(() => {
+      if (isMounted.current) fetchWorkers();
+    }, 30000);
+
     return () => {
-      isMounted = false;
+      isMounted.current = false;
+      clearTimeout(initTimeout);
       clearInterval(interval);
     };
   }, [fetchWorkers]);

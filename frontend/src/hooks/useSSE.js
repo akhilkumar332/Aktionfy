@@ -1,10 +1,13 @@
 import { useEffect } from 'react';
+import { useNotify } from '../context/NotificationContext';
 
 /**
  * useSSE - A hook to consume Server-Sent Events with auto-reconnect and visibility awareness
  * @param {Function} onEvent - Callback function called with parsed event data
  */
 export const useSSE = (onEvent) => {
+  const { notify } = useNotify();
+
   useEffect(() => {
     let eventSource;
     let reconnectTimeout;
@@ -23,12 +26,12 @@ export const useSSE = (onEvent) => {
           const data = JSON.parse(event.data);
           onEvent(data);
         } catch (err) {
-          console.error('Failed to parse SSE event', err);
+          notify('ERROR', 'Failed to parse SSE event', err.message);
         }
       };
 
-      eventSource.onerror = (err) => {
-        console.error('SSE connection error:', err);
+      eventSource.onerror = () => {
+        notify('ERROR', 'SSE connection error', 'The link to the neural hub was interrupted. Reconnecting...');
         eventSource.close();
         
         // Simple reconnect with 3 second delay if still visible
@@ -68,5 +71,5 @@ export const useSSE = (onEvent) => {
         clearTimeout(reconnectTimeout);
       }
     };
-  }, [onEvent]);
+  }, [onEvent, notify]);
 };

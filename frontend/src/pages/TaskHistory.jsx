@@ -1,29 +1,39 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
 import axios from 'axios';
-import { History, ArrowLeft, RefreshCw, Clock, CheckCircle2, AlertCircle, Command, GitBranch, Terminal } from 'lucide-react';
+import { History, ArrowLeft, RefreshCw, Clock, CheckCircle2, AlertCircle, Command, GitBranch, Terminal, X, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useNotify } from '../context/NotificationContext';
 
 const TaskHistory = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { notify } = useNotify();
+  const isMounted = useRef(true);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [restoring, setRestoring] = useState(null);
+  const [confirmRollback, setConfirmRollback] = useState(null);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   const fetchHistory = useCallback(async () => {
     try {
       const res = await axios.get(`/api/v1/tasks/${id}/versions`);
-      if (res.data.success) {
+      if (res.data.success && isMounted.current) {
         setHistory(res.data.data || []);
       }
-    } catch {
-      console.error('Failed to fetch task history');
+    } catch (err) {
+      notify('ERROR', 'Failed to fetch task history', err.response?.data?.error || err.message);
     } finally {
-      setLoading(false);
+      if (isMounted.current) setLoading(false);
     }
-  }, [id]);
+  }, [id, notify]);
 
   useEffect(() => {
     const init = async () => {
@@ -33,16 +43,18 @@ const TaskHistory = () => {
   }, [fetchHistory]);
 
   const handleRestore = async (versionId) => {
-    if (!confirm('Authorize neural rollback? Current configuration will be archived as a new state.')) return;
-    
     setRestoring(versionId);
     try {
       await axios.post(`/api/v1/tasks/${id}/restore/${versionId}`);
+      notify('SUCCESS', 'Neural rollback executed successfully');
       fetchHistory();
-    } catch {
-      console.error('Failed to restore task');
+    } catch (err) {
+      notify('ERROR', 'Failed to restore task state', err.response?.data?.error || err.message);
     } finally {
-      setRestoring(null);
+      if (isMounted.current) {
+        setRestoring(null);
+        setConfirmRollback(null);
+      }
     }
   };
 
@@ -165,14 +177,35 @@ const TaskHistory = () => {
                              </div>
 
                              {index !== 0 && (
-                               <button 
-                                 onClick={() => handleRestore(version.id)}
-                                 disabled={restoring === version.id}
-                                 className="w-fit  bg-blue-500 text-white px-10 py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-[0_10px_40px_rgba(59,130,246,0.3)] hover:brightness-110 active:scale-95 transition-all flex items-center gap-3 disabled:opacity-50"
-                               >
-                                 {restoring === version.id ? <RefreshCw size={16} className="animate-spin" /> : <RefreshCw size={16} />}
-                                 {restoring === version.id ? 'ROLLING BACK...' : 'Authorize Rollback'}
-                               </button>
+                               <div className="flex items-center gap-3">
+                                 {confirmRollback === version.id ? (
+                                   <div className="flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 rounded-xl p-2">
+                                     <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest px-2">Authorize?</span>
+                                     <button 
+                                       onClick={() => handleRestore(version.id)}
+                                       disabled={restoring === version.id}
+                                       className="p-3 bg-blue-500 text-white rounded-lg hover:brightness-110 transition-all"
+                                     >
+                                       <Check size={18} />
+                                     </button>
+                                     <button 
+                                       onClick={() => setConfirmRollback(null)}
+                                       className="p-3 bg-zinc-800 text-zinc-400 rounded-lg hover:text-white transition-all"
+                                     >
+                                       <X size={18} />
+                                     </button>
+                                   </div>
+                                 ) : (
+                                   <button 
+                                     onClick={() => setConfirmRollback(version.id)}
+                                     disabled={restoring === version.id}
+                                     className="w-fit  bg-blue-500 text-white px-10 py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-[0_10px_40px_rgba(59,130,246,0.3)] hover:brightness-110 active:scale-95 transition-all flex items-center gap-3 disabled:opacity-50"
+                                   >
+                                     {restoring === version.id ? <RefreshCw size={16} className="animate-spin" /> : <RefreshCw size={16} />}
+                                     {restoring === version.id ? 'ROLLING BACK...' : 'Authorize Rollback'}
+                                   </button>
+                                 )}
+                               </div>
                              )}
                           </div>
                         </div>

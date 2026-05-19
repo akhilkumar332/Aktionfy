@@ -928,6 +928,12 @@ func executeDecisionRouter(ctx context.Context, mcpServer *server.MCPServer, t d
 	dependents, err := queries.GetDependentTasks(ctx, t.ID)
 	if err != nil {
 		log.Printf("Error fetching dependent tasks for router %s: %v", taskID, err)
+		queries.UpdateTaskApprovalStatus(ctx, db.UpdateTaskApprovalStatusParams{
+			LastApprovalStatus: pgtype.Text{String: ApprovalStatusNeedsRouting, Valid: true},
+			Status:             pgtype.Text{String: StatusHalted, Valid: true},
+			ID:                 t.ID,
+			UserID:             t.UserID,
+		})
 		return
 	}
 
@@ -1372,15 +1378,22 @@ func executeSwarmRouter(ctx context.Context, mcpServer *server.MCPServer, t db.T
 	var swarmCfg SwarmConfig
 	if err := json.Unmarshal(t.SwarmConfig, &swarmCfg); err != nil {
 		log.Printf("Failed to parse swarm config for task %s: %v", taskID, err)
+		queries.UpdateTaskApprovalStatus(ctx, db.UpdateTaskApprovalStatusParams{
+			LastApprovalStatus: pgtype.Text{String: ApprovalStatusNeedsRouting, Valid: true},
+			Status:             pgtype.Text{String: StatusHalted, Valid: true},
+			ID:                 t.ID,
+			UserID:             t.UserID,
+		})
 		return
 	}
 
 	if len(swarmCfg.Council) == 0 {
 		log.Printf("Swarm council is empty for task %s", taskID)
-		queries.UpdateTaskStatus(ctx, db.UpdateTaskStatusParams{
-			Status: pgtype.Text{String: ApprovalStatusNeedsRouting, Valid: true},
-			ID:     t.ID,
-			UserID: t.UserID,
+		queries.UpdateTaskApprovalStatus(ctx, db.UpdateTaskApprovalStatusParams{
+			LastApprovalStatus: pgtype.Text{String: ApprovalStatusNeedsRouting, Valid: true},
+			Status:             pgtype.Text{String: StatusHalted, Valid: true},
+			ID:                 t.ID,
+			UserID:             t.UserID,
 		})
 		return
 	}
@@ -1388,6 +1401,12 @@ func executeSwarmRouter(ctx context.Context, mcpServer *server.MCPServer, t db.T
 	dependents, err := queries.GetDependentTasks(ctx, t.ID)
 	if err != nil {
 		log.Printf("Failed to get dependent tasks for %s: %v", taskID, err)
+		queries.UpdateTaskApprovalStatus(ctx, db.UpdateTaskApprovalStatusParams{
+			LastApprovalStatus: pgtype.Text{String: ApprovalStatusNeedsRouting, Valid: true},
+			Status:             pgtype.Text{String: StatusHalted, Valid: true},
+			ID:                 t.ID,
+			UserID:             t.UserID,
+		})
 		return
 	}
 

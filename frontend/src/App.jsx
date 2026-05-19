@@ -159,14 +159,14 @@ const AppRoutes = () => {
 function App() {
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <NotificationProvider>
+      <NotificationProvider>
+        <AuthProvider>
           <Router>
             <AppRoutes />
           </Router>
           <NotificationHub />
-        </NotificationProvider>
-      </AuthProvider>
+        </AuthProvider>
+      </NotificationProvider>
     </ErrorBoundary>
   );
 }

@@ -1,37 +1,38 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 
 import axios from 'axios';
-import { Key, Trash2, Plus, ShieldCheck, Zap, Bell, Loader2, X, RefreshCw, Shield } from 'lucide-react';
+import { Key, Trash2, Plus, ShieldCheck, Loader2, X, RefreshCw, Shield, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNotify } from '../context/NotificationContext';
 
 const Vault = () => {
+  const { notify } = useNotify();
+  const isMounted = useRef(true);
   const [secrets, setSecrets] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [toasts, setToasts] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newSecret, setNewSecret] = useState({ name: '', value: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(null);
 
-  const addToast = useCallback((message, type = 'success') => {
-    const id = Date.now();
-    setToasts((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 5000);
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
   }, []);
 
   const fetchData = useCallback(async () => {
     try {
       const res = await axios.get('/api/v1/secrets');
-      if (res.data.success) {
+      if (res.data.success && isMounted.current) {
         setSecrets(res.data.data || []);
       }
-    } catch {
-      addToast('Failed to fetch secrets', 'error');
+    } catch (err) {
+      notify('ERROR', 'Failed to fetch secrets', err.response?.data?.error || err.message);
     } finally {
-      setLoading(false);
+      if (isMounted.current) setLoading(false);
     }
-  }, [addToast]);
+  }, [notify]);
 
   useEffect(() => {
     const init = async () => {
@@ -41,33 +42,36 @@ const Vault = () => {
   }, [fetchData]);
 
   const handleDelete = async (name) => {
-    if (!confirm(`Terminate secret "${name}" linkage?`)) return;
     try {
       await axios.delete(`/api/v1/secrets/${name}`);
-      addToast(`Secret "${name}" decoupled`);
+      notify('SUCCESS', `Secret "${name}" decoupled`);
       fetchData();
-    } catch {
-      addToast(`Failed to decouple secret`, 'error');
+    } catch (err) {
+      notify('ERROR', `Failed to decouple secret`, err.response?.data?.error || err.message);
+    } finally {
+      if (isMounted.current) setConfirmDelete(null);
     }
   };
 
   const handleUpsert = async (e) => {
     e.preventDefault();
     if (!newSecret.name || !newSecret.value) {
-      addToast('Identity and value required', 'error');
+      notify('ERROR', 'Identity and value required');
       return;
     }
     setSubmitting(true);
     try {
       await axios.post('/api/v1/secrets', newSecret);
-      addToast(`Secret "${newSecret.name}" encrypted and stored`);
-      setNewSecret({ name: '', value: '' });
-      setShowAddForm(false);
+      notify('SUCCESS', `Secret "${newSecret.name}" encrypted and stored`);
+      if (isMounted.current) {
+        setNewSecret({ name: '', value: '' });
+        setShowAddForm(false);
+      }
       fetchData();
-    } catch {
-      addToast('Failed to store secret', 'error');
+    } catch (err) {
+      notify('ERROR', 'Failed to store secret', err.response?.data?.error || err.message);
     } finally {
-      setSubmitting(false);
+      if (isMounted.current) setSubmitting(false);
     }
   };
 
@@ -213,13 +217,32 @@ const Vault = () => {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={() => handleDelete(secret.name)}
-                          className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-red-500 transition-all"
-                          title="Terminate Linkage"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        {confirmDelete === secret.name ? (
+                          <div className="flex items-center gap-1 bg-red-500/10 border border-red-500/20 rounded-md p-0.5">
+                            <button 
+                              onClick={() => handleDelete(secret.name)}
+                              className="p-1 text-red-500 hover:bg-red-500 hover:text-white rounded transition-all"
+                              title="Confirm Terminate"
+                            >
+                              <Check size={14} />
+                            </button>
+                            <button 
+                              onClick={() => setConfirmDelete(null)}
+                              className="p-1 text-zinc-400 hover:bg-zinc-700 hover:text-white rounded transition-all"
+                              title="Cancel"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        ) : (
+                          <button 
+                            onClick={() => setConfirmDelete(secret.name)}
+                            className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-red-500 transition-all"
+                            title="Terminate Linkage"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -228,28 +251,6 @@ const Vault = () => {
             </tbody>
           </table>
         </div>
-      </div>
-
-      {/* Notification Toast Stream */}
-      <div className="fixed bottom-8 right-8 z-[100] flex flex-col gap-3 pointer-events-none">
-        <AnimatePresence>
-          {toasts.map((toast) => (
-            <motion.div
-              key={toast.id}
-              initial={{ opacity: 0, x: 20, scale: 0.95 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 10, scale: 0.95 }}
-              className={`pointer-events-auto px-6 py-4 rounded-xl shadow-lg border flex items-center gap-4 min-w-[320px] backdrop-blur-md bg-zinc-900/90 ${
-                toast.type === 'success' ? 'border-emerald-500/20' : 'border-red-500/20'
-              }`}
-            >
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${toast.type === 'success' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
-                {toast.type === 'success' ? <Zap size={14} /> : <Bell size={14} />}
-              </div>
-              <span className="text-xs font-semibold tracking-tight text-zinc-100 truncate">{toast.message}</span>
-            </motion.div>
-          ))}
-        </AnimatePresence>
       </div>
     </>
   );

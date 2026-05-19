@@ -6,6 +6,7 @@ import {
 import axios from 'axios';
 import { createPortal } from 'react-dom';
 import { parseJSONField, validateStep } from '../utils/wizardUtils';
+import { useNotify } from '../context/NotificationContext';
 
 // Modular Step Components
 import StepIdentity from './wizard/StepIdentity';
@@ -15,6 +16,7 @@ import StepVector from './wizard/StepVector';
 import StepDeploy from './wizard/StepDeploy';
 
 const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = false }) => {
+  const { notify } = useNotify();
   const [step, setStep] = useState(1);
   const [workspaces, setWorkspaces] = useState([]);
   const [userTasks, setUserTasks] = useState([]);
@@ -86,11 +88,11 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
         }
       }
     } catch (err) {
-      console.error('Failed to fetch workspaces', err);
+      notify('ERROR', 'Failed to fetch workspaces', err.response?.data?.error || err.message);
     } finally {
       if (isMounted.current) setLoadingWorkspaces(false);
     }
-  }, []);
+  }, [notify]);
 
   const fetchUserTasks = useCallback(async () => {
     try {
@@ -102,9 +104,9 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
         setUserTasks(filteredTasks);
       }
     } catch (err) {
-      console.error('Failed to fetch tasks', err);
+      notify('ERROR', 'Failed to fetch tasks', err.response?.data?.error || err.message);
     }
-  }, [initialData]);
+  }, [initialData, notify]);
 
   useEffect(() => {
     if (isOpen) {

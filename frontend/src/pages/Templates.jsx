@@ -1,10 +1,11 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { Layout, Search, Download, Sparkles, Zap, RefreshCw } from 'lucide-react';
+import { Layout, Search, Download, Sparkles, Zap, RefreshCw, X, Check } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import TaskWizard from '../components/TaskWizard';
+import { useNotify } from '../context/NotificationContext';
 
 const decodeBase64 = (str) => {
     if (!str) return '';
@@ -23,26 +24,35 @@ const decodeBase64 = (str) => {
 };
 
 const Templates = () => {
+    const { notify } = useNotify();
+    const isMounted = useRef(true);
     const [templates, setTemplates] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [isWizardOpen, setIsWizardOpen] = useState(false);
     const [selectedTemplate, setSelectedTemplate] = useState(null);
+    const [confirmDeploy, setConfirmDeploy] = useState(null);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        return () => {
+            isMounted.current = false;
+        };
+    }, []);
     
     const fetchTemplates = useCallback(async (query = '') => {
         setLoading(true);
         try {
             const res = await axios.get(`/api/v1/templates?search=${encodeURIComponent(query)}`);
-            if (res.data.success) {
+            if (res.data.success && isMounted.current) {
                 setTemplates(res.data.data || []);
             }
         } catch (err) {
-            console.error(err);
+            notify('ERROR', 'Failed to fetch blueprints', err.response?.data?.error || err.message);
         } finally {
-            setLoading(false);
+            if (isMounted.current) setLoading(false);
         }
-    }, []);
+    }, [notify]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -51,7 +61,28 @@ const Templates = () => {
         return () => clearTimeout(timer);
     }, [search, fetchTemplates]);
 
-    const handleUseBlueprint = async (template) => {
+    const handleDeployBundle = async (templateId) => {
+        setLoading(true);
+        try {
+            const res = await axios.post('/api/v1/blueprints/deploy', {
+                template_id: templateId,
+                variables: {} 
+            });
+            if (res.data.success) {
+                notify('SUCCESS', 'Blueprint bundle deployed successfully');
+                navigate('/canvas');
+            }
+        } catch (err) {
+            notify('ERROR', 'Failed to deploy blueprint bundle', err.response?.data?.error || err.message);
+        } finally {
+            if (isMounted.current) {
+                setLoading(false);
+                setConfirmDeploy(null);
+            }
+        }
+    };
+
+    const handleUseBlueprint = (template) => {
         let config = template.config;
         if (typeof template.config === 'string') {
             try {
@@ -60,8 +91,8 @@ const Templates = () => {
                 if (e instanceof SyntaxError) {
                     try {
                         config = JSON.parse(decodeBase64(template.config));
-                    } catch (e2) {
-                        console.error("Failed to parse template config:", e2);
+                    } catch {
+                        notify('ERROR', 'Failed to parse blueprint configuration');
                         config = null; 
                     }
                 } else {
@@ -71,23 +102,7 @@ const Templates = () => {
         }
 
         if (Array.isArray(config)) {
-            if (!confirm(`This blueprint contains ${config.length} tasks. Deploy this bundle to your workspace?`)) return;
-            
-            setLoading(true);
-            try {
-                const res = await axios.post('/api/v1/blueprints/deploy', {
-                    template_id: template.id,
-                    variables: {} 
-                });
-                if (res.data.success) {
-                    navigate('/canvas');
-                }
-            } catch (err) {
-                console.error('Failed to deploy blueprint bundle', err);
-                alert('Failed to deploy blueprint bundle. Please try again.');
-            } finally {
-                setLoading(false);
-            }
+            setConfirmDeploy({ id: template.id, count: config.length });
         } else {
             setSelectedTemplate({
                 id: template.id,
@@ -108,11 +123,10 @@ const Templates = () => {
                         try {
                             await axios.post(`/api/v1/templates/${selectedTemplate.id}/increment-uses`);
                             fetchTemplates(search);
-                        } catch (err) {
-                            console.error('Failed to increment uses', err);
+                        } catch {
+                            // Non-critical error
                         }
-                    }
-                }}
+                    }                }}
                 initialData={selectedTemplate}
             />
             
@@ -181,12 +195,33 @@ const Templates = () => {
                            <Download size={12} />
                            {t.uses_count || 0} Syncs
                         </div>
-                        <button 
-                          onClick={() => handleUseBlueprint(t)}
-                          className="pro-button-secondary !py-1.5 !px-4 !text-[10px] uppercase tracking-widest"
-                        >
-                          Initialize
-                        </button>
+                        <div className="flex items-center gap-2">
+                          {confirmDeploy?.id === t.id ? (
+                            <div className="flex items-center gap-1 bg-brand-primary/10 border border-brand-primary/20 rounded-md p-0.5">
+                              <span className="text-[9px] font-black text-brand-primary uppercase tracking-widest px-2">Deploy {confirmDeploy.count} nodes?</span>
+                              <button 
+                                onClick={() => handleDeployBundle(t.id)}
+                                disabled={loading}
+                                className="p-1.5 text-brand-primary hover:bg-brand-primary hover:text-white rounded transition-all"
+                              >
+                                <Check size={12} />
+                              </button>
+                              <button 
+                                onClick={() => setConfirmDeploy(null)}
+                                className="p-1.5 text-zinc-400 hover:bg-zinc-700 hover:text-white rounded transition-all"
+                              >
+                                <X size={12} />
+                              </button>
+                            </div>
+                          ) : (
+                            <button 
+                              onClick={() => handleUseBlueprint(t)}
+                              className="pro-button-secondary !py-1.5 !px-4 !text-[10px] uppercase tracking-widest"
+                            >
+                              Initialize
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}

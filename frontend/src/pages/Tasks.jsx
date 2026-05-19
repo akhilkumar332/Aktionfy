@@ -27,13 +27,13 @@ const Tasks = () => {
       if (res.data.success) {
         setTasks(res.data.data || []);
       }
-    } catch {
-      console.error('Failed to fetch tasks');
+    } catch (err) {
+      notify('ERROR', 'Failed to fetch tasks', err.response?.data?.error || err.message);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [notify]);
 
   useEffect(() => {
     const init = async () => {

@@ -1,14 +1,17 @@
+import { useCallback, useMemo } from 'react';
 import { Check, Zap, Rocket, Shield, Crown, Command } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
+import { useNotify } from '../context/NotificationContext';
 
 const Pricing = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { notify } = useNotify();
 
-  const handleUpgrade = async () => {
+  const handleUpgrade = useCallback(async () => {
     if (!user) {
       navigate('/login');
       return;
@@ -18,62 +21,67 @@ const Pricing = () => {
       if (res.data.success && res.data.data.url) {
         window.location.assign(res.data.data.url);
       }
-    } catch {
-      alert('Failed to initiate upgrade');
+    } catch (err) {
+      notify('ERROR', 'Failed to initiate upgrade', err.response?.data?.error || err.message);
     }
-  };
+  }, [user, navigate, notify]);
 
-  const plans = [
-    {
-      name: 'Sandbox',
-      price: '$0',
-      description: 'Ideal for rapid prototyping and individual neural discovery.',
-      icon: Zap,
-      features: [
-        '2 concurrent task streams',
-        'Standard delivery latency',
-        '100 historical logs',
-        'Community access',
-      ],
-      cta: user ? (user.tier === 'free' ? 'Active Protocol' : 'Baseline') : 'Start Free',
-      active: user?.tier === 'free',
-      highlight: false,
-    },
-    {
-      name: 'Production',
-      price: '$29',
-      period: '/mo',
-      description: 'For high-availability mission critical AI automation.',
-      icon: Rocket,
-      features: [
-        '50 concurrent task streams',
-        'Ultra-low latency priority',
-        'Unlimited log persistence',
-        'Direct engineer support',
-        'Multi-region replication',
-      ],
-      cta: user?.tier === 'pro' ? 'Active Protocol' : 'Authorize Pro',
-      active: user?.tier === 'pro',
-      highlight: true,
-      onClick: handleUpgrade,
-    },
-    {
-      name: 'Cluster',
-      price: 'Custom',
-      description: 'For industrial scale and multi-tenant deployments.',
-      icon: Shield,
-      features: [
-        'Unlimited scaling',
-        'Dedicated server clusters',
-        'White-label dashboard',
-        '99.99% uptime SLA',
-        'On-premise deployment',
-      ],
-      cta: 'Contact Logistics',
-      active: false,
-      highlight: false,
-    },
-  ];
+  const plans = useMemo(() => {
+    const isPro = user?.tier === 'pro';
+    const isFree = user?.tier === 'free';
+    
+    return [
+      {
+        name: 'Sandbox',
+        price: '$0',
+        description: 'Ideal for rapid prototyping and individual neural discovery.',
+        icon: Zap,
+        features: [
+          '2 concurrent task streams',
+          'Standard delivery latency',
+          '100 historical logs',
+          'Community access',
+        ],
+        cta: user ? (isFree ? 'Active Protocol' : 'Baseline') : 'Start Free',
+        active: isFree,
+        highlight: false,
+      },
+      {
+        name: 'Production',
+        price: '$29',
+        period: '/mo',
+        description: 'For high-availability mission critical AI automation.',
+        icon: Rocket,
+        features: [
+          '50 concurrent task streams',
+          'Ultra-low latency priority',
+          'Unlimited log persistence',
+          'Direct engineer support',
+          'Multi-region replication',
+        ],
+        cta: isPro ? 'Active Protocol' : 'Authorize Pro',
+        active: isPro,
+        highlight: true,
+        onClick: handleUpgrade,
+      },
+      {
+        name: 'Cluster',
+        price: 'Custom',
+        description: 'For industrial scale and multi-tenant deployments.',
+        icon: Shield,
+        features: [
+          'Unlimited scaling',
+          'Dedicated server clusters',
+          'White-label dashboard',
+          '99.99% uptime SLA',
+          'On-premise deployment',
+        ],
+        cta: 'Contact Logistics',
+        active: false,
+        highlight: false,
+      },
+    ];
+  }, [user, handleUpgrade]);
 
   return (
     <section id="pricing" className="py-40 bg-zinc-950 relative overflow-hidden">

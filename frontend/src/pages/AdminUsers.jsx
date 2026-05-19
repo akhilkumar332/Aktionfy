@@ -2,8 +2,10 @@ import { useEffect, useState, useCallback } from 'react';
 
 import axios from 'axios';
 import { UserCog, UserCircle, Search, RefreshCw, ChevronDown, MoreHorizontal } from 'lucide-react';
+import { useNotify } from '../context/NotificationContext';
 
 const AdminUsers = () => {
+  const { notify } = useNotify();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -15,12 +17,12 @@ const AdminUsers = () => {
       if (res.data.success) {
         setUsers(res.data.data || []);
       }
-    } catch {
-      console.error('Failed to fetch users');
+    } catch (err) {
+      notify('ERROR', 'Failed to fetch users', err.response?.data?.error || err.message);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [notify]);
 
   useEffect(() => {
     const timer = setTimeout(async () => {
@@ -34,8 +36,8 @@ const AdminUsers = () => {
     try {
       await axios.post('/api/v1/admin/users/update', { user_id: userId, role, tier });
       await fetchUsers(search);
-    } catch {
-      console.error('Failed to update user');
+    } catch (err) {
+      notify('ERROR', 'Failed to update user', err.response?.data?.error || err.message);
     } finally {
       setUpdating(null);
     }

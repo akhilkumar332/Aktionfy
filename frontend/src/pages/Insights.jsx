@@ -8,8 +8,10 @@ import {
 import { BarChart3, Activity, Zap, Users, ShieldCheck, ArrowRight, Server, Globe, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useNotify } from '../context/NotificationContext';
 
 const Insights = () => {
+  const { notify } = useNotify();
   const [data, setData] = useState(null);
   const [trends, setTrends] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -28,11 +30,11 @@ const Insights = () => {
         setTrends(trendsRes.data.data);
       }
     } catch (err) {
-      console.error('Failed to fetch insights', err);
+      notify('ERROR', 'Failed to fetch insights', err.response?.data?.error || err.message);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [notify]);
 
   useEffect(() => {
     const init = async () => {
