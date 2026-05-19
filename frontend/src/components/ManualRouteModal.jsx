@@ -36,8 +36,8 @@ const ManualRouteModal = ({ isOpen, onClose, task, tasks, onRouted }) => {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl shadow-lg w-full max-w-md overflow-hidden">
-        <div className="px-8 py-6 border-b border-zinc-800/50 flex justify-between items-center bg-zinc-900">
+      <div className="pro-card w-full max-w-md overflow-hidden shadow-2xl border-zinc-800/50">
+        <div className="px-8 py-6 border-b border-zinc-800/50 flex justify-between items-center glass-surface border-none rounded-none">
           <div>
             <h3 className="text-xl font-black text-white uppercase tracking-tighter">Manual Resolution</h3>
             <p className="text-[10px] text-zinc-400 font-black uppercase tracking-widest">Routing required</p>
@@ -90,7 +90,7 @@ const ManualRouteModal = ({ isOpen, onClose, task, tasks, onRouted }) => {
         <div className="px-8 py-6 bg-black/20 border-t border-zinc-800/50 flex justify-end gap-4">
           <button
             onClick={onClose}
-            className="px-6 py-3 text-xs font-black text-zinc-400 hover:text-white uppercase tracking-widest transition-colors"
+            className="pro-button-secondary"
           >
             Cancel
           </button>
