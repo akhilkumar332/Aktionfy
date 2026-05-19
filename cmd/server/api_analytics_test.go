@@ -11,10 +11,6 @@ import (
 )
 
 func TestHandleGetTrends(t *testing.T) {
-	if dbPool == nil {
-		t.Skip("Skipping test: dbPool is nil")
-	}
-
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/analytics/trends", nil)
 	rec := httptest.NewRecorder()

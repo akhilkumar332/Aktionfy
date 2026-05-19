@@ -141,6 +141,17 @@ func EchoRateLimitMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
+// IPRateLimitMiddleware applies the global rate limiter based on the request IP
+func IPRateLimitMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		ip := c.RealIP()
+		if !globalRateLimiter.Allow(c.Request().Context(), "ip:"+ip) {
+			return c.JSON(http.StatusTooManyRequests, APIResponse{Success: false, Error: "Too Many Requests"})
+		}
+		return next(c)
+	}
+}
+
 func getUserFromEcho(c echo.Context) *User {
 	user, _ := c.Get("user").(*User)
 	return user

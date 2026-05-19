@@ -399,7 +399,7 @@ func main() {
 	e.Static("/assets", "frontend/dist/assets")
 
 	// Auth API Handlers
-	authGroup := e.Group("/api/auth", csrfMiddleware)
+	authGroup := e.Group("/api/auth", csrfMiddleware, IPRateLimitMiddleware)
 	authGroup.GET("/csrf", apiCSRFHandler)
 	authGroup.POST("/signup", apiSignupHandler)
 	authGroup.POST("/login", apiLoginHandler)

@@ -11,9 +11,6 @@ import (
 )
 
 func TestApiCreateTaskHandler(t *testing.T) {
-	if queries == nil {
-		t.Skip("Skipping test: queries is nil")
-	}
 	e := echo.New()
 
 	taskData := `{
@@ -57,9 +54,6 @@ func TestApiCreateTaskHandler(t *testing.T) {
 }
 
 func TestApiUpdateTaskHandler(t *testing.T) {
-	if queries == nil || dbPool == nil {
-		t.Skip("Skipping test: queries or dbPool is nil")
-	}
 	e := echo.New()
 
 	taskData := `{
@@ -99,9 +93,6 @@ func TestApiUpdateTaskHandler(t *testing.T) {
 }
 
 func TestApiRestoreTaskVersionHandler(t *testing.T) {
-	if queries == nil || dbPool == nil {
-		t.Skip("Skipping test: queries or dbPool is nil")
-	}
 	e := echo.New()
 
 	req := httptest.NewRequest(http.MethodPost, "/api/tasks/550e8400-e29b-41d4-a716-446655440000/restore/550e8400-e29b-41d4-a716-446655440001", nil)

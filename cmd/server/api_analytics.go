@@ -29,6 +29,11 @@ func handleGetSystemInsights(c echo.Context) error {
 		activeSessions = 0
 	}
 
+	workerCount, err := queries.GetActiveWorkerCount(ctx)
+	if err != nil {
+		workerCount = 0
+	}
+
 	trends, err := queries.GetDailyExecutionTrends(ctx)
 	if err != nil {
 		trends = []db.GetDailyExecutionTrendsRow{}
@@ -59,10 +64,12 @@ func handleGetSystemInsights(c echo.Context) error {
 	}
 
 	data := map[string]interface{}{
-		"p99_latency":    int64(p99),
-		"success_rate":   successRate,
-		"active_workers": activeSessions,
-		"daily_tasks":    dailyTasks,
+		"p99_latency":     int64(p99),
+		"success_rate":    successRate,
+		"active_workers":  activeSessions, // Map sessions to "Active Actors" in UI
+		"worker_count":    workerCount,    // Actual background worker nodes
+		"active_sessions": activeSessions,
+		"daily_tasks":     dailyTasks,
 	}
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: data})

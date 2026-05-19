@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Terminal, Copy, Check, ExternalLink, Layout, Boxes, Command, ChevronRight, Zap } from 'lucide-react';
+import { Terminal, Copy, Check, ExternalLink, Layout, Boxes, Command, ChevronRight, Zap, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 
 const Installation = () => {
   const { user } = useAuth();
   const [copied, setCopied] = useState(null);
+  const [showKey, setShowKey] = useState(false);
 
   const handleCopy = (text, id) => {
     navigator.clipboard.writeText(text);
@@ -93,10 +94,20 @@ const Installation = () => {
                          whileInView={{ opacity: 1, y: 0 }}
                          className="mt-6 bg-black/60 border border-zinc-800/50 rounded-2xl p-5 flex items-center justify-between group/cmd shadow-inner"
                        >
-                          <code className="text-emerald-400 font-mono text-xs tracking-wider">{installCommand}</code>
-                          <button onClick={() => handleCopy(installCommand, 'install')} className="p-2 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-300 hover:text-white transition-all">
-                             {copied === 'install' ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
-                          </button>
+                          <code className="text-emerald-400 font-mono text-xs tracking-wider">
+                            {showKey ? installCommand : `npx @aktionfy/mcp install --api-key ${'•'.repeat(24)}`}
+                          </code>
+                          <div className="flex items-center gap-2">
+                            <button 
+                              onClick={() => setShowKey(!showKey)}
+                              className="p-2 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-all"
+                            >
+                              {showKey ? <EyeOff size={14} /> : <Eye size={14} />}
+                            </button>
+                            <button onClick={() => handleCopy(installCommand, 'install')} className="p-2 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-300 hover:text-white transition-all">
+                               {copied === 'install' ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
+                            </button>
+                          </div>
                        </motion.div>
                     )}
                   </div>
@@ -145,6 +156,13 @@ const Installation = () => {
                       <span className="text-[9px] font-black text-zinc-300 uppercase tracking-widest">mcp_config.json</span>
                    </div>
                    <button 
+                    onClick={() => setShowKey(!showKey)}
+                    className="p-2.5 bg-zinc-900/50 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white transition-all shadow-xl"
+                    title={showKey ? "Hide API Key" : "Show API Key"}
+                  >
+                    {showKey ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                   <button 
                     onClick={() => handleCopy(configSnippet, 'config')}
                     className="p-2.5 bg-brand-primary/10 border border-brand-primary/20 rounded-xl text-brand-primary hover:bg-brand-primary hover:text-white transition-all shadow-xl"
                   >
@@ -161,7 +179,7 @@ const Installation = () => {
                   <span className="text-brand-primary">      "command"</span>: <span className="text-emerald-500">"aktionfy"</span>, <br />
                   <span className="text-brand-primary">      "args"</span>: <span className="text-zinc-300">[</span><span className="text-emerald-500">"run"</span><span className="text-zinc-300">]</span>, <br />
                   <span className="text-brand-primary">      "env"</span>: <span className="text-zinc-300">{"{"}</span> <br />
-                  <span className="text-blue-400">        "X-API-KEY"</span>: <span className="text-emerald-500">"NEURAL_TOKEN"</span> <br />
+                  <span className="text-blue-400">        "X-API-KEY"</span>: <span className="text-emerald-500">"{showKey ? apiKey : '•'.repeat(24)}"</span> <br />
                   <span className="text-zinc-300">      {"}"}</span> <br />
                   <span className="text-zinc-300">    {"}"}</span> <br />
                   <span className="text-zinc-300">  {"}"}</span> <br />

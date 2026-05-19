@@ -8,6 +8,8 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	queries = db.New(&mockDB{})
+	mock := &mockDB{}
+	queries = db.New(mock)
+	dbPool = mock
 	os.Exit(m.Run())
 }

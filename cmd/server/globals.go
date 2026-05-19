@@ -2,10 +2,12 @@ package main
 
 import (
 	"aktionfy/db"
+	"context"
 	"encoding/hex"
 	"fmt"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
 	"github.com/redis/go-redis/v9"
 	"net/http"
@@ -54,8 +56,17 @@ func (s *GlobalSystemSettings) Update(js int, reaper int, poll int) {
 	s.SchedulerPollIntervalSec = poll
 }
 
+type DBPool interface {
+	Begin(ctx context.Context) (pgx.Tx, error)
+	Close()
+	Ping(ctx context.Context) error
+	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}
+
 var (
-	dbPool            *pgxpool.Pool
+	dbPool            DBPool
 	queries           *db.Queries
 	RedisClient       *redis.Client
 	ServerStartTime   time.Time
