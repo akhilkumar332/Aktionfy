@@ -8,11 +8,15 @@ const { StdioServerTransport } = require("@modelcontextprotocol/sdk/server/stdio
 const args = process.argv.slice(2);
 const command = args[0];
 
-// Parse --api-key and --proxy (if any)
+// Parse --api-key, --url, and --proxy (if any)
 let apiKey = "";
+let apiUrl = "";
 for (let i = 1; i < args.length; i++) {
   if (args[i] === "--api-key" && i + 1 < args.length) {
     apiKey = args[i + 1];
+    i++;
+  } else if (args[i] === "--url" && i + 1 < args.length) {
+    apiUrl = args[i + 1];
     i++;
   }
 }
@@ -28,7 +32,7 @@ if (command === "install") {
 }
 
 if (command !== "run" && command !== "start") {
-  console.error("Usage: aktionfy <run|start> --api-key <YOUR_API_KEY>");
+  console.error("Usage: aktionfy <run|start> --api-key <YOUR_API_KEY> [--url <API_URL>]");
   process.exit(1);
 }
 
@@ -38,7 +42,7 @@ if (!apiKey) {
 }
 
 // Fallback to local for development if not specified
-const BASE_URL = process.env.AKTIONFY_API_URL || "https://api.aktionfy.com";
+const BASE_URL = apiUrl || process.env.AKTIONFY_API_URL || "https://api.aktionfy.com";
 const SSE_URL = new URL("/sse", BASE_URL);
 
 async function main() {
