@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Terminal, Copy, Check, ExternalLink, Layout, Boxes, Command, ChevronRight, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useAuth } from '../context/AuthContext';
 
 const Installation = () => {
+  const { user } = useAuth();
   const [copied, setCopied] = useState(null);
 
   const handleCopy = (text, id) => {
@@ -29,14 +31,15 @@ const Installation = () => {
     }
   ];
 
-  const installCommand = 'npx @aktionfy/mcp install';
+  const apiKey = user?.api_key || 'NEURAL_ACCESS_TOKEN';
+  const installCommand = `npx @aktionfy/mcp install --api-key ${apiKey}`;
   const configSnippet = `{
   "mcpServers": {
     "aktionfy": {
       "command": "aktionfy",
       "args": ["run"],
       "env": {
-        "X-API-KEY": "NEURAL_ACCESS_TOKEN"
+        "X-API-KEY": "${apiKey}"
       }
     }
   }

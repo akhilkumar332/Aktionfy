@@ -13,8 +13,8 @@ const (
 	TierPro  = "pro"
 
 	QuotaFree = 2
-	QuotaPlus = 10
-	QuotaPro  = 20
+	QuotaPlus = 25
+	QuotaPro  = 50
 
 	PolicySkip         = "skip"
 	PolicyRunImmediate = "run_immediately"
