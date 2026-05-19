@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 
 import axios from 'axios';
-import { Key, Trash2, Plus, ShieldCheck, Loader2, X, RefreshCw, Shield, Check } from 'lucide-react';
+import { Key, Trash2, Plus, ShieldCheck, Loader2, X, RefreshCw, Shield, Check, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNotify } from '../context/NotificationContext';
 
@@ -14,6 +14,7 @@ const Vault = () => {
   const [newSecret, setNewSecret] = useState({ name: '', value: '' });
   const [submitting, setSubmitting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [showSecretValue, setShowSecretValue] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -141,14 +142,24 @@ const Vault = () => {
                 </div>
                 <div className="space-y-2">
                   <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-1">Sensitive Payload</label>
-                  <textarea 
-                    value={newSecret.value}
-                    onChange={(e) => setNewSecret({...newSecret, value: e.target.value})}
-                    placeholder="Enter raw value for 256-bit encryption..."
-                    rows={4}
-                    className="pro-input w-full font-mono !text-xs resize-none"
-                    required
-                  />
+                  <div className="relative">
+                    <input 
+                      type={showSecretValue ? "text" : "password"}
+                      value={newSecret.value}
+                      onChange={(e) => setNewSecret({...newSecret, value: e.target.value})}
+                      placeholder="Enter raw value for 256-bit encryption..."
+                      className="pro-input w-full font-mono !text-xs pr-10"
+                      required
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => setShowSecretValue(!showSecretValue)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+                      title={showSecretValue ? "Hide Value" : "Show Value"}
+                    >
+                      {showSecretValue ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
                 </div>
                 <button 
                   disabled={submitting}

@@ -133,16 +133,16 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 	defer activeSSEConnections.Dec()
 
 	sm.AddUser(ctx, userID, isBridge)
+	defer func() {
+		// Use a background context for cleanup to ensure it runs even if parent is cancelled
+		sm.RemoveUser(context.Background(), userID, isBridge)
+	}()
 
 	if !isBridge {
 		// Non-bridge connections just stay open to keep the session alive
-		// but don't subscribe to task triggers.
-		ticker := time.NewTicker(15 * time.Second)
-		defer ticker.Stop()
 		for {
 			select {
 			case <-ctx.Done():
-				sm.RemoveUser(context.Background(), userID, isBridge)
 				return
 			case <-ticker.C:
 				sm.AddUser(ctx, userID, isBridge)
@@ -179,13 +179,13 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 		ch := pubsub.Channel()
 
 		// Inner loop for processing messages
+		shouldExit := false
 		func() {
 			defer pubsub.Close()
 			for {
 				select {
 				case <-ctx.Done():
-					// The HTTP request was cancelled (connection closed)
-					sm.RemoveUser(context.Background(), userID, isBridge)
+					shouldExit = true
 					return
 				case <-ticker.C:
 					sm.AddUser(ctx, userID, isBridge)
@@ -649,12 +649,8 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 			}
 		}()
 
-		// Check if we exited the inner loop because of ctx.Done()
-		select {
-		case <-ctx.Done():
+		if shouldExit {
 			return
-		default:
-			// Continue to outer loop to re-subscribe
 		}
 	}
 }

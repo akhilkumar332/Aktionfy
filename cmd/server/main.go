@@ -282,7 +282,7 @@ func main() {
 	// 3.5 Health Check (Public)
 	e.GET("/health", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{"status": "ok", "version": "1.0.0"})
-	})
+	}, IPRateLimitMiddleware)
 
 	// CSRF Setup
 	csrfKey := cfg.CSRFKey

@@ -227,13 +227,17 @@ func apiRotateAPIKeyHandler(c echo.Context) error {
 
 	newKey, err := RotateAPIKey(c.Request().Context(), user.ID)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to rotate API key"})
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to rotate API Key"})
 	}
+
 	writeAuditLog(c.Request().Context(), AuditEvent{
 		UserID:       user.ID,
-		Action:       "user.rotate_api_key",
+		Action:       "user.rotate_key",
 		ResourceType: "user",
 		ResourceID:   user.ID,
+		Metadata: map[string]interface{}{
+			"email": user.Email,
+		},
 	})
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: map[string]string{"api_key": newKey}})
