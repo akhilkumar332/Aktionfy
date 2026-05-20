@@ -66,12 +66,12 @@ async function main() {
 
   const mcpClient = new Client(
     { name: "aktionfy-bridge-client", version: "1.0.0" },
-    { capabilities: { tools: {}, sampling: {} } }
+    { capabilities: { tools: {}, sampling: {}, prompts: {}, resources: {} } }
   );
 
   const mcpServer = new Server(
     { name: "aktionfy-bridge", version: "1.0.0" },
-    { capabilities: { tools: {}, sampling: {} } }
+    { capabilities: { tools: {}, sampling: {}, prompts: {}, resources: {} } }
   );
 
   try {
