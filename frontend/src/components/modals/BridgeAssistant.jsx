@@ -184,7 +184,7 @@ const BridgeAssistant = ({ isOpen, onClose, systemStatus, fetchStatus }) => {
                 <li>Add New MCP Server: <span className="text-zinc-200">Actionfy</span></li>
                 <li>Command: <span className="text-zinc-200 font-mono text-[10px]">npx</span></li>
                 <li>
-                  Args: <span className="text-zinc-200 font-mono text-[10px]">-y @aktionfy/mcp start --api-key {showKey ? apiKey : apiKey.slice(0, 8) + '••••••••'}</span>
+                  Args: <span className="text-zinc-200 font-mono text-[10px]">-y @aktionfy/mcp start --api-key {showKey ? apiKey : (apiKey.length > 8 ? apiKey.slice(0, 8) + '••••••••' : '••••••••')}</span>
                   <button 
                     onClick={() => setShowKey(!showKey)}
                     className="ml-2 text-zinc-500 hover:text-white transition-all align-middle"

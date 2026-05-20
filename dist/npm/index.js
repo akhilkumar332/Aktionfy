@@ -11,11 +11,11 @@ const command = args[0];
 // Parse --api-key, --url, and --proxy (if any)
 let apiKey = "";
 let apiUrl = "";
-for (let i = 1; i < args.length; i++) {
-  if (args[i] === "--api-key" && i + 1 < args.length) {
+for (let i = 0; i < args.length; i++) {
+  if ((args[i] === "--api-key" || args[i] === "-k") && i + 1 < args.length) {
     apiKey = args[i + 1];
     i++;
-  } else if (args[i] === "--url" && i + 1 < args.length) {
+  } else if ((args[i] === "--url" || args[i] === "-u") && i + 1 < args.length) {
     apiUrl = args[i + 1];
     i++;
   }
@@ -38,6 +38,7 @@ if (command !== "run" && command !== "start") {
 
 if (!apiKey) {
   console.error("Error: --api-key is required to connect to the Aktionfy engine.");
+  console.error("You can also set the AKTIONFY_API_KEY environment variable.");
   process.exit(1);
 }
 
@@ -49,7 +50,7 @@ async function main() {
   try {
     // 1. Set up the transport to the remote Aktionfy Server
     const sseTransport = new SSEClientTransport(SSE_URL, {
-      requestInit: {
+      eventSourceInit: {
         headers: {
           "X-API-Key": apiKey
         }
@@ -74,25 +75,16 @@ async function main() {
     // 2. Set up the local stdio transport to communicate with the host client (e.g. Claude)
     const stdioTransport = new StdioServerTransport();
     
-    // We need to pass messages back and forth. The @modelcontextprotocol/sdk provides 
-    // a way to connect a client and server transport, effectively creating a proxy.
-    
+    // We need to pass messages back and forth. 
     stdioTransport.onmessage = async (message) => {
         // Forward message from Stdio (Claude) to SSE (Aktionfy Server)
         try {
-            // We use the underlying connection of the client transport if available,
-            // or we make direct requests using the client. 
-            // For a true proxy, we'd need a server instance, but we can manually bridge it.
-            // A simpler approach for a tool-only bridge is to listen for tool calls on Stdio
-            // and dispatch them via the MCP client.
-            
             if (message.method === "tools/call") {
                  const result = await mcpClient.callTool({
                      name: message.params.name,
                      arguments: message.params.arguments
                  });
                  
-                 // Send back the result over stdio
                  stdioTransport.send({
                      jsonrpc: "2.0",
                      id: message.id,
@@ -126,7 +118,6 @@ async function main() {
                 // Ignore
             }
             else {
-                 // For other methods, return method not found or empty
                  if (message.id) {
                      stdioTransport.send({
                          jsonrpc: "2.0",
@@ -147,16 +138,19 @@ async function main() {
         }
     };
 
-    stdioTransport.onclose = () => {
-        sseTransport.close();
+    const cleanup = async () => {
+        try {
+            await sseTransport.close();
+        } catch (e) {}
         process.exit(0);
     };
 
-    sseTransport.onclose = () => {
-        stdioTransport.close();
-        process.exit(0);
-    };
+    stdioTransport.onclose = cleanup;
+    sseTransport.onclose = cleanup;
     
+    process.on('SIGINT', cleanup);
+    process.on('SIGTERM', cleanup);
+
     // Start listening on stdin
     await stdioTransport.start();
 

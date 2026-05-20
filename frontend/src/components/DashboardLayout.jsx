@@ -146,6 +146,17 @@ const DashboardLayout = ({ children }) => {
     };
   }, []);
 
+  useEffect(() => {
+    if (isSearchOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isSearchOpen]);
+
   const closeSearch = () => {
     setIsSearchOpen(false);
     setTimeout(() => {
@@ -189,18 +200,21 @@ const DashboardLayout = ({ children }) => {
   })();
 
   const handleSearchKeyDown = (e) => {
+    if (searchResults.length === 0) {
+      if (e.key === 'Escape') closeSearch();
+      return;
+    }
+
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setSelectedIndex((prev) => (prev + 1) % (searchResults.length || 1));
+      setSelectedIndex((prev) => (prev + 1) % searchResults.length);
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setSelectedIndex((prev) => (prev - 1 + searchResults.length) % (searchResults.length || 1));
+      setSelectedIndex((prev) => (prev - 1 + searchResults.length) % searchResults.length);
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      if (searchResults.length > 0) {
-        navigate(searchResults[selectedIndex].path);
-        closeSearch();
-      }
+      navigate(searchResults[selectedIndex].path);
+      closeSearch();
     } else if (e.key === 'Escape') {
       closeSearch();
     }
@@ -361,10 +375,15 @@ const DashboardLayout = ({ children }) => {
                     }}
                     onKeyDown={handleSearchKeyDown}
                     autoFocus
+                    aria-label="Search Aktionfy"
+                    role="combobox"
+                    aria-expanded="true"
+                    aria-controls="search-results"
+                    aria-haspopup="listbox"
                   />
                   <div className="px-2 py-1 bg-zinc-900 border border-zinc-800 rounded text-[10px] font-black text-zinc-500 tracking-widest">ESC</div>
                </div>
-               <div className="p-4 max-h-[400px] overflow-y-auto custom-scrollbar">
+               <div className="p-4 max-h-[400px] overflow-y-auto custom-scrollbar" id="search-results" role="listbox">
                   {searchResults.length > 0 ? (
                     <div className="space-y-1">
                       {searchResults.map((item, idx) => {
@@ -379,6 +398,8 @@ const DashboardLayout = ({ children }) => {
                             }}
                             onMouseEnter={() => setSelectedIndex(idx)}
                             className={`w-full text-left px-4 py-3 rounded-lg transition-colors flex items-center justify-between group ${isSelected ? 'bg-zinc-900' : 'hover:bg-zinc-900/50'}`}
+                            role="option"
+                            aria-selected={isSelected}
                           >
                             <div className="flex items-center gap-3">
                               <Icon size={16} className={isSelected ? 'text-brand-primary' : 'text-zinc-500'} />
