@@ -908,7 +908,7 @@ func (q *Queries) GetDependentTasks(ctx context.Context, dependsOnTaskID pgtype.
 }
 
 const getDependentTasksToTrigger = `-- name: GetDependentTasksToTrigger :many
-SELECT t.id, t.user_id, t.name, t.trigger_type, t.trigger_config, t.agent_prompt, t.status, t.locked_by, t.next_run, t.last_run, t.failure_count, t.missed_task_policy, t.depends_on_task_id, t.created_at, t.requires_approval, t.encrypted_secrets, t.last_approval_status, t.trigger_on_completion, t.task_type, t.native_code, t.workspace_id, t.max_retries, t.retry_count, t.backoff_strategy, t.ui_coordinates, t.branch_condition, t.is_bundle_root, t.loop_condition, t.swarm_config FROM tasks t
+SELECT t.id, t.user_id, t.name, t.trigger_type, t.trigger_config, t.agent_prompt, t.status, t.locked_by, t.locked_at, t.next_run, t.last_run, t.failure_count, t.missed_task_policy, t.depends_on_task_id, t.created_at, t.requires_approval, t.encrypted_secrets, t.last_approval_status, t.trigger_on_completion, t.task_type, t.native_code, t.workspace_id, t.max_retries, t.retry_count, t.backoff_strategy, t.ui_coordinates, t.branch_condition, t.is_bundle_root, t.loop_condition, t.swarm_config FROM tasks t
 INNER JOIN tasks parent ON t.depends_on_task_id = parent.id
 WHERE t.depends_on_task_id = $1 
   AND t.trigger_on_completion = TRUE 
@@ -1219,7 +1219,7 @@ func (q *Queries) GetTaskByID(ctx context.Context, arg GetTaskByIDParams) (Task,
 }
 
 const getTaskByWebhookToken = `-- name: GetTaskByWebhookToken :one
-SELECT t.id, t.user_id, t.name, t.trigger_type, t.trigger_config, t.agent_prompt, t.status, t.locked_by, t.next_run, t.last_run, t.failure_count, t.missed_task_policy, t.depends_on_task_id, t.created_at, t.requires_approval, t.encrypted_secrets, t.last_approval_status, t.trigger_on_completion, t.task_type, t.native_code, t.workspace_id, t.max_retries, t.retry_count, t.backoff_strategy, t.ui_coordinates, t.branch_condition, t.is_bundle_root, t.loop_condition, t.swarm_config FROM tasks t JOIN webhook_triggers w ON t.id = w.task_id WHERE w.token = $1
+SELECT t.id, t.user_id, t.name, t.trigger_type, t.trigger_config, t.agent_prompt, t.status, t.locked_by, t.locked_at, t.next_run, t.last_run, t.failure_count, t.missed_task_policy, t.depends_on_task_id, t.created_at, t.requires_approval, t.encrypted_secrets, t.last_approval_status, t.trigger_on_completion, t.task_type, t.native_code, t.workspace_id, t.max_retries, t.retry_count, t.backoff_strategy, t.ui_coordinates, t.branch_condition, t.is_bundle_root, t.loop_condition, t.swarm_config FROM tasks t JOIN webhook_triggers w ON t.id = w.task_id WHERE w.token = $1
 `
 
 func (q *Queries) GetTaskByWebhookToken(ctx context.Context, token string) (Task, error) {
@@ -1963,7 +1963,7 @@ func (q *Queries) ListUserSecrets(ctx context.Context, userID string) ([]ListUse
 
 const listUserTasks = `-- name: ListUserTasks :many
 SELECT 
-    t.id, t.user_id, t.name, t.trigger_type, t.trigger_config, t.agent_prompt, t.status, t.locked_by, t.next_run, t.last_run, t.failure_count, t.missed_task_policy, t.depends_on_task_id, t.created_at, t.requires_approval, t.encrypted_secrets, t.last_approval_status, t.trigger_on_completion, t.task_type, t.native_code, t.workspace_id, t.max_retries, t.retry_count, t.backoff_strategy, t.ui_coordinates, t.branch_condition, t.is_bundle_root, t.loop_condition, t.swarm_config,
+    t.id, t.user_id, t.name, t.trigger_type, t.trigger_config, t.agent_prompt, t.status, t.locked_by, t.locked_at, t.next_run, t.last_run, t.failure_count, t.missed_task_policy, t.depends_on_task_id, t.created_at, t.requires_approval, t.encrypted_secrets, t.last_approval_status, t.trigger_on_completion, t.task_type, t.native_code, t.workspace_id, t.max_retries, t.retry_count, t.backoff_strategy, t.ui_coordinates, t.branch_condition, t.is_bundle_root, t.loop_condition, t.swarm_config,
     (SELECT COUNT(*) FROM task_versions tv WHERE tv.task_id = t.id) as version_count
 FROM tasks t
 WHERE t.user_id = $1
@@ -1975,7 +1975,7 @@ type ListUserTasksRow struct {
 	UserID              string             `json:"user_id"`
 	Name                string             `json:"name"`
 	TriggerType         pgtype.Text        `json:"trigger_type"`
-	TriggerConfig       []byte             `json:"trigger_config"`
+	TriggerConfig       json.RawMessage    `json:"trigger_config"`
 	AgentPrompt         string             `json:"agent_prompt"`
 	Status              pgtype.Text        `json:"status"`
 	LockedBy            pgtype.Text        `json:"locked_by"`
@@ -1996,11 +1996,11 @@ type ListUserTasksRow struct {
 	MaxRetries          pgtype.Int4        `json:"max_retries"`
 	RetryCount          pgtype.Int4        `json:"retry_count"`
 	BackoffStrategy     pgtype.Text        `json:"backoff_strategy"`
-	UiCoordinates       []byte             `json:"ui_coordinates"`
-	BranchCondition     []byte             `json:"branch_condition"`
+	UiCoordinates       json.RawMessage    `json:"ui_coordinates"`
+	BranchCondition     json.RawMessage    `json:"branch_condition"`
 	IsBundleRoot        pgtype.Bool        `json:"is_bundle_root"`
-	LoopCondition       []byte             `json:"loop_condition"`
-	SwarmConfig         []byte             `json:"swarm_config"`
+	LoopCondition       json.RawMessage    `json:"loop_condition"`
+	SwarmConfig         json.RawMessage    `json:"swarm_config"`
 	VersionCount        int64              `json:"version_count"`
 }
 

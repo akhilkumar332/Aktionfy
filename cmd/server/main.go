@@ -232,6 +232,16 @@ func main() {
 
 	// 3. Setup Echo Server
 	e := echo.New()
+	e.HTTPErrorHandler = func(err error, c echo.Context) {
+		code := http.StatusInternalServerError
+		if he, ok := err.(*echo.HTTPError); ok {
+			code = he.Code
+		}
+		if code == http.StatusInternalServerError {
+			log.Printf("CRITICAL SERVER ERROR [%s %s]: %v", c.Request().Method, c.Request().URL.Path, err)
+		}
+		e.DefaultHTTPErrorHandler(err, c)
+	}
 
 	// URL Fix Middleware must be at the very top for CSRF same-origin check
 	// URL Fix Middleware must be at the very top for CSRF same-origin check

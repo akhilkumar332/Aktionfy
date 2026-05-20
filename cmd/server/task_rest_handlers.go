@@ -118,6 +118,7 @@ func apiListTasksHandler(c echo.Context) error {
 
 	tasks, err := queries.ListUserTasks(c.Request().Context(), userID)
 	if err != nil {
+		log.Printf("Failed to list tasks for user %s: %v", userID, err)
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to list tasks"})
 	}
 	if tasks == nil {
