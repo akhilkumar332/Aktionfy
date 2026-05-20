@@ -50,7 +50,7 @@ async function main() {
   try {
     // 1. Set up the transport to the remote Aktionfy Server
     const sseTransport = new SSEClientTransport(SSE_URL, {
-      eventSourceInit: {
+      requestInit: {
         headers: {
           "X-API-Key": apiKey
         }

@@ -2,13 +2,11 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"log"
 	"net/http"
 	"time"
 
 	"aktionfy/db"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/labstack/echo/v4"
 )
@@ -222,7 +220,14 @@ func apiDeleteTaskHandler(c echo.Context) error {
 }
 
 type UpdateTaskRequest struct {
+	Name                string          `json:"name"`
+	WorkspaceID         string          `json:"workspace_id"`
+	TaskType            string          `json:"task_type"`
 	AgentPrompt         string          `json:"agent_prompt"`
+	NativeCode          string          `json:"native_code"`
+	TriggerType         string          `json:"trigger_type"`
+	TriggerConfig       json.RawMessage `json:"trigger_config"`
+	RequiresApproval    bool            `json:"requires_approval"`
 	MissedTaskPolicy    string          `json:"missed_task_policy"`
 	UICoordinates       json.RawMessage `json:"ui_coordinates"`
 	DependsOnTaskID     string          `json:"depends_on_task_id"`
@@ -265,6 +270,14 @@ func apiUpdateTaskHandler(c echo.Context) error {
 		log.Printf("Warning: Failed to create task version snapshot for %s: %v", taskIDStr, err)
 	}
 
+	var workspaceID pgtype.UUID
+	if req.WorkspaceID != "" {
+		workspaceID, err = mustParseUUID(c, req.WorkspaceID)
+		if err != nil {
+			return err
+		}
+	}
+
 	var dependsOnTaskID pgtype.UUID
 	if req.DependsOnTaskID != "" {
 		dependsOnTaskID, err = mustParseUUID(c, req.DependsOnTaskID)
@@ -273,22 +286,48 @@ func apiUpdateTaskHandler(c echo.Context) error {
 		}
 	}
 
-	_, err = qtx.UpdateTaskAgentPromptAndPolicy(ctx, db.UpdateTaskAgentPromptAndPolicyParams{
-		AgentPrompt:         req.AgentPrompt,
-		MissedTaskPolicy:    pgtype.Text{String: req.MissedTaskPolicy, Valid: true},
-		UiCoordinates:       req.UICoordinates,
-		DependsOnTaskID:     dependsOnTaskID,
-		TriggerOnCompletion: pgtype.Bool{Bool: req.TriggerOnCompletion, Valid: true},
-		BranchCondition:     req.BranchCondition,
-		LoopCondition:       req.LoopCondition,
-		SwarmConfig:         req.SwarmConfig,
-		ID:                  taskID,
-		UserID:              userID,
-	})
+	// Use manual SQL to ensure all fields are updated since sqlc isn't available to regenerate
+	query := `
+		UPDATE tasks
+		SET name = $1,
+		    workspace_id = $2,
+		    task_type = $3,
+		    agent_prompt = $4,
+		    native_code = $5,
+		    trigger_type = $6,
+		    trigger_config = $7,
+		    requires_approval = $8,
+		    missed_task_policy = $9,
+		    ui_coordinates = $10,
+		    depends_on_task_id = $11,
+		    trigger_on_completion = $12,
+		    branch_condition = $13,
+		    loop_condition = $14,
+		    swarm_config = $15,
+		    updated_at = NOW()
+		WHERE id = $16 AND user_id = $17`
+
+	_, err = tx.Exec(ctx, query,
+		req.Name,
+		workspaceID,
+		req.TaskType,
+		req.AgentPrompt,
+		req.NativeCode,
+		req.TriggerType,
+		req.TriggerConfig,
+		req.RequiresApproval,
+		req.MissedTaskPolicy,
+		req.UICoordinates,
+		dependsOnTaskID,
+		req.TriggerOnCompletion,
+		req.BranchCondition,
+		req.LoopCondition,
+		req.SwarmConfig,
+		taskID,
+		userID,
+	)
+
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return c.JSON(http.StatusNotFound, APIResponse{Success: false, Error: "Task not found"})
-		}
 		log.Printf("Failed to update task: %v", err)
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to update task"})
 	}
