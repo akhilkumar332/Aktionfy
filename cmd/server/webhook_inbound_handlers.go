@@ -39,7 +39,9 @@ func handleInboundWebhook(c echo.Context) error {
 		}
 	}
 
-	// Trigger the task immediately in a background goroutine to not block the webhook response
+	// Trigger the task immediately in a background goroutine to not block the webhook response.
+	// We MUST use context.Background() here because the request-scoped context (c.Request().Context())
+	// will be cancelled as soon as this handler returns.
 	workerWG.Add(1)
 	go func(p map[string]interface{}) {
 		defer workerWG.Done()
@@ -48,7 +50,8 @@ func handleInboundWebhook(c echo.Context) error {
 				log.Printf("Panic recovered in inbound webhook worker: %v", r)
 			}
 		}()
-		workerCtx, cancel := context.WithTimeout(c.Request().Context(), 60*time.Second)
+		// Use a fresh context for the long-running background operation
+		workerCtx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 		defer cancel()
 		handleDispatchTask(workerCtx, claimedTask, p)
 	}(payload)

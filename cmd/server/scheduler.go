@@ -159,54 +159,45 @@ func listenForTaskClaims(ctx context.Context, dbURL string) {
 			return
 		}
 
-		conn, err := pgx.Connect(ctx, dbURL)
-		if err != nil {
-			log.Printf("Failed to connect task claim listener: %v. Retrying in %v...", err, backoff)
-			timer := time.NewTimer(backoff)
-			select {
-			case <-ctx.Done():
-				timer.Stop()
-				return
-			case <-timer.C:
-			}
-			if backoff < 30*time.Second {
-				backoff *= 2
-			}
-			continue
-		}
-
-		_, err = conn.Exec(ctx, "LISTEN task_claimed")
-		if err != nil {
-			log.Printf("Failed to LISTEN for task claims: %v", err)
-			conn.Close(context.Background())
-			timer := time.NewTimer(backoff)
-			select {
-			case <-ctx.Done():
-				timer.Stop()
-				return
-			case <-timer.C:
-			}
-			if backoff < 30*time.Second {
-				backoff *= 2
-			}
-			continue
-		}
-
-		backoff = time.Second
-		log.Printf("Listening for PostgreSQL task claim notifications as worker %s", workerID)
-
-		for {
-			notification, err := conn.WaitForNotification(ctx)
+		func() {
+			conn, err := pgx.Connect(ctx, dbURL)
 			if err != nil {
-				conn.Close(context.Background())
-				if ctx.Err() != nil {
+				log.Printf("Failed to connect task claim listener: %v. Retrying in %v...", err, backoff)
+				timer := time.NewTimer(backoff)
+				select {
+				case <-ctx.Done():
+					timer.Stop()
+					return
+				case <-timer.C:
+				}
+				if backoff < 30*time.Second {
+					backoff *= 2
+				}
+				return
+			}
+			defer conn.Close(context.Background())
+
+			_, err = conn.Exec(ctx, "LISTEN task_claimed")
+			if err != nil {
+				log.Printf("Failed to LISTEN for task claims: %v", err)
+				return
+			}
+
+			backoff = time.Second
+			log.Printf("Listening for PostgreSQL task claim notifications as worker %s", workerID)
+
+			for {
+				notification, err := conn.WaitForNotification(ctx)
+				if err != nil {
+					if ctx.Err() != nil {
+						return
+					}
+					log.Printf("Task claim listener disconnected: %v", err)
 					return
 				}
-				log.Printf("Task claim listener disconnected: %v", err)
-				break
+				handleTaskClaimNotification(ctx, notification.Payload)
 			}
-			handleTaskClaimNotification(ctx, notification.Payload)
-		}
+		}()
 	}
 }
 
