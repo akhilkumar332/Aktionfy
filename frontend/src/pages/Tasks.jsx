@@ -5,7 +5,7 @@ import axios from 'axios';
 import { 
   Play, Pause, Trash2,
   Cpu, Link as LinkIcon, History, Plus, 
-  Activity, Command, RefreshCw, X, Check
+  Activity, Command, RefreshCw, X, Check, Settings
 } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -17,6 +17,7 @@ const Tasks = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
 
@@ -41,6 +42,11 @@ const Tasks = () => {
     };
     init();
   }, [fetchTasks]);
+
+  const handleEdit = (task) => {
+    setSelectedTask(task);
+    setIsWizardOpen(true);
+  };
 
   const handleAction = async (taskId, action) => {
     try {
@@ -88,8 +94,12 @@ const Tasks = () => {
         {isWizardOpen && (
           <TaskWizard 
             isOpen={isWizardOpen} 
-            onClose={() => setIsWizardOpen(false)} 
+            onClose={() => {
+              setIsWizardOpen(false);
+              setSelectedTask(null);
+            }} 
             onTaskCreated={() => fetchTasks()} 
+            initialData={selectedTask}
           />
         )}
       </AnimatePresence>
@@ -167,6 +177,13 @@ const Tasks = () => {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                           onClick={() => handleEdit(task)}
+                           className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-white transition-all shadow-sm"
+                           title="Calibrate Node"
+                        >
+                           <Settings size={14} />
+                        </button>
                         <button 
                           onClick={() => navigate(`/tasks/${task.id}/history`)} 
                           className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-white transition-all shadow-sm" 

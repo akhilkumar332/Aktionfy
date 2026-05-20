@@ -105,7 +105,7 @@ const Templates = () => {
             setConfirmDeploy({ id: template.id, count: config.length });
         } else {
             setSelectedTemplate({
-                id: template.id,
+                template_id: template.id,
                 name: `${template.name} (Copy)`,
                 ...config
             });
@@ -119,9 +119,9 @@ const Templates = () => {
                 isOpen={isWizardOpen} 
                 onClose={() => setIsWizardOpen(false)} 
                 onTaskCreated={async () => {
-                    if (selectedTemplate && selectedTemplate.id) {
+                    if (selectedTemplate && selectedTemplate.template_id) {
                         try {
-                            await axios.post(`/api/v1/templates/${selectedTemplate.id}/increment-uses`);
+                            await axios.post(`/api/v1/templates/${selectedTemplate.template_id}/increment-uses`);
                             fetchTemplates(search);
                         } catch {
                             // Non-critical error

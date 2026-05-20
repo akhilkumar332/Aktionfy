@@ -191,8 +191,9 @@ const DashboardLayout = ({ children }) => {
     });
 
     searchTasks.forEach(task => {
-      if (task.name.toLowerCase().includes(q) || task.id.toLowerCase().includes(q)) {
-        results.push({ type: 'task', label: task.name, id: task.id, path: `/tasks/${task.id}/history`, icon: ListTodo, group: 'Tasks' });
+      const taskIdStr = String(task.id);
+      if (task.name.toLowerCase().includes(q) || taskIdStr.toLowerCase().includes(q)) {
+        results.push({ type: 'task', label: task.name, id: taskIdStr, path: `/tasks/${taskIdStr}/history`, icon: ListTodo, group: 'Tasks' });
       }
     });
 

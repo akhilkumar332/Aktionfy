@@ -14,7 +14,7 @@ import 'reactflow/dist/style.css';
 import TaskWizard from '../components/TaskWizard';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
-import { Save, RefreshCw, Layers, X, Trash2, Play, Pause, FastForward, Rewind, Activity, Check } from 'lucide-react';
+import { Save, RefreshCw, Layers, X, Trash2, Play, Pause, FastForward, Rewind, Activity, Check, Plus } from 'lucide-react';
 import DecisionNode from '../components/DecisionNode';
 import ManualRouteModal from '../components/ManualRouteModal';
 import GlobalPlaybackBar from '../components/GlobalPlaybackBar';
@@ -516,6 +516,12 @@ const WorkflowCanvas = () => {
     fetchTasks();
   }, [fetchTasks, notify]);
 
+  const handleCreateNew = () => {
+    setSelectedTask(null);
+    setPlaybackMode(false);
+    setIsSidebarOpen(true);
+  };
+
   const onNodeClick = useCallback((event, node) => {
     const task = node.data.task;
     setSelectedTask(task);
@@ -579,6 +585,13 @@ const WorkflowCanvas = () => {
         </div>
         <div className="flex gap-3">
           <button 
+            onClick={handleCreateNew}
+            className="pro-button-primary !py-4 !px-6 flex items-center gap-3"
+          >
+            <Plus size={18} />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Add Node</span>
+          </button>
+          <button 
             onClick={fetchTasks}
             disabled={loading}
             className="p-4 bg-zinc-900 text-zinc-400 rounded-2xl border border-zinc-800/50 hover:bg-zinc-100/10 hover:text-white transition-all disabled:opacity-50"
@@ -629,7 +642,7 @@ const WorkflowCanvas = () => {
                 <h2 className="text-xl font-black text-white uppercase tracking-widest mb-4">Neural Void</h2>
                 <p className="text-zinc-400 text-xs font-bold uppercase tracking-widest leading-relaxed">No orchestration streams identified in this environment.</p>
                 <button 
-                  onClick={() => setIsSidebarOpen(true)}
+                  onClick={handleCreateNew}
                   className="mt-8 px-10 py-5 bg-indigo-600 text-white rounded-xl font-black uppercase text-[10px] tracking-[0.2em] shadow-lg"
                 >
                   Fire First Orchestration
