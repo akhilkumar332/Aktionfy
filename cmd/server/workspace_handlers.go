@@ -77,6 +77,9 @@ func handleListWorkspaceEnvVars(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch environment variables"})
 	}
+	if envVars == nil {
+		envVars = []db.WorkspaceEnvVar{}
+	}
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: envVars})
 }

@@ -310,7 +310,7 @@ func apiMonitorHandler(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch logs"})
 	}
 
-	var logs []TaskLog
+	logs := make([]TaskLog, 0)
 	for _, l := range rows {
 		var llmResp, errMsg *string
 		if l.LlmResponse.Valid {
@@ -344,7 +344,7 @@ func apiAdminUsersHandler(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch users"})
 	}
 
-	var users []User
+	users := make([]User, 0)
 	for _, u := range rows {
 		maskedKey := u.ApiKey
 		if len(maskedKey) > 8 {
@@ -594,7 +594,7 @@ func apiListWebhooksHandler(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch webhooks"})
 	}
 
-	var hooks []WebhookSubscription
+	hooks := make([]WebhookSubscription, 0)
 	for _, row := range rows {
 		var eventTypes []string
 		if len(row.EventTypes) > 0 {
@@ -731,7 +731,7 @@ func apiWebhookDeliveriesHandler(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch webhook deliveries"})
 	}
 
-	var deliveries []WebhookDelivery
+	deliveries := make([]WebhookDelivery, 0)
 	for _, row := range rows {
 		var statusCode *int32
 		if row.StatusCode.Valid {
@@ -855,7 +855,7 @@ func apiAdminAuditLogsHandler(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch audit logs"})
 	}
 
-	var logs []AuditLogEntry
+	logs := make([]AuditLogEntry, 0)
 	for _, row := range rows {
 		var entry AuditLogEntry
 		entry.ID = formatUUID(row.ID)
