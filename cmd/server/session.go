@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -22,14 +23,42 @@ import (
 )
 
 // GlobalSessionManager tracks which users have active SSE connections via Redis
-var GlobalSessionManager = &SessionManager{}
+var GlobalSessionManager = &SessionManager{
+	mcpSessions: make(map[string]server.ClientSession),
+}
 
 type SessionManager struct {
 	redisClient *redis.Client
+	mu          sync.RWMutex
+	mcpSessions map[string]server.ClientSession
 }
 
 func (sm *SessionManager) Init(client *redis.Client) {
 	sm.redisClient = client
+}
+
+// AddMCPSession stores the local in-memory MCP session
+func (sm *SessionManager) AddMCPSession(userID string, session server.ClientSession) {
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+	sm.mcpSessions[userID] = session
+}
+
+// RemoveMCPSession removes the local in-memory MCP session
+func (sm *SessionManager) RemoveMCPSession(userID string) {
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+	delete(sm.mcpSessions, userID)
+}
+
+// GetMCPSession retrieves the local in-memory MCP session if it exists
+func (sm *SessionManager) GetMCPSession(userID string) server.ClientSession {
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
+	if session, exists := sm.mcpSessions[userID]; exists {
+		return session
+	}
+	return nil
 }
 
 func (sm *SessionManager) GetActiveSessionCount(ctx context.Context) (int, error) {
@@ -390,6 +419,14 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 							InputData:   pgtype.Text{String: maskSensitiveData(finalPrompt), Valid: true},
 						}); err != nil {
 							log.Printf("Trace error for task %s: %v", taskID, err)
+						}
+
+						// Retrieve and inject the active ClientSession
+						mcpSession := GlobalSessionManager.GetMCPSession(userID)
+						if mcpSession != nil {
+							sampleCtx = mcpServer.WithContext(sampleCtx, mcpSession)
+						} else {
+							log.Printf("Warning: No active local MCP session found for user %s. Sampling request may fail.", userID)
 						}
 
 						req := mcp.CreateMessageRequest{

@@ -226,6 +226,22 @@ func main() {
 
 	// 2. Initialize MCP Server
 	mcpServer := server.NewMCPServer("aktionfy", "1.0.0")
+	
+	mcpServer.GetHooks().AddOnRegisterSession(func(ctx context.Context, session server.ClientSession) {
+		userID, ok := ctx.Value(userIDKey).(string)
+		if ok && userID != "" {
+			log.Printf("MCP Session registered for user %s", userID)
+			GlobalSessionManager.AddMCPSession(userID, session)
+		}
+	})
+
+	mcpServer.GetHooks().AddOnUnregisterSession(func(ctx context.Context, session server.ClientSession) {
+		userID, ok := ctx.Value(userIDKey).(string)
+		if ok && userID != "" {
+			log.Printf("MCP Session unregistered for user %s", userID)
+			GlobalSessionManager.RemoveMCPSession(userID)
+		}
+	})
 
 	// Register Tools
 	registerTools(mcpServer)
