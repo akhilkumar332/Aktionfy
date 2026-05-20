@@ -134,6 +134,9 @@ const DashboardLayout = ({ children }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isBridgeAssistantOpen, setIsBridgeAssistantOpen] = useState(false);
   const [systemStatus, setSystemStatus] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchTasks, setSearchTasks] = useState([]);
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const isMounted = useRef(true);
 
   useEffect(() => {
@@ -142,6 +145,66 @@ const DashboardLayout = ({ children }) => {
       isMounted.current = false;
     };
   }, []);
+
+  const closeSearch = () => {
+    setIsSearchOpen(false);
+    setTimeout(() => {
+      setSearchQuery('');
+      setSelectedIndex(0);
+    }, 200); // Clear after animation
+  };
+
+  useEffect(() => {
+    if (isSearchOpen && searchTasks.length === 0) {
+      axios.get('/api/v1/tasks').then(res => {
+        if (res.data.success && isMounted.current) {
+          setSearchTasks(res.data.data || []);
+        }
+      }).catch(() => {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSearchOpen]);
+
+  const searchResults = (() => {
+    const q = searchQuery.toLowerCase();
+    const results = [];
+    
+    navGroups.forEach(group => {
+      group.items.forEach(item => {
+        if (!item.roles || item.roles.includes(user?.role)) {
+          if (item.label.toLowerCase().includes(q) || group.title.toLowerCase().includes(q)) {
+            results.push({ type: 'nav', label: item.label, path: item.path, icon: item.icon, group: group.title });
+          }
+        }
+      });
+    });
+
+    searchTasks.forEach(task => {
+      if (task.name.toLowerCase().includes(q) || task.id.toLowerCase().includes(q)) {
+        results.push({ type: 'task', label: task.name, id: task.id, path: `/tasks/${task.id}/history`, icon: ListTodo, group: 'Tasks' });
+      }
+    });
+
+    return results;
+  })();
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev + 1) % (searchResults.length || 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev - 1 + searchResults.length) % (searchResults.length || 1));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (searchResults.length > 0) {
+        navigate(searchResults[selectedIndex].path);
+        closeSearch();
+      }
+    } else if (e.key === 'Escape') {
+      closeSearch();
+    }
+  };
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -276,7 +339,7 @@ const DashboardLayout = ({ children }) => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setIsSearchOpen(false)}
+              onClick={closeSearch}
               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             />
             <motion.div 
@@ -291,20 +354,53 @@ const DashboardLayout = ({ children }) => {
                     type="text" 
                     placeholder="Search tasks, docs, or run commands..." 
                     className="flex-1 bg-transparent border-none outline-none text-lg font-medium text-white placeholder:text-zinc-700"
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setSelectedIndex(0);
+                    }}
+                    onKeyDown={handleSearchKeyDown}
                     autoFocus
                   />
                   <div className="px-2 py-1 bg-zinc-900 border border-zinc-800 rounded text-[10px] font-black text-zinc-500 tracking-widest">ESC</div>
                </div>
                <div className="p-4 max-h-[400px] overflow-y-auto custom-scrollbar">
-                  <div className="px-4 py-2 text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em]">Neural Interconnects</div>
-                  <div className="mt-2 space-y-1">
-                     {['Dashboard', 'Workflow Canvas', 'Task Scheduling', 'Global Vault'].map((item) => (
-                       <button key={item} className="w-full text-left px-4 py-3 rounded-lg hover:bg-zinc-900 transition-colors flex items-center justify-between group">
-                          <span className="text-sm font-semibold text-zinc-300 group-hover:text-white transition-colors">{item}</span>
-                          <ChevronRight size={14} className="text-zinc-700 opacity-0 group-hover:opacity-100 transition-all" />
-                       </button>
-                     ))}
-                  </div>
+                  {searchResults.length > 0 ? (
+                    <div className="space-y-1">
+                      {searchResults.map((item, idx) => {
+                        const Icon = item.icon;
+                        const isSelected = idx === selectedIndex;
+                        return (
+                          <button 
+                            key={`${item.type}-${item.id || item.path}`} 
+                            onClick={() => {
+                              navigate(item.path);
+                              closeSearch();
+                            }}
+                            onMouseEnter={() => setSelectedIndex(idx)}
+                            className={`w-full text-left px-4 py-3 rounded-lg transition-colors flex items-center justify-between group ${isSelected ? 'bg-zinc-900' : 'hover:bg-zinc-900/50'}`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <Icon size={16} className={isSelected ? 'text-brand-primary' : 'text-zinc-500'} />
+                              <div className="flex flex-col">
+                                <span className={`text-sm font-semibold transition-colors ${isSelected ? 'text-white' : 'text-zinc-300'}`}>{item.label}</span>
+                                {item.type === 'task' && <span className="text-[10px] text-zinc-500 font-mono mt-0.5">{item.id.substring(0, 8)}...</span>}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">{item.group}</span>
+                              <ChevronRight size={14} className={`transition-all ${isSelected ? 'text-zinc-500 opacity-100' : 'text-zinc-700 opacity-0 group-hover:opacity-100'}`} />
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="py-8 text-center flex flex-col items-center gap-2">
+                       <Search size={24} className="text-zinc-700" />
+                       <span className="text-xs text-zinc-500 font-medium">No results found for "{searchQuery}"</span>
+                    </div>
+                  )}
                </div>
                <div className="p-4 bg-zinc-900/50 border-t border-zinc-800 flex items-center gap-6">
                   <div className="flex items-center gap-2 text-[9px] font-black text-zinc-600 uppercase tracking-widest">
