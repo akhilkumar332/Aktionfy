@@ -1,8 +1,8 @@
 -- migrations/029_phase1_foundation.up.sql
 ALTER TABLE system_settings 
-ADD COLUMN js_timeout_ms INT NOT NULL DEFAULT 5000,
-ADD COLUMN reaper_stuck_threshold_minutes INT NOT NULL DEFAULT 5,
-ADD COLUMN scheduler_poll_interval_seconds INT NOT NULL DEFAULT 30;
+ADD COLUMN IF NOT EXISTS js_timeout_ms INT NOT NULL DEFAULT 5000,
+ADD COLUMN IF NOT EXISTS reaper_stuck_threshold_minutes INT NOT NULL DEFAULT 5,
+ADD COLUMN IF NOT EXISTS scheduler_poll_interval_seconds INT NOT NULL DEFAULT 30;
 
 -- Update existing row
 UPDATE system_settings SET js_timeout_ms = 5000, reaper_stuck_threshold_minutes = 5, scheduler_poll_interval_seconds = 30 WHERE id = 1;

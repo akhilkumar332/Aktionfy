@@ -1,5 +1,5 @@
 -- migrations/032_add_locked_at.up.sql
-ALTER TABLE tasks ADD COLUMN locked_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS locked_at TIMESTAMP WITH TIME ZONE;
 
 -- Update the claim function to set locked_at
 CREATE OR REPLACE FUNCTION fn_claim_due_tasks(batch_size INT, worker_id TEXT)

@@ -1,2 +1,2 @@
 -- migrations/030_trace_metadata.up.sql
-ALTER TABLE execution_traces ADD COLUMN metadata JSONB;
+ALTER TABLE execution_traces ADD COLUMN IF NOT EXISTS metadata JSONB;
