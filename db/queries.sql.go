@@ -49,7 +49,7 @@ func (q *Queries) CheckWorkspaceAccess(ctx context.Context, arg CheckWorkspaceAc
 }
 
 const claimDueTasks = `-- name: ClaimDueTasks :many
-SELECT id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, task_type, native_code, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates, branch_condition, is_bundle_root, loop_condition, swarm_config FROM fn_claim_due_tasks($1, $2)
+SELECT id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, locked_at, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, task_type, native_code, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates, branch_condition, is_bundle_root, loop_condition, swarm_config FROM fn_claim_due_tasks($1, $2)
 `
 
 type ClaimDueTasksParams struct {
@@ -75,6 +75,7 @@ func (q *Queries) ClaimDueTasks(ctx context.Context, arg ClaimDueTasksParams) ([
 			&i.AgentPrompt,
 			&i.Status,
 			&i.LockedBy,
+			&i.LockedAt,
 			&i.NextRun,
 			&i.LastRun,
 			&i.FailureCount,
@@ -113,7 +114,7 @@ SET status = 'processing',
     locked_by = $1,
     locked_at = NOW()
 WHERE id = $2 AND status IN ('active', 'paused')
-RETURNING id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, task_type, native_code, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates, branch_condition, is_bundle_root, loop_condition, swarm_config
+RETURNING id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, locked_at, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, task_type, native_code, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates, branch_condition, is_bundle_root, loop_condition, swarm_config
 `
 
 type ClaimTaskByIDParams struct {
@@ -133,6 +134,7 @@ func (q *Queries) ClaimTaskByID(ctx context.Context, arg ClaimTaskByIDParams) (T
 		&i.AgentPrompt,
 		&i.Status,
 		&i.LockedBy,
+		&i.LockedAt,
 		&i.NextRun,
 		&i.LastRun,
 		&i.FailureCount,
@@ -290,7 +292,7 @@ func (q *Queries) CreateOutboundWebhook(ctx context.Context, arg CreateOutboundW
 const createTask = `-- name: CreateTask :one
 INSERT INTO tasks (user_id, name, trigger_type, trigger_config, agent_prompt, missed_task_policy, depends_on_task_id, next_run, requires_approval, encrypted_secrets, trigger_on_completion, workspace_id, task_type, native_code, branch_condition, is_bundle_root, loop_condition, swarm_config) 
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) 
-RETURNING id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, task_type, native_code, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates, branch_condition, is_bundle_root, loop_condition, swarm_config
+RETURNING id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, locked_at, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, task_type, native_code, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates, branch_condition, is_bundle_root, loop_condition, swarm_config
 `
 
 type CreateTaskParams struct {
@@ -345,6 +347,7 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		&i.AgentPrompt,
 		&i.Status,
 		&i.LockedBy,
+		&i.LockedAt,
 		&i.NextRun,
 		&i.LastRun,
 		&i.FailureCount,
@@ -679,7 +682,7 @@ func (q *Queries) DeleteWorkspaceEnvVar(ctx context.Context, arg DeleteWorkspace
 }
 
 const exportUserTasks = `-- name: ExportUserTasks :many
-SELECT id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, task_type, native_code, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates, branch_condition, is_bundle_root, loop_condition, swarm_config FROM tasks WHERE user_id = $1
+SELECT id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, locked_at, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, task_type, native_code, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates, branch_condition, is_bundle_root, loop_condition, swarm_config FROM tasks WHERE user_id = $1
 `
 
 func (q *Queries) ExportUserTasks(ctx context.Context, userID string) ([]Task, error) {
@@ -700,6 +703,7 @@ func (q *Queries) ExportUserTasks(ctx context.Context, userID string) ([]Task, e
 			&i.AgentPrompt,
 			&i.Status,
 			&i.LockedBy,
+			&i.LockedAt,
 			&i.NextRun,
 			&i.LastRun,
 			&i.FailureCount,
@@ -849,7 +853,7 @@ func (q *Queries) GetDailyExecutionTrends(ctx context.Context) ([]GetDailyExecut
 }
 
 const getDependentTasks = `-- name: GetDependentTasks :many
-SELECT id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, task_type, native_code, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates, branch_condition, is_bundle_root, loop_condition, swarm_config FROM tasks WHERE depends_on_task_id = $1
+SELECT id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, locked_at, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, task_type, native_code, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates, branch_condition, is_bundle_root, loop_condition, swarm_config FROM tasks WHERE depends_on_task_id = $1
 `
 
 func (q *Queries) GetDependentTasks(ctx context.Context, dependsOnTaskID pgtype.UUID) ([]Task, error) {
@@ -870,6 +874,7 @@ func (q *Queries) GetDependentTasks(ctx context.Context, dependsOnTaskID pgtype.
 			&i.AgentPrompt,
 			&i.Status,
 			&i.LockedBy,
+			&i.LockedAt,
 			&i.NextRun,
 			&i.LastRun,
 			&i.FailureCount,
@@ -929,6 +934,7 @@ func (q *Queries) GetDependentTasksToTrigger(ctx context.Context, dependsOnTaskI
 			&i.AgentPrompt,
 			&i.Status,
 			&i.LockedBy,
+			&i.LockedAt,
 			&i.NextRun,
 			&i.LastRun,
 			&i.FailureCount,
@@ -962,7 +968,7 @@ func (q *Queries) GetDependentTasksToTrigger(ctx context.Context, dependsOnTaskI
 }
 
 const getDispatchableTaskByID = `-- name: GetDispatchableTaskByID :one
-SELECT id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, task_type, native_code, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates, branch_condition, is_bundle_root, loop_condition, swarm_config FROM tasks
+SELECT id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, locked_at, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, task_type, native_code, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates, branch_condition, is_bundle_root, loop_condition, swarm_config FROM tasks
 WHERE id = $1
   AND user_id = $2
   AND status = 'processing'
@@ -987,6 +993,7 @@ func (q *Queries) GetDispatchableTaskByID(ctx context.Context, arg GetDispatchab
 		&i.AgentPrompt,
 		&i.Status,
 		&i.LockedBy,
+		&i.LockedAt,
 		&i.NextRun,
 		&i.LastRun,
 		&i.FailureCount,
@@ -1165,7 +1172,7 @@ func (q *Queries) GetSystemUsageMetrics(ctx context.Context) (GetSystemUsageMetr
 }
 
 const getTaskByID = `-- name: GetTaskByID :one
-SELECT id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, task_type, native_code, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates, branch_condition, is_bundle_root, loop_condition, swarm_config FROM tasks WHERE id = $1 AND user_id = $2
+SELECT id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, locked_at, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, task_type, native_code, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates, branch_condition, is_bundle_root, loop_condition, swarm_config FROM tasks WHERE id = $1 AND user_id = $2
 `
 
 type GetTaskByIDParams struct {
@@ -1185,6 +1192,7 @@ func (q *Queries) GetTaskByID(ctx context.Context, arg GetTaskByIDParams) (Task,
 		&i.AgentPrompt,
 		&i.Status,
 		&i.LockedBy,
+		&i.LockedAt,
 		&i.NextRun,
 		&i.LastRun,
 		&i.FailureCount,
@@ -1226,6 +1234,7 @@ func (q *Queries) GetTaskByWebhookToken(ctx context.Context, token string) (Task
 		&i.AgentPrompt,
 		&i.Status,
 		&i.LockedBy,
+		&i.LockedAt,
 		&i.NextRun,
 		&i.LastRun,
 		&i.FailureCount,
@@ -1970,6 +1979,7 @@ type ListUserTasksRow struct {
 	AgentPrompt         string             `json:"agent_prompt"`
 	Status              pgtype.Text        `json:"status"`
 	LockedBy            pgtype.Text        `json:"locked_by"`
+	LockedAt            pgtype.Timestamptz `json:"locked_at"`
 	NextRun             pgtype.Timestamptz `json:"next_run"`
 	LastRun             pgtype.Timestamptz `json:"last_run"`
 	FailureCount        pgtype.Int4        `json:"failure_count"`
@@ -2012,6 +2022,7 @@ func (q *Queries) ListUserTasks(ctx context.Context, userID string) ([]ListUserT
 			&i.AgentPrompt,
 			&i.Status,
 			&i.LockedBy,
+			&i.LockedAt,
 			&i.NextRun,
 			&i.LastRun,
 			&i.FailureCount,
@@ -2220,11 +2231,11 @@ func (q *Queries) PruneZombieWorkers(ctx context.Context, dollar_1 interface{}) 
 const reapStuckTasks = `-- name: ReapStuckTasks :execrows
 UPDATE tasks
 SET status = 'active', locked_by = NULL
-WHERE status = 'processing' AND next_run < $1
+WHERE status = 'processing' AND locked_at < $1
 `
 
-func (q *Queries) ReapStuckTasks(ctx context.Context, nextRun pgtype.Timestamp) (int64, error) {
-	result, err := q.db.Exec(ctx, reapStuckTasks, nextRun)
+func (q *Queries) ReapStuckTasks(ctx context.Context, lockedAt pgtype.Timestamptz) (int64, error) {
+	result, err := q.db.Exec(ctx, reapStuckTasks, lockedAt)
 	if err != nil {
 		return 0, err
 	}
@@ -2346,7 +2357,7 @@ SET agent_prompt = $1,
     loop_condition = $7,
     swarm_config = $8
 WHERE id = $9 AND user_id = $10
-RETURNING id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, task_type, native_code, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates, branch_condition, is_bundle_root, loop_condition, swarm_config
+RETURNING id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, locked_at, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, task_type, native_code, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates, branch_condition, is_bundle_root, loop_condition, swarm_config
 `
 
 type UpdateTaskAgentPromptAndPolicyParams struct {
@@ -2385,6 +2396,7 @@ func (q *Queries) UpdateTaskAgentPromptAndPolicy(ctx context.Context, arg Update
 		&i.AgentPrompt,
 		&i.Status,
 		&i.LockedBy,
+		&i.LockedAt,
 		&i.NextRun,
 		&i.LastRun,
 		&i.FailureCount,

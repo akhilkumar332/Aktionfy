@@ -5,7 +5,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE TABLE users (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     api_key TEXT UNIQUE NOT NULL,
-    email TEXT,
+    email TEXT UNIQUE,
     password_hash TEXT,
     role TEXT DEFAULT 'user' CHECK (role IN ('user', 'staff', 'admin')),
     last_login TIMESTAMP WITH TIME ZONE,
@@ -30,6 +30,7 @@ CREATE TABLE tasks (
     agent_prompt TEXT NOT NULL,
     status TEXT DEFAULT 'active' CHECK (status IN ('active', 'paused', 'processing', 'completed', 'error', 'halted')),
     locked_by TEXT, -- Tracks which worker instance is processing this task
+    locked_at TIMESTAMP WITH TIME ZONE, -- When the task was claimed
     next_run TIMESTAMP WITH TIME ZONE NOT NULL,
     last_run TIMESTAMP WITH TIME ZONE,
     failure_count INT DEFAULT 0, -- Phase 2.3: Dead Letter Queue
@@ -122,7 +123,8 @@ BEGIN
         WITH claimed AS (
             UPDATE tasks
             SET status = 'processing', -- Temporary state to prevent double-firing
-                locked_by = worker_id
+                locked_by = worker_id,
+                locked_at = NOW()
             WHERE id IN (
                 SELECT t.id 
                 FROM tasks t

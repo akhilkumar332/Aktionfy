@@ -303,8 +303,7 @@ func apiUpdateTaskHandler(c echo.Context) error {
 		    trigger_on_completion = $12,
 		    branch_condition = $13,
 		    loop_condition = $14,
-		    swarm_config = $15,
-		    updated_at = NOW()
+		    swarm_config = $15
 		WHERE id = $16 AND user_id = $17`
 
 	_, err = tx.Exec(ctx, query,

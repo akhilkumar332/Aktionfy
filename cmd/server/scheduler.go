@@ -1300,7 +1300,7 @@ func runReaper(ctx context.Context) {
 		select {
 		case <-reapTicker.C:
 			threshold := time.Now().Add(-CurrentSystemSettings.GetReaperThreshold())
-			rows, err := queries.ReapStuckTasks(ctx, pgtype.Timestamp{Time: threshold, Valid: true})
+			rows, err := queries.ReapStuckTasks(ctx, pgtype.Timestamptz{Time: threshold, Valid: true})
 			if err != nil {
 				log.Printf("Reaper: error reaping stuck tasks: %v", err)
 			} else if rows > 0 {

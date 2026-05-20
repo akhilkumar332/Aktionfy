@@ -77,6 +77,7 @@ type Task struct {
 	AgentPrompt         string             `json:"agent_prompt"`
 	Status              pgtype.Text        `json:"status"`
 	LockedBy            pgtype.Text        `json:"locked_by"`
+	LockedAt            pgtype.Timestamptz `json:"locked_at"`
 	NextRun             pgtype.Timestamptz `json:"next_run"`
 	LastRun             pgtype.Timestamptz `json:"last_run"`
 	FailureCount        pgtype.Int4        `json:"failure_count"`
