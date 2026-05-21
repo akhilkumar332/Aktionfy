@@ -253,7 +253,7 @@ func SamplingInterceptorMiddleware(next http.Handler) http.Handler {
 		r.Body = io.NopCloser(bytes.NewBuffer(body))
 
 		var msg struct {
-			ID     json.RawMessage         `json:"id"`
+			ID     json.RawMessage          `json:"id"`
 			Result *mcp.CreateMessageResult `json:"result"`
 			Error  *struct {
 				Code    int    `json:"code"`
@@ -264,10 +264,13 @@ func SamplingInterceptorMiddleware(next http.Handler) http.Handler {
 		if err := json.Unmarshal(body, &msg); err == nil && len(msg.ID) > 0 && (msg.Result != nil || msg.Error != nil) {
 			// Extract ID as string (strip quotes if string, keep literal if number)
 			idStr := strings.Trim(string(msg.ID), "\"")
-			
+
 			errStr := ""
 			if msg.Error != nil {
-				errStr = fmt.Sprintf("MCP error %d: %s", msg.Error.Code, msg.Error.Message)
+				errStr = msg.Error.Message
+				if errStr == "" {
+					errStr = fmt.Sprintf("MCP error %d", msg.Error.Code)
+				}
 			}
 
 			// Check if this ID is one of our pending sampling requests

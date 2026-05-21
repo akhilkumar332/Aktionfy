@@ -109,7 +109,60 @@ async function main() {
 
     // Sampling (Backward forwarding: Server -> Bridge -> Host)
     mcpClient.setRequestHandler(CreateMessageRequestSchema, async (request) => {
-      return await mcpServer.createMessage(request.params);
+      try {
+        // 1. Try to forward to the connected host (e.g. Claude Desktop)
+        // We use a shorter timeout here so we can fallback quickly if no host is there
+        return await mcpServer.createMessage(request.params);
+      } catch (error) {
+        // 2. Fallback to local LLM if host is not responding or not connected
+        const openaiKey = process.env.OPENAI_API_KEY;
+        if (!openaiKey) {
+          throw new Error("Sampling failed: No host connected and OPENAI_API_KEY not set for standalone execution.");
+        }
+
+        console.log("Aktionfy CLI: Executing sampling request locally via OpenAI...");
+        
+        // Convert MCP messages to OpenAI format
+        const messages = request.params.messages.map(m => ({
+          role: m.role,
+          content: m.content.text || m.content
+        }));
+
+        try {
+          const response = await fetch("https://api.openai.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${openaiKey}`
+            },
+            body: JSON.stringify({
+              model: request.params.modelPreferences?.hints?.[0]?.name || "gpt-4o",
+              messages: messages,
+              max_tokens: request.params.maxTokens || 1000
+            })
+          });
+
+          if (!response.ok) {
+            const errBody = await response.text();
+            throw new Error(`OpenAI API error: ${response.status} ${errBody}`);
+          }
+
+          const data = await response.json();
+          const choice = data.choices[0];
+
+          return {
+            role: "assistant",
+            content: {
+              type: "text",
+              text: choice.message.content
+            },
+            model: data.model,
+            stopReason: choice.finish_reason === "stop" ? "endTurn" : "maxTokens"
+          };
+        } catch (llmError) {
+          throw new Error(`Standalone execution failed: ${llmError.message}`);
+        }
+      }
     });
 
     // 3. Connect to local Stdio host
