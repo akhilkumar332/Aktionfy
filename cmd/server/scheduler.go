@@ -561,24 +561,28 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 		return
 	}
 
-	if _, err := queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{Metadata: nil, 
+	if trace, err := queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{Metadata: nil, 
 		TaskID:      t.ID,
 		ExecutionID: executionID,
 		WorkerID:    workerID,
 		StepName:    "Executor Started",
 		InputData:   pgtype.Text{String: t.AgentPrompt, Valid: true},
-	}); err != nil {
+	}); err == nil {
+		publishTrace(workerCtx, t.UserID, trace, nil)
+	} else {
 		log.Printf("Trace error for task %s: %v", taskID, err)
 	}
 
 	resolvedPrompt := resolvePromptVariables(workerCtx, t.UserID, t.AgentPrompt, triggerPayload, state)
-	if _, err := queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{Metadata: nil, 
+	if trace, err := queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{Metadata: nil, 
 		TaskID:      t.ID,
 		ExecutionID: executionID,
 		WorkerID:    workerID,
 		StepName:    "Prompt Variables Resolved",
 		OutputData:  pgtype.Text{String: maskSensitiveData(resolvedPrompt), Valid: true},
-	}); err != nil {
+	}); err == nil {
+		publishTrace(workerCtx, t.UserID, trace, nil)
+	} else {
 		log.Printf("Trace error: %v", err)
 	}
 
@@ -746,13 +750,15 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 		}
 	}
 
-	if _, err := queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{Metadata: nil, 
+	if trace, err := queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{Metadata: nil, 
 		TaskID:      t.ID,
 		ExecutionID: executionID,
 		WorkerID:    workerID,
 		StepName:    "Task Delivered",
 		OutputData:  pgtype.Text{String: "Task delivered to node via Redis", Valid: true},
-	}); err != nil {
+	}); err == nil {
+		publishTrace(workerCtx, t.UserID, trace, nil)
+	} else {
 		log.Printf("Trace error for task %s: %v", taskID, err)
 	}
 

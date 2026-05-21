@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { X, Activity, Clock, Terminal, AlertCircle, CheckCircle2, ChevronRight, Database, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSSE } from '../hooks/useSSE';
 
 const ExecutionTracesModal = ({ isOpen, onClose, taskId, taskName }) => {
   const [executions, setExecutions] = useState([]);
@@ -10,6 +11,14 @@ const ExecutionTracesModal = ({ isOpen, onClose, taskId, taskName }) => {
   const [loadingExecutions, setLoadingExecutions] = useState(false);
   const [loadingTraces, setLoadingTraces] = useState(false);
   const isMounted = useRef(true);
+  const scrollRef = useRef(null);
+
+  // Auto-scroll to bottom when new traces arrive
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [traces]);
 
   useEffect(() => {
     isMounted.current = true;
@@ -51,6 +60,40 @@ const ExecutionTracesModal = ({ isOpen, onClose, taskId, taskName }) => {
       if (isMounted.current) setLoadingTraces(false);
     }
   }, [taskId]);
+
+  // Handle live trace events
+  const onLiveEvent = useCallback((event) => {
+    if (event.event_type === 'trace_created') {
+      try {
+        const trace = JSON.parse(event.payload);
+        // Only append if it belongs to the currently viewed execution
+        if (trace.task_id === taskId && trace.execution_id === selectedExecutionId) {
+          setTraces(prev => {
+            // Check for duplicates
+            if (prev.find(t => t.id === trace.id)) return prev;
+            return [...prev, trace];
+          });
+        }
+        
+        // Also refresh executions list if it's a new execution ID we haven't seen
+        if (trace.task_id === taskId) {
+           setExecutions(prev => {
+              if (prev.find(e => e.execution_id === trace.execution_id)) {
+                 // Update error status if needed
+                 return prev.map(e => e.execution_id === trace.execution_id ? { ...e, is_error: e.is_error || trace.is_error } : e);
+              }
+              // New execution detected, trigger refresh
+              fetchExecutions();
+              return prev;
+           });
+        }
+      } catch (err) {
+        console.error('Failed to parse live trace:', err);
+      }
+    }
+  }, [taskId, selectedExecutionId, fetchExecutions]);
+
+  useSSE(onLiveEvent);
 
   useEffect(() => {
     if (isOpen && taskId) {
@@ -109,7 +152,10 @@ const ExecutionTracesModal = ({ isOpen, onClose, taskId, taskName }) => {
                   executions.map((exec) => (
                     <button
                       key={exec?.execution_id || Math.random()}
-                      onClick={() => setSelectedExecutionId(exec?.execution_id)}
+                      onClick={() => {
+                        setSelectedExecutionId(exec?.execution_id);
+                        setTraces([]); // Clear current to show loading state
+                      }}
                       className={`w-full text-left p-3 rounded-xl transition-all group ${selectedExecutionId === exec?.execution_id ? 'bg-zinc-800 border border-zinc-700 shadow-md' : 'hover:bg-zinc-900/50 border border-transparent'}`}
                     >
                       <div className="flex items-center justify-between mb-1">
@@ -135,7 +181,7 @@ const ExecutionTracesModal = ({ isOpen, onClose, taskId, taskName }) => {
                </div>
              )}
              
-             <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
+             <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar p-8">
                 {(!traces || traces.length === 0) && !loadingTraces ? (
                   <div className="h-full flex flex-col items-center justify-center text-zinc-700 opacity-20">
                      <Database size={64} />

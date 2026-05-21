@@ -523,16 +523,17 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 						        return
 						}
 
-						if _, err := queries.CreateExecutionTrace(dbCtx, db.CreateExecutionTraceParams{Metadata: nil, 
-						        TaskID:      tid,
-						        ExecutionID: executionID,
-						        WorkerID:    workerID,
-						        StepName:    "LLM Sampling",
-						        InputData:   pgtype.Text{String: maskSensitiveData(finalPrompt), Valid: true},
-						}); err != nil {
-						        log.Printf("Trace error for task %s: %v", taskID, err)
+						if trace, err := queries.CreateExecutionTrace(dbCtx, db.CreateExecutionTraceParams{Metadata: nil, 
+							TaskID:      tid,
+							ExecutionID: executionID,
+							WorkerID:    workerID,
+							StepName:    "LLM Sampling",
+							InputData:   pgtype.Text{String: maskSensitiveData(finalPrompt), Valid: true},
+						}); err == nil {
+							publishTrace(dbCtx, userID, trace, nil)
+						} else {
+							log.Printf("Trace error for task %s: %v", taskID, err)
 						}
-
 						req := mcp.CreateMessageRequest{							CreateMessageParams: mcp.CreateMessageParams{
 								Messages: []mcp.SamplingMessage{
 									{Role: "user", Content: mcp.TextContent{Type: "text", Text: finalPrompt}},
@@ -549,15 +550,17 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 							observeTaskExecutionDuration(executionStart, "failure")
 							log.Printf("Pub/Sub Sampling failed for user %s: %v", userID, err)
 
-							if _, err := queries.CreateExecutionTrace(dbCtx, db.CreateExecutionTraceParams{Metadata: nil, 
+							if trace, tErr := queries.CreateExecutionTrace(dbCtx, db.CreateExecutionTraceParams{Metadata: nil, 
 								TaskID:       tid,
 								ExecutionID:  executionID,
 								WorkerID:     workerID,
 								StepName:     "LLM Sampling Failed",
 								IsError:      pgtype.Bool{Bool: true, Valid: true},
 								ErrorMessage: pgtype.Text{String: err.Error(), Valid: true},
-							}); err != nil {
-								log.Printf("Trace error for task %s: %v", taskID, err)
+							}); tErr == nil {
+								publishTrace(dbCtx, userID, trace, nil)
+							} else {
+								log.Printf("Trace error for task %s: %v", taskID, tErr)
 							}
 
 							// Phase 10.2: Properly log failure back to DB instead of failing silently
@@ -680,13 +683,15 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 						observeTaskOutcome("execution_success")
 						observeTaskExecutionDuration(executionStart, "success")
 
-						if _, err := queries.CreateExecutionTrace(dbCtx, db.CreateExecutionTraceParams{Metadata: nil, 
+						if trace, err := queries.CreateExecutionTrace(dbCtx, db.CreateExecutionTraceParams{Metadata: nil, 
 							TaskID:      tid,
 							ExecutionID: executionID,
 							WorkerID:    workerID,
 							StepName:    "LLM Sampling Success",
 							OutputData:  pgtype.Text{String: llmResponse, Valid: true},
-						}); err != nil {
+						}); err == nil {
+							publishTrace(dbCtx, userID, trace, nil)
+						} else {
 							log.Printf("Trace error for task %s: %v", taskID, err)
 						}
 

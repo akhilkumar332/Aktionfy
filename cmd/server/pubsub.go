@@ -1,6 +1,7 @@
 package main
 
 import (
+	"aktionfy/db"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -74,4 +75,26 @@ func SubscribeToEvents(ctx context.Context, onEvent func(context.Context, PubSub
 			}
 		}
 	}
+}
+
+// publishTrace emits a live trace event for real-time terminal streaming
+func publishTrace(ctx context.Context, userID string, trace db.ExecutionTrace, err error) {
+	if err == nil {
+		PublishTraceEvent(ctx, userID, trace)
+	}
+}
+
+// PublishTraceEvent publishes a live execution trace event to the user's event stream
+func PublishTraceEvent(ctx context.Context, userID string, trace db.ExecutionTrace) {
+	payload, err := json.Marshal(trace)
+	if err != nil {
+		log.Printf("Error marshaling trace event for %s: %v", userID, err)
+		return
+	}
+
+	PublishEvent(ctx, PubSubEvent{
+		UserID:    userID,
+		EventType: "trace_created",
+		Payload:   string(payload),
+	})
 }
