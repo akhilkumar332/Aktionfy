@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
-import { X, Activity, Clock, Terminal, AlertCircle, CheckCircle2, ChevronRight, Database } from 'lucide-react';
+import { X, Activity, Clock, Terminal, AlertCircle, CheckCircle2, ChevronRight, Database, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const ExecutionTracesModal = ({ isOpen, onClose, taskId, taskName }) => {
