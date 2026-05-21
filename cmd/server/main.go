@@ -225,7 +225,7 @@ func main() {
 	GlobalSessionManager.Init(RedisClient)
 
 	// 2. Initialize MCP Server
-	mcpServer := server.NewMCPServer("aktionfy", "1.0.0")
+	mcpServer := server.NewMCPServer("aktionfy", "1.0.0", server.WithHooks(&server.Hooks{}))
 	
 	mcpServer.GetHooks().AddOnRegisterSession(func(ctx context.Context, session server.ClientSession) {
 		userID, ok := ctx.Value(userIDKey).(string)
