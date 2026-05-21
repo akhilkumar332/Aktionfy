@@ -77,7 +77,7 @@ func importUserTasks(ctx context.Context, userID string, tasks []TransferTask) (
 		if task.TriggerType == "" {
 			return nil, fmt.Errorf("task %d: trigger_type is required", idx)
 		}
-		
+
 		missedPolicy := task.MissedTaskPolicy
 		if missedPolicy == "" {
 			missedPolicy = "run_immediately"

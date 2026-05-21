@@ -36,13 +36,13 @@ type mockTx struct {
 }
 
 func (m *mockTx) Begin(ctx context.Context) (pgx.Tx, error) { return m, nil }
-func (m *mockTx) Commit(ctx context.Context) error         { return nil }
-func (m *mockTx) Rollback(ctx context.Context) error       { return nil }
+func (m *mockTx) Commit(ctx context.Context) error          { return nil }
+func (m *mockTx) Rollback(ctx context.Context) error        { return nil }
 func (m *mockTx) CopyFrom(ctx context.Context, tableName pgx.Identifier, columnNames []string, rowSrc pgx.CopyFromSource) (int64, error) {
 	return 0, nil
 }
 func (m *mockTx) SendBatch(ctx context.Context, b *pgx.Batch) pgx.BatchResults { return nil }
-func (m *mockTx) LargeObjects() pgx.LargeObjects                { return pgx.LargeObjects{} }
+func (m *mockTx) LargeObjects() pgx.LargeObjects                               { return pgx.LargeObjects{} }
 func (m *mockTx) Prepare(ctx context.Context, name, sql string) (*pgconn.StatementDescription, error) {
 	return nil, nil
 }
@@ -61,9 +61,9 @@ type mockRows struct {
 	pgx.Rows
 }
 
-func (m *mockRows) Close()     {}
-func (m *mockRows) Next() bool { return false }
-func (m *mockRows) Err() error { return nil }
+func (m *mockRows) Close()                         {}
+func (m *mockRows) Next() bool                     { return false }
+func (m *mockRows) Err() error                     { return nil }
 func (m *mockRows) Scan(dest ...interface{}) error { return nil }
 
 type mockRow struct {

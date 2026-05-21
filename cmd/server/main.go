@@ -230,7 +230,7 @@ func main() {
 
 	// Initialize SSE Server earlier so it can be used in hooks
 	sseServer := server.NewSSEServer(mcpServer)
-	
+
 	mcpServer.GetHooks().AddOnRegisterSession(func(ctx context.Context, session server.ClientSession) {
 		userID, ok := ctx.Value(userIDKey).(string)
 		if ok && userID != "" {
