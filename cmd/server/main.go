@@ -226,12 +226,21 @@ func main() {
 
 	// 2. Initialize MCP Server
 	mcpServer := server.NewMCPServer("aktionfy", "1.0.0", server.WithHooks(&server.Hooks{}))
+	mcpServer.EnableSampling()
+
+	// Initialize SSE Server earlier so it can be used in hooks
+	sseServer := server.NewSSEServer(mcpServer)
 	
 	mcpServer.GetHooks().AddOnRegisterSession(func(ctx context.Context, session server.ClientSession) {
 		userID, ok := ctx.Value(userIDKey).(string)
 		if ok && userID != "" {
 			log.Printf("MCP Session registered for user %s (ID: %s)", userID, session.SessionID())
-			GlobalSessionManager.AddMCPSession(userID, session)
+			// Wrap session with sampling support
+			wrapped := &SamplingSSESession{
+				ClientSession: session,
+				sseServer:     sseServer,
+			}
+			GlobalSessionManager.AddMCPSession(userID, wrapped)
 		}
 	})
 
@@ -396,7 +405,6 @@ func main() {
 	}
 
 	// MCP SSE Handlers (using net/http compatible wrappers)
-	sseServer := server.NewSSEServer(mcpServer)
 	e.GET("/sse", echo.WrapHandler(NetHttpAuthMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userID, ok := r.Context().Value(userIDKey).(string)
 		if !ok || userID == "" {
@@ -407,7 +415,7 @@ func main() {
 		go GlobalSessionManager.MaintainHeartbeat(r.Context(), userID, mcpServer, isBridge)
 		sseServer.SSEHandler().ServeHTTP(w, r)
 	}), mcpServer)))
-	e.POST("/message", echo.WrapHandler(NetHttpAuthMiddleware(sseServer.MessageHandler(), mcpServer)))
+	e.POST("/message", echo.WrapHandler(NetHttpAuthMiddleware(SamplingInterceptorMiddleware(sseServer.MessageHandler()), mcpServer)))
 
 	// Telemetry & Observability
 	e.GET("/metrics", echo.WrapHandler(promhttp.Handler()), EchoSessionMiddleware, EchoRequireRole("admin"))

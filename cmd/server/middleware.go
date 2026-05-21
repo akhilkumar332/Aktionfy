@@ -1,7 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 	"strings"
@@ -10,6 +13,7 @@ import (
 	"aktionfy/db"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/labstack/echo/v4"
+	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
 
@@ -227,5 +231,41 @@ func NetHttpAuthMiddleware(next http.Handler, mcpServer *server.MCPServer) http.
 		ctx = context.WithValue(ctx, userTierKey, userTier)
 		ctx = context.WithValue(ctx, isBridgeKey, isBridge)
 		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+// SamplingInterceptorMiddleware peeks at incoming POST messages to see if they are responses to our sampling requests.
+func SamplingInterceptorMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// Peek at the body
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+		// Restore body for the next handler
+		r.Body = io.NopCloser(bytes.NewBuffer(body))
+
+		var msg struct {
+			ID     string                  `json:"id"`
+			Result *mcp.CreateMessageResult `json:"result"`
+			Error  any                     `json:"error"`
+		}
+
+		if err := json.Unmarshal(body, &msg); err == nil && msg.ID != "" && (msg.Result != nil || msg.Error != nil) {
+			// Check if this ID is one of our pending sampling requests
+			if GlobalSessionManager.HandleSamplingResponse(msg.ID, msg.Result) {
+				// We handled it! Return 202 Accepted (matches SSEServer behavior)
+				w.WriteHeader(http.StatusAccepted)
+				return
+			}
+		}
+
+		next.ServeHTTP(w, r)
 	})
 }

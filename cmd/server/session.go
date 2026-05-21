@@ -28,9 +28,10 @@ var GlobalSessionManager = &SessionManager{
 }
 
 type SessionManager struct {
-	redisClient *redis.Client
-	mu          sync.RWMutex
-	mcpSessions map[string]map[string]server.ClientSession
+	redisClient     *redis.Client
+	mu              sync.RWMutex
+	mcpSessions     map[string]map[string]server.ClientSession
+	pendingSampling map[string]chan *mcp.CreateMessageResult
 }
 
 func (sm *SessionManager) Init(client *redis.Client) {
@@ -39,6 +40,82 @@ func (sm *SessionManager) Init(client *redis.Client) {
 	defer sm.mu.Unlock()
 	if sm.mcpSessions == nil {
 		sm.mcpSessions = make(map[string]map[string]server.ClientSession)
+	}
+	if sm.pendingSampling == nil {
+		sm.pendingSampling = make(map[string]chan *mcp.CreateMessageResult)
+	}
+}
+
+// AddPendingSampling registers a channel for an incoming sampling response
+func (sm *SessionManager) AddPendingSampling(id string, ch chan *mcp.CreateMessageResult) {
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+	sm.pendingSampling[id] = ch
+}
+
+// RemovePendingSampling removes a pending sampling channel
+func (sm *SessionManager) RemovePendingSampling(id string) {
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+	delete(sm.pendingSampling, id)
+}
+
+// HandleSamplingResponse routes a sampling response to the waiting goroutine
+func (sm *SessionManager) HandleSamplingResponse(id string, res *mcp.CreateMessageResult) bool {
+	sm.mu.RLock()
+	ch, ok := sm.pendingSampling[id]
+	sm.mu.RUnlock()
+	if ok {
+		select {
+		case ch <- res:
+			return true
+		default:
+			return false
+		}
+	}
+	return false
+}
+
+// SamplingSSESession wraps a standard ClientSession to add sampling support
+type SamplingSSESession struct {
+	server.ClientSession
+	sseServer *server.SSEServer
+}
+
+// RequestSampling implements the SessionWithSampling interface
+func (s *SamplingSSESession) RequestSampling(ctx context.Context, req mcp.CreateMessageRequest) (*mcp.CreateMessageResult, error) {
+	id := fmt.Sprintf("sample-%d", time.Now().UnixNano())
+	ch := make(chan *mcp.CreateMessageResult, 1)
+
+	GlobalSessionManager.AddPendingSampling(id, ch)
+	defer GlobalSessionManager.RemovePendingSampling(id)
+
+	// Create JSON-RPC request
+	rpcReq := struct {
+		JSONRPC string                  `json:"jsonrpc"`
+		ID      string                  `json:"id"`
+		Method  string                  `json:"method"`
+		Params  mcp.CreateMessageParams `json:"params"`
+	}{
+		JSONRPC: "2.0",
+		ID:      id,
+		Method:  "sampling/createMessage",
+		Params:  req.CreateMessageParams,
+	}
+
+	if err := s.sseServer.SendEventToSession(s.SessionID(), rpcReq); err != nil {
+		return nil, fmt.Errorf("failed to send sampling request: %w", err)
+	}
+
+	// Wait for response
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case res := <-ch:
+		if res == nil {
+			return nil, fmt.Errorf("sampling request failed or was malformed")
+		}
+		return res, nil
 	}
 }
 
