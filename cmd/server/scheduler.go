@@ -448,10 +448,12 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 				}); err != nil {
 					log.Printf("Error updating status to error for task %s: %v", taskID, err)
 				}
-				queries.MoveToDLQ(workerCtx, db.MoveToDLQParams{
+				if _, dlqErr := queries.MoveToDLQ(workerCtx, db.MoveToDLQParams{
 					TaskID:       t.ID,
 					ErrorMessage: pgtype.Text{String: err.Error(), Valid: true},
-				})
+				}); dlqErr != nil {
+					log.Printf("Error moving task %s to DLQ: %v", taskID, dlqErr)
+				}
 				sendFailureEmail(workerCtx, t.UserID, taskID, t.Name)
 			} else {
 				backoffMinutes := int(retryCount) * 2
