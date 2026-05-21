@@ -28,11 +28,16 @@ var GlobalSessionManager = &SessionManager{
 	mcpSessions: make(map[string]map[string]server.ClientSession),
 }
 
+type samplingResult struct {
+	result *mcp.CreateMessageResult
+	err    string
+}
+
 type SessionManager struct {
 	redisClient     *redis.Client
 	mu              sync.RWMutex
 	mcpSessions     map[string]map[string]server.ClientSession
-	pendingSampling map[string]chan *mcp.CreateMessageResult
+	pendingSampling map[string]chan samplingResult
 	samplingCounter atomic.Int64
 }
 
@@ -44,12 +49,12 @@ func (sm *SessionManager) Init(client *redis.Client) {
 		sm.mcpSessions = make(map[string]map[string]server.ClientSession)
 	}
 	if sm.pendingSampling == nil {
-		sm.pendingSampling = make(map[string]chan *mcp.CreateMessageResult)
+		sm.pendingSampling = make(map[string]chan samplingResult)
 	}
 }
 
 // AddPendingSampling registers a channel for an incoming sampling response
-func (sm *SessionManager) AddPendingSampling(id string, ch chan *mcp.CreateMessageResult) {
+func (sm *SessionManager) AddPendingSampling(id string, ch chan samplingResult) {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 	sm.pendingSampling[id] = ch
@@ -63,13 +68,13 @@ func (sm *SessionManager) RemovePendingSampling(id string) {
 }
 
 // HandleSamplingResponse routes a sampling response to the waiting goroutine
-func (sm *SessionManager) HandleSamplingResponse(id string, res *mcp.CreateMessageResult) bool {
+func (sm *SessionManager) HandleSamplingResponse(id string, res *mcp.CreateMessageResult, errStr string) bool {
 	sm.mu.RLock()
 	ch, ok := sm.pendingSampling[id]
 	sm.mu.RUnlock()
 	if ok {
 		select {
-		case ch <- res:
+		case ch <- samplingResult{result: res, err: errStr}:
 			return true
 		default:
 			return false
@@ -88,7 +93,7 @@ type SamplingSSESession struct {
 func (s *SamplingSSESession) RequestSampling(ctx context.Context, req mcp.CreateMessageRequest) (*mcp.CreateMessageResult, error) {
 	idInt := GlobalSessionManager.samplingCounter.Add(1)
 	id := fmt.Sprintf("%d", idInt)
-	ch := make(chan *mcp.CreateMessageResult, 1)
+	ch := make(chan samplingResult, 1)
 
 	GlobalSessionManager.AddPendingSampling(id, ch)
 	defer GlobalSessionManager.RemovePendingSampling(id)
@@ -115,10 +120,13 @@ func (s *SamplingSSESession) RequestSampling(ctx context.Context, req mcp.Create
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	case res := <-ch:
-		if res == nil {
-			return nil, fmt.Errorf("sampling request failed or was malformed")
+		if res.err != "" {
+			return nil, errors.New(res.err)
 		}
-		return res, nil
+		if res.result == nil {
+			return nil, fmt.Errorf("sampling request failed: empty response")
+		}
+		return res.result, nil
 	}
 }
 

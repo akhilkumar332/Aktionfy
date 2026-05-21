@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -254,15 +255,23 @@ func SamplingInterceptorMiddleware(next http.Handler) http.Handler {
 		var msg struct {
 			ID     json.RawMessage         `json:"id"`
 			Result *mcp.CreateMessageResult `json:"result"`
-			Error  any                     `json:"error"`
+			Error  *struct {
+				Code    int    `json:"code"`
+				Message string `json:"message"`
+			} `json:"error"`
 		}
 
 		if err := json.Unmarshal(body, &msg); err == nil && len(msg.ID) > 0 && (msg.Result != nil || msg.Error != nil) {
 			// Extract ID as string (strip quotes if string, keep literal if number)
 			idStr := strings.Trim(string(msg.ID), "\"")
 			
+			errStr := ""
+			if msg.Error != nil {
+				errStr = fmt.Sprintf("MCP error %d: %s", msg.Error.Code, msg.Error.Message)
+			}
+
 			// Check if this ID is one of our pending sampling requests
-			if GlobalSessionManager.HandleSamplingResponse(idStr, msg.Result) {
+			if GlobalSessionManager.HandleSamplingResponse(idStr, msg.Result, errStr) {
 				// We handled it! Return 202 Accepted (matches SSEServer behavior)
 				w.WriteHeader(http.StatusAccepted)
 				return
