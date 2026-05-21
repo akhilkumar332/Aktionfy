@@ -27,6 +27,8 @@ type CreateTaskRequest struct {
 	LoopCondition       json.RawMessage `json:"loop_condition"`
 	IsBundleRoot        bool            `json:"is_bundle_root"`
 	SwarmConfig         json.RawMessage `json:"swarm_config"`
+	MaxRetries          int             `json:"max_retries"`
+	BackoffStrategy     string          `json:"backoff_strategy"`
 }
 
 func apiCreateTaskHandler(c echo.Context) error {
@@ -87,6 +89,8 @@ func apiCreateTaskHandler(c echo.Context) error {
 		IsBundleRoot:        pgtype.Bool{Bool: req.IsBundleRoot, Valid: true},
 		NextRun:             pgtype.Timestamptz{Time: time.Now(), Valid: true},
 		SwarmConfig:         req.SwarmConfig,
+		MaxRetries:          int32(req.MaxRetries),
+		BackoffStrategy:     pgtype.Text{String: req.BackoffStrategy, Valid: req.BackoffStrategy != ""},
 	}
 
 	task, err := queries.CreateTask(c.Request().Context(), params)
@@ -236,6 +240,8 @@ type UpdateTaskRequest struct {
 	BranchCondition     json.RawMessage `json:"branch_condition"`
 	LoopCondition       json.RawMessage `json:"loop_condition"`
 	SwarmConfig         json.RawMessage `json:"swarm_config"`
+	MaxRetries          int             `json:"max_retries"`
+	BackoffStrategy     string          `json:"backoff_strategy"`
 }
 
 func apiUpdateTaskHandler(c echo.Context) error {
@@ -304,8 +310,10 @@ func apiUpdateTaskHandler(c echo.Context) error {
 		    trigger_on_completion = $12,
 		    branch_condition = $13,
 		    loop_condition = $14,
-		    swarm_config = $15
-		WHERE id = $16 AND user_id = $17`
+		    swarm_config = $15,
+		    max_retries = $16,
+		    backoff_strategy = $17
+		WHERE id = $18 AND user_id = $19`
 
 	_, err = tx.Exec(ctx, query,
 		req.Name,
@@ -323,6 +331,8 @@ func apiUpdateTaskHandler(c echo.Context) error {
 		req.BranchCondition,
 		req.LoopCondition,
 		req.SwarmConfig,
+		req.MaxRetries,
+		req.BackoffStrategy,
 		taskID,
 		userID,
 	)

@@ -39,6 +39,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
     depends_on_task_id: '',
     trigger_on_completion: false,
     branch_condition: { if: 'contains', value: '', key: '' },
+    loop_condition: { enabled: false, variable: '', operator: 'equals', value: '' },
     swarm_config: {
       consensus_mode: 'voting',
       supervisor_prompt: 'You are the Executive Director. Read the council\'s debate and choose the best path.',
@@ -68,6 +69,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
       depends_on_task_id: '',
       trigger_on_completion: false,
       branch_condition: { if: 'contains', value: '', key: '' },
+      loop_condition: { enabled: false, variable: '', operator: 'equals', value: '' },
       swarm_config: {
         consensus_mode: 'voting',
         supervisor_prompt: 'You are the Executive Director. Read the council\'s debate and choose the best path.',
@@ -128,6 +130,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
               ...initialData,
               trigger_config: parseJSONField(initialData.trigger_config, prev.trigger_config),
               branch_condition: parseJSONField(initialData.branch_condition, prev.branch_condition),
+              loop_condition: parseJSONField(initialData.loop_condition, prev.loop_condition),
               swarm_config: parseJSONField(initialData.swarm_config, prev.swarm_config)
             }));
           }
@@ -163,6 +166,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
         depends_on_task_id: formData.depends_on_task_id || null,
         trigger_on_completion: formData.trigger_on_completion,
         branch_condition: formData.branch_condition,
+        loop_condition: formData.loop_condition,
         swarm_config: formData.task_type === 'swarm_router' ? formData.swarm_config : null
       };
 

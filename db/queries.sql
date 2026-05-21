@@ -127,8 +127,8 @@ WHERE status = 'processing' AND next_run < $1;
 SELECT EXISTS(SELECT 1 FROM tasks WHERE id = $1 AND user_id = $2);
 
 -- name: CreateTask :one
-INSERT INTO tasks (user_id, name, trigger_type, trigger_config, agent_prompt, missed_task_policy, depends_on_task_id, next_run, requires_approval, encrypted_secrets, trigger_on_completion, workspace_id, task_type, native_code, branch_condition, is_bundle_root, loop_condition, swarm_config) 
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) 
+INSERT INTO tasks (user_id, name, trigger_type, trigger_config, agent_prompt, missed_task_policy, depends_on_task_id, next_run, requires_approval, encrypted_secrets, trigger_on_completion, workspace_id, task_type, native_code, branch_condition, is_bundle_root, loop_condition, swarm_config, max_retries, backoff_strategy) 
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20) 
 RETURNING *;
 
 -- name: ListUserTasks :many

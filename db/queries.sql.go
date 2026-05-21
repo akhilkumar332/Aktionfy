@@ -290,8 +290,8 @@ func (q *Queries) CreateOutboundWebhook(ctx context.Context, arg CreateOutboundW
 }
 
 const createTask = `-- name: CreateTask :one
-INSERT INTO tasks (user_id, name, trigger_type, trigger_config, agent_prompt, missed_task_policy, depends_on_task_id, next_run, requires_approval, encrypted_secrets, trigger_on_completion, workspace_id, task_type, native_code, branch_condition, is_bundle_root, loop_condition, swarm_config) 
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) 
+INSERT INTO tasks (user_id, name, trigger_type, trigger_config, agent_prompt, missed_task_policy, depends_on_task_id, next_run, requires_approval, encrypted_secrets, trigger_on_completion, workspace_id, task_type, native_code, branch_condition, is_bundle_root, loop_condition, swarm_config, max_retries, backoff_strategy) 
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20) 
 RETURNING id, user_id, name, trigger_type, trigger_config, agent_prompt, status, locked_by, locked_at, next_run, last_run, failure_count, missed_task_policy, depends_on_task_id, created_at, requires_approval, encrypted_secrets, last_approval_status, trigger_on_completion, task_type, native_code, workspace_id, max_retries, retry_count, backoff_strategy, ui_coordinates, branch_condition, is_bundle_root, loop_condition, swarm_config
 `
 
@@ -314,6 +314,8 @@ type CreateTaskParams struct {
 	IsBundleRoot        pgtype.Bool        `json:"is_bundle_root"`
 	LoopCondition       json.RawMessage    `json:"loop_condition"`
 	SwarmConfig         json.RawMessage    `json:"swarm_config"`
+	MaxRetries          int32              `json:"max_retries"`
+	BackoffStrategy     pgtype.Text        `json:"backoff_strategy"`
 }
 
 func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error) {
@@ -336,6 +338,8 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		arg.IsBundleRoot,
 		arg.LoopCondition,
 		arg.SwarmConfig,
+		arg.MaxRetries,
+		arg.BackoffStrategy,
 	)
 	var i Task
 	err := row.Scan(

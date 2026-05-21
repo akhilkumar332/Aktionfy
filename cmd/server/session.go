@@ -24,39 +24,55 @@ import (
 
 // GlobalSessionManager tracks which users have active SSE connections via Redis
 var GlobalSessionManager = &SessionManager{
-	mcpSessions: make(map[string]server.ClientSession),
+	mcpSessions: make(map[string]map[string]server.ClientSession),
 }
 
 type SessionManager struct {
 	redisClient *redis.Client
 	mu          sync.RWMutex
-	mcpSessions map[string]server.ClientSession
+	mcpSessions map[string]map[string]server.ClientSession
 }
 
 func (sm *SessionManager) Init(client *redis.Client) {
 	sm.redisClient = client
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+	if sm.mcpSessions == nil {
+		sm.mcpSessions = make(map[string]map[string]server.ClientSession)
+	}
 }
 
 // AddMCPSession stores the local in-memory MCP session
 func (sm *SessionManager) AddMCPSession(userID string, session server.ClientSession) {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
-	sm.mcpSessions[userID] = session
+	if sm.mcpSessions[userID] == nil {
+		sm.mcpSessions[userID] = make(map[string]server.ClientSession)
+	}
+	sm.mcpSessions[userID][session.SessionID()] = session
 }
 
 // RemoveMCPSession removes the local in-memory MCP session
-func (sm *SessionManager) RemoveMCPSession(userID string) {
+func (sm *SessionManager) RemoveMCPSession(userID string, sessionID string) {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
-	delete(sm.mcpSessions, userID)
+	if sm.mcpSessions[userID] != nil {
+		delete(sm.mcpSessions[userID], sessionID)
+		if len(sm.mcpSessions[userID]) == 0 {
+			delete(sm.mcpSessions, userID)
+		}
+	}
 }
 
-// GetMCPSession retrieves the local in-memory MCP session if it exists
+// GetMCPSession retrieves an active local in-memory MCP session if it exists.
+// If multiple sessions exist, it returns the first one (usually the bridge/CLI).
 func (sm *SessionManager) GetMCPSession(userID string) server.ClientSession {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
-	if session, exists := sm.mcpSessions[userID]; exists {
-		return session
+	if sessions, exists := sm.mcpSessions[userID]; exists {
+		for _, s := range sessions {
+			return s
+		}
 	}
 	return nil
 }
@@ -404,33 +420,32 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 						sampleCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 						defer cancel()
 
-						// Phase 10.1: Prevent Double Execution if user is connected from multiple terminals
+						// Phase 10.1: Check for local session before attempting to lock
+						// This ensures only the node with the active SSE connection processes the task
+						mcpSession := GlobalSessionManager.GetMCPSession(userID)
+						if mcpSession == nil {
+						        return
+						}
+						sampleCtx = mcpServer.WithContext(sampleCtx, mcpSession)
+
+						// Phase 10.2: Prevent Double Execution if user is connected from multiple terminals
 						locked, err := sm.redisClient.SetNX(sampleCtx, fmt.Sprintf("lock:exec:%s", executionID), "locked", 5*time.Minute).Result()
 						if err != nil || !locked {
-							log.Printf("Task %s already executed by another connection for user %s", taskID, userID)
-							return
+						        log.Printf("Task %s already executed by another connection for user %s", taskID, userID)
+						        return
 						}
 
 						if _, err := queries.CreateExecutionTrace(dbCtx, db.CreateExecutionTraceParams{Metadata: nil, 
-							TaskID:      tid,
-							ExecutionID: executionID,
-							WorkerID:    workerID,
-							StepName:    "LLM Sampling",
-							InputData:   pgtype.Text{String: maskSensitiveData(finalPrompt), Valid: true},
+						        TaskID:      tid,
+						        ExecutionID: executionID,
+						        WorkerID:    workerID,
+						        StepName:    "LLM Sampling",
+						        InputData:   pgtype.Text{String: maskSensitiveData(finalPrompt), Valid: true},
 						}); err != nil {
-							log.Printf("Trace error for task %s: %v", taskID, err)
+						        log.Printf("Trace error for task %s: %v", taskID, err)
 						}
 
-						// Retrieve and inject the active ClientSession
-						mcpSession := GlobalSessionManager.GetMCPSession(userID)
-						if mcpSession != nil {
-							sampleCtx = mcpServer.WithContext(sampleCtx, mcpSession)
-						} else {
-							log.Printf("Warning: No active local MCP session found for user %s. Sampling request may fail.", userID)
-						}
-
-						req := mcp.CreateMessageRequest{
-							CreateMessageParams: mcp.CreateMessageParams{
+						req := mcp.CreateMessageRequest{							CreateMessageParams: mcp.CreateMessageParams{
 								Messages: []mcp.SamplingMessage{
 									{Role: "user", Content: mcp.TextContent{Type: "text", Text: finalPrompt}},
 								},

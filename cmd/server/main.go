@@ -230,7 +230,7 @@ func main() {
 	mcpServer.GetHooks().AddOnRegisterSession(func(ctx context.Context, session server.ClientSession) {
 		userID, ok := ctx.Value(userIDKey).(string)
 		if ok && userID != "" {
-			log.Printf("MCP Session registered for user %s", userID)
+			log.Printf("MCP Session registered for user %s (ID: %s)", userID, session.SessionID())
 			GlobalSessionManager.AddMCPSession(userID, session)
 		}
 	})
@@ -238,8 +238,8 @@ func main() {
 	mcpServer.GetHooks().AddOnUnregisterSession(func(ctx context.Context, session server.ClientSession) {
 		userID, ok := ctx.Value(userIDKey).(string)
 		if ok && userID != "" {
-			log.Printf("MCP Session unregistered for user %s", userID)
-			GlobalSessionManager.RemoveMCPSession(userID)
+			log.Printf("MCP Session unregistered for user %s (ID: %s)", userID, session.SessionID())
+			GlobalSessionManager.RemoveMCPSession(userID, session.SessionID())
 		}
 	})
 
@@ -259,7 +259,6 @@ func main() {
 		e.DefaultHTTPErrorHandler(err, c)
 	}
 
-	// URL Fix Middleware must be at the very top for CSRF same-origin check
 	// URL Fix Middleware must be at the very top for CSRF same-origin check
 	e.Pre(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
