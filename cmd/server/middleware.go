@@ -252,14 +252,17 @@ func SamplingInterceptorMiddleware(next http.Handler) http.Handler {
 		r.Body = io.NopCloser(bytes.NewBuffer(body))
 
 		var msg struct {
-			ID     string                  `json:"id"`
+			ID     json.RawMessage         `json:"id"`
 			Result *mcp.CreateMessageResult `json:"result"`
 			Error  any                     `json:"error"`
 		}
 
-		if err := json.Unmarshal(body, &msg); err == nil && msg.ID != "" && (msg.Result != nil || msg.Error != nil) {
+		if err := json.Unmarshal(body, &msg); err == nil && len(msg.ID) > 0 && (msg.Result != nil || msg.Error != nil) {
+			// Extract ID as string (strip quotes if string, keep literal if number)
+			idStr := strings.Trim(string(msg.ID), "\"")
+			
 			// Check if this ID is one of our pending sampling requests
-			if GlobalSessionManager.HandleSamplingResponse(msg.ID, msg.Result) {
+			if GlobalSessionManager.HandleSamplingResponse(idStr, msg.Result) {
 				// We handled it! Return 202 Accepted (matches SSEServer behavior)
 				w.WriteHeader(http.StatusAccepted)
 				return

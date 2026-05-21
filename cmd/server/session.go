@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -32,6 +33,7 @@ type SessionManager struct {
 	mu              sync.RWMutex
 	mcpSessions     map[string]map[string]server.ClientSession
 	pendingSampling map[string]chan *mcp.CreateMessageResult
+	samplingCounter atomic.Int64
 }
 
 func (sm *SessionManager) Init(client *redis.Client) {
@@ -84,21 +86,22 @@ type SamplingSSESession struct {
 
 // RequestSampling implements the SessionWithSampling interface
 func (s *SamplingSSESession) RequestSampling(ctx context.Context, req mcp.CreateMessageRequest) (*mcp.CreateMessageResult, error) {
-	id := fmt.Sprintf("sample-%d", time.Now().UnixNano())
+	idInt := GlobalSessionManager.samplingCounter.Add(1)
+	id := fmt.Sprintf("%d", idInt)
 	ch := make(chan *mcp.CreateMessageResult, 1)
 
 	GlobalSessionManager.AddPendingSampling(id, ch)
 	defer GlobalSessionManager.RemovePendingSampling(id)
 
-	// Create JSON-RPC request
+	// Create JSON-RPC request with integer ID
 	rpcReq := struct {
 		JSONRPC string                  `json:"jsonrpc"`
-		ID      string                  `json:"id"`
+		ID      int64                   `json:"id"`
 		Method  string                  `json:"method"`
 		Params  mcp.CreateMessageParams `json:"params"`
 	}{
 		JSONRPC: "2.0",
-		ID:      id,
+		ID:      idInt,
 		Method:  "sampling/createMessage",
 		Params:  req.CreateMessageParams,
 	}
@@ -494,7 +497,7 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 							}
 						}
 
-						sampleCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+						sampleCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 						defer cancel()
 
 						// Phase 10.1: Check for local session before attempting to lock
