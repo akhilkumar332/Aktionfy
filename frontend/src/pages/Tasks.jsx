@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from 'react';
 
 import TaskWizard from '../components/TaskWizard';
+import ExecutionTracesModal from '../components/ExecutionTracesModal';
 import axios from 'axios';
 import { 
   Play, Pause, Trash2,
   Cpu, Link as LinkIcon, History, Plus, 
-  Activity, Command, RefreshCw, X, Check, Settings
+  Activity, Command, RefreshCw, X, Check, Settings, Terminal
 } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -18,6 +19,7 @@ const Tasks = () => {
   const [loading, setLoading] = useState(true);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
+  const [traceTask, setTraceTask] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
 
@@ -161,13 +163,20 @@ const Tasks = () => {
                        <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">{task.trigger_type}</span>
                     </td>
                     <td className="px-6 py-4 text-center">
-                      {task.status === 'active' ? (
-                        <span className="pro-badge bg-emerald-500/10 border-emerald-500/20 text-emerald-400">active</span>
-                      ) : task.status === 'paused' ? (
-                        <span className="pro-badge bg-amber-500/10 border-amber-500/20 text-amber-400">paused</span>
-                      ) : (
-                        <span className="pro-badge bg-red-500/10 border-red-500/20 text-red-400">{task.status}</span>
-                      )}
+                      <div className="flex flex-col items-center gap-1">
+                        {task.status === 'active' ? (
+                          <span className="pro-badge bg-emerald-500/10 border-emerald-500/20 text-emerald-400">active</span>
+                        ) : task.status === 'paused' ? (
+                          <span className="pro-badge bg-amber-500/10 border-amber-500/20 text-amber-400">paused</span>
+                        ) : (
+                          <span className="pro-badge bg-red-500/10 border-red-500/20 text-red-400">{task.status}</span>
+                        )}
+                        {task.status === 'error' && task.last_error && (
+                          <span className="text-[8px] text-red-400/60 font-mono max-w-[120px] truncate hover:whitespace-normal hover:overflow-visible hover:max-w-none hover:bg-zinc-900 hover:p-2 hover:rounded-md hover:z-10 transition-all cursor-help" title={task.last_error}>
+                            {task.last_error}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 text-center">
                        <div className="flex flex-col items-center">
@@ -177,6 +186,13 @@ const Tasks = () => {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                           onClick={() => setTraceTask(task)}
+                           className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-brand-primary transition-all shadow-sm"
+                           title="Execution Traces"
+                        >
+                           <Terminal size={14} />
+                        </button>
                         <button 
                            onClick={() => handleEdit(task)}
                            className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-white transition-all shadow-sm"
@@ -226,6 +242,12 @@ const Tasks = () => {
           </table>
         </div>
       </div>
+      <ExecutionTracesModal 
+        isOpen={!!traceTask} 
+        onClose={() => setTraceTask(null)} 
+        taskId={traceTask?.id} 
+        taskName={traceTask?.name} 
+      />
     </>
   );
 };

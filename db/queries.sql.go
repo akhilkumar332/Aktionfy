@@ -1861,7 +1861,11 @@ func (q *Queries) ListPublicTemplates(ctx context.Context, name string) ([]Templ
 }
 
 const listTaskExecutionIDs = `-- name: ListTaskExecutionIDs :many
-SELECT DISTINCT execution_id, MAX(start_time) as last_activity
+SELECT 
+    execution_id, 
+    MIN(start_time) as start_time,
+    MAX(start_time) as last_activity,
+    BOOL_OR(is_error) as is_error
 FROM execution_traces
 WHERE task_id = $1
 GROUP BY execution_id
@@ -1870,8 +1874,10 @@ LIMIT 20
 `
 
 type ListTaskExecutionIDsRow struct {
-	ExecutionID  string      `json:"execution_id"`
-	LastActivity interface{} `json:"last_activity"`
+	ExecutionID  string             `json:"execution_id"`
+	StartTime    pgtype.Timestamptz `json:"start_time"`
+	LastActivity pgtype.Timestamptz `json:"last_activity"`
+	IsError      bool               `json:"is_error"`
 }
 
 func (q *Queries) ListTaskExecutionIDs(ctx context.Context, taskID pgtype.UUID) ([]ListTaskExecutionIDsRow, error) {
@@ -1883,7 +1889,12 @@ func (q *Queries) ListTaskExecutionIDs(ctx context.Context, taskID pgtype.UUID) 
 	var items []ListTaskExecutionIDsRow
 	for rows.Next() {
 		var i ListTaskExecutionIDsRow
-		if err := rows.Scan(&i.ExecutionID, &i.LastActivity); err != nil {
+		if err := rows.Scan(
+			&i.ExecutionID,
+			&i.StartTime,
+			&i.LastActivity,
+			&i.IsError,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -1968,7 +1979,8 @@ func (q *Queries) ListUserSecrets(ctx context.Context, userID string) ([]ListUse
 const listUserTasks = `-- name: ListUserTasks :many
 SELECT 
     t.id, t.user_id, t.name, t.trigger_type, t.trigger_config, t.agent_prompt, t.status, t.locked_by, t.locked_at, t.next_run, t.last_run, t.failure_count, t.missed_task_policy, t.depends_on_task_id, t.created_at, t.requires_approval, t.encrypted_secrets, t.last_approval_status, t.trigger_on_completion, t.task_type, t.native_code, t.workspace_id, t.max_retries, t.retry_count, t.backoff_strategy, t.ui_coordinates, t.branch_condition, t.is_bundle_root, t.loop_condition, t.swarm_config,
-    (SELECT COUNT(*) FROM task_versions tv WHERE tv.task_id = t.id) as version_count
+    (SELECT COUNT(*) FROM task_versions tv WHERE tv.task_id = t.id) as version_count,
+    (SELECT error_message FROM dlq_tasks dt WHERE dt.task_id = t.id ORDER BY failed_at DESC LIMIT 1) as last_error
 FROM tasks t
 WHERE t.user_id = $1
 ORDER BY t.created_at DESC
@@ -2006,6 +2018,7 @@ type ListUserTasksRow struct {
 	LoopCondition       json.RawMessage    `json:"loop_condition"`
 	SwarmConfig         json.RawMessage    `json:"swarm_config"`
 	VersionCount        int64              `json:"version_count"`
+	LastError           pgtype.Text        `json:"last_error"`
 }
 
 func (q *Queries) ListUserTasks(ctx context.Context, userID string) ([]ListUserTasksRow, error) {
@@ -2049,6 +2062,7 @@ func (q *Queries) ListUserTasks(ctx context.Context, userID string) ([]ListUserT
 			&i.LoopCondition,
 			&i.SwarmConfig,
 			&i.VersionCount,
+			&i.LastError,
 		); err != nil {
 			return nil, err
 		}

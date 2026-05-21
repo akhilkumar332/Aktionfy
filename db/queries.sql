@@ -134,7 +134,8 @@ RETURNING *;
 -- name: ListUserTasks :many
 SELECT 
     t.*,
-    (SELECT COUNT(*) FROM task_versions tv WHERE tv.task_id = t.id) as version_count
+    (SELECT COUNT(*) FROM task_versions tv WHERE tv.task_id = t.id) as version_count,
+    (SELECT error_message FROM dlq_tasks dt WHERE dt.task_id = t.id ORDER BY failed_at DESC LIMIT 1) as last_error
 FROM tasks t
 WHERE t.user_id = $1
 ORDER BY t.created_at DESC;
@@ -289,7 +290,11 @@ WHERE task_id = $1 AND execution_id = $2
 ORDER BY start_time ASC;
 
 -- name: ListTaskExecutionIDs :many
-SELECT DISTINCT execution_id, MAX(start_time) as last_activity
+SELECT 
+    execution_id, 
+    MIN(start_time) as start_time,
+    MAX(start_time) as last_activity,
+    BOOL_OR(is_error) as is_error
 FROM execution_traces
 WHERE task_id = $1
 GROUP BY execution_id
