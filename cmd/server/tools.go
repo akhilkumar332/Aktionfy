@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"aktionfy/db"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
@@ -452,6 +453,221 @@ func registerTools(s *server.MCPServer) {
 			return mcp.NewToolResultError(fmt.Sprintf("internal error: %v", err)), nil
 		}
 		return mcp.NewToolResultText(string(resBytes)), nil
+	})
+
+	getTaskTool := mcp.NewTool("get_task",
+		mcp.WithDescription("Gets detailed information about a specific task"),
+		mcp.WithString("id", mcp.Required(), mcp.Description("Task ID")),
+	)
+	s.AddTool(getTaskTool, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args, ok := req.Params.Arguments.(map[string]interface{})
+		if !ok {
+			return mcp.NewToolResultError("invalid arguments"), nil
+		}
+		userID, ok := ctx.Value(userIDKey).(string)
+		if !ok {
+			return mcp.NewToolResultError("unauthorized"), nil
+		}
+		id, ok := args["id"].(string)
+		if !ok {
+			return mcp.NewToolResultError("missing or invalid 'id'"), nil
+		}
+
+		var tid pgtype.UUID
+		if err := parseUUID(id, &tid); err != nil {
+			return mcp.NewToolResultError("invalid task ID format"), nil
+		}
+
+		t, err := queries.GetTaskByID(ctx, db.GetTaskByIDParams{
+			ID:     tid,
+			UserID: userID,
+		})
+		if err != nil {
+			if err == pgx.ErrNoRows {
+				return mcp.NewToolResultError("task not found"), nil
+			}
+			return mcp.NewToolResultError(fmt.Sprintf("db error: %v", err)), nil
+		}
+
+		resBytes, err := json.Marshal(t)
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("internal error: %v", err)), nil
+		}
+		return mcp.NewToolResultText(string(resBytes)), nil
+	})
+
+	updateTaskTool := mcp.NewTool("update_task",
+		mcp.WithDescription("Updates an existing task's configuration"),
+		mcp.WithString("id", mcp.Required(), mcp.Description("Task ID")),
+		mcp.WithString("agent_prompt", mcp.Description("New agent prompt")),
+		mcp.WithString("missed_task_policy", mcp.Description("New policy for missed tasks")),
+		mcp.WithString("depends_on_task_id", mcp.Description("New dependency")),
+		mcp.WithObject("branch_condition", mcp.Description("New branch condition")),
+		mcp.WithObject("loop_condition", mcp.Description("New loop condition")),
+		mcp.WithObject("swarm_config", mcp.Description("New swarm configuration")),
+	)
+	s.AddTool(updateTaskTool, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args, ok := req.Params.Arguments.(map[string]interface{})
+		if !ok {
+			return mcp.NewToolResultError("invalid arguments"), nil
+		}
+		userID, ok := ctx.Value(userIDKey).(string)
+		if !ok {
+			return mcp.NewToolResultError("unauthorized"), nil
+		}
+		id, ok := args["id"].(string)
+		if !ok {
+			return mcp.NewToolResultError("missing or invalid 'id'"), nil
+		}
+
+		var tid pgtype.UUID
+		if err := parseUUID(id, &tid); err != nil {
+			return mcp.NewToolResultError("invalid task ID format"), nil
+		}
+
+		// Fetch existing task to merge
+		t, err := queries.GetTaskByID(ctx, db.GetTaskByIDParams{
+			ID:     tid,
+			UserID: userID,
+		})
+		if err != nil {
+			if err == pgx.ErrNoRows {
+				return mcp.NewToolResultError("task not found"), nil
+			}
+			return mcp.NewToolResultError(fmt.Sprintf("db error: %v", err)), nil
+		}
+
+		agentPrompt := t.AgentPrompt
+		if ap, ok := args["agent_prompt"].(string); ok {
+			agentPrompt = ap
+		}
+
+		missedPolicy := t.MissedTaskPolicy
+		if mp, ok := args["missed_task_policy"].(string); ok {
+			missedPolicy = pgtype.Text{String: mp, Valid: true}
+		}
+
+		dependsOn := t.DependsOnTaskID
+		if dep, ok := args["depends_on_task_id"].(string); ok {
+			if dep == "" {
+				dependsOn = pgtype.UUID{Valid: false}
+			} else {
+				if dep == id {
+					return mcp.NewToolResultError("a task cannot depend on itself"), nil
+				}
+				if err := parseUUID(dep, &dependsOn); err != nil {
+					return mcp.NewToolResultError("invalid depends_on_task_id format"), nil
+				}
+				// Verify ownership of the dependency
+				depExists, err := queries.CheckTaskOwnership(ctx, db.CheckTaskOwnershipParams{
+					ID:     dependsOn,
+					UserID: userID,
+				})
+				if err != nil || !depExists {
+					return mcp.NewToolResultError("dependency task not found or unauthorized"), nil
+				}
+			}
+		}
+
+		branchCondition := t.BranchCondition
+		if bc, ok := args["branch_condition"].(map[string]interface{}); ok {
+			var err error
+			branchCondition, err = json.Marshal(bc)
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("invalid branch_condition: %v", err)), nil
+			}
+		}
+
+		loopCondition := t.LoopCondition
+		if lc, ok := args["loop_condition"].(map[string]interface{}); ok {
+			var err error
+			loopCondition, err = json.Marshal(lc)
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("invalid loop_condition: %v", err)), nil
+			}
+		}
+
+		swarmConfig := t.SwarmConfig
+		if sc, ok := args["swarm_config"].(map[string]interface{}); ok {
+			var err error
+			swarmConfig, err = json.Marshal(sc)
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("invalid swarm_config: %v", err)), nil
+			}
+		}
+
+		_, err = queries.UpdateTaskAgentPromptAndPolicy(ctx, db.UpdateTaskAgentPromptAndPolicyParams{
+			ID:                 tid,
+			UserID:             userID,
+			AgentPrompt:        agentPrompt,
+			MissedTaskPolicy:   missedPolicy,
+			DependsOnTaskID:    dependsOn,
+			BranchCondition:    branchCondition,
+			LoopCondition:      loopCondition,
+			SwarmConfig:        swarmConfig,
+			TriggerOnCompletion: t.TriggerOnCompletion,
+			UiCoordinates:      t.UiCoordinates,
+		})
+
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("db error: %v", err)), nil
+		}
+
+		return mcp.NewToolResultText("Task updated successfully"), nil
+	})
+
+	executeTaskTool := mcp.NewTool("execute_task",
+		mcp.WithDescription("Manually triggers a task to run immediately"),
+		mcp.WithString("id", mcp.Required(), mcp.Description("Task ID")),
+	)
+	s.AddTool(executeTaskTool, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args, ok := req.Params.Arguments.(map[string]interface{})
+		if !ok {
+			return mcp.NewToolResultError("invalid arguments"), nil
+		}
+		userID, ok := ctx.Value(userIDKey).(string)
+		if !ok {
+			return mcp.NewToolResultError("unauthorized"), nil
+		}
+		id, ok := args["id"].(string)
+		if !ok {
+			return mcp.NewToolResultError("missing or invalid 'id'"), nil
+		}
+
+		var tid pgtype.UUID
+		if err := parseUUID(id, &tid); err != nil {
+			return mcp.NewToolResultError("invalid task ID format"), nil
+		}
+
+		// Ensure ownership
+		exists, err := queries.CheckTaskOwnership(ctx, db.CheckTaskOwnershipParams{
+			ID:     tid,
+			UserID: userID,
+		})
+		if err != nil || !exists {
+			return mcp.NewToolResultError("task not found or unauthorized"), nil
+		}
+
+		err = queries.UpdateTaskNextRun(ctx, db.UpdateTaskNextRunParams{
+			Status:  pgtype.Text{String: StatusActive, Valid: true},
+			NextRun: pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},
+			ID:      tid,
+			UserID:  userID,
+		})
+
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("db error: %v", err)), nil
+		}
+
+		return mcp.NewToolResultText("Task queued for immediate execution"), nil
+	})
+
+	getCurrentTimeTool := mcp.NewTool("get_current_time",
+		mcp.WithDescription("Returns the current server time"),
+	)
+	s.AddTool(getCurrentTimeTool, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		now := time.Now().UTC().Format(time.RFC3339)
+		return mcp.NewToolResultText(fmt.Sprintf("Current server time (UTC): %s", now)), nil
 	})
 
 	storeSecretTool := mcp.NewTool("store_secret",

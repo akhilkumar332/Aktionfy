@@ -63,9 +63,16 @@ func apiCreateTaskHandler(c echo.Context) error {
 		if err != nil {
 			return err
 		}
-	}
 
-	// Default missed task policy if not provided
+		// Verify ownership of the dependency
+		exists, err := queries.CheckTaskOwnership(c.Request().Context(), db.CheckTaskOwnershipParams{
+			ID:     dependsOnTaskID,
+			UserID: userID,
+		})
+		if err != nil || !exists {
+			return c.JSON(http.StatusForbidden, APIResponse{Success: false, Error: "Unauthorized dependency"})
+		}
+	}
 	policy := req.MissedTaskPolicy
 	if policy == "" {
 		policy = "run_immediately"
@@ -224,6 +231,50 @@ func apiDeleteTaskHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Task deleted"})
 }
 
+func apiTriggerTaskHandler(c echo.Context) error {
+	userID := getUserID(c)
+	if userID == "" {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
+	taskIDStr := c.Param("id")
+	taskID, err := mustParseUUID(c, taskIDStr)
+	if err != nil {
+		return err
+	}
+
+	// Verify ownership
+	exists, err := queries.CheckTaskOwnership(c.Request().Context(), db.CheckTaskOwnershipParams{
+		ID:     taskID,
+		UserID: userID,
+	})
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to verify task ownership"})
+	}
+	if !exists {
+		return c.JSON(http.StatusNotFound, APIResponse{Success: false, Error: "Task not found"})
+	}
+
+	err = queries.UpdateTaskNextRun(c.Request().Context(), db.UpdateTaskNextRunParams{
+		Status:  pgtype.Text{String: "active", Valid: true},
+		NextRun: pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},
+		ID:      taskID,
+		UserID:  userID,
+	})
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to trigger task"})
+	}
+
+	// Audit Log
+	writeAuditLog(c.Request().Context(), AuditEvent{
+		UserID:       userID,
+		Action:       "task.trigger",
+		ResourceType: "task",
+		ResourceID:   taskIDStr,
+	})
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Task triggered immediately"})
+}
+
 type UpdateTaskRequest struct {
 	Name                string          `json:"name"`
 	WorkspaceID         string          `json:"workspace_id"`
@@ -287,9 +338,21 @@ func apiUpdateTaskHandler(c echo.Context) error {
 
 	var dependsOnTaskID pgtype.UUID
 	if req.DependsOnTaskID != "" {
+		if req.DependsOnTaskID == taskIDStr {
+			return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "A task cannot depend on itself"})
+		}
 		dependsOnTaskID, err = mustParseUUID(c, req.DependsOnTaskID)
 		if err != nil {
 			return err
+		}
+
+		// Verify ownership of the dependency
+		exists, err := queries.CheckTaskOwnership(ctx, db.CheckTaskOwnershipParams{
+			ID:     dependsOnTaskID,
+			UserID: userID,
+		})
+		if err != nil || !exists {
+			return c.JSON(http.StatusForbidden, APIResponse{Success: false, Error: "Unauthorized dependency"})
 		}
 	}
 
@@ -470,10 +533,22 @@ func apiLinkTaskHandler(c echo.Context) error {
 
 	var dependsOnTaskID pgtype.UUID
 	if req.DependsOnTaskID != "" {
+		if req.DependsOnTaskID == taskIDStr {
+			return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "A task cannot depend on itself"})
+		}
 		var err error
 		dependsOnTaskID, err = mustParseUUID(c, req.DependsOnTaskID)
 		if err != nil {
 			return err
+		}
+
+		// Verify ownership of the dependency
+		exists, err := queries.CheckTaskOwnership(c.Request().Context(), db.CheckTaskOwnershipParams{
+			ID:     dependsOnTaskID,
+			UserID: userID,
+		})
+		if err != nil || !exists {
+			return c.JSON(http.StatusForbidden, APIResponse{Success: false, Error: "Unauthorized dependency"})
 		}
 	}
 
@@ -631,6 +706,7 @@ func apiManualRouteHandler(c echo.Context) error {
 		Status:  pgtype.Text{String: "active", Valid: true},
 		NextRun: pgtype.Timestamptz{Time: time.Now(), Valid: true},
 		ID:      targetTaskID,
+		UserID:  userID,
 	})
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to trigger target task"})

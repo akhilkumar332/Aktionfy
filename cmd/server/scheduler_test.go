@@ -70,6 +70,69 @@ func TestCalculateNextRunRejectsUnknownTrigger(t *testing.T) {
 	}
 }
 
+func TestExtractRawText(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    interface{}
+		expected string
+	}{
+		{
+			name: "Single content object",
+			input: map[string]interface{}{
+				"content": map[string]interface{}{
+					"type": "text",
+					"text": "hello world",
+				},
+			},
+			expected: "hello world",
+		},
+		{
+			name: "Slice of content objects",
+			input: map[string]interface{}{
+				"content": []interface{}{
+					map[string]interface{}{
+						"type": "text",
+						"text": "part 1",
+					},
+					map[string]interface{}{
+						"type": "text",
+						"text": "part 2",
+					},
+				},
+			},
+			expected: "part 1",
+		},
+		{
+			name: "Nested result with slice",
+			input: map[string]interface{}{
+				"result": map[string]interface{}{
+					"content": []interface{}{
+						map[string]interface{}{
+							"type": "text",
+							"text": "nested hello",
+						},
+					},
+				},
+			},
+			expected: "nested hello",
+		},
+		{
+			name:     "Nil input",
+			input:    nil,
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := extractRawText(tt.input)
+			if got != tt.expected {
+				t.Errorf("extractRawText() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
+
 func TestParseLLMChoice(t *testing.T) {
 	tests := []struct {
 		name     string

@@ -43,11 +43,28 @@ const WorkflowCanvas = () => {
   const [executions, setExecutions] = useState([]);
   const [selectedExecutionId, setSelectedExecutionId] = useState('');
   const [traces, setTraces] = useState([]);
-  const [currentTraceIndex, setCurrentTraceIndex] = useState(-1);
   const [isPlaying, setIsPlaying] = useState(false);
   const [globalTime, setGlobalTime] = useState(0);
   const [totalDuration, setTotalDuration] = useState(0);
   const playbackTimerRef = useRef(null);
+
+  // Derive currentTraceIndex from globalTime and traces
+  const currentTraceIndex = useMemo(() => {
+    if (!playbackMode || traces.length === 0) return -1;
+    const startTime = new Date(traces[0].start_time).getTime();
+    const targetTime = startTime + (globalTime * 1000);
+    
+    let foundIndex = 0;
+    for (let i = 0; i < traces.length; i++) {
+      const traceStart = new Date(traces[i].start_time).getTime();
+      if (traceStart <= targetTime) {
+        foundIndex = i;
+      } else {
+        break;
+      }
+    }
+    return foundIndex;
+  }, [globalTime, playbackMode, traces]);
 
   // Optimized task lookup map
   const taskMap = useMemo(() => {
@@ -273,7 +290,6 @@ const WorkflowCanvas = () => {
     loadTraces();
   }, [selectedExecutionId, selectedTask, fetchTraces]);
 
-  // Handle Playback Animation
   useEffect(() => {
     if (isPlaying && traces.length > 0) {
       playbackTimerRef.current = setInterval(() => {
@@ -290,30 +306,6 @@ const WorkflowCanvas = () => {
     }
     return () => clearInterval(playbackTimerRef.current);
   }, [isPlaying, traces, totalDuration]);
-
-  // Sync globalTime to currentTraceIndex
-  useEffect(() => {
-    if (playbackMode && traces.length > 0) {
-      const startTime = new Date(traces[0].start_time).getTime();
-      const targetTime = startTime + (globalTime * 1000);
-      
-      let foundIndex = 0;
-      for (let i = 0; i < traces.length; i++) {
-        const traceStart = new Date(traces[i].start_time).getTime();
-        if (traceStart <= targetTime) {
-          foundIndex = i;
-        } else {
-          break;
-        }
-      }
-      // Use setTimeout to avoid synchronous setState inside effect (cascading render)
-      setTimeout(() => {
-        if (isMountedRef.current) {
-          setCurrentTraceIndex(foundIndex);
-        }
-      }, 0);
-    }
-  }, [globalTime, playbackMode, traces]);
 
   // Update visual state (nodes and edges) based on playback time
   useEffect(() => {
@@ -779,7 +771,16 @@ const WorkflowCanvas = () => {
                              
                              <div className="flex items-center justify-center gap-6">
                                <button 
-                                 onClick={() => setCurrentTraceIndex(prev => Math.max(0, prev - 1))}
+                                 onClick={() => {
+                                   if (currentTraceIndex > 0) {
+                                     const prevTrace = traces[currentTraceIndex - 1];
+                                     const start = new Date(traces[0].start_time).getTime();
+                                     const prevStart = new Date(prevTrace.start_time).getTime();
+                                     setGlobalTime((prevStart - start) / 1000);
+                                   } else {
+                                     setGlobalTime(0);
+                                   }
+                                 }}
                                  className="p-3 bg-zinc-900 rounded-xl text-white hover:bg-zinc-800 transition-colors border border-zinc-800/50"
                                >
                                  <Rewind size={20} />
@@ -791,7 +792,14 @@ const WorkflowCanvas = () => {
                                  {isPlaying ? <Pause size={28} /> : <Play size={28} className="translate-x-1" />}
                                </button>
                                <button 
-                                 onClick={() => setCurrentTraceIndex(prev => Math.min(traces.length - 1, prev + 1))}
+                                 onClick={() => {
+                                   if (currentTraceIndex < traces.length - 1) {
+                                     const nextTrace = traces[currentTraceIndex + 1];
+                                     const start = new Date(traces[0].start_time).getTime();
+                                     const nextStart = new Date(nextTrace.start_time).getTime();
+                                     setGlobalTime((nextStart - start) / 1000);
+                                   }
+                                 }}
                                  className="p-3 bg-zinc-900 rounded-xl text-white hover:bg-zinc-800 transition-colors border border-zinc-800/50"
                                >
                                  <FastForward size={20} />
@@ -803,8 +811,14 @@ const WorkflowCanvas = () => {
                                  type="range" 
                                  min="0" 
                                  max={Math.max(0, traces.length - 1)} 
-                                 value={currentTraceIndex}
-                                 onChange={(e) => setCurrentTraceIndex(parseInt(e.target.value))}
+                                 value={Math.max(0, currentTraceIndex)}
+                                 onChange={(e) => {
+                                   const idx = parseInt(e.target.value);
+                                   const targetTrace = traces[idx];
+                                   const start = new Date(traces[0].start_time).getTime();
+                                   const targetStart = new Date(targetTrace.start_time).getTime();
+                                   setGlobalTime((targetStart - start) / 1000);
+                                 }}
                                  className="w-full h-1 bg-zinc-900 rounded-full appearance-none cursor-pointer accent-brand-primary"
                                />
                              </div>

@@ -265,19 +265,25 @@ func SamplingInterceptorMiddleware(next http.Handler) http.Handler {
 			// Extract ID as string (strip quotes if string, keep literal if number)
 			idStr := strings.Trim(string(msg.ID), "\"")
 
+			log.Printf("[SAMPLING] Intercepted response for ID %s", idStr)
+
 			errStr := ""
 			if msg.Error != nil {
 				errStr = msg.Error.Message
 				if errStr == "" {
 					errStr = fmt.Sprintf("MCP error %d", msg.Error.Code)
 				}
+				log.Printf("[SAMPLING] Intercepted error for ID %s: %s", idStr, errStr)
 			}
 
 			// Check if this ID is one of our pending sampling requests
 			if GlobalSessionManager.HandleSamplingResponse(idStr, msg.Result, errStr) {
+				log.Printf("[SAMPLING] Successfully routed response for ID %s", idStr)
 				// We handled it! Return 202 Accepted (matches SSEServer behavior)
 				w.WriteHeader(http.StatusAccepted)
 				return
+			} else {
+				log.Printf("[SAMPLING] No pending request found for ID %s", idStr)
 			}
 		}
 

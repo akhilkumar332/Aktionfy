@@ -340,6 +340,7 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 				Status:  pgtype.Text{String: StatusActive, Valid: true},
 				NextRun: pgtype.Timestamptz{Time: time.Now().UTC().Add(1 * time.Minute), Valid: true},
 				ID:      t.ID,
+				UserID:  t.UserID,
 			}); err != nil {
 				log.Printf("Error updating next run for missed task %s: %v", taskID, err)
 			}
@@ -470,10 +471,12 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 					UserID:       t.UserID,
 				})
 				queries.UpdateTaskNextRun(workerCtx, db.UpdateTaskNextRunParams{
-					Status:  pgtype.Text{String: StatusActive, Valid: true},
-					NextRun: pgtype.Timestamptz{Time: nextRun, Valid: true},
+					Status:  pgtype.Text{String: StatusPaused, Valid: true},
+					NextRun: pgtype.Timestamptz{Time: time.Time{}, Valid: false},
 					ID:      t.ID,
+					UserID:  t.UserID,
 				})
+
 			}
 		} else {
 			observeTaskOutcome("success")
@@ -711,6 +714,7 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 				Status:  pgtype.Text{String: StatusActive, Valid: true},
 				NextRun: pgtype.Timestamptz{Time: nextRun, Valid: true},
 				ID:      t.ID,
+				UserID:  t.UserID,
 			}); err != nil {
 				log.Printf("Error updating next run for task %s: %v", taskID, err)
 			}
@@ -1084,6 +1088,7 @@ Synthesize the views and pick the final branch. Respond ONLY with JSON: {"choice
 				Status:  pgtype.Text{String: StatusActive, Valid: true},
 				NextRun: pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},
 				ID:      dept.ID,
+				UserID:  dept.UserID,
 			})
 			log.Printf("Decision router %s activated task %s (choice: %s)", taskID, formatUUID(dept.ID), choice)
 			found = true
@@ -1116,12 +1121,37 @@ func extractRawText(res interface{}) string {
 
 	// 1. Try direct type assertion for MCP CreateMessageResult
 	if msgRes, ok := res.(*mcp.CreateMessageResult); ok {
+		// msgRes.Content can be mcp.TextContent, *mcp.TextContent, or a slice of content
 		if tc, ok := msgRes.Content.(mcp.TextContent); ok {
 			return tc.Text
 		}
-		// Also check for pointer variant
 		if tc, ok := msgRes.Content.(*mcp.TextContent); ok {
 			return tc.Text
+		}
+
+		// Handle slice of content
+		if contentSlice, ok := msgRes.Content.([]interface{}); ok {
+			for _, c := range contentSlice {
+				if tc, ok := c.(mcp.TextContent); ok {
+					return tc.Text
+				}
+				if tc, ok := c.(*mcp.TextContent); ok {
+					return tc.Text
+				}
+				// Also check if it's a map (unmarshaled from generic JSON)
+				if m, ok := c.(map[string]interface{}); ok {
+					if t, ok := m["text"].(string); ok {
+						return t
+					}
+				}
+			}
+		}
+
+		// Try to marshal back and forth if type assertions failed
+		resBytes, _ := json.Marshal(msgRes)
+		var resMap map[string]interface{}
+		if err := json.Unmarshal(resBytes, &resMap); err == nil {
+			return extractFromMap(resMap)
 		}
 		return ""
 	}
@@ -1136,14 +1166,33 @@ func extractRawText(res interface{}) string {
 		return ""
 	}
 
-	if content, ok := resMap["content"].(map[string]interface{}); ok {
-		if text, ok := content["text"].(string); ok {
+	return extractFromMap(resMap)
+}
+
+func extractFromMap(resMap map[string]interface{}) string {
+	// Some clients return { "result": { "content": { "text": "..." } } }
+	// Others return { "content": { "text": "..." } }
+	content := resMap["content"]
+	if content == nil {
+		if result, ok := resMap["result"].(map[string]interface{}); ok {
+			content = result["content"]
+		}
+	}
+
+	if content == nil {
+		return ""
+	}
+
+	if m, ok := content.(map[string]interface{}); ok {
+		if text, ok := m["text"].(string); ok {
 			return text
 		}
-	} else if contentSlice, ok := resMap["content"].([]interface{}); ok && len(contentSlice) > 0 {
-		if first, ok := contentSlice[0].(map[string]interface{}); ok {
-			if text, ok := first["text"].(string); ok {
-				return text
+	} else if slice, ok := content.([]interface{}); ok && len(slice) > 0 {
+		for _, item := range slice {
+			if m, ok := item.(map[string]interface{}); ok {
+				if text, ok := m["text"].(string); ok {
+					return text
+				}
 			}
 		}
 	}
@@ -1228,9 +1277,11 @@ func completeTask(ctx context.Context, userID string, taskID string, nextRun tim
 
 		if err := queries.UpdateTaskNextRun(ctx, db.UpdateTaskNextRunParams{
 			Status:  pgtype.Text{String: StatusActive, Valid: true},
-			NextRun: pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},
+			NextRun: pgtype.Timestamptz{Time: time.Now().UTC().Add(1 * time.Minute), Valid: true},
 			ID:      t.ID,
+			UserID:  t.UserID,
 		}); err != nil {
+
 			log.Printf("Error making dependent task %s due immediately for user %s: %v", formatUUID(t.ID), t.UserID, err)
 			continue
 		}
@@ -1580,6 +1631,7 @@ func executeSwarmRouter(ctx context.Context, mcpServer *server.MCPServer, t db.T
 						Status:  pgtype.Text{String: StatusActive, Valid: true},
 						NextRun: pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},
 						ID:      dept.ID,
+						UserID:  dept.UserID,
 					})
 					found = true
 					break

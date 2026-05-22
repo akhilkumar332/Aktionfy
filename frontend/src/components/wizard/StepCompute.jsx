@@ -143,6 +143,41 @@ const StepCompute = ({ formData, updateFormData, showVariableSelector, setShowVa
           </div>
         )}
       </div>
+
+      <div className="space-y-4 pt-4 border-t border-zinc-900">
+        <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Reliability & Resilience</label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-6">
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <label className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Max Retries</label>
+              <span className="text-[10px] font-mono text-indigo-400 font-bold">{formData.max_retries} ATTEMPTS</span>
+            </div>
+            <input 
+              type="range" 
+              min="0" 
+              max="10" 
+              value={formData.max_retries}
+              onChange={(e) => updateFormData('max_retries', parseInt(e.target.value))}
+              className="w-full h-1.5 bg-zinc-800 rounded-full appearance-none cursor-pointer accent-indigo-500"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest ml-1">Backoff Strategy</label>
+            <div className="flex gap-2">
+              {['exponential', 'linear', 'fixed'].map(strategy => (
+                <button
+                  key={strategy}
+                  type="button"
+                  onClick={() => updateFormData('backoff_strategy', strategy)}
+                  className={`flex-1 py-2 rounded-lg text-[9px] font-bold uppercase tracking-widest border transition-all ${formData.backoff_strategy === strategy ? 'bg-indigo-600/10 border-indigo-500/50 text-white' : 'bg-zinc-950 border-zinc-800 text-zinc-500 hover:text-zinc-300'}`}
+                >
+                  {strategy}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
     </motion.div>
   );
 };

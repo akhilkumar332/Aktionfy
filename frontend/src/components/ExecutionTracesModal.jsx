@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
-import { X, Activity, Clock, Terminal, AlertCircle, CheckCircle2, ChevronRight, Database, RefreshCw } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { X, Activity, Clock, AlertCircle, CheckCircle2, Database, RefreshCw } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useSSE } from '../hooks/useSSE';
 
 const ExecutionTracesModal = ({ isOpen, onClose, taskId, taskName }) => {
@@ -97,13 +97,15 @@ const ExecutionTracesModal = ({ isOpen, onClose, taskId, taskName }) => {
 
   useEffect(() => {
     if (isOpen && taskId) {
-      fetchExecutions();
+      // Use microtask to avoid synchronous state updates in effect
+      Promise.resolve().then(() => fetchExecutions());
     }
   }, [isOpen, taskId, fetchExecutions]);
 
   useEffect(() => {
     if (selectedExecutionId) {
-      fetchTraces(selectedExecutionId);
+      // Use microtask to avoid synchronous state updates in effect
+      Promise.resolve().then(() => fetchTraces(selectedExecutionId));
     }
   }, [selectedExecutionId, fetchTraces]);
 
@@ -149,9 +151,9 @@ const ExecutionTracesModal = ({ isOpen, onClose, taskId, taskName }) => {
                 ) : executions.length === 0 ? (
                   <div className="p-4 text-center text-[9px] text-zinc-600 uppercase font-bold italic">No traces found</div>
                 ) : (
-                  executions.map((exec) => (
+                  executions.map((exec, idx) => (
                     <button
-                      key={exec?.execution_id || Math.random()}
+                      key={exec?.execution_id || `cycle-${idx}`}
                       onClick={() => {
                         setSelectedExecutionId(exec?.execution_id);
                         setTraces([]); // Clear current to show loading state

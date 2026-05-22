@@ -2483,17 +2483,23 @@ func (q *Queries) UpdateTaskApprovalStatusAndLastRun(ctx context.Context, arg Up
 }
 
 const updateTaskNextRun = `-- name: UpdateTaskNextRun :exec
-UPDATE tasks SET status = $1, locked_by = NULL, next_run = $2 WHERE id = $3
+UPDATE tasks SET status = $1, locked_by = NULL, next_run = $2 WHERE id = $3 AND user_id = $4
 `
 
 type UpdateTaskNextRunParams struct {
 	Status  pgtype.Text        `json:"status"`
 	NextRun pgtype.Timestamptz `json:"next_run"`
 	ID      pgtype.UUID        `json:"id"`
+	UserID  string             `json:"user_id"`
 }
 
 func (q *Queries) UpdateTaskNextRun(ctx context.Context, arg UpdateTaskNextRunParams) error {
-	_, err := q.db.Exec(ctx, updateTaskNextRun, arg.Status, arg.NextRun, arg.ID)
+	_, err := q.db.Exec(ctx, updateTaskNextRun,
+		arg.Status,
+		arg.NextRun,
+		arg.ID,
+		arg.UserID,
+	)
 	return err
 }
 

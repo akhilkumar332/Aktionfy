@@ -82,7 +82,7 @@ SET depends_on_task_id = $1, trigger_on_completion = $2
 WHERE id = $3 AND user_id = $4;
 
 -- name: UpdateTaskNextRun :exec
-UPDATE tasks SET status = $1, locked_by = NULL, next_run = $2 WHERE id = $3;
+UPDATE tasks SET status = $1, locked_by = NULL, next_run = $2 WHERE id = $3 AND user_id = $4;
 
 -- name: GetLatestTaskLogResponse :one
 SELECT l.llm_response FROM task_logs l

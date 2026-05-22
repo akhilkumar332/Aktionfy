@@ -187,6 +187,13 @@ const Tasks = () => {
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button 
+                           onClick={() => handleAction(task.id, 'trigger')}
+                           className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-emerald-400 transition-all shadow-sm"
+                           title="Execute Immediately"
+                        >
+                           <Activity size={14} />
+                        </button>
+                        <button 
                            onClick={() => setTraceTask(task)}
                            className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-brand-primary transition-all shadow-sm"
                            title="Execution Traces"

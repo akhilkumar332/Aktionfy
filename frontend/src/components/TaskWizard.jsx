@@ -44,7 +44,9 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
       consensus_mode: 'voting',
       supervisor_prompt: 'You are the Executive Director. Read the council\'s debate and choose the best path.',
       council: [{ name: 'AGENT_1', prompt: 'Analyze this data.' }]
-    }
+    },
+    max_retries: 3,
+    backoff_strategy: 'exponential'
   });
 
   useEffect(() => {
@@ -74,7 +76,9 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
         consensus_mode: 'voting',
         supervisor_prompt: 'You are the Executive Director. Read the council\'s debate and choose the best path.',
         council: [{ name: 'AGENT_1', prompt: 'Analyze this data.' }]
-      }
+      },
+      max_retries: 3,
+      backoff_strategy: 'exponential'
     });
     setError(null);
   }, []);
@@ -167,7 +171,10 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
         trigger_on_completion: formData.trigger_on_completion,
         branch_condition: formData.branch_condition,
         loop_condition: formData.loop_condition,
-        swarm_config: formData.task_type === 'swarm_router' ? formData.swarm_config : null
+        swarm_config: formData.task_type === 'swarm_router' ? formData.swarm_config : null,
+        max_retries: formData.max_retries,
+        backoff_strategy: formData.backoff_strategy,
+        ui_coordinates: initialData?.ui_coordinates || null
       };
 
       let res;

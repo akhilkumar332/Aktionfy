@@ -95,6 +95,7 @@ func (s *SamplingSSESession) RequestSampling(ctx context.Context, req mcp.Create
 	id := fmt.Sprintf("%d", idInt)
 	ch := make(chan samplingResult, 1)
 
+	log.Printf("[SAMPLING] Sending request ID %s to session %s", id, s.SessionID())
 	GlobalSessionManager.AddPendingSampling(id, ch)
 	defer GlobalSessionManager.RemovePendingSampling(id)
 
@@ -112,20 +113,25 @@ func (s *SamplingSSESession) RequestSampling(ctx context.Context, req mcp.Create
 	}
 
 	if err := s.sseServer.SendEventToSession(s.SessionID(), rpcReq); err != nil {
+		log.Printf("[SAMPLING] Failed to send event to session %s: %v", s.SessionID(), err)
 		return nil, fmt.Errorf("failed to send sampling request: %w", err)
 	}
 
 	// Wait for response
 	select {
 	case <-ctx.Done():
+		log.Printf("[SAMPLING] Request ID %s timed out or was cancelled", id)
 		return nil, ctx.Err()
 	case res := <-ch:
 		if res.err != "" {
+			log.Printf("[SAMPLING] Request ID %s failed with error: %s", id, res.err)
 			return nil, errors.New(res.err)
 		}
 		if res.result == nil {
+			log.Printf("[SAMPLING] Request ID %s returned empty result", id)
 			return nil, fmt.Errorf("sampling request failed: empty response")
 		}
+		log.Printf("[SAMPLING] Request ID %s succeeded", id)
 		return res.result, nil
 	}
 }
@@ -396,7 +402,7 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 						triggerPayload, _ := taskData["trigger_payload"].(map[string]interface{})
 
 						if triggerType == "" || triggerConfigStr == "" {
-							errMsg := "Incomplete trigger data in Pub/Sub payload (missing trigger_type or trigger_config)"
+							errMsg := "incomplete trigger data in Pub/Sub payload (missing trigger_type or trigger_config)"
 							log.Printf("%s for user %s: %+v", errMsg, userID, taskData)
 							span.RecordError(errors.New(errMsg))
 							span.SetStatus(codes.Error, errMsg)
