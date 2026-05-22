@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -159,11 +160,18 @@ func (sm *SessionManager) RemoveMCPSession(userID string, sessionID string) {
 }
 
 // GetMCPSession retrieves an active local in-memory MCP session if it exists.
-// If multiple sessions exist, it returns the first one (usually the bridge/CLI).
+// It prioritizes Bridge/CLI sessions over Web/LobeChat sessions for automated tasks.
 func (sm *SessionManager) GetMCPSession(userID string) server.ClientSession {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 	if sessions, exists := sm.mcpSessions[userID]; exists {
+		// Priority 1: Find a session with "bridge" in the ID
+		for id, s := range sessions {
+			if strings.Contains(strings.ToLower(id), "bridge") {
+				return s
+			}
+		}
+		// Priority 2: Return the first available session
 		for _, s := range sessions {
 			return s
 		}

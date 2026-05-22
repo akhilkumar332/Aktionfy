@@ -248,7 +248,6 @@ const WorkflowCanvas = () => {
       if (res.data.success && isMountedRef.current) {
         const tracesData = res.data.data || [];
         setTraces(tracesData);
-        setCurrentTraceIndex(0);
         
         // Calculate total duration for the playback bar
         if (tracesData.length > 0) {
@@ -272,7 +271,6 @@ const WorkflowCanvas = () => {
       } else {
         setExecutions([]);
         setTraces([]);
-        setCurrentTraceIndex(-1);
         setIsPlaying(false);
         setGlobalTime(0);
         setTotalDuration(0);

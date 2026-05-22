@@ -27,12 +27,13 @@ const BridgeAssistant = ({ isOpen, onClose, systemStatus, fetchStatus }) => {
 
   const claudeConfig = {
     "mcpServers": {
-      "actionfy": {
+      "aktionfy": {
         "command": "npx",
         "args": ["-y", "@aktionfy/mcp", "start", "--api-key", apiKey]
       }
     }
   };
+
 
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
@@ -48,6 +49,18 @@ const BridgeAssistant = ({ isOpen, onClose, systemStatus, fetchStatus }) => {
       desc: 'Official Anthropic GUI client' 
     },
     { 
+      id: 'lobechat', 
+      name: 'LobeChat', 
+      icon: Globe, 
+      desc: 'Modern web-based LLM UI' 
+    },
+    { 
+      id: 'cursor', 
+      name: 'Cursor / VS Code', 
+      icon: Code, 
+      desc: 'AI-integrated code editors' 
+    },
+    { 
       id: 'claude_cli', 
       name: 'Claude Code (CLI)', 
       icon: Terminal, 
@@ -60,22 +73,10 @@ const BridgeAssistant = ({ isOpen, onClose, systemStatus, fetchStatus }) => {
       desc: 'Google Gemini terminal interface' 
     },
     { 
-      id: 'cursor', 
-      name: 'Cursor / VS Code', 
-      icon: Code, 
-      desc: 'AI-integrated code editors' 
-    },
-    { 
       id: 'codex', 
       name: 'Codex / Copilot', 
       icon: Shield, 
       desc: 'GitHub Copilot CLI ecosystem' 
-    },
-    { 
-      id: 'custom', 
-      name: 'Custom Protocol', 
-      icon: Globe, 
-      desc: 'Manual SDK implementation' 
     }
   ];
 
@@ -117,31 +118,53 @@ const BridgeAssistant = ({ isOpen, onClose, systemStatus, fetchStatus }) => {
             </div>
           </div>
         );
-      case 'claude_cli':
+      case 'lobechat':
         return (
           <div className="space-y-6">
-             <div className="space-y-3">
-              <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Setup Protocol</p>
-              <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 space-y-4">
-                <p className="text-xs text-zinc-300">Run the following command to add Actionfy as a persistent MCP server to Claude Code:</p>
-                <div className="bg-black/40 border border-zinc-800 rounded-md p-3 flex items-center gap-3">
-                   <code className="text-xs text-emerald-500 font-mono flex-1">
-                     {showKey ? `claude mcp add actionfy -- ${installCommand}` : `claude mcp add actionfy -- npx @aktionfy/mcp install --api-key ${'•'.repeat(24)}`}
-                   </code>
-                   <div className="flex items-center gap-2">
-                     <button 
-                       onClick={() => setShowKey(!showKey)}
-                       className="text-zinc-500 hover:text-white transition-all"
-                       title={showKey ? "Hide Signature" : "Show Signature"}
-                     >
-                       {showKey ? <EyeOff size={14} /> : <Eye size={14} />}
-                     </button>
-                     <button onClick={() => handleCopy(`claude mcp add actionfy -- ${installCommand}`)} className="text-zinc-500 hover:text-white transition-all">
-                       {copied ? <Check size={14} /> : <Copy size={14} />}
-                     </button>
-                   </div>
-                </div>
-              </div>
+            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 space-y-3">
+              <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Skill Integration</p>
+              <ul className="text-xs text-zinc-400 space-y-2 list-decimal list-inside">
+                <li>Go to <span className="text-zinc-200">Settings</span> → <span className="text-zinc-200">Skill Settings</span></li>
+                <li>Select <span className="text-zinc-200">Custom Skills</span> tab</li>
+                <li>Click <span className="text-zinc-200">Quick Import JSON</span></li>
+                <li className="list-none pt-2">
+                  <button 
+                    onClick={() => handleCopy(JSON.stringify({
+                      "identifier": "aktionfy",
+                      "api": `${window.location.origin}/sse`,
+                      "type": "mcp"
+                    }, null, 2))}
+                    className="w-full py-2 bg-emerald-600/10 border border-emerald-500/20 text-emerald-400 rounded-md text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600/20 transition-all"
+                  >
+                    Copy LobeChat Manifest
+                  </button>
+                </li>
+              </ul>
+            </div>
+            <p className="text-[10px] text-zinc-500 italic text-center">Note: LobeChat uses direct SSE connection to this dashboard.</p>
+          </div>
+        );
+      case 'cursor':
+        return (
+          <div className="space-y-6">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 space-y-3">
+              <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">IDE Integration</p>
+              <ul className="text-xs text-zinc-400 space-y-2 list-disc list-inside">
+                <li>Open <span className="text-zinc-200">Settings</span> → <span className="text-zinc-200">Features</span> → <span className="text-zinc-200">MCP</span></li>
+                <li>Add New MCP Server: <span className="text-zinc-200">Aktionfy</span></li>
+                <li>Type: <span className="text-zinc-200 font-mono">command</span></li>
+                <li>Command: <span className="text-zinc-200 font-mono text-[10px]">npx</span></li>
+                <li>
+                  Args: <span className="text-zinc-200 font-mono text-[10px]">-y @aktionfy/mcp start --api-key {showKey ? apiKey : (apiKey.length > 8 ? apiKey.slice(0, 8) + '••••••••' : '••••••••')}</span>
+                  <button 
+                    onClick={() => setShowKey(!showKey)}
+                    className="ml-2 text-zinc-500 hover:text-white transition-all align-middle"
+                    title={showKey ? "Hide Signature" : "Show Signature"}
+                  >
+                    {showKey ? <EyeOff size={12} /> : <Eye size={12} />}
+                  </button>
+                </li>
+              </ul>
             </div>
           </div>
         );
@@ -171,29 +194,6 @@ const BridgeAssistant = ({ isOpen, onClose, systemStatus, fetchStatus }) => {
                 </div>
                 <p className="text-[10px] text-zinc-500 italic">This establishes a secure IPC bridge between the Gemini runtime and the Aktionfy engine.</p>
               </div>
-            </div>
-          </div>
-        );
-      case 'cursor':
-        return (
-          <div className="space-y-6">
-            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 space-y-3">
-              <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">IDE Integration</p>
-              <ul className="text-xs text-zinc-400 space-y-2 list-disc list-inside">
-                <li>Open Settings {'>'} Features {'>'} MCP</li>
-                <li>Add New MCP Server: <span className="text-zinc-200">Actionfy</span></li>
-                <li>Command: <span className="text-zinc-200 font-mono text-[10px]">npx</span></li>
-                <li>
-                  Args: <span className="text-zinc-200 font-mono text-[10px]">-y @aktionfy/mcp start --api-key {showKey ? apiKey : (apiKey.length > 8 ? apiKey.slice(0, 8) + '••••••••' : '••••••••')}</span>
-                  <button 
-                    onClick={() => setShowKey(!showKey)}
-                    className="ml-2 text-zinc-500 hover:text-white transition-all align-middle"
-                    title={showKey ? "Hide Signature" : "Show Signature"}
-                  >
-                    {showKey ? <EyeOff size={12} /> : <Eye size={12} />}
-                  </button>
-                </li>
-              </ul>
             </div>
           </div>
         );
