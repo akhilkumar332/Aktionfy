@@ -94,7 +94,7 @@ func apiCreateTaskHandler(c echo.Context) error {
 		BranchCondition:     req.BranchCondition,
 		LoopCondition:       req.LoopCondition,
 		IsBundleRoot:        pgtype.Bool{Bool: req.IsBundleRoot, Valid: true},
-		NextRun:             pgtype.Timestamptz{Time: time.Now(), Valid: true},
+		NextRun:             pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},
 		SwarmConfig:         req.SwarmConfig,
 		MaxRetries:          int32(req.MaxRetries),
 		BackoffStrategy:     pgtype.Text{String: req.BackoffStrategy, Valid: req.BackoffStrategy != ""},
@@ -704,7 +704,7 @@ func apiManualRouteHandler(c echo.Context) error {
 	// 3. Update target task to active and next_run = NOW()
 	err = queries.UpdateTaskNextRun(c.Request().Context(), db.UpdateTaskNextRunParams{
 		Status:  pgtype.Text{String: "active", Valid: true},
-		NextRun: pgtype.Timestamptz{Time: time.Now(), Valid: true},
+		NextRun: pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},
 		ID:      targetTaskID,
 		UserID:  userID,
 	})

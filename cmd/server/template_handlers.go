@@ -139,7 +139,7 @@ func apiDeployBlueprintHandler(c echo.Context) error {
 			TriggerOnCompletion: pgtype.Bool{Bool: bt.TriggerOnCompletion, Valid: true},
 			BranchCondition:     bt.BranchCondition,
 			IsBundleRoot:        pgtype.Bool{Bool: bt.IsBundleRoot, Valid: true},
-			NextRun:             pgtype.Timestamptz{Time: time.Now(), Valid: true},
+			NextRun:             pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},
 			SwarmConfig:         bt.SwarmConfig,
 		})
 		if err != nil {
