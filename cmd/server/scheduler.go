@@ -908,8 +908,59 @@ func evaluateBranchCondition(condition []byte, parentOutput string) bool {
 	switch op {
 	case "contains":
 		return strings.Contains(parentOutput, val)
+	case "equals":
+		return strings.TrimSpace(parentOutput) == val
+	case "not_equals":
+		return strings.TrimSpace(parentOutput) != val
 	default:
 		return true
+	}
+}
+
+func evaluateLoopCondition(condition []byte, taskOutput string) bool {
+	if len(condition) == 0 {
+		return false
+	}
+	var cond map[string]interface{}
+	if err := json.Unmarshal(condition, &cond); err != nil {
+		log.Printf("Error unmarshaling loop condition: %v", err)
+		return false
+	}
+
+	enabled, _ := cond["enabled"].(bool)
+	if !enabled {
+		return false
+	}
+
+	// variable := cond["variable"].(string) // Not used yet, assume taskOutput for now
+	operator, _ := cond["operator"].(string)
+	targetValue, _ := cond["value"].(string)
+
+	actualValue := strings.TrimSpace(taskOutput)
+
+	switch operator {
+	case "equals":
+		return actualValue == targetValue
+	case "not_equals":
+		return actualValue != targetValue
+	case "contains":
+		return strings.Contains(actualValue, targetValue)
+	case "greater_than":
+		actualNum, err1 := strconv.ParseFloat(actualValue, 64)
+		targetNum, err2 := strconv.ParseFloat(targetValue, 64)
+		if err1 == nil && err2 == nil {
+			return actualNum > targetNum
+		}
+		return false
+	case "less_than":
+		actualNum, err1 := strconv.ParseFloat(actualValue, 64)
+		targetNum, err2 := strconv.ParseFloat(targetValue, 64)
+		if err1 == nil && err2 == nil {
+			return actualNum < targetNum
+		}
+		return false
+	default:
+		return false
 	}
 }
 
@@ -1250,14 +1301,7 @@ func completeTask(ctx context.Context, userID string, taskID string, nextRun tim
 		return
 	}
 
-	// Step 1: Trigger dependent tasks immediately
-	dependents, err := queries.GetDependentTasksToTrigger(ctx, tid)
-	if err != nil {
-		log.Printf("Error fetching dependent tasks for %s: %v", taskID, err)
-		return
-	}
-
-	// Fetch last output of the parent task
+	// Fetch last output of the task (parent output for dependents and loops)
 	parentOutputBytes, err := queries.GetTaskOutput(ctx, db.GetTaskOutputParams{
 		TaskID: tid,
 		UserID: userID,
@@ -1267,6 +1311,33 @@ func completeTask(ctx context.Context, userID string, taskID string, nextRun tim
 		log.Printf("Error fetching output for task %s in completeTask: %v", taskID, err)
 	} else {
 		parentOutput = parentOutputBytes.String
+	}
+
+	// Fetch task details for loop check
+	task, err := queries.GetTaskByID(ctx, db.GetTaskByIDParams{
+		ID:     tid,
+		UserID: userID,
+	})
+	if err == nil {
+		// Evaluate Loop Condition
+		if evaluateLoopCondition(task.LoopCondition, parentOutput) {
+			log.Printf("Loop condition met for task %s, re-triggering...", taskID)
+			// Reset next_run to NOW to re-run immediately
+			queries.UpdateTaskNextRun(ctx, db.UpdateTaskNextRunParams{
+				Status:  pgtype.Text{String: StatusActive, Valid: true},
+				NextRun: pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},
+				ID:      tid,
+				UserID:  userID,
+			})
+			return // DO NOT trigger dependents if looping
+		}
+	}
+
+	// Step 1: Trigger dependent tasks immediately
+	dependents, err := queries.GetDependentTasksToTrigger(ctx, tid)
+	if err != nil {
+		log.Printf("Error fetching dependent tasks for %s: %v", taskID, err)
+		return
 	}
 
 	for _, t := range dependents {

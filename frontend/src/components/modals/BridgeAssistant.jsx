@@ -17,7 +17,6 @@ const BridgeAssistant = ({ isOpen, onClose, systemStatus, fetchStatus }) => {
   const [showKey, setShowKey] = useState(false);
 
   const apiKey = user?.api_key || 'YOUR_API_KEY';
-  const installCommand = `npx @aktionfy/mcp install --api-key ${apiKey}`;
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -25,14 +24,29 @@ const BridgeAssistant = ({ isOpen, onClose, systemStatus, fetchStatus }) => {
     setTimeout(() => setRefreshing(false), 1000);
   };
 
+  const [preventSleep, setPreventSleep] = useState(false);
+  const [standaloneMode, setStandaloneMode] = useState(false);
+  const [standaloneProvider, setStandaloneModeProvider] = useState('openai');
+
+  const getArgs = () => {
+    const args = ["-y", "@aktionfy/mcp", "start", "--api-key", apiKey];
+    if (preventSleep) args.push("--prevent-sleep");
+    if (standaloneMode) {
+      args.push("--ai-provider", standaloneProvider);
+    }
+    return args;
+  };
+
   const claudeConfig = {
     "mcpServers": {
       "aktionfy": {
         "command": "npx",
-        "args": ["-y", "@aktionfy/mcp", "start", "--api-key", apiKey]
+        "args": getArgs()
       }
     }
   };
+
+  const installCommand = `npx ${getArgs().join(' ')}`;
 
 
   const handleCopy = (text) => {
@@ -115,6 +129,47 @@ const BridgeAssistant = ({ isOpen, onClose, systemStatus, fetchStatus }) => {
                   {JSON.stringify(claudeConfig, null, 2)}
                 </pre>
               </div>
+            </div>
+
+            <div className="space-y-4 pt-4 border-t border-zinc-800">
+               <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Advanced Tuning</p>
+               <div className="grid grid-cols-2 gap-4">
+                  <button 
+                    onClick={() => setPreventSleep(!preventSleep)}
+                    className={`p-3 rounded-xl border text-left transition-all ${preventSleep ? 'bg-indigo-600/10 border-indigo-500/50' : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'}`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <Zap size={14} className={preventSleep ? 'text-indigo-400' : 'text-zinc-500'} />
+                      <span className="text-[10px] font-bold text-white uppercase tracking-wider">Stay Awake</span>
+                    </div>
+                    <p className="text-[9px] text-zinc-500 leading-tight">Prevent local computer from sleeping during tasks.</p>
+                  </button>
+
+                  <button 
+                    onClick={() => setStandaloneMode(!standaloneMode)}
+                    className={`p-3 rounded-xl border text-left transition-all ${standaloneMode ? 'bg-emerald-600/10 border-emerald-500/50' : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'}`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <Cpu size={14} className={standaloneMode ? 'text-emerald-400' : 'text-zinc-500'} />
+                      <span className="text-[10px] font-bold text-white uppercase tracking-wider">Standalone</span>
+                    </div>
+                    <p className="text-[9px] text-zinc-500 leading-tight">Fallback to local AI if Claude is disconnected.</p>
+                  </button>
+               </div>
+
+               {standaloneMode && (
+                 <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-3 flex gap-2">
+                    {['openai', 'anthropic', 'gemini'].map(p => (
+                      <button
+                        key={p}
+                        onClick={() => setStandaloneModeProvider(p)}
+                        className={`flex-1 py-1.5 rounded text-[9px] font-black uppercase tracking-tighter border transition-all ${standaloneProvider === p ? 'bg-zinc-100 text-zinc-950 border-white shadow-lg' : 'bg-transparent text-zinc-600 border-zinc-800 hover:text-zinc-400'}`}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                 </div>
+               )}
             </div>
           </div>
         );

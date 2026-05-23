@@ -254,6 +254,15 @@ func apiTriggerTaskHandler(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, APIResponse{Success: false, Error: "Task not found"})
 	}
 
+	// Prevent triggering if already processing
+	t, err := queries.GetTaskByID(c.Request().Context(), db.GetTaskByIDParams{
+		ID:     taskID,
+		UserID: userID,
+	})
+	if err == nil && t.Status.String == "processing" {
+		return c.JSON(http.StatusConflict, APIResponse{Success: false, Error: "Task is already being processed"})
+	}
+
 	err = queries.UpdateTaskNextRun(c.Request().Context(), db.UpdateTaskNextRunParams{
 		Status:  pgtype.Text{String: "active", Valid: true},
 		NextRun: pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},

@@ -640,12 +640,19 @@ func registerTools(s *server.MCPServer) {
 		}
 
 		// Ensure ownership
-		exists, err := queries.CheckTaskOwnership(ctx, db.CheckTaskOwnershipParams{
+		t, err := queries.GetTaskByID(ctx, db.GetTaskByIDParams{
 			ID:     tid,
 			UserID: userID,
 		})
-		if err != nil || !exists {
-			return mcp.NewToolResultError("task not found or unauthorized"), nil
+		if err != nil {
+			if err == pgx.ErrNoRows {
+				return mcp.NewToolResultError("task not found"), nil
+			}
+			return mcp.NewToolResultError(fmt.Sprintf("db error: %v", err)), nil
+		}
+
+		if t.Status.String == StatusProcessing {
+			return mcp.NewToolResultError("task is already being processed"), nil
 		}
 
 		err = queries.UpdateTaskNextRun(ctx, db.UpdateTaskNextRunParams{

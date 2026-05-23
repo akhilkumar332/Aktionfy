@@ -19,6 +19,8 @@
   "license": "Apache-2.0",
   "type": "commonjs",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.98.0",
+    "@google/generative-ai": "^0.24.1",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "eventsource": "^4.1.0"
   }

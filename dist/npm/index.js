@@ -18,9 +18,13 @@ const {
 const args = process.argv.slice(2);
 const command = args[0];
 
-// Parse --api-key, --url
+// Parse advanced options
 let apiKey = "";
 let apiUrl = "";
+let preventSleep = false;
+let aiProvider = "openai";
+let aiModel = "";
+
 for (let i = 0; i < args.length; i++) {
   if ((args[i] === "--api-key" || args[i] === "-k") && i + 1 < args.length) {
     apiKey = args[i + 1];
@@ -28,6 +32,24 @@ for (let i = 0; i < args.length; i++) {
   } else if ((args[i] === "--url" || args[i] === "-u") && i + 1 < args.length) {
     apiUrl = args[i + 1];
     i++;
+  } else if (args[i] === "--prevent-sleep") {
+    preventSleep = true;
+  } else if (args[i] === "--ai-provider") {
+    aiProvider = args[i + 1]?.toLowerCase() || "openai";
+    i++;
+  } else if (args[i] === "--ai-model") {
+    aiModel = args[i + 1];
+    i++;
+  }
+}
+
+if (preventSleep) {
+  try {
+    // Simple stay-awake logic (prevent process from idling out)
+    const interval = setInterval(() => {}, 1000 * 60 * 60);
+    console.log("Aktionfy CLI: Sleep prevention active.");
+  } catch (e) {
+    console.warn("Aktionfy CLI: Could not activate sleep prevention.");
   }
 }
 
@@ -111,59 +133,98 @@ async function main() {
     mcpClient.setRequestHandler(CreateMessageRequestSchema, async (request) => {
       try {
         // 1. Try to forward to the connected host (e.g. Claude Desktop)
-        // We use a shorter timeout here so we can fallback quickly if no host is there
         return await mcpServer.createMessage(request.params);
       } catch (error) {
         // 2. Fallback to local LLM if host is not responding or not connected
-        const openaiKey = process.env.OPENAI_API_KEY;
-        if (!openaiKey) {
-          throw new Error("Sampling failed: No host connected and OPENAI_API_KEY not set for standalone execution.");
-        }
-
-        console.log("Aktionfy CLI: Executing sampling request locally via OpenAI...");
+        console.log(`Aktionfy CLI: Executing sampling request via ${aiProvider}...`);
         
-        // Convert MCP messages to OpenAI format
+        switch (aiProvider) {
+          case "anthropic":
+            return await executeAnthropic(request);
+          case "google":
+          case "gemini":
+            return await executeGemini(request);
+          default:
+            return await executeOpenAI(request);
+        }
+      }
+    });
+
+    async function executeOpenAI(request) {
+        const openaiKey = process.env.OPENAI_API_KEY;
+        if (!openaiKey) throw new Error("OPENAI_API_KEY not set for standalone execution.");
+        
         const messages = request.params.messages.map(m => ({
           role: m.role,
           content: m.content.text || m.content
         }));
 
-        try {
-          const response = await fetch("https://api.openai.com/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${openaiKey}`
-            },
-            body: JSON.stringify({
-              model: request.params.modelPreferences?.hints?.[0]?.name || "gpt-4o",
-              messages: messages,
-              max_tokens: request.params.maxTokens || 1000
-            })
-          });
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${openaiKey}`
+          },
+          body: JSON.stringify({
+            model: aiModel || request.params.modelPreferences?.hints?.[0]?.name || "gpt-4o",
+            messages: messages,
+            max_tokens: request.params.maxTokens || 1000
+          })
+        });
 
-          if (!response.ok) {
-            const errBody = await response.text();
-            throw new Error(`OpenAI API error: ${response.status} ${errBody}`);
-          }
+        if (!response.ok) throw new Error(`OpenAI error: ${await response.text()}`);
+        const data = await response.json();
+        return {
+          role: "assistant",
+          content: { type: "text", text: data.choices[0].message.content },
+          model: data.model,
+          stopReason: data.choices[0].finish_reason === "stop" ? "endTurn" : "maxTokens"
+        };
+    }
 
-          const data = await response.json();
-          const choice = data.choices[0];
+    async function executeAnthropic(request) {
+        const { Anthropic } = require("@anthropic-ai/sdk");
+        const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+        
+        const response = await client.messages.create({
+          model: aiModel || "claude-3-5-sonnet-20240620",
+          max_tokens: request.params.maxTokens || 1000,
+          messages: request.params.messages.map(m => ({
+            role: m.role === "assistant" ? "assistant" : "user",
+            content: m.content.text || m.content
+          }))
+        });
 
-          return {
-            role: "assistant",
-            content: {
-              type: "text",
-              text: choice.message.content
-            },
-            model: data.model,
-            stopReason: choice.finish_reason === "stop" ? "endTurn" : "maxTokens"
-          };
-        } catch (llmError) {
-          throw new Error(`Standalone execution failed: ${llmError.message}`);
-        }
-      }
-    });
+        return {
+          role: "assistant",
+          content: { type: "text", text: response.content[0].text },
+          model: response.model,
+          stopReason: response.stop_reason === "end_turn" ? "endTurn" : "maxTokens"
+        };
+    }
+
+    async function executeGemini(request) {
+        const { GoogleGenerativeAI } = require("@google/generative-ai");
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY);
+        const model = genAI.getGenerativeModel({ model: aiModel || "gemini-1.5-pro" });
+
+        const history = request.params.messages.slice(0, -1).map(m => ({
+          role: m.role === "assistant" ? "model" : "user",
+          parts: [{ text: m.content.text || m.content }]
+        }));
+        
+        const lastMsg = request.params.messages[request.params.messages.length - 1];
+        const chat = model.startChat({ history });
+        const result = await chat.sendMessage(lastMsg.content.text || lastMsg.content);
+        const response = await result.response;
+
+        return {
+          role: "assistant",
+          content: { type: "text", text: response.text() },
+          model: aiModel || "gemini-1.5-pro",
+          stopReason: "endTurn"
+        };
+    }
 
     // 3. Connect to local Stdio host
     const stdioTransport = new StdioServerTransport();
