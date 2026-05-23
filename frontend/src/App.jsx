@@ -2,23 +2,25 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, Outlet }
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import ErrorBoundary from './components/ErrorBoundary';
-import Landing from './pages/Landing';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
-import Dashboard from './pages/Dashboard';
-import Tasks from './pages/Tasks';
-import TaskHistory from './pages/TaskHistory';
-import Vault from './pages/Vault';
-import Webhooks from './pages/Webhooks';
-import Workspaces from './pages/Workspaces';
-import Templates from './pages/Templates';
-import Monitor from './pages/Monitor';
-import WorkflowCanvas from './pages/WorkflowCanvas';
-import AdminUsers from './pages/AdminUsers';
-import AdminSEO from './pages/AdminSEO';
-import AdminSettings from './pages/AdminSettings';
-import Insights from './pages/Insights';
-import Workers from './pages/Workers';
+import { lazy, Suspense } from 'react';
+
+const Landing = lazy(() => import('./pages/Landing'));
+const Login = lazy(() => import('./pages/Login'));
+const Signup = lazy(() => import('./pages/Signup'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Tasks = lazy(() => import('./pages/Tasks'));
+const TaskHistory = lazy(() => import('./pages/TaskHistory'));
+const Vault = lazy(() => import('./pages/Vault'));
+const Webhooks = lazy(() => import('./pages/Webhooks'));
+const Workspaces = lazy(() => import('./pages/Workspaces'));
+const Templates = lazy(() => import('./pages/Templates'));
+const Monitor = lazy(() => import('./pages/Monitor'));
+const WorkflowCanvas = lazy(() => import('./pages/WorkflowCanvas'));
+const AdminUsers = lazy(() => import('./pages/AdminUsers'));
+const AdminSEO = lazy(() => import('./pages/AdminSEO'));
+const AdminSettings = lazy(() => import('./pages/AdminSettings'));
+const Insights = lazy(() => import('./pages/Insights'));
+const Workers = lazy(() => import('./pages/Workers'));
 import DashboardLayout from './components/DashboardLayout';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -162,7 +164,16 @@ function App() {
       <NotificationProvider>
         <AuthProvider>
           <Router>
-            <AppRoutes />
+            <Suspense fallback={
+              <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-white font-sans">
+                <div className="flex flex-col items-center gap-4">
+                   <div className="w-10 h-10 border-2 border-brand-primary/20 border-t-brand-primary rounded-full animate-spin"></div>
+                   <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 animate-pulse">Loading View...</span>
+                </div>
+              </div>
+            }>
+              <AppRoutes />
+            </Suspense>
           </Router>
           <NotificationHub />
         </AuthProvider>

@@ -16,6 +16,7 @@ import (
 
 	"aktionfy/db"
 	"github.com/jackc/pgx/v5/pgtype"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type WebhookSubscription struct {
@@ -85,7 +86,10 @@ func dispatchOutboundWebhooks(ctx context.Context, event PubSubEvent) {
 					log.Printf("Panic recovered in webhook delivery worker: %v", r)
 				}
 			}()
-			deliverCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			// Propagate trace context to the background context
+			span := trace.SpanFromContext(ctx)
+			bgCtx := trace.ContextWithSpan(context.Background(), span)
+			deliverCtx, cancel := context.WithTimeout(bgCtx, 10*time.Second)
 			defer cancel()
 			if err := deliverWebhookEvent(deliverCtx, webhookID, event, endpointURL, string(secret)); err != nil {
 				log.Printf("Webhook delivery failed for %s: %v", webhookID, err)

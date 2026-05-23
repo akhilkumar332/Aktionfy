@@ -8,7 +8,12 @@ import { useNotify } from '../context/NotificationContext';
 const AdminSettings = () => {
   const { notify } = useNotify();
   const isMounted = useRef(true);
-  const [settings, setSettings] = useState({ worker_prune_days: 7 });
+  const [settings, setSettings] = useState({ 
+    worker_prune_days: 7,
+    js_timeout_ms: 5000,
+    reaper_stuck_threshold_minutes: 5,
+    scheduler_poll_interval_seconds: 30
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [pruning, setPruning] = useState(false);
@@ -24,7 +29,12 @@ const AdminSettings = () => {
     try {
       const res = await axios.get('/api/v1/admin/settings');
       if (res.data.success && isMounted.current) {
-        setSettings(res.data.data || { worker_prune_days: 7 });
+        setSettings(res.data.data || { 
+          worker_prune_days: 7,
+          js_timeout_ms: 5000,
+          reaper_stuck_threshold_minutes: 5,
+          scheduler_poll_interval_seconds: 30
+        });
       }
     } catch (err) {
       notify('ERROR', 'Failed to load system settings', err.response?.data?.error || err.message);
@@ -128,7 +138,7 @@ const AdminSettings = () => {
 
                 <div className="space-y-10">
                   <div className="space-y-4">
-                    <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.3em] ml-2">Node Termination Threshold (Days)</label>
+                    <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.3em] ml-2">Node Pruning Lease (Days)</label>
                     <input 
                       type="number"
                       value={settings.worker_prune_days}
@@ -136,7 +146,46 @@ const AdminSettings = () => {
                       className="w-full bg-black/40 border border-zinc-800/50 rounded-xl p-6 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner"
                     />
                     <p className="text-[10px] text-zinc-300 font-medium ml-4 leading-relaxed max-w-lg">
-                      Inactive reaper nodes will be automatically purged from the global registry after this period. Minimum 1 day recommended.
+                      Inactive workers are permanently deregistered from the pool after remaining silent for this period.
+                    </p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.3em] ml-2">Sandbox JS Timeout (Milliseconds)</label>
+                    <input 
+                      type="number"
+                      value={settings.js_timeout_ms}
+                      onChange={(e) => setSettings({ ...settings, js_timeout_ms: parseInt(e.target.value) || 0 })}
+                      className="w-full bg-black/40 border border-zinc-800/50 rounded-xl p-6 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner"
+                    />
+                    <p className="text-[10px] text-zinc-300 font-medium ml-4 leading-relaxed max-w-lg">
+                      Maximum execution duration permitted for native JS actions before halting the task with a timeout error.
+                    </p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.3em] ml-2">Stuck Task Reaper Lease (Minutes)</label>
+                    <input 
+                      type="number"
+                      value={settings.reaper_stuck_threshold_minutes}
+                      onChange={(e) => setSettings({ ...settings, reaper_stuck_threshold_minutes: parseInt(e.target.value) || 0 })}
+                      className="w-full bg-black/40 border border-zinc-800/50 rounded-xl p-6 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner"
+                    />
+                    <p className="text-[10px] text-zinc-300 font-medium ml-4 leading-relaxed max-w-lg">
+                      Tasks left in the processing state for longer than this limit are reaped and returned to active queue.
+                    </p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.3em] ml-2">Scheduler Poll Interval (Seconds)</label>
+                    <input 
+                      type="number"
+                      value={settings.scheduler_poll_interval_seconds}
+                      onChange={(e) => setSettings({ ...settings, scheduler_poll_interval_seconds: parseInt(e.target.value) || 0 })}
+                      className="w-full bg-black/40 border border-zinc-800/50 rounded-xl p-6 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner"
+                    />
+                    <p className="text-[10px] text-zinc-300 font-medium ml-4 leading-relaxed max-w-lg">
+                      The default interval at which the background database schedulers check for due/runnable schedules.
                     </p>
                   </div>
 

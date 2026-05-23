@@ -53,8 +53,8 @@ type rateLimiter struct {
 
 func (rl *rateLimiter) Allow(ctx context.Context, userID string) bool {
 	if rl.client == nil {
-		// Fallback if redis is not ready
-		return false
+		log.Printf("WARNING: Rate limiter client is nil for user %s. Failing open.", userID)
+		return true
 	}
 
 	now := time.Now().UTC().UnixMilli()
@@ -65,14 +65,14 @@ func (rl *rateLimiter) Allow(ctx context.Context, userID string) bool {
 
 	result, err := rateLimitScript.Run(ctx, rl.client, []string{key}, RateTokensPerSec, BurstCapacity, now).Result()
 	if err != nil {
-		log.Printf("Rate limit Lua script error for user %s: %v", userID, err)
-		return false // Default deny on error
+		log.Printf("WARNING: Rate limit Lua script error for user %s: %v. Failing open.", userID, err)
+		return true
 	}
 
 	allowed, ok := result.(int64)
 	if !ok {
-		log.Printf("Rate limit result type assertion failed for user %s: expected int64, got %T", userID, result)
-		return false
+		log.Printf("WARNING: Rate limit result type assertion failed for user %s: expected int64, got %T. Failing open.", userID, result)
+		return true
 	}
 	return allowed == 1
 }

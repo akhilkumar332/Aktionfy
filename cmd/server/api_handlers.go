@@ -370,7 +370,10 @@ type AdminUpdateUserInput struct {
 }
 
 type AdminSystemSettingsInput struct {
-	WorkerPruneDays int32 `json:"worker_prune_days"`
+	WorkerPruneDays              int32 `json:"worker_prune_days"`
+	JsTimeoutMs                  int32 `json:"js_timeout_ms"`
+	ReaperStuckThresholdMinutes  int32 `json:"reaper_stuck_threshold_minutes"`
+	SchedulerPollIntervalSeconds int32 `json:"scheduler_poll_interval_seconds"`
 }
 
 func apiAdminUpdateUserHandler(c echo.Context) error {
@@ -899,7 +902,9 @@ func apiAdminUsageHandler(c echo.Context) error {
 }
 
 func apiAdminGetSettingsHandler(c echo.Context) error {
-	days, err := queries.GetSystemSettings(c.Request().Context())
+	var pruneDays, jsTimeout, reaperThreshold, pollInterval int32
+	ctx := c.Request().Context()
+	err := dbPool.QueryRow(ctx, "SELECT worker_prune_days, js_timeout_ms, reaper_stuck_threshold_minutes, scheduler_poll_interval_seconds FROM system_settings WHERE id = 1").Scan(&pruneDays, &jsTimeout, &reaperThreshold, &pollInterval)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch settings"})
 	}
@@ -907,7 +912,10 @@ func apiAdminGetSettingsHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, APIResponse{
 		Success: true,
 		Data: map[string]int32{
-			"worker_prune_days": days,
+			"worker_prune_days":                pruneDays,
+			"js_timeout_ms":                    jsTimeout,
+			"reaper_stuck_threshold_minutes":   reaperThreshold,
+			"scheduler_poll_interval_seconds": pollInterval,
 		},
 	})
 }
@@ -921,19 +929,50 @@ func apiAdminUpdateSettingsHandler(c echo.Context) error {
 	if input.WorkerPruneDays < 1 {
 		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Worker prune days must be at least 1"})
 	}
+	if input.JsTimeoutMs < 100 {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "JS execution timeout must be at least 100ms"})
+	}
+	if input.ReaperStuckThresholdMinutes < 1 {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Reaper threshold must be at least 1 minute"})
+	}
+	if input.SchedulerPollIntervalSeconds < 1 {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Scheduler poll interval must be at least 1 second"})
+	}
 
-	err := queries.UpdateSystemSettings(c.Request().Context(), input.WorkerPruneDays)
+	ctx := c.Request().Context()
+	_, err := dbPool.Exec(ctx, `
+		UPDATE system_settings 
+		SET worker_prune_days = $1, 
+		    js_timeout_ms = $2, 
+		    reaper_stuck_threshold_minutes = $3, 
+		    scheduler_poll_interval_seconds = $4,
+		    updated_at = NOW() 
+		WHERE id = 1`,
+		input.WorkerPruneDays,
+		input.JsTimeoutMs,
+		input.ReaperStuckThresholdMinutes,
+		input.SchedulerPollIntervalSeconds,
+	)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to update settings"})
 	}
 
+	// Sync local setting cache immediately
+	syncSettings(ctx)
+
 	user := getUserFromEcho(c)
-	writeAuditLog(c.Request().Context(), AuditEvent{
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
+	writeAuditLog(ctx, AuditEvent{
 		UserID:       user.ID,
 		Action:       "admin.update_settings",
 		ResourceType: "system_settings",
 		Metadata: map[string]interface{}{
-			"worker_prune_days": input.WorkerPruneDays,
+			"worker_prune_days":                input.WorkerPruneDays,
+			"js_timeout_ms":                    input.JsTimeoutMs,
+			"reaper_stuck_threshold_minutes":   input.ReaperStuckThresholdMinutes,
+			"scheduler_poll_interval_seconds": input.SchedulerPollIntervalSeconds,
 		},
 	})
 
@@ -956,6 +995,9 @@ func apiAdminPruneNowHandler(c echo.Context) error {
 	}
 
 	user := getUserFromEcho(c)
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
 	writeAuditLog(c.Request().Context(), AuditEvent{
 		UserID:       user.ID,
 		Action:       "admin.prune_workers",

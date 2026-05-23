@@ -291,28 +291,36 @@ const Insights = () => {
   );
 };
 
-const MetricCard = ({ icon: Icon, label, value, trend, color, bg }) => (
-  <motion.div 
-    whileHover={{ y: -8 }}
-    className="bg-zinc-950 border border-zinc-800/50 rounded-2xl p-10 backdrop-blur-xl relative overflow-hidden group shadow-lg"
-  >
-    <div className="absolute top-0 right-0 p-10 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-700 pointer-events-none">
-      <Icon size={120} />
-    </div>
-    <div className="flex items-start justify-between mb-8 relative z-10">
-      <div className={`p-4 rounded-2xl ${bg} border border-zinc-800/50 group-hover:scale-110 transition-transform`}>
-        <Icon size={24} className={color} />
+const MetricCard = ({ icon: Icon, label, value, trend, color, bg }) => {
+  const isPositive = trend?.startsWith('+') || trend === 'NEW';
+  const isNegative = trend?.startsWith('-');
+  const trendTextColor = isPositive ? 'text-emerald-400' : isNegative ? 'text-red-400' : 'text-zinc-400';
+  const trendIconColor = isPositive ? 'text-emerald-500' : isNegative ? 'text-red-500' : 'text-zinc-500';
+  const trendBg = isPositive ? 'bg-emerald-500/10 border-emerald-500/20' : isNegative ? 'bg-red-500/10 border-red-500/20' : 'bg-zinc-100/5 border-zinc-800/50';
+
+  return (
+    <motion.div 
+      whileHover={{ y: -8 }}
+      className="bg-zinc-950 border border-zinc-800/50 rounded-2xl p-10 backdrop-blur-xl relative overflow-hidden group shadow-lg"
+    >
+      <div className="absolute top-0 right-0 p-10 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-700 pointer-events-none">
+        <Icon size={120} />
       </div>
-      <div className="flex items-center gap-2 px-3 py-1 bg-zinc-100/5 rounded-full border border-zinc-800/50">
-         <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest">{trend}</span>
-         <Activity size={10} className="text-emerald-500 animate-pulse" />
+      <div className="flex items-start justify-between mb-8 relative z-10">
+        <div className={`p-4 rounded-2xl ${bg} border border-zinc-800/50 group-hover:scale-110 transition-transform`}>
+          <Icon size={24} className={color} />
+        </div>
+        <div className={`flex items-center gap-2 px-3 py-1 rounded-full border ${trendBg}`}>
+           <span className={`text-[8px] font-black uppercase tracking-widest ${trendTextColor}`}>{trend}</span>
+           <Activity size={10} className={`${trendIconColor} ${isPositive || isNegative ? 'animate-pulse' : ''}`} />
+        </div>
       </div>
-    </div>
-    <div className="relative z-10">
-      <p className="text-zinc-400 font-black uppercase text-[10px] tracking-[0.3em] mb-2 ml-1">{label}</p>
-      <p className="text-4xl font-black text-white tracking-tighter tabular-nums">{value}</p>
-    </div>
-  </motion.div>
-);
+      <div className="relative z-10">
+        <p className="text-zinc-400 font-black uppercase text-[10px] tracking-[0.3em] mb-2 ml-1">{label}</p>
+        <p className="text-4xl font-black text-white tracking-tighter tabular-nums">{value}</p>
+      </div>
+    </motion.div>
+  );
+};
 
 export default Insights;

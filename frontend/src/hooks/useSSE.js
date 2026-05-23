@@ -31,7 +31,7 @@ export const useSSE = (onEvent) => {
       };
 
       eventSource.onerror = () => {
-        notify('ERROR', 'SSE connection error', 'The link to the neural hub was interrupted. Reconnecting...');
+        console.warn('Aktionfy SSE: Connection interrupted. Reconnecting in 3s...');
         eventSource.close();
         
         // Simple reconnect with 3 second delay if still visible

@@ -285,23 +285,23 @@ func apiTriggerTaskHandler(c echo.Context) error {
 }
 
 type UpdateTaskRequest struct {
-	Name                string          `json:"name"`
-	WorkspaceID         string          `json:"workspace_id"`
-	TaskType            string          `json:"task_type"`
-	AgentPrompt         string          `json:"agent_prompt"`
-	NativeCode          string          `json:"native_code"`
-	TriggerType         string          `json:"trigger_type"`
-	TriggerConfig       json.RawMessage `json:"trigger_config"`
-	RequiresApproval    bool            `json:"requires_approval"`
-	MissedTaskPolicy    string          `json:"missed_task_policy"`
-	UICoordinates       json.RawMessage `json:"ui_coordinates"`
-	DependsOnTaskID     string          `json:"depends_on_task_id"`
-	TriggerOnCompletion bool            `json:"trigger_on_completion"`
-	BranchCondition     json.RawMessage `json:"branch_condition"`
-	LoopCondition       json.RawMessage `json:"loop_condition"`
-	SwarmConfig         json.RawMessage `json:"swarm_config"`
-	MaxRetries          int             `json:"max_retries"`
-	BackoffStrategy     string          `json:"backoff_strategy"`
+	Name                *string          `json:"name"`
+	WorkspaceID         *string          `json:"workspace_id"`
+	TaskType            *string          `json:"task_type"`
+	AgentPrompt         *string          `json:"agent_prompt"`
+	NativeCode          *string          `json:"native_code"`
+	TriggerType         *string          `json:"trigger_type"`
+	TriggerConfig       json.RawMessage  `json:"trigger_config"`
+	RequiresApproval    *bool            `json:"requires_approval"`
+	MissedTaskPolicy    *string          `json:"missed_task_policy"`
+	UICoordinates       json.RawMessage  `json:"ui_coordinates"`
+	DependsOnTaskID     *string          `json:"depends_on_task_id"`
+	TriggerOnCompletion *bool            `json:"trigger_on_completion"`
+	BranchCondition     json.RawMessage  `json:"branch_condition"`
+	LoopCondition       json.RawMessage  `json:"loop_condition"`
+	SwarmConfig         json.RawMessage  `json:"swarm_config"`
+	MaxRetries          *int             `json:"max_retries"`
+	BackoffStrategy     *string          `json:"backoff_strategy"`
 }
 
 func apiUpdateTaskHandler(c echo.Context) error {
@@ -329,6 +329,15 @@ func apiUpdateTaskHandler(c echo.Context) error {
 
 	qtx := queries.WithTx(tx)
 
+	// Fetch existing task to merge parameters (preventing partial updates from overwriting with default values)
+	existing, err := qtx.GetTaskByID(ctx, db.GetTaskByIDParams{
+		ID:     taskID,
+		UserID: userID,
+	})
+	if err != nil {
+		return c.JSON(http.StatusNotFound, APIResponse{Success: false, Error: "Task not found"})
+	}
+
 	// Auto-snapshot before update
 	if _, err := qtx.CreateTaskVersion(ctx, db.CreateTaskVersionParams{
 		ID:     taskID,
@@ -337,31 +346,103 @@ func apiUpdateTaskHandler(c echo.Context) error {
 		log.Printf("Warning: Failed to create task version snapshot for %s: %v", taskIDStr, err)
 	}
 
-	var workspaceID pgtype.UUID
-	if req.WorkspaceID != "" {
-		workspaceID, err = mustParseUUID(c, req.WorkspaceID)
-		if err != nil {
-			return err
+	// Merge fields
+	name := existing.Name
+	if req.Name != nil {
+		name = *req.Name
+	}
+	taskType := existing.TaskType.String
+	if req.TaskType != nil {
+		taskType = *req.TaskType
+	}
+	agentPrompt := existing.AgentPrompt
+	if req.AgentPrompt != nil {
+		agentPrompt = *req.AgentPrompt
+	}
+	nativeCode := existing.NativeCode.String
+	if req.NativeCode != nil {
+		nativeCode = *req.NativeCode
+	}
+	triggerType := existing.TriggerType.String
+	if req.TriggerType != nil {
+		triggerType = *req.TriggerType
+	}
+	triggerConfig := existing.TriggerConfig
+	if len(req.TriggerConfig) > 0 {
+		triggerConfig = req.TriggerConfig
+	}
+	requiresApproval := existing.RequiresApproval.Bool
+	if req.RequiresApproval != nil {
+		requiresApproval = *req.RequiresApproval
+	}
+	missedPolicy := existing.MissedTaskPolicy.String
+	if req.MissedTaskPolicy != nil {
+		missedPolicy = *req.MissedTaskPolicy
+	}
+	uiCoordinates := existing.UiCoordinates
+	if len(req.UICoordinates) > 0 {
+		uiCoordinates = req.UICoordinates
+	}
+	triggerOnCompletion := existing.TriggerOnCompletion.Bool
+	if req.TriggerOnCompletion != nil {
+		triggerOnCompletion = *req.TriggerOnCompletion
+	}
+	branchCondition := existing.BranchCondition
+	if len(req.BranchCondition) > 0 {
+		branchCondition = req.BranchCondition
+	}
+	loopCondition := existing.LoopCondition
+	if len(req.LoopCondition) > 0 {
+		loopCondition = req.LoopCondition
+	}
+	swarmConfig := existing.SwarmConfig
+	if len(req.SwarmConfig) > 0 {
+		swarmConfig = req.SwarmConfig
+	}
+	maxRetries := existing.MaxRetries.Int32
+	if req.MaxRetries != nil {
+		maxRetries = int32(*req.MaxRetries)
+	}
+	backoffStrategy := existing.BackoffStrategy.String
+	if req.BackoffStrategy != nil {
+		backoffStrategy = *req.BackoffStrategy
+	}
+
+	workspaceID := existing.WorkspaceID
+	if req.WorkspaceID != nil {
+		if *req.WorkspaceID == "" {
+			workspaceID = pgtype.UUID{Valid: false}
+		} else {
+			uuidVal, err := mustParseUUID(c, *req.WorkspaceID)
+			if err != nil {
+				return err
+			}
+			workspaceID = uuidVal
 		}
 	}
 
-	var dependsOnTaskID pgtype.UUID
-	if req.DependsOnTaskID != "" {
-		if req.DependsOnTaskID == taskIDStr {
-			return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "A task cannot depend on itself"})
-		}
-		dependsOnTaskID, err = mustParseUUID(c, req.DependsOnTaskID)
-		if err != nil {
-			return err
-		}
+	dependsOnTaskID := existing.DependsOnTaskID
+	if req.DependsOnTaskID != nil {
+		if *req.DependsOnTaskID == "" {
+			dependsOnTaskID = pgtype.UUID{Valid: false}
+		} else {
+			if *req.DependsOnTaskID == taskIDStr {
+				return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "A task cannot depend on itself"})
+			}
+			uuidVal, err := mustParseUUID(c, *req.DependsOnTaskID)
+			if err != nil {
+				return err
+			}
+			dependsOnTaskID = uuidVal
 
-		// Verify ownership of the dependency
-		exists, err := queries.CheckTaskOwnership(ctx, db.CheckTaskOwnershipParams{
-			ID:     dependsOnTaskID,
-			UserID: userID,
-		})
-		if err != nil || !exists {
-			return c.JSON(http.StatusForbidden, APIResponse{Success: false, Error: "Unauthorized dependency"})
+			// Verify ownership of the dependency
+			exists, err := queries.CheckTaskOwnership(ctx, db.CheckTaskOwnershipParams{
+				ID:     dependsOnTaskID,
+				UserID: userID,
+			})
+			if err != nil || !exists {
+				return c.JSON(http.StatusForbidden, APIResponse{Success: false, Error: "Unauthorized dependency"})
+			}
 		}
 	}
 
@@ -388,23 +469,23 @@ func apiUpdateTaskHandler(c echo.Context) error {
 		WHERE id = $18 AND user_id = $19`
 
 	_, err = tx.Exec(ctx, query,
-		req.Name,
+		name,
 		workspaceID,
-		req.TaskType,
-		req.AgentPrompt,
-		req.NativeCode,
-		req.TriggerType,
-		req.TriggerConfig,
-		req.RequiresApproval,
-		req.MissedTaskPolicy,
-		req.UICoordinates,
+		pgtype.Text{String: taskType, Valid: true},
+		agentPrompt,
+		pgtype.Text{String: nativeCode, Valid: nativeCode != ""},
+		pgtype.Text{String: triggerType, Valid: triggerType != ""},
+		triggerConfig,
+		pgtype.Bool{Bool: requiresApproval, Valid: true},
+		pgtype.Text{String: missedPolicy, Valid: true},
+		uiCoordinates,
 		dependsOnTaskID,
-		req.TriggerOnCompletion,
-		req.BranchCondition,
-		req.LoopCondition,
-		req.SwarmConfig,
-		req.MaxRetries,
-		req.BackoffStrategy,
+		pgtype.Bool{Bool: triggerOnCompletion, Valid: true},
+		branchCondition,
+		loopCondition,
+		swarmConfig,
+		maxRetries,
+		pgtype.Text{String: backoffStrategy, Valid: true},
 		taskID,
 		userID,
 	)
