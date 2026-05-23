@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  X, ChevronRight, ChevronLeft, Command, Cpu, Terminal, 
+  X, ChevronRight, ChevronLeft, Command, Cpu, 
   Copy, Check, ExternalLink, Activity, Wifi, WifiOff,
   Monitor, Code, Globe, RefreshCw, Zap, Shield, Eye, EyeOff
 } from 'lucide-react';
@@ -25,15 +25,10 @@ const BridgeAssistant = ({ isOpen, onClose, systemStatus, fetchStatus }) => {
   };
 
   const [preventSleep, setPreventSleep] = useState(false);
-  const [standaloneMode, setStandaloneMode] = useState(false);
-  const [standaloneProvider, setStandaloneModeProvider] = useState('openai');
 
   const getArgs = () => {
     const args = ["-y", "@aktionfy/mcp", "start", "--api-key", apiKey];
     if (preventSleep) args.push("--prevent-sleep");
-    if (standaloneMode) {
-      args.push("--ai-provider", standaloneProvider);
-    }
     return args;
   };
 
@@ -63,34 +58,28 @@ const BridgeAssistant = ({ isOpen, onClose, systemStatus, fetchStatus }) => {
       desc: 'Official Anthropic GUI client' 
     },
     { 
-      id: 'lobechat', 
-      name: 'LobeChat', 
-      icon: Globe, 
-      desc: 'Modern web-based LLM UI' 
-    },
-    { 
       id: 'cursor', 
       name: 'Cursor / VS Code', 
       icon: Code, 
       desc: 'AI-integrated code editors' 
     },
     { 
-      id: 'claude_cli', 
-      name: 'Claude Code (CLI)', 
-      icon: Terminal, 
-      desc: 'Anthropic\'s terminal-based AI' 
+      id: 'antigravity', 
+      name: 'Antigravity', 
+      icon: Activity, 
+      desc: 'High-performance MCP explorer' 
     },
     { 
-      id: 'gemini_cli', 
-      name: 'Gemini CLI', 
-      icon: Zap, 
-      desc: 'Google Gemini terminal interface' 
-    },
-    { 
-      id: 'codex', 
-      name: 'Codex / Copilot', 
+      id: 'codex_desktop', 
+      name: 'Codex Desktop', 
       icon: Shield, 
-      desc: 'GitHub Copilot CLI ecosystem' 
+      desc: 'Secure local AI workspace' 
+    },
+    { 
+      id: 'lobechat', 
+      name: 'LobeChat', 
+      icon: Globe, 
+      desc: 'Modern web-based LLM UI' 
     }
   ];
 
@@ -133,7 +122,7 @@ const BridgeAssistant = ({ isOpen, onClose, systemStatus, fetchStatus }) => {
 
             <div className="space-y-4 pt-4 border-t border-zinc-800">
                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Advanced Tuning</p>
-               <div className="grid grid-cols-2 gap-4">
+               <div className="grid grid-cols-1">
                   <button 
                     onClick={() => setPreventSleep(!preventSleep)}
                     className={`p-3 rounded-xl border text-left transition-all ${preventSleep ? 'bg-indigo-600/10 border-indigo-500/50' : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'}`}
@@ -142,34 +131,9 @@ const BridgeAssistant = ({ isOpen, onClose, systemStatus, fetchStatus }) => {
                       <Zap size={14} className={preventSleep ? 'text-indigo-400' : 'text-zinc-500'} />
                       <span className="text-[10px] font-bold text-white uppercase tracking-wider">Stay Awake</span>
                     </div>
-                    <p className="text-[9px] text-zinc-500 leading-tight">Prevent local computer from sleeping during tasks.</p>
-                  </button>
-
-                  <button 
-                    onClick={() => setStandaloneMode(!standaloneMode)}
-                    className={`p-3 rounded-xl border text-left transition-all ${standaloneMode ? 'bg-emerald-600/10 border-emerald-500/50' : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'}`}
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <Cpu size={14} className={standaloneMode ? 'text-emerald-400' : 'text-zinc-500'} />
-                      <span className="text-[10px] font-bold text-white uppercase tracking-wider">Standalone</span>
-                    </div>
-                    <p className="text-[9px] text-zinc-500 leading-tight">Fallback to local AI if Claude is disconnected.</p>
+                    <p className="text-[9px] text-zinc-500 leading-tight">Prevent local computer from sleeping during long-running tasks.</p>
                   </button>
                </div>
-
-               {standaloneMode && (
-                 <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-3 flex gap-2">
-                    {['openai', 'anthropic', 'gemini'].map(p => (
-                      <button
-                        key={p}
-                        onClick={() => setStandaloneModeProvider(p)}
-                        className={`flex-1 py-1.5 rounded text-[9px] font-black uppercase tracking-tighter border transition-all ${standaloneProvider === p ? 'bg-zinc-100 text-zinc-950 border-white shadow-lg' : 'bg-transparent text-zinc-600 border-zinc-800 hover:text-zinc-400'}`}
-                      >
-                        {p}
-                      </button>
-                    ))}
-                 </div>
-               )}
             </div>
           </div>
         );
@@ -197,6 +161,46 @@ const BridgeAssistant = ({ isOpen, onClose, systemStatus, fetchStatus }) => {
               </ul>
             </div>
             <p className="text-[10px] text-zinc-500 italic text-center">Note: LobeChat uses direct SSE connection to this dashboard.</p>
+          </div>
+        );
+      case 'antigravity':
+        return (
+          <div className="space-y-6">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 space-y-3">
+              <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Explorer Integration</p>
+              <ul className="text-xs text-zinc-400 space-y-2 list-disc list-inside">
+                <li>Open <span className="text-zinc-200">Antigravity</span> Settings</li>
+                <li>Add New <span className="text-zinc-200">Bridge Tool</span></li>
+                <li>Configure with Command: <span className="text-zinc-200 font-mono text-[10px]">npx</span></li>
+                <li>
+                  Args: <span className="text-zinc-200 font-mono text-[10px]">{getArgs().join(' ')}</span>
+                </li>
+              </ul>
+            </div>
+            <p className="text-[10px] text-zinc-500 italic text-center">Antigravity will securely route neural requests via your local process.</p>
+          </div>
+        );
+      case 'codex_desktop':
+        return (
+          <div className="space-y-6">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 space-y-3">
+              <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Desktop Proxy</p>
+              <ul className="text-xs text-zinc-400 space-y-2 list-disc list-inside">
+                <li>Open <span className="text-zinc-200">Codex Desktop</span></li>
+                <li>Navigate to <span className="text-zinc-200">Protocol Settings</span></li>
+                <li>Inject Neural Stream with command:</li>
+                <li className="list-none pt-2">
+                   <div className="bg-black/40 border border-zinc-800 rounded-md p-3 flex items-center gap-3">
+                     <code className="text-[10px] text-emerald-500 font-mono flex-1">
+                       {installCommand}
+                     </code>
+                     <button onClick={() => handleCopy(installCommand)} className="text-zinc-500 hover:text-white transition-all">
+                       {copied ? <Check size={14} /> : <Copy size={14} />}
+                     </button>
+                   </div>
+                </li>
+              </ul>
+            </div>
           </div>
         );
       case 'cursor':

@@ -938,6 +938,18 @@ func evaluateLoopCondition(condition []byte, taskOutput string) bool {
 
 	actualValue := strings.TrimSpace(taskOutput)
 
+	// Helper for numeric comparison
+	parseNum := func(s string) (float64, error) {
+		// Strip common currency symbols or units if they are at the start/end
+		s = strings.Map(func(r rune) rune {
+			if (r >= '0' && r <= '9') || r == '.' || r == '-' {
+				return r
+			}
+			return -1
+		}, s)
+		return strconv.ParseFloat(s, 64)
+	}
+
 	switch operator {
 	case "equals":
 		return actualValue == targetValue
@@ -946,15 +958,15 @@ func evaluateLoopCondition(condition []byte, taskOutput string) bool {
 	case "contains":
 		return strings.Contains(actualValue, targetValue)
 	case "greater_than":
-		actualNum, err1 := strconv.ParseFloat(actualValue, 64)
-		targetNum, err2 := strconv.ParseFloat(targetValue, 64)
+		actualNum, err1 := parseNum(actualValue)
+		targetNum, err2 := parseNum(targetValue)
 		if err1 == nil && err2 == nil {
 			return actualNum > targetNum
 		}
 		return false
 	case "less_than":
-		actualNum, err1 := strconv.ParseFloat(actualValue, 64)
-		targetNum, err2 := strconv.ParseFloat(targetValue, 64)
+		actualNum, err1 := parseNum(actualValue)
+		targetNum, err2 := parseNum(targetValue)
 		if err1 == nil && err2 == nil {
 			return actualNum < targetNum
 		}
