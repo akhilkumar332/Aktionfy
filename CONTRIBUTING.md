@@ -1,4 +1,4 @@
-# Contributing to Aktionfy MCP Server
+# Contributing to Aktionfy
 
 We welcome contributions from the community! To maintain a high bar for engineering quality, please follow these guidelines.
 

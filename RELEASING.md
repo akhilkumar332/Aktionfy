@@ -35,8 +35,8 @@ GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o dist/bin/aktionfy-windows
 
 1.  **Tagging**:
     ```bash
-    git tag -a v1.1.0 -m "Release v1.1.0: Decision Nodes and Auto-Pruning"
-    git push origin v1.1.0
+    git tag -a v1.2.0 -m "Release v1.2.0: Zero-Key Architecture and Workflow Looping"
+    git push origin v1.2.0
     ```
 2.  **Upload Artifacts**: Attach the binaries from `dist/bin/` to the GitHub release. The global installers depend on these exact filenames.
 

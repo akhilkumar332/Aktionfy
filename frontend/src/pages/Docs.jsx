@@ -1,5 +1,5 @@
 
-import { Terminal, Shield, Zap, Globe, Layers, Settings, Database, Code, History } from 'lucide-react';
+import { Terminal, Shield, Zap, Globe, Layers, Settings, Database, Code } from 'lucide-react';
 
 const Overview = () => (
   <>
@@ -19,9 +19,9 @@ const Overview = () => (
         <p className="mt-4 font-bold">Aktionfy fills this gap by providing:</p>
         <ul className="list-disc pl-6 space-y-2 mt-4 text-zinc-300">
           <li><strong>Autonomous Pipelines:</strong> Sequential task chaining where completion triggers the next action.</li>
-          <li><strong>Secure Persistence:</strong> AES-256-GCM encrypted Global Secret Vault for centralized API key management.</li>
-          <li><strong>Prompt Injection:</strong> Dynamic resolution of <code>{`{{secrets.NAME}}`}</code> and parent context injection.</li>
-          <li><strong>Human-in-the-Loop:</strong> Real-time approval workflows for sensitive automated actions.</li>
+          <li><strong>Zero-Key Privacy:</strong> AI execution happens on your machine. We never see or store your API keys.</li>
+          <li><strong>Prompt Injection:</strong> Dynamic resolution of <code>{`{{state.VARIABLE}}`}</code> and parent context injection.</li>
+          <li><strong>Workflow Looping:</strong> Iterative execution support based on intelligent terminal conditions.</li>
           <li><strong>Durable State:</strong> Tasks survive server restarts and client disconnections.</li>
           <li><strong>Live Telemetry:</strong> Real-time status updates and log streaming powered by Redis.</li>
         </ul>
@@ -57,20 +57,19 @@ const QuickStart = () => (
       </section>
 
       <section>
-        <h2 className="text-2xl font-bold text-zinc-100 mb-6">2. Connect your Client</h2>
-        <p className="mb-4">Install the global CLI client using <code>npx</code> and copy your API key from the Dashboard:</p>
+        <h2 className="text-2xl font-bold text-zinc-100 mb-6">2. Connect your Neural Bridge</h2>
+        <p className="mb-4">Establish a secure link between your local AI and the Aktionfy engine:</p>
         <div className="space-y-4">
           <pre className="p-6 rounded-2xl bg-zinc-900/50 text-emerald-400 font-mono text-sm shadow-xl">
-            $ npx @aktionfy/mcp install --api-key YOUR_KEY
+            $ npx @aktionfy/mcp start --api-key YOUR_KEY
           </pre>
-          <p className="text-sm text-zinc-300 italic">Alternatively, manually configure your <code>mcp_config.json</code>:</p>
+          <p className="text-sm text-zinc-300 italic">Example <code>mcp_config.json</code> for Claude Desktop:</p>
           <pre className="p-6 rounded-2xl bg-zinc-900/50 text-emerald-400 font-mono text-sm shadow-xl">
 {`{
   "mcpServers": {
-    "schedule": {
-      "command": "aktionfy",
-      "args": ["run"],
-      "env": { "X-API-KEY": "YOUR_KEY" }
+    "aktionfy": {
+      "command": "npx",
+      "args": ["-y", "@aktionfy/mcp", "start", "--api-key", "YOUR_KEY"]
     }
   }
 }`}
@@ -184,25 +183,25 @@ const CoreConcepts = () => (
             <Zap size={24} />
           </div>
           <div>
-            <h3 className="text-2xl font-bold text-zinc-100 mb-2">The Sampling Bridge</h3>
+            <h3 className="text-2xl font-bold text-zinc-100 mb-2">Zero-Key Bridge</h3>
             <p className="text-zinc-300 leading-relaxed">
-              Execution doesn't happen on our server. Instead, we use a **Pub/Sub bridge** to notify your 
-              physical client session that a task is due. Your client then "samples" the LLM and 
-              returns the output to us for logging and further scheduling.
+              Execution doesn't happen on our server. Instead, we use a **Neural Bridge** to notify your 
+              local host that a task is due. Your host (Claude, Cursor, etc.) uses its own API keys 
+              to "sample" the LLM. We never see your AI credentials.
             </p>
           </div>
         </div>
 
         <div className="flex gap-8 group">
-          <div className="flex-shrink-0 w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-blue-600 group-hover:text-white transition-colors duration-500">
-            <History size={24} />
+          <div className="flex-shrink-0 w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-amber-600 group-hover:text-white transition-colors duration-500">
+            <Shield size={24} />
           </div>
           <div>
-            <h3 className="text-2xl font-bold text-zinc-100 mb-2">Immutable Versioning</h3>
+            <h3 className="text-2xl font-bold text-zinc-100 mb-2">Neural Sandbox</h3>
             <p className="text-zinc-300 leading-relaxed">
-              Every time you update a task's prompt or configuration, the system automatically creates 
-              an immutable snapshot. This allows you to view history and perform **one-click rollbacks** 
-              if a prompt modification leads to unexpected AI behavior.
+              If you run custom logic (Native Actions), they are executed in a hardened Goja sandbox. 
+              This ensures that user scripts cannot access the host filesystem or network, 
+              maintaining strict process isolation.
             </p>
           </div>
         </div>
@@ -283,50 +282,40 @@ const ApiReference = () => (
           <div className="border border-zinc-800/50 rounded-2xl overflow-hidden shadow-sm bg-zinc-900">
             <div className="px-6 py-4 bg-zinc-900 border-b border-zinc-800/50 flex items-center justify-between">
               <span className="font-mono font-bold text-zinc-100">create_task</span>
-              <span className="text-[10px] font-bold uppercase tracking-widest bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">Core Tool</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">Core</span>
             </div>
-            <div className="p-6 space-y-4">
-              <p className="text-sm text-zinc-300">Creates a new durable schedule entry.</p>
-              <div className="grid grid-cols-2 gap-4 text-xs">
-                <div className="space-y-1">
-                  <p className="font-bold text-zinc-300">Arguments</p>
-                  <p className="font-mono text-zinc-300">name, trigger_type, agent_prompt, secrets (optional), requires_approval (bool)</p>
-                </div>
-                <div className="space-y-1 text-right">
-                  <p className="font-bold text-zinc-300">Trigger Types</p>
-                  <p className="font-mono text-zinc-300">interval, cron, date</p>
-                </div>
-              </div>
+            <div className="p-6">
+              <p className="text-sm text-zinc-300">Schedules a new persistent AI task or workflow.</p>
             </div>
           </div>
 
           <div className="border border-zinc-800/50 rounded-2xl overflow-hidden shadow-sm bg-zinc-900">
             <div className="px-6 py-4 bg-zinc-900 border-b border-zinc-800/50 flex items-center justify-between">
-              <span className="font-mono font-bold text-zinc-100">store_secret</span>
-              <span className="text-[10px] font-bold uppercase tracking-widest bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">V3 Tool</span>
+              <span className="font-mono font-bold text-zinc-100">update_task</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest bg-blue-100 text-blue-700 px-2 py-0.5 rounded">Core</span>
             </div>
             <div className="p-6">
-              <p className="text-sm text-zinc-300">Encrypts and stores a sensitive value in the Global Secret Vault.</p>
+              <p className="text-sm text-zinc-300">Modifies prompts, loop conditions, or dependencies for an existing task.</p>
             </div>
           </div>
 
           <div className="border border-zinc-800/50 rounded-2xl overflow-hidden shadow-sm bg-zinc-900">
             <div className="px-6 py-4 bg-zinc-900 border-b border-zinc-800/50 flex items-center justify-between">
-              <span className="font-mono font-bold text-zinc-100">list_secrets</span>
-              <span className="text-[10px] font-bold uppercase tracking-widest bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">V3 Tool</span>
+              <span className="font-mono font-bold text-zinc-100">execute_task</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest bg-amber-100 text-amber-700 px-2 py-0.5 rounded">Core</span>
             </div>
             <div className="p-6">
-              <p className="text-sm text-zinc-300">Returns a Markdown table of names of stored secrets (never exposes values).</p>
+              <p className="text-sm text-zinc-300">Manually triggers a task to run immediately, regardless of its schedule.</p>
             </div>
           </div>
 
           <div className="border border-zinc-800/50 rounded-2xl overflow-hidden shadow-sm bg-zinc-900">
             <div className="px-6 py-4 bg-zinc-900 border-b border-zinc-800/50 flex items-center justify-between">
               <span className="font-mono font-bold text-zinc-100">list_tasks</span>
-              <span className="text-[10px] font-bold uppercase tracking-widest bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">Core Tool</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">Core</span>
             </div>
             <div className="p-6">
-              <p className="text-sm text-zinc-300">Returns a beautiful Markdown table and raw JSON of all active and paused tasks.</p>
+              <p className="text-sm text-zinc-300">Returns a Markdown table and raw JSON of all active and paused nodes.</p>
             </div>
           </div>
         </div>

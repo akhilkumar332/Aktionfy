@@ -14,8 +14,9 @@ We provide security updates for the following versions:
 Aktionfy implements a **Multi-Layer Defense** strategy:
 
 ### 1. Data Integrity & Privacy
-*   **Zero-Trust Secret Vault**: All task secrets and API keys are encrypted with **AES-256-GCM**. Decryption only occurs in-memory during task execution.
-*   **Tracing Anonymization**: Internal tracing (`execution_traces`) stores raw data as TEXT to prevent injection vulnerabilities associated with dynamic JSON parsing.
+*   **Zero-Key Architecture**: Aktionfy **does not store** your AI provider API keys (OpenAI, Anthropic, etc.). AI execution is delegated to your local machine via the MCP Sampling protocol.
+*   **Encrypted Local Secrets**: If you choose to store non-AI secrets (e.g., database passwords) for native actions, they are encrypted with **AES-256-GCM** using your master `ENCRYPTION_KEY`.
+*   **In-Memory Resolution**: Decryption and prompt resolution occur strictly in-memory during the sub-millisecond dispatch window.
 
 ### 2. Authentication & Access Control
 *   **Database-Backed Sessions**: Allows for immediate global session revocation.

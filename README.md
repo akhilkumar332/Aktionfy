@@ -12,31 +12,30 @@ A high-performance, durable AI workflow orchestration engine powered by the **Mo
 ## 🚀 Key Features
 
 *   **Durable Orchestration**: Native support for Cron, Intervals, and One-off dates with PostgreSQL-backed atomicity (`FOR UPDATE SKIP LOCKED`).
-*   **Agentic Workflow Engine**: Chain tasks together with **Decision Nodes** (intelligent LLM-driven branching) and persistent state management (`{{state.VARIABLE}}`).
-*   **Human-in-the-Loop**: Built-in safety valves that pause workflows and request manual intervention when the AI is unsure of a routing decision.
-*   **Visual Time-Travel Debugger**: An interactive Workflow Canvas (React Flow) that lets you visually "replay" past executions and inspect data piping step-by-step.
-*   **Enterprise-Grade Observability**: Full OpenTelemetry and Prometheus integration. Track every execution step with sub-millisecond precision.
-*   **Zero-Trust Security**: Hardened CSRF protection, multi-layer RBAC (Admin/Staff/User), and AES-256-GCM encrypted secret vault.
-*   **Auto-Maintenance**: Automated "Zombie Worker" pruning to keep your node registry clean and efficient.
+*   **Zero-Key Bridge**: Privacy-first architecture. Sampling happens exclusively via your connected local host (Claude, Cursor, Antigravity). No API keys are stored on our servers.
+*   **Agentic Workflow Engine**: Chain tasks with **Decision Nodes** (LLM branching), **Workflow Looping** (iterative execution), and persistent state (`{{state.VAR}}`).
+*   **Human-in-the-Loop**: Built-in safety valves that pause workflows and request manual intervention for ambiguous routing decisions.
+*   **Visual Time-Travel Debugger**: An interactive Workflow Canvas (React Flow) to visually "replay" past executions and inspect data piping.
+*   **Enterprise Observability**: Full OpenTelemetry integration. Track every execution step with sub-millisecond precision in Jaeger.
 
 ---
 
 ## 🏗 Architecture
 
-The system is designed for massive horizontal scale:
-1.  **API Layer**: High-performance Go (Echo) server handling web traffic and MCP tool calls.
-2.  **Orchestrator**: A distributed scheduler that claims tasks via SQL locking and dispatches them via Redis Pub/Sub.
-3.  **The Bridge**: A persistent SSE connection that links your remote server to local AI assistants (Claude, Cursor).
-4.  **Data Layer**: PostgreSQL for durable state, Redis for low-latency signaling and session management.
+The system is designed for massive scale and absolute privacy:
+1.  **API Layer**: High-performance Go server handling web traffic and MCP tool calls.
+2.  **Orchestrator**: Distributed scheduler that claims tasks via SQL locking and dispatches them via Redis Pub/Sub.
+3.  **Neural Bridge**: A secure SSE tunnel linking the remote engine to your local AI environment.
+4.  **Privacy Layer**: Leverages MCP Sampling to delegate AI execution to your local client, keeping your keys on your machine.
 
 ---
 
 ## 🛠 Tech Stack
 
-*   **Backend**: Go (Echo), PostgreSQL (pgx), Redis (Pub/Sub)
-*   **Frontend**: React (Vite), React Flow, Tailwind CSS, Framer Motion
-*   **Observability**: OpenTelemetry, Jaeger (Distributed Tracing), Prometheus (Metrics)
-*   **Infrastructure**: Docker, Docker Compose, Caddy
+*   **Backend**: Go (Echo), PostgreSQL (pgx), Redis
+*   **Frontend**: React (Vite), React Flow, Tailwind CSS
+*   **Bridge**: Node.js CLI (Zero-dependency AI execution)
+*   **Observability**: OpenTelemetry, Jaeger, Prometheus
 
 ---
 
@@ -47,16 +46,23 @@ The system is designed for massive horizontal scale:
 docker-compose up --build
 ```
 
-The system will start:
-*   **Dashboard**: [http://localhost:8080](http://localhost:8080)
-*   **Jaeger Tracing**: [http://localhost:16686](http://localhost:16686)
-*   **Prometheus Metrics**: `http://localhost:8080/metrics`
-
-### 2. Connect your Local LLM
-Install the global bridge to link your local AI to the persistent engine:
+### 2. Connect your Neural Bridge
+Connect your local AI assistant to the persistent engine:
 ```bash
-npx @aktionfy/mcp install --api-key YOUR_NEURAL_KEY
+npx @aktionfy/mcp start --api-key YOUR_API_KEY
 ```
+Supported Hosts: **Claude Desktop**, **Cursor**, **Antigravity**, **Codex Desktop**.
+
+---
+
+## 🛠 MCP Tools
+
+*   `create_task`: Schedule a new AI workflow.
+*   `list_tasks`: Monitor active and scheduled tasks.
+*   `get_task`: Retrieve detailed node configuration.
+*   `update_task`: Modify prompts, loops, or logic on-the-fly.
+*   `execute_task`: Manually trigger a workflow immediately.
+*   `get_current_time`: Synchronize local agents with server time.
 
 ---
 
