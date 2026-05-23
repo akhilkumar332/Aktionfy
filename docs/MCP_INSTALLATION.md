@@ -5,7 +5,7 @@ This guide explains how to connect your preferred AI client to the Aktionfy MCP 
 ## Installation Methods
 
 ### Claude Desktop
-To use Aktionfy with Claude Desktop, add the following to your `claude_desktop_config.json`:
+To use Aktionfy as a bridge to your remote server, add the following to your `claude_desktop_config.json`:
 
 **Mac:** `~/Library/Application Support/Claude/claude_desktop_config.json`
 **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
@@ -15,11 +15,7 @@ To use Aktionfy with Claude Desktop, add the following to your `claude_desktop_c
   "mcpServers": {
     "aktionfy": {
       "command": "npx",
-      "args": ["-y", "@aktionfy/schedule-mcp"],
-      "env": {
-        "DATABASE_URL": "your-database-url",
-        "REDIS_URL": "your-redis-url"
-      }
+      "args": ["-y", "@aktionfy/mcp", "start", "--api-key", "YOUR_API_KEY", "--url", "https://api.aktionfy.com"]
     }
   }
 }
@@ -39,14 +35,6 @@ To use Aktionfy with Claude Desktop, add the following to your `claude_desktop_c
 1. Open the Command Palette (`Ctrl+Shift+P`).
 2. Search for **MCP: Add Server**.
 3. Follow the prompts to add the Aktionfy server.
-
-## Configuration Options
-
-| Environment Variable | Description | Default |
-|----------------------|-------------|---------|
-| `DATABASE_URL`       | PostgreSQL connection string | `postgres://postgres:postgres@localhost:5432/mcp?sslmode=disable` |
-| `REDIS_URL`          | Redis connection string | `redis://localhost:6379/0` |
-| `PORT`               | HTTP server port | `8080` |
 
 ## Available Tools
 
