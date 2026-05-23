@@ -123,9 +123,22 @@ async function main() {
 
     // Sampling (Backward forwarding: Server -> Bridge -> Host)
     mcpClient.setRequestHandler(CreateMessageRequestSchema, async (request) => {
-      // Forward to the connected host (e.g. Claude Desktop, Cursor, Antigravity)
-      // This ensures NO API KEYS are ever stored on this bridge or the server.
-      return await mcpServer.createMessage(request.params);
+      try {
+        // Forward to the connected host (e.g. Claude Desktop, Cursor, Antigravity)
+        return await mcpServer.createMessage(request.params);
+      } catch (error) {
+        const localGeminiKey = process.env.GEMINI_API_KEY;
+        if (localGeminiKey) {
+          console.warn("Aktionfy Bridge: Host sampling blocked or failed. Falling back to direct Gemini API call.");
+          try {
+            return await callGeminiDirectly(request.params, localGeminiKey);
+          } catch (geminiError) {
+            console.error("Aktionfy Bridge: Direct Gemini fallback failed:", geminiError);
+            throw geminiError;
+          }
+        }
+        throw error;
+      }
     });
 
     // 3. Connect to local Stdio host
@@ -149,3 +162,56 @@ async function main() {
 }
 
 main();
+
+async function callGeminiDirectly(params, apiKey) {
+  const contents = params.messages.map(m => {
+    let role = m.role === 'assistant' ? 'model' : 'user';
+    let text = '';
+    if (m.content.type === 'text') {
+      text = m.content.text;
+    } else {
+      text = JSON.stringify(m.content);
+    }
+    return {
+      role: role,
+      parts: [{ text: text }]
+    };
+  });
+
+  const systemInstruction = params.systemPrompt ? {
+    parts: [{ text: params.systemPrompt }]
+  } : undefined;
+
+  const model = params.includeModelSuggest === 'high' ? 'gemini-1.5-pro' : 'gemini-1.5-flash';
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents,
+      systemInstruction,
+      generationConfig: {
+        temperature: params.temperature,
+        maxOutputTokens: params.maxTokens
+      }
+    })
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Gemini API returned error: ${response.status} - ${errText}`);
+  }
+
+  const json = await response.json();
+  const text = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+  return {
+    role: 'assistant',
+    content: {
+      type: 'text',
+      text: text
+    },
+    model: model
+  };
+}
