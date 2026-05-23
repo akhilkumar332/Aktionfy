@@ -61,26 +61,46 @@ const ExecutionTracesModal = ({ isOpen, onClose, taskId, taskName }) => {
     }
   }, [taskId]);
 
+  const normalizeUUID = (uuid) => {
+    if (!uuid) return '';
+    if (typeof uuid === 'string') {
+      return uuid.replace(/-/g, '').toLowerCase();
+    }
+    if (uuid.Bytes && Array.isArray(uuid.Bytes)) {
+      return uuid.Bytes.map(b => b.toString(16).padStart(2, '0')).join('').toLowerCase();
+    }
+    if (uuid.bytes && Array.isArray(uuid.bytes)) {
+      return uuid.bytes.map(b => b.toString(16).padStart(2, '0')).join('').toLowerCase();
+    }
+    return String(uuid).replace(/-/g, '').toLowerCase();
+  };
+
   // Handle live trace events
   const onLiveEvent = useCallback((event) => {
     if (event.event_type === 'trace_created') {
       try {
         const trace = JSON.parse(event.payload);
+        const traceTaskId = normalizeUUID(trace.task_id);
+        const currentTaskId = normalizeUUID(taskId);
+        const traceExecId = normalizeUUID(trace.execution_id);
+        const currentExecId = normalizeUUID(selectedExecutionId);
+
         // Only append if it belongs to the currently viewed execution
-        if (trace.task_id === taskId && trace.execution_id === selectedExecutionId) {
+        if (traceTaskId === currentTaskId && traceExecId === currentExecId) {
           setTraces(prev => {
             // Check for duplicates
-            if (prev.find(t => t.id === trace.id)) return prev;
+            if (prev.find(t => normalizeUUID(t.id) === normalizeUUID(trace.id))) return prev;
             return [...prev, trace];
           });
         }
         
         // Also refresh executions list if it's a new execution ID we haven't seen
-        if (trace.task_id === taskId) {
+        if (traceTaskId === currentTaskId) {
            setExecutions(prev => {
-              if (prev.find(e => e.execution_id === trace.execution_id)) {
+              const matched = prev.find(e => normalizeUUID(e.execution_id) === traceExecId);
+              if (matched) {
                  // Update error status if needed
-                 return prev.map(e => e.execution_id === trace.execution_id ? { ...e, is_error: e.is_error || trace.is_error } : e);
+                 return prev.map(e => normalizeUUID(e.execution_id) === traceExecId ? { ...e, is_error: e.is_error || trace.is_error } : e);
               }
               // New execution detected, trigger refresh
               fetchExecutions();

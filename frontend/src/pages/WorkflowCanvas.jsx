@@ -356,10 +356,25 @@ const WorkflowCanvas = () => {
     }
   }, [playbackMode, globalTime, traces, rawTasks, fetchTasks, mapTasksToFlow, setNodes, setEdges, taskMap]);
 
+  const normalizeUUID = (uuid) => {
+    if (!uuid) return '';
+    if (typeof uuid === 'string') {
+      return uuid.replace(/-/g, '').toLowerCase();
+    }
+    if (uuid.Bytes && Array.isArray(uuid.Bytes)) {
+      return uuid.Bytes.map(b => b.toString(16).padStart(2, '0')).join('').toLowerCase();
+    }
+    if (uuid.bytes && Array.isArray(uuid.bytes)) {
+      return uuid.bytes.map(b => b.toString(16).padStart(2, '0')).join('').toLowerCase();
+    }
+    return String(uuid).replace(/-/g, '').toLowerCase();
+  };
+
   const updateTaskStatusLocally = useCallback((taskId, status) => {
     if (!isMountedRef.current) return;
+    const targetId = normalizeUUID(taskId);
     setNodes(prev => prev.map(node => {
-        if (node.id === taskId) {
+        if (normalizeUUID(node.id) === targetId) {
             const updatedTask = { ...node.data.task, status };
             const isProcessing = status === 'processing';
             return {
