@@ -5,3 +5,4 @@ docs/
 /server
 .antigravitycli/*
 .vscode/*
+cmd/server/server
