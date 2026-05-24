@@ -101,6 +101,7 @@ const Dashboard = () => {
     addListener('webhook_updated', handleEvent);
     addListener('settings_updated', handleEvent);
     addListener('worker_updated', handleEvent);
+    addListener('bridge_status_changed', handleEvent);
     
     return () => {
       removeListener('task_executed', handleTaskExecuted);
@@ -113,6 +114,7 @@ const Dashboard = () => {
       removeListener('webhook_updated', handleEvent);
       removeListener('settings_updated', handleEvent);
       removeListener('worker_updated', handleEvent);
+      removeListener('bridge_status_changed', handleEvent);
     };
   }, [addListener, removeListener, fetchData, fetchSystemStatus, notify]);
 
