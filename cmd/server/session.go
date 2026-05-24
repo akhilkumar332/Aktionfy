@@ -280,9 +280,23 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 	defer activeSSEConnections.Dec()
 
 	sm.AddUser(ctx, userID, isBridge)
+	if isBridge {
+		_ = PublishEvent(ctx, PubSubEvent{
+			UserID:    userID,
+			EventType: "bridge_status_changed",
+			Payload:   `{"bridge_active": true}`,
+		})
+	}
 	defer func() {
 		// Use a background context for cleanup to ensure it runs even if parent is cancelled
 		sm.RemoveUser(context.Background(), userID, isBridge)
+		if isBridge {
+			_ = PublishEvent(context.Background(), PubSubEvent{
+				UserID:    userID,
+				EventType: "bridge_status_changed",
+				Payload:   `{"bridge_active": false}`,
+			})
+		}
 	}()
 
 	if !isBridge {

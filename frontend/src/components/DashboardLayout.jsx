@@ -322,9 +322,25 @@ const DashboardLayout = ({ children }) => {
                 title="Neural Link Assistance"
                 className="hidden md:flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-md px-3 py-1.5 text-[10px] font-black uppercase tracking-widest shadow-inner transition-all hover:border-brand-primary/50 group cursor-pointer"
               >
-                  <div className={`w-1 h-1 rounded-full animate-signal transition-colors duration-500 ${(isConnected && bridgeActive) ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'}`}></div>
-                  <span className={(isConnected && bridgeActive) ? 'text-zinc-500 group-hover:text-zinc-300' : 'text-red-500 group-hover:text-red-400'}>
-                    {(isConnected && bridgeActive) ? 'Neural Link Active' : 'Bridge Lost'}
+                  <div className={`w-1 h-1 rounded-full animate-signal transition-colors duration-500 ${
+                    !isConnected 
+                      ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]' 
+                      : !bridgeActive 
+                      ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]' 
+                      : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]'
+                  }`}></div>
+                  <span className={
+                    !isConnected 
+                      ? 'text-red-500 group-hover:text-red-400' 
+                      : !bridgeActive 
+                      ? 'text-amber-500 group-hover:text-amber-400' 
+                      : 'text-zinc-500 group-hover:text-zinc-300'
+                  }>
+                    {!isConnected 
+                      ? 'Bridge Lost' 
+                      : !bridgeActive 
+                      ? 'Bridge Offline' 
+                      : 'Neural Link Active'}
                   </span>
               </button>
               <button 
