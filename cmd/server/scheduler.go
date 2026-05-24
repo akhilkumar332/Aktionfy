@@ -243,6 +243,14 @@ func handleTaskClaimNotification(ctx context.Context, payload string) {
 			return
 		}
 
+		// Acquire distributed lock in Redis for singleton execution guarantee
+		acquired, release := AcquireTaskLock(workerCtx, notice.TaskID, 45*time.Second)
+		if !acquired {
+			log.Printf("Skipping claimed task %s: lock already held by another node in cluster", notice.TaskID)
+			return
+		}
+		defer release()
+
 		handleDispatchTask(workerCtx, t, nil)
 	}()
 }
@@ -313,7 +321,9 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 			Status:       "missed",
 			ErrorMessage: pgtype.Text{String: "user offline", Valid: true},
 		})
-		if err != nil {
+		if err == nil {
+			RecordTaskExecutionTelemetry(workerCtx, t.UserID, formatUUID(t.ID), "missed")
+		} else {
 			log.Printf("Error creating task log for %s (missed): %v", taskID, err)
 		}
 
@@ -399,7 +409,9 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 				Status:       "failure",
 				ErrorMessage: pgtype.Text{String: err.Error(), Valid: true},
 			})
-			if logErr != nil {
+			if logErr == nil {
+				RecordTaskExecutionTelemetry(workerCtx, t.UserID, formatUUID(t.ID), "failure")
+			} else {
 				log.Printf("Error creating task log for %s (failure): %v", taskID, logErr)
 			}
 
@@ -490,7 +502,9 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 				Status:      "success",
 				LlmResponse: pgtype.Text{String: result, Valid: true},
 			})
-			if err != nil {
+			if err == nil {
+				RecordTaskExecutionTelemetry(workerCtx, t.UserID, formatUUID(t.ID), "success")
+			} else {
 				log.Printf("Error creating task log for %s (success): %v", taskID, err)
 			}
 
@@ -643,7 +657,9 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 			Status:       "failure",
 			ErrorMessage: pgtype.Text{String: err.Error(), Valid: true},
 		})
-		if logErr != nil {
+		if logErr == nil {
+			RecordTaskExecutionTelemetry(workerCtx, t.UserID, formatUUID(t.ID), "failure")
+		} else {
 			log.Printf("Error creating task log for %s (failure): %v", taskID, logErr)
 		}
 
@@ -737,7 +753,9 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 		Status:      "success",
 		LlmResponse: pgtype.Text{String: "Task delivered to node via Redis", Valid: true},
 	})
-	if err != nil {
+	if err == nil {
+		RecordTaskExecutionTelemetry(workerCtx, t.UserID, formatUUID(t.ID), "success")
+	} else {
 		log.Printf("Error creating task log for %s (delivered): %v", taskID, err)
 	}
 

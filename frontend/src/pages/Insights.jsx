@@ -14,20 +14,25 @@ const Insights = () => {
   const { notify } = useNotify();
   const [data, setData] = useState(null);
   const [trends, setTrends] = useState(null);
+  const [hourlyHeatmap, setHourlyHeatmap] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   const fetchInsights = useCallback(async () => {
     try {
-      const [insightsRes, trendsRes] = await Promise.all([
+      const [insightsRes, trendsRes, heatmapRes] = await Promise.all([
           axios.get('/api/v1/admin/insights'),
-          axios.get('/api/v1/admin/analytics/trends')
+          axios.get('/api/v1/admin/analytics/trends'),
+          axios.get('/api/v1/admin/analytics/hourly-heatmap')
       ]);        
       if (insightsRes.data.success) {
         setData(insightsRes.data.data);
       }
       if (trendsRes.data.success) {
         setTrends(trendsRes.data.data);
+      }
+      if (heatmapRes.data.success) {
+        setHourlyHeatmap(heatmapRes.data.data);
       }
     } catch (err) {
       notify('ERROR', 'Failed to fetch insights', err.response?.data?.error || err.message);
@@ -258,6 +263,47 @@ const Insights = () => {
                 </div>
               </motion.div>
             </div>
+
+            {/* Hourly Heatmap Chart */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-zinc-950 border border-zinc-800/50 rounded-3xl p-10 shadow-lg backdrop-blur-xl relative overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-48 h-48 bg-indigo-500/5 blur-[80px] -translate-y-1/2 -translate-x-1/2"></div>
+              
+              <div className="flex items-center justify-between mb-12 relative z-10">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-zinc-100/5 rounded-xl border border-zinc-800/50 text-zinc-400">
+                    <Zap size={20} />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black text-white uppercase tracking-tighter">Hourly Chrono-Flux</h2>
+                    <p className="text-[9px] text-zinc-300 font-bold uppercase tracking-widest mt-0.5">Execution load per hour over the last 24 hours</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="h-72 w-full relative z-10">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={hourlyHeatmap}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} vertical={false} />
+                    <XAxis dataKey="label" stroke={chartColors.text} fontSize={9} tickLine={false} axisLine={false} />
+                    <YAxis stroke={chartColors.text} fontSize={9} tickLine={false} axisLine={false} />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#050505', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '1.5rem', padding: '1rem' }}
+                      itemStyle={{ color: '#818cf8', fontWeight: 900, fontSize: '12px' }}
+                      labelStyle={{ color: '#64748b', marginBottom: '4px', fontSize: '10px' }}
+                    />
+                    <Bar dataKey="count" fill="#6366f1" radius={[8, 8, 0, 0]} barSize={32}>
+                      {hourlyHeatmap.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.count > 0 ? '#6366f1' : 'rgba(255, 255, 255, 0.05)'} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </motion.div>
 
             <div className="pt-8">
               <motion.div 

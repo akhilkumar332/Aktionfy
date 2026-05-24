@@ -2,7 +2,8 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
 import axios from 'axios';
-import { History, ArrowLeft, RefreshCw, Clock, CheckCircle2, AlertCircle, Command, GitBranch, Terminal, X, Check, Play } from 'lucide-react';
+import { History, ArrowLeft, RefreshCw, Clock, CheckCircle2, AlertCircle, Command, GitBranch, Terminal, X, Check, Play, Zap } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNotify } from '../context/NotificationContext';
 
@@ -49,11 +50,19 @@ const TaskHistory = () => {
     };
   }, []);
 
+  const [hourlyHeatmap, setHourlyHeatmap] = useState([]);
+
   const fetchHistory = useCallback(async () => {
     try {
-      const res = await axios.get(`/api/v1/tasks/${id}/versions`);
+      const [res, heatmapRes] = await Promise.all([
+        axios.get(`/api/v1/tasks/${id}/versions`),
+        axios.get(`/api/v1/tasks/${id}/analytics/hourly-heatmap`)
+      ]);
       if (res.data.success && isMounted.current) {
         setHistory(res.data.data || []);
+      }
+      if (heatmapRes.data.success && isMounted.current) {
+        setHourlyHeatmap(heatmapRes.data.data || []);
       }
     } catch (err) {
       notify('ERROR', 'Failed to fetch task history', err.response?.data?.error || err.message);
@@ -133,6 +142,48 @@ const TaskHistory = () => {
       </header>
 
       <div className="space-y-6">
+        {!loading && history.length > 0 && (
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-zinc-950 border border-zinc-800/50 rounded-3xl p-10 shadow-lg backdrop-blur-xl relative overflow-hidden mb-12"
+          >
+            <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-500/5 blur-[80px] -translate-y-1/2 translate-x-1/2"></div>
+            
+            <div className="flex items-center justify-between mb-8 relative z-10">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-zinc-100/5 rounded-xl border border-zinc-800/50 text-zinc-400">
+                  <Zap size={20} className="text-indigo-400" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-white uppercase tracking-tighter">Hourly Node Chrono-Flux</h2>
+                  <p className="text-[9px] text-zinc-300 font-bold uppercase tracking-widest mt-0.5">Execution load for this node over the last 24 hours</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="h-48 w-full relative z-10">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={hourlyHeatmap}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.05)" vertical={false} />
+                  <XAxis dataKey="label" stroke="#475569" fontSize={9} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#475569" fontSize={9} tickLine={false} axisLine={false} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#050505', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '1.5rem', padding: '1rem' }}
+                    itemStyle={{ color: '#818cf8', fontWeight: 900, fontSize: '12px' }}
+                    labelStyle={{ color: '#64748b', marginBottom: '4px', fontSize: '10px' }}
+                  />
+                  <Bar dataKey="count" fill="#6366f1" radius={[6, 6, 0, 0]} barSize={24}>
+                    {hourlyHeatmap.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.count > 0 ? '#6366f1' : 'rgba(255, 255, 255, 0.05)'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </motion.div>
+        )}
+
         {loading ? (
           <div className="py-40 flex flex-col items-center justify-center gap-6">
             <div className="w-12 h-12 border-2 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>

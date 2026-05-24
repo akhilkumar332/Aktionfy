@@ -45,6 +45,10 @@ type WebhookCreateInput struct {
 
 func handleSystemEvent(ctx context.Context, event PubSubEvent) {
 	log.Printf("Received event for user %s: %s", event.UserID, event.EventType)
+	if event.EventType == "settings_updated" {
+		log.Printf("Syncing local system settings cache on redis broadcast")
+		syncSettings(ctx)
+	}
 	dispatchOutboundWebhooks(ctx, event)
 }
 

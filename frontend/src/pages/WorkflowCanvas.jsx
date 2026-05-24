@@ -78,10 +78,120 @@ const WorkflowCanvas = () => {
   
   const isMountedRef = useRef(true);
 
+  const [presenceUsers, setPresenceUsers] = useState([]);
+  const [currentWorkspaceId, setCurrentWorkspaceId] = useState(null);
+
   useEffect(() => {
     isMountedRef.current = true;
-    return () => { isMountedRef.current = false; };
+    return () => { 
+      isMountedRef.current = false; 
+      if (lockTimerRef.current) {
+        clearInterval(lockTimerRef.current);
+      }
+    };
   }, []);
+
+  useEffect(() => {
+    const loadWorkspace = async () => {
+      try {
+        const res = await axios.get('/api/v1/workspaces');
+        if (res.data.success && isMountedRef.current && res.data.data?.length > 0) {
+          setCurrentWorkspaceId(res.data.data[0].id);
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+    loadWorkspace();
+  }, []);
+
+  useEffect(() => {
+    if (!currentWorkspaceId) return;
+
+    const sendHeartbeat = async () => {
+      try {
+        await axios.post(`/api/v1/workspaces/${currentWorkspaceId}/presence`, {
+          active_task_id: selectedTask ? selectedTask.id : ''
+        });
+      } catch (e) {
+        // ignore
+      }
+    };
+
+    const fetchPresence = async () => {
+      try {
+        const res = await axios.get(`/api/v1/workspaces/${currentWorkspaceId}/presence`);
+        if (res.data.success && isMountedRef.current) {
+          setPresenceUsers(res.data.data || []);
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+
+    sendHeartbeat();
+    const heartbeatInterval = setInterval(sendHeartbeat, 10000);
+
+    fetchPresence();
+    const fetchInterval = setInterval(fetchPresence, 10000);
+
+    return () => {
+      clearInterval(heartbeatInterval);
+      clearInterval(fetchInterval);
+    };
+  }, [currentWorkspaceId, selectedTask]);
+
+  const lockTimerRef = useRef(null);
+
+  const releaseTaskLock = useCallback(async (taskId) => {
+    if (lockTimerRef.current) {
+      clearInterval(lockTimerRef.current);
+      lockTimerRef.current = null;
+    }
+    if (taskId) {
+      try {
+        await axios.post(`/api/v1/tasks/${taskId}/unlock`);
+      } catch (e) {
+        // ignore
+      }
+    }
+  }, []);
+
+  const acquireTaskLock = useCallback(async (task) => {
+    try {
+      const res = await axios.post(`/api/v1/tasks/${task.id}/lock`);
+      if (res.data.success) {
+        setSelectedTask(task);
+        if (task.task_type === 'decision_router' && task.last_approval_status === 'needs_routing') {
+          setIsManualRouteOpen(true);
+        } else {
+          setIsSidebarOpen(true);
+        }
+
+        // Start heartbeat to renew lock every 10 seconds
+        if (lockTimerRef.current) clearInterval(lockTimerRef.current);
+        lockTimerRef.current = setInterval(async () => {
+          try {
+            await axios.post(`/api/v1/tasks/${task.id}/lock`);
+          } catch (e) {
+            // ignore
+          }
+        }, 10000);
+      } else {
+        notify('WARNING', 'Node Edit Lock Denied', res.data.error || 'This node is being edited by another administrator.');
+      }
+    } catch (err) {
+      notify('ERROR', 'Lock Acquisition Error', err.response?.data?.error || err.message);
+    }
+  }, [notify]);
+
+  const closeSidebarAndUnlock = useCallback(() => {
+    if (selectedTask) {
+      releaseTaskLock(selectedTask.id);
+    }
+    setIsSidebarOpen(false);
+    setSelectedTask(null);
+  }, [selectedTask, releaseTaskLock]);
 
   const mapTasksToFlow = useCallback((tasksList) => {
     if (!isMountedRef.current) return;
@@ -534,6 +644,9 @@ const WorkflowCanvas = () => {
   }, [fetchTasks, notify]);
 
   const handleCreateNew = () => {
+    if (selectedTask) {
+      releaseTaskLock(selectedTask.id);
+    }
     setSelectedTask(null);
     setPlaybackMode(false);
     setIsSidebarOpen(true);
@@ -541,14 +654,11 @@ const WorkflowCanvas = () => {
 
   const onNodeClick = useCallback((event, node) => {
     const task = node.data.task;
-    setSelectedTask(task);
-    
-    if (task.task_type === 'decision_router' && task.last_approval_status === 'needs_routing') {
-      setIsManualRouteOpen(true);
-    } else {
-      setIsSidebarOpen(true);
+    if (selectedTask && selectedTask.id !== task.id) {
+      releaseTaskLock(selectedTask.id);
     }
-  }, []);
+    acquireTaskLock(task);
+  }, [selectedTask, acquireTaskLock, releaseTaskLock]);
 
   const handleDeleteTask = useCallback(async (taskId) => {
     try {
@@ -583,22 +693,43 @@ const WorkflowCanvas = () => {
 
   return (
     <div className="h-screen w-full flex flex-col relative bg-zinc-950 text-white overflow-hidden selection:bg-indigo-600">
-      <header className="px-10 py-8 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-zinc-950 backdrop-blur-xl border-b border-zinc-800/50 z-20">
-        <div>
-          <motion.h1 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="text-3xl font-black text-white tracking-tighter flex items-center gap-4"
-          >
-            <div className="p-2 bg-indigo-600/10 rounded-xl border border-indigo-500/20">
-               <Layers className="text-indigo-400" size={24} />
+      <header className="absolute top-8 left-8 right-8 z-40 bg-zinc-950/80 backdrop-blur-md border border-zinc-800/50 px-8 py-6 rounded-3xl flex items-center justify-between shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+        <div className="flex items-center gap-6">
+          <div>
+            <motion.h1 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="text-3xl font-black text-white tracking-tighter flex items-center gap-4"
+            >
+              <div className="p-2 bg-indigo-600/10 rounded-xl border border-indigo-500/20">
+                 <Layers className="text-indigo-400" size={24} />
+              </div>
+              Workflow Canvas
+            </motion.h1>
+            <div className="flex items-center gap-3 mt-1 ml-14">
+               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+               <p className="text-zinc-400 font-black uppercase text-[9px] tracking-[0.2em]">Neural Interconnect Active</p>
             </div>
-            Workflow Canvas
-          </motion.h1>
-          <div className="flex items-center gap-3 mt-1 ml-14">
-             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-             <p className="text-zinc-400 font-black uppercase text-[9px] tracking-[0.2em]">Neural Interconnect Active</p>
           </div>
+
+          {presenceUsers.length > 0 && (
+            <div className="flex items-center gap-2.5 bg-zinc-900/40 border border-zinc-800/80 px-3.5 py-2 rounded-2xl backdrop-blur-sm ml-4">
+              <div className="flex -space-x-2 overflow-hidden">
+                {presenceUsers.map(user => (
+                  <div 
+                    key={user.user_id} 
+                    className="inline-block h-6 w-6 rounded-full ring-2 ring-zinc-950 bg-indigo-950 border border-indigo-500/30 flex items-center justify-center text-[8px] font-black text-indigo-300 cursor-help"
+                    title={`${user.email} ${user.active_task_id ? '(Calibrating Node)' : '(Viewing Canvas)'}`}
+                  >
+                    {user.email.substring(0, 2).toUpperCase()}
+                  </div>
+                ))}
+              </div>
+              <span className="text-[8px] font-black uppercase tracking-widest text-zinc-500 animate-pulse">
+                {presenceUsers.length} Online
+              </span>
+            </div>
+          )}
         </div>
         <div className="flex gap-3">
           <button 
@@ -710,7 +841,7 @@ const WorkflowCanvas = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                onClick={() => setIsSidebarOpen(false)}
+                onClick={closeSidebarAndUnlock}
                 className="absolute inset-0 bg-black/80 backdrop-blur-md z-40"
               />
               <motion.div 
@@ -767,7 +898,7 @@ const WorkflowCanvas = () => {
                       </button>
                     )}
                     <button 
-                      onClick={() => setIsSidebarOpen(false)}
+                      onClick={closeSidebarAndUnlock}
                       className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white transition-all"
                     >
                       <X size={18} />
@@ -911,11 +1042,11 @@ const WorkflowCanvas = () => {
                      <div className="flex-1 flex flex-col h-full overflow-hidden min-h-0">
                         <TaskWizard 
                             isOpen={isSidebarOpen} 
-                            onClose={() => setIsSidebarOpen(false)} 
+                            onClose={closeSidebarAndUnlock} 
                             initialData={selectedTask}
                             onTaskCreated={() => {
                               fetchTasks();
-                              setIsSidebarOpen(false);
+                              closeSidebarAndUnlock();
                             }}
                             isInline={true}
                         />

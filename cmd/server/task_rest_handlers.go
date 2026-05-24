@@ -907,3 +907,75 @@ func apiManualRouteHandler(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Task manually routed"})
 }
+
+// apiLockTaskHandler locks a task node for editing in Redis.
+func apiLockTaskHandler(c echo.Context) error {
+	ctx := c.Request().Context()
+	taskIDStr := c.Param("id")
+	userID := getUserID(c)
+	if userID == "" {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
+
+	if RedisClient == nil {
+		return c.JSON(http.StatusOK, APIResponse{Success: true})
+	}
+
+	email := userID
+	user, err := queries.GetUser(ctx, userID)
+	if err == nil && user.Email.Valid {
+		email = user.Email.String
+	}
+
+	key := fmt.Sprintf("lock:edit:task:%s", taskIDStr)
+	acquired, err := RedisClient.SetNX(ctx, key, email, 15*time.Second).Result()
+	if err != nil {
+		return c.JSON(http.StatusOK, APIResponse{Success: true})
+	}
+
+	if !acquired {
+		currentOwner, _ := RedisClient.Get(ctx, key).Result()
+		if currentOwner != email {
+			return c.JSON(http.StatusOK, APIResponse{
+				Success: false,
+				Error:   fmt.Sprintf("Node is currently locked by another administrator: %s", currentOwner),
+			})
+		}
+		_ = RedisClient.Expire(ctx, key, 15*time.Second).Err()
+	}
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true})
+}
+
+// apiUnlockTaskHandler unlocks a task node.
+func apiUnlockTaskHandler(c echo.Context) error {
+	ctx := c.Request().Context()
+	taskIDStr := c.Param("id")
+	userID := getUserID(c)
+	if userID == "" {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
+
+	if RedisClient == nil {
+		return c.JSON(http.StatusOK, APIResponse{Success: true})
+	}
+
+	email := userID
+	user, err := queries.GetUser(ctx, userID)
+	if err == nil && user.Email.Valid {
+		email = user.Email.String
+	}
+
+	key := fmt.Sprintf("lock:edit:task:%s", taskIDStr)
+	releaseScript := `
+		if redis.call("get", KEYS[1]) == ARGV[1] then
+			return redis.call("del", KEYS[1])
+		else
+			return 0
+		end
+	`
+	_, _ = RedisClient.Eval(ctx, releaseScript, []string{key}, email).Result()
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true})
+}
+

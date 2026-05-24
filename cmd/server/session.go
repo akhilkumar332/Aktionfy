@@ -515,6 +515,7 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 								Status:       "failure",
 								ErrorMessage: pgtype.Text{String: fmt.Sprintf("Prompt resolution failed: %v", err), Valid: true},
 							})
+							RecordTaskExecutionTelemetry(dbCtx, userID, formatUUID(tid), "failure")
 							queries.UpdateTaskStatusAndFailureCount(dbCtx, db.UpdateTaskStatusAndFailureCountParams{
 								ID:     tid,
 								UserID: userID,
@@ -598,7 +599,9 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 								Status:       "failure",
 								ErrorMessage: pgtype.Text{String: err.Error(), Valid: true},
 							})
-							if logErr != nil {
+							if logErr == nil {
+								RecordTaskExecutionTelemetry(dbCtx, userID, formatUUID(tid), "failure")
+							} else {
 								log.Printf("Error creating failure log for task %s: %v", taskID, logErr)
 							}
 
@@ -730,7 +733,9 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 							Status:      "success",
 							LlmResponse: pgtype.Text{String: llmResponse, Valid: true},
 						})
-						if err != nil {
+						if err == nil {
+							RecordTaskExecutionTelemetry(dbCtx, userID, formatUUID(tid), "success")
+						} else {
 							log.Printf("Error creating success log for task %s: %v", taskID, err)
 						}
 

@@ -1,7 +1,10 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
+	"time"
 
 	"aktionfy/db"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -195,4 +198,93 @@ func handleDeleteWorkspaceEnvVar(c echo.Context) error {
 	})
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Environment variable deleted"})
+}
+
+type workspacePresence struct {
+	UserID       string    `json:"user_id"`
+	Email        string    `json:"email"`
+	ActiveTaskID string    `json:"active_task_id"`
+	LastSeen     time.Time `json:"last_seen"`
+}
+
+func handleWorkspacePresenceHeartbeat(c echo.Context) error {
+	workspaceIDStr := c.Param("id")
+	var workspaceID pgtype.UUID
+	if err := parseUUID(workspaceIDStr, &workspaceID); err != nil {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid workspace ID"})
+	}
+
+	userID := getUserID(c)
+	if userID == "" {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
+
+	var input struct {
+		ActiveTaskID string `json:"active_task_id"`
+	}
+	_ = c.Bind(&input)
+
+	// Fetch user details for email
+	user, err := queries.GetUser(c.Request().Context(), userID)
+	email := "anonymous@aktionfy"
+	if err == nil {
+		if user.Email.Valid {
+			email = user.Email.String
+		} else {
+			email = userID
+		}
+	}
+
+	presence := workspacePresence{
+		UserID:       userID,
+		Email:        email,
+		ActiveTaskID: input.ActiveTaskID,
+		LastSeen:     time.Now().UTC(),
+	}
+
+	if RedisClient != nil {
+		key := fmt.Sprintf("presence:workspace:%s", workspaceIDStr)
+		bytes, _ := json.Marshal(presence)
+		_ = RedisClient.HSet(c.Request().Context(), key, userID, string(bytes)).Err()
+		_ = RedisClient.Expire(c.Request().Context(), key, 5*time.Minute).Err()
+	}
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true})
+}
+
+func handleGetWorkspacePresence(c echo.Context) error {
+	workspaceIDStr := c.Param("id")
+	var workspaceID pgtype.UUID
+	if err := parseUUID(workspaceIDStr, &workspaceID); err != nil {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid workspace ID"})
+	}
+
+	userID := getUserID(c)
+	if userID == "" {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
+
+	presenceList := []workspacePresence{}
+
+	if RedisClient != nil {
+		key := fmt.Sprintf("presence:workspace:%s", workspaceIDStr)
+		results, err := RedisClient.HGetAll(c.Request().Context(), key).Result()
+		if err == nil {
+			now := time.Now().UTC()
+			for fieldUserID, jsonStr := range results {
+				var p workspacePresence
+				if err := json.Unmarshal([]byte(jsonStr), &p); err == nil {
+					// Filter out stale users (older than 30 seconds)
+					if now.Sub(p.LastSeen) < 30*time.Second {
+						presenceList = append(presenceList, p)
+					} else {
+						// Clean up stale field
+						_ = RedisClient.HDel(c.Request().Context(), key, fieldUserID).Err()
+					}
+				}
+			}
+		}
+	}
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: presenceList})
 }

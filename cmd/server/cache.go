@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"aktionfy/db"
+	"github.com/redis/go-redis/v9"
 )
 
 const (
@@ -368,4 +369,67 @@ func InvalidateCachedTrends(ctx context.Context) {
 	_ = RedisClient.Del(ctx, "cache:admin:trends").Err()
 }
 
+// AcquireTaskLock attempts to acquire a distributed lock for a task in Redis using SETNX.
+// Returns true if the lock was acquired, and a release function.
+func AcquireTaskLock(ctx context.Context, taskID string, ttl time.Duration) (bool, func()) {
+	if RedisClient == nil {
+		// If Redis is offline, fail-open to allow execution but log warning
+		log.Printf("Warning: Redis offline, bypassing distributed lock for task %s", taskID)
+		return true, func() {}
+	}
 
+	key := fmt.Sprintf("lock:task:run:%s", taskID)
+	val := workerID
+	if val == "" {
+		val = "unknown-worker"
+	}
+
+	acquired, err := RedisClient.SetNX(ctx, key, val, ttl).Result()
+	if err != nil {
+		log.Printf("Warning: failed to communicate with Redis for lock %s: %v. Failing open.", key, err)
+		return true, func() {}
+	}
+
+	if !acquired {
+		return false, nil
+	}
+
+	releaseFunc := func() {
+		// Release lock only if we own it (Lua script to guarantee atomicity)
+		releaseScript := redis.NewScript(`
+			if redis.call("get", KEYS[1]) == ARGV[1] then
+				return redis.call("del", KEYS[1])
+			else
+				return 0
+			end
+		`)
+		_, _ = releaseScript.Run(context.Background(), RedisClient, []string{key}, val).Result()
+	}
+
+	return true, releaseFunc
+}
+
+// RecordTaskExecutionTelemetry logs task execution status and timestamp to Redis ZSETs for hourly analytics.
+func RecordTaskExecutionTelemetry(ctx context.Context, userID string, taskID string, status string) {
+	if RedisClient == nil {
+		return
+	}
+	now := time.Now().UTC()
+	timestamp := now.Unix()
+	member := fmt.Sprintf("%s:%s:%d:%d", taskID, status, timestamp, now.UnixNano())
+
+	// ZAdd into global, user, and task-specific sorted sets
+	keyUser := fmt.Sprintf("analytics:runs:%s", userID)
+	keyGlobal := "analytics:runs:global"
+	keyTask := fmt.Sprintf("analytics:runs:task:%s", taskID)
+
+	_ = RedisClient.ZAdd(ctx, keyUser, redis.Z{Score: float64(timestamp), Member: member}).Err()
+	_ = RedisClient.ZAdd(ctx, keyGlobal, redis.Z{Score: float64(timestamp), Member: member}).Err()
+	_ = RedisClient.ZAdd(ctx, keyTask, redis.Z{Score: float64(timestamp), Member: member}).Err()
+
+	// Keep only the last 30 days of data in Redis to prevent memory leaks
+	thirtyDaysAgo := now.Add(-30 * 24 * time.Hour).Unix()
+	_ = RedisClient.ZRemRangeByScore(ctx, keyUser, "-inf", fmt.Sprintf("%d", thirtyDaysAgo)).Err()
+	_ = RedisClient.ZRemRangeByScore(ctx, keyGlobal, "-inf", fmt.Sprintf("%d", thirtyDaysAgo)).Err()
+	_ = RedisClient.ZRemRangeByScore(ctx, keyTask, "-inf", fmt.Sprintf("%d", thirtyDaysAgo)).Err()
+}

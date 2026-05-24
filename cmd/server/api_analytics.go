@@ -1,15 +1,18 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"aktionfy/db"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/labstack/echo/v4"
+	"github.com/redis/go-redis/v9"
 )
 
 func handleGetSystemInsights(c echo.Context) error {
@@ -206,3 +209,94 @@ func handleGetWorkers(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: data})
 }
+
+// handleGetHourlyHeatmap fetches the global hourly task execution counts from Redis ZSET.
+func handleGetHourlyHeatmap(c echo.Context) error {
+	ctx := c.Request().Context()
+	
+	heatmap, err := getHeatmapForZset(ctx, "analytics:runs:global")
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to generate hourly heatmap"})
+	}
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: heatmap})
+}
+
+// handleGetTaskHourlyHeatmap fetches the task-specific hourly task execution counts from Redis ZSET.
+func handleGetTaskHourlyHeatmap(c echo.Context) error {
+	ctx := c.Request().Context()
+	taskIDStr := c.Param("id")
+	
+	userID := getUserID(c)
+	if userID == "" {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
+
+	key := fmt.Sprintf("analytics:runs:task:%s", taskIDStr)
+	heatmap, err := getHeatmapForZset(ctx, key)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to generate task hourly heatmap"})
+	}
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: heatmap})
+}
+
+// getHeatmapForZset is a helper that parses and aggregates ZSET logs into hourly buckets for the last 24 hours.
+func getHeatmapForZset(ctx context.Context, key string) ([]map[string]interface{}, error) {
+	if RedisClient == nil {
+		// Redis offline, fail-open with empty list
+		return []map[string]interface{}{}, nil
+	}
+
+	now := time.Now().UTC()
+	start := now.Add(-24 * time.Hour).Unix()
+	end := now.Unix()
+
+	results, err := RedisClient.ZRangeByScore(ctx, key, &redis.ZRangeBy{
+		Min: fmt.Sprintf("%d", start),
+		Max: fmt.Sprintf("%d", end),
+	}).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	// Initialize hourly buckets for the last 24 hours
+	hourlyBuckets := make(map[string]int)
+	for i := 0; i < 24; i++ {
+		t := now.Add(-time.Duration(i) * time.Hour)
+		hourStr := t.Format("2006-01-02 15:00")
+		hourlyBuckets[hourStr] = 0
+	}
+
+	// Parse members and increment buckets
+	for _, member := range results {
+		parts := strings.Split(member, ":")
+		if len(parts) >= 3 {
+			var ts int64
+			_, _ = fmt.Sscanf(parts[2], "%d", &ts)
+			if ts > 0 {
+				t := time.Unix(ts, 0).UTC()
+				hourStr := t.Format("2006-01-02 15:00")
+				if _, exists := hourlyBuckets[hourStr]; exists {
+					hourlyBuckets[hourStr]++
+				}
+			}
+		}
+	}
+
+	// Format output in chronological order
+	heatmap := []map[string]interface{}{}
+	for i := 23; i >= 0; i-- {
+		t := now.Add(-time.Duration(i) * time.Hour)
+		hourStr := t.Format("2006-01-02 15:00")
+		displayHour := t.Format("15:00")
+		heatmap = append(heatmap, map[string]interface{}{
+			"time":  hourStr,
+			"label": displayHour,
+			"count": hourlyBuckets[hourStr],
+		})
+	}
+
+	return heatmap, nil
+}
+
