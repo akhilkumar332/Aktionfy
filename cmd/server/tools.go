@@ -208,8 +208,30 @@ func registerTools(s *server.MCPServer) {
 
 	listTasksTool := mcp.NewTool("list_tasks",
 		mcp.WithDescription("Lists user's active tasks"),
+		mcp.WithString("status", mcp.Description("Optional status filter (e.g. active, paused, processing)")),
+		mcp.WithInteger("limit", mcp.Description("Optional maximum number of tasks to return")),
+		mcp.WithInteger("offset", mcp.Description("Optional pagination offset")),
 	)
 	s.AddTool(listTasksTool, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args, ok := req.Params.Arguments.(map[string]interface{})
+		var statusFilter string
+		var limit, offset int64
+		if ok {
+			if sf, ok := args["status"].(string); ok {
+				statusFilter = sf
+			}
+			if lim, ok := args["limit"].(float64); ok {
+				limit = int64(lim)
+			} else if limInt, ok := args["limit"].(int64); ok {
+				limit = limInt
+			}
+			if off, ok := args["offset"].(float64); ok {
+				offset = int64(off)
+			} else if offInt, ok := args["offset"].(int64); ok {
+				offset = offInt
+			}
+		}
+
 		userID, ok := ctx.Value(userIDKey).(string)
 		if !ok {
 			return mcp.NewToolResultError("unauthorized"), nil
@@ -230,12 +252,36 @@ func registerTools(s *server.MCPServer) {
 			return mcp.NewToolResultError(fmt.Sprintf("db error: %v", err)), nil
 		}
 
+		// Apply status filtering
+		var filteredRows []db.ListUserTasksRow
+		for _, t := range rows {
+			if statusFilter != "" && !strings.EqualFold(t.Status.String, statusFilter) {
+				continue
+			}
+			filteredRows = append(filteredRows, t)
+		}
+
+		// Apply pagination
+		totalTasks := int64(len(filteredRows))
+		start := offset
+		if start < 0 {
+			start = 0
+		}
+		if start > totalTasks {
+			start = totalTasks
+		}
+		end := totalTasks
+		if limit > 0 && start+limit < totalTasks {
+			end = start + limit
+		}
+		paginatedRows := filteredRows[start:end]
+
 		var tasks []map[string]interface{}
 		var md strings.Builder
 		md.WriteString("| ID | Prompt | Status | Next Run | Approval |\n")
 		md.WriteString("|---|---|---|---|---|\n")
 
-		for _, t := range rows {
+		for _, t := range paginatedRows {
 			idStr := formatUUID(t.ID)
 			approval := "Optional"
 			if t.RequiresApproval.Bool {
@@ -617,6 +663,15 @@ func registerTools(s *server.MCPServer) {
 			if err != nil {
 				return mcp.NewToolResultError(fmt.Sprintf("invalid swarm_config: %v", err)), nil
 			}
+		}
+
+		// Automatically create a task version before applying updates (Immutable Versioning)
+		_, err = queries.CreateTaskVersion(ctx, db.CreateTaskVersionParams{
+			ID:     tid,
+			UserID: userID,
+		})
+		if err != nil {
+			log.Printf("Warning: failed to create task version: %v", err)
 		}
 
 		_, err = queries.UpdateTaskAgentPromptAndPolicy(ctx, db.UpdateTaskAgentPromptAndPolicyParams{
@@ -1106,6 +1161,534 @@ func registerTools(s *server.MCPServer) {
 		md.WriteString(fmt.Sprintf("- **Uptime**: %s\n", uptime.String()))
 		md.WriteString(fmt.Sprintf("- **Redis Infrastructure**: %s\n", redisStatus))
 		md.WriteString(fmt.Sprintf("- **Active Reaper Nodes**: %d\n", activeWorkersCount))
+
+		return mcp.NewToolResultText(md.String()), nil
+	})
+
+	listTaskVersionsTool := mcp.NewTool("list_task_versions",
+		mcp.WithDescription("Lists all historical versions of a task"),
+		mcp.WithString("task_id", mcp.Required(), mcp.Description("UUID of the task")),
+	)
+	s.AddTool(listTaskVersionsTool, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args, ok := req.Params.Arguments.(map[string]interface{})
+		if !ok {
+			return mcp.NewToolResultError("invalid arguments"), nil
+		}
+		userID, ok := ctx.Value(userIDKey).(string)
+		if !ok {
+			return mcp.NewToolResultError("unauthorized"), nil
+		}
+		taskIDStr, ok := args["task_id"].(string)
+		if !ok {
+			return mcp.NewToolResultError("missing task_id"), nil
+		}
+
+		var tid pgtype.UUID
+		if err := parseUUID(taskIDStr, &tid); err != nil {
+			return mcp.NewToolResultError("invalid task_id format"), nil
+		}
+
+		exists, err := queries.CheckTaskOwnership(ctx, db.CheckTaskOwnershipParams{
+			ID:     tid,
+			UserID: userID,
+		})
+		if err != nil || !exists {
+			return mcp.NewToolResultError("task not found or unauthorized"), nil
+		}
+
+		versions, err := queries.ListTaskVersions(ctx, tid)
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("failed to fetch versions: %v", err)), nil
+		}
+
+		var md strings.Builder
+		md.WriteString("### Task Version History:\n\n")
+		md.WriteString("| Version ID | Saved At | Prompt Preview |\n")
+		md.WriteString("|---|---|---|\n")
+
+		for _, v := range versions {
+			versionIDStr := formatUUID(v.ID)
+			savedAtStr := v.CreatedAt.Time.Format("2006-01-02 15:04:05")
+			preview := v.AgentPrompt
+			if len(preview) > 50 {
+				preview = preview[:47] + "..."
+			}
+			preview = strings.ReplaceAll(preview, "\n", " ")
+			preview = strings.ReplaceAll(preview, "|", "\\|")
+			md.WriteString(fmt.Sprintf("| `%s` | %s | %s |\n", versionIDStr, savedAtStr, preview))
+		}
+
+		if len(versions) == 0 {
+			return mcp.NewToolResultText("No version history found for this task."), nil
+		}
+
+		return mcp.NewToolResultText(md.String()), nil
+	})
+
+	restoreTaskVersionTool := mcp.NewTool("restore_task_version",
+		mcp.WithDescription("Restores a task from a specific historical version"),
+		mcp.WithString("task_id", mcp.Required(), mcp.Description("UUID of the task")),
+		mcp.WithString("version_id", mcp.Required(), mcp.Description("UUID of the version to restore")),
+	)
+	s.AddTool(restoreTaskVersionTool, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args, ok := req.Params.Arguments.(map[string]interface{})
+		if !ok {
+			return mcp.NewToolResultError("invalid arguments"), nil
+		}
+		userID, ok := ctx.Value(userIDKey).(string)
+		if !ok {
+			return mcp.NewToolResultError("unauthorized"), nil
+		}
+		taskIDStr, ok := args["task_id"].(string)
+		versionIDStr, ok2 := args["version_id"].(string)
+		if !ok || !ok2 {
+			return mcp.NewToolResultError("missing task_id or version_id"), nil
+		}
+
+		var tid, vid pgtype.UUID
+		if err := parseUUID(taskIDStr, &tid); err != nil {
+			return mcp.NewToolResultError("invalid task_id format"), nil
+		}
+		if err := parseUUID(versionIDStr, &vid); err != nil {
+			return mcp.NewToolResultError("invalid version_id format"), nil
+		}
+
+		// Verify task ownership
+		exists, err := queries.CheckTaskOwnership(ctx, db.CheckTaskOwnershipParams{
+			ID:     tid,
+			UserID: userID,
+		})
+		if err != nil || !exists {
+			return mcp.NewToolResultError("task not found or unauthorized"), nil
+		}
+
+		// Fetch version to confirm it exists and belongs to this task
+		version, err := queries.GetTaskVersionByID(ctx, db.GetTaskVersionByIDParams{
+			ID:     vid,
+			TaskID: tid,
+		})
+		if err != nil {
+			if err == pgx.ErrNoRows {
+				return mcp.NewToolResultError("version not found for this task"), nil
+			}
+			return mcp.NewToolResultError(fmt.Sprintf("db error: %v", err)), nil
+		}
+
+		// Automatically save current state to task_versions before reverting
+		_, err = queries.CreateTaskVersion(ctx, db.CreateTaskVersionParams{
+			ID:     tid,
+			UserID: userID,
+		})
+		if err != nil {
+			log.Printf("Warning: failed to create task version before restore: %v", err)
+		}
+
+		err = queries.RestoreTaskFromVersion(ctx, db.RestoreTaskFromVersionParams{
+			ID:     tid,
+			UserID: userID,
+			ID_2:   version.ID,
+		})
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("failed to restore task version: %v", err)), nil
+		}
+
+		InvalidateCachedTask(ctx, taskIDStr)
+		InvalidateCachedTasks(ctx, userID)
+
+		return mcp.NewToolResultText(fmt.Sprintf("Task '%s' successfully restored to version saved at %s", taskIDStr, version.CreatedAt.Time.Format("2006-01-02 15:04:05"))), nil
+	})
+
+	setWorkspaceEnvTool := mcp.NewTool("set_workspace_env",
+		mcp.WithDescription("Sets or updates an environment variable for a workspace"),
+		mcp.WithString("workspace_id", mcp.Required(), mcp.Description("UUID of the workspace")),
+		mcp.WithString("name", mcp.Required(), mcp.Description("Variable name (e.g. API_KEY)")),
+		mcp.WithString("value", mcp.Required(), mcp.Description("Variable value")),
+	)
+	s.AddTool(setWorkspaceEnvTool, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args, ok := req.Params.Arguments.(map[string]interface{})
+		if !ok {
+			return mcp.NewToolResultError("invalid arguments"), nil
+		}
+		userID, ok := ctx.Value(userIDKey).(string)
+		if !ok {
+			return mcp.NewToolResultError("unauthorized"), nil
+		}
+		workspaceIDStr, ok1 := args["workspace_id"].(string)
+		name, ok2 := args["name"].(string)
+		value, ok3 := args["value"].(string)
+		if !ok1 || !ok2 || !ok3 || name == "" {
+			return mcp.NewToolResultError("missing workspace_id, name, or value"), nil
+		}
+
+		var wid pgtype.UUID
+		if err := parseUUID(workspaceIDStr, &wid); err != nil {
+			return mcp.NewToolResultError("invalid workspace_id format"), nil
+		}
+
+		hasAccess, err := queries.CheckWorkspaceAccess(ctx, db.CheckWorkspaceAccessParams{
+			ID:      wid,
+			OwnerID: userID,
+		})
+		if err != nil || !hasAccess {
+			return mcp.NewToolResultError("workspace not found or access denied"), nil
+		}
+
+		_, err = queries.UpsertWorkspaceEnvVar(ctx, db.UpsertWorkspaceEnvVarParams{
+			WorkspaceID: wid,
+			Name:        name,
+			Value:       value,
+		})
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("failed to set environment variable: %v", err)), nil
+		}
+
+		writeAuditLog(ctx, AuditEvent{
+			UserID:       userID,
+			Action:       "workspace.env.set",
+			ResourceType: "workspace",
+			ResourceID:   workspaceIDStr,
+			Metadata: map[string]interface{}{
+				"var_name": name,
+			},
+		})
+
+		return mcp.NewToolResultText(fmt.Sprintf("Environment variable '%s' successfully set for workspace '%s'", name, workspaceIDStr)), nil
+	})
+
+	listWorkspaceEnvTool := mcp.NewTool("list_workspace_env",
+		mcp.WithDescription("Lists all environment variables for a workspace"),
+		mcp.WithString("workspace_id", mcp.Required(), mcp.Description("UUID of the workspace")),
+	)
+	s.AddTool(listWorkspaceEnvTool, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args, ok := req.Params.Arguments.(map[string]interface{})
+		if !ok {
+			return mcp.NewToolResultError("invalid arguments"), nil
+		}
+		userID, ok := ctx.Value(userIDKey).(string)
+		if !ok {
+			return mcp.NewToolResultError("unauthorized"), nil
+		}
+		workspaceIDStr, ok := args["workspace_id"].(string)
+		if !ok {
+			return mcp.NewToolResultError("missing workspace_id"), nil
+		}
+
+		var wid pgtype.UUID
+		if err := parseUUID(workspaceIDStr, &wid); err != nil {
+			return mcp.NewToolResultError("invalid workspace_id format"), nil
+		}
+
+		hasAccess, err := queries.CheckWorkspaceAccess(ctx, db.CheckWorkspaceAccessParams{
+			ID:      wid,
+			OwnerID: userID,
+		})
+		if err != nil || !hasAccess {
+			return mcp.NewToolResultError("workspace not found or access denied"), nil
+		}
+
+		envVars, err := queries.ListWorkspaceEnvVars(ctx, wid)
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("failed to fetch environment variables: %v", err)), nil
+		}
+
+		var md strings.Builder
+		md.WriteString(fmt.Sprintf("### Environment Variables for Workspace `%s`:\n\n", workspaceIDStr))
+		md.WriteString("| Variable Name | Value | Last Updated |\n")
+		md.WriteString("|---|---|---|\n")
+
+		sensitiveKeys := []string{"key", "secret", "token", "password"}
+
+		for _, ev := range envVars {
+			displayVal := ev.Value
+			lowerName := strings.ToLower(ev.Name)
+			for _, sk := range sensitiveKeys {
+				if strings.Contains(lowerName, sk) {
+					displayVal = "********"
+					break
+				}
+			}
+			updatedStr := ev.UpdatedAt.Time.Format("2006-01-02 15:04:05")
+			md.WriteString(fmt.Sprintf("| %s | %s | %s |\n", ev.Name, displayVal, updatedStr))
+		}
+
+		if len(envVars) == 0 {
+			return mcp.NewToolResultText("No environment variables configured for this workspace."), nil
+		}
+
+		return mcp.NewToolResultText(md.String()), nil
+	})
+
+	deleteWorkspaceEnvTool := mcp.NewTool("delete_workspace_env",
+		mcp.WithDescription("Deletes an environment variable from a workspace"),
+		mcp.WithString("workspace_id", mcp.Required(), mcp.Description("UUID of the workspace")),
+		mcp.WithString("name", mcp.Required(), mcp.Description("Variable name to delete")),
+	)
+	s.AddTool(deleteWorkspaceEnvTool, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args, ok := req.Params.Arguments.(map[string]interface{})
+		if !ok {
+			return mcp.NewToolResultError("invalid arguments"), nil
+		}
+		userID, ok := ctx.Value(userIDKey).(string)
+		if !ok {
+			return mcp.NewToolResultError("unauthorized"), nil
+		}
+		workspaceIDStr, ok1 := args["workspace_id"].(string)
+		name, ok2 := args["name"].(string)
+		if !ok1 || !ok2 || name == "" {
+			return mcp.NewToolResultError("missing workspace_id or name"), nil
+		}
+
+		var wid pgtype.UUID
+		if err := parseUUID(workspaceIDStr, &wid); err != nil {
+			return mcp.NewToolResultError("invalid workspace_id format"), nil
+		}
+
+		hasAccess, err := queries.CheckWorkspaceAccess(ctx, db.CheckWorkspaceAccessParams{
+			ID:      wid,
+			OwnerID: userID,
+		})
+		if err != nil || !hasAccess {
+			return mcp.NewToolResultError("workspace not found or access denied"), nil
+		}
+
+		err = queries.DeleteWorkspaceEnvVar(ctx, db.DeleteWorkspaceEnvVarParams{
+			WorkspaceID: wid,
+			Name:        name,
+		})
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("failed to delete environment variable: %v", err)), nil
+		}
+
+		writeAuditLog(ctx, AuditEvent{
+			UserID:       userID,
+			Action:       "workspace.env.delete",
+			ResourceType: "workspace",
+			ResourceID:   workspaceIDStr,
+			Metadata: map[string]interface{}{
+				"var_name": name,
+			},
+		})
+
+		return mcp.NewToolResultText(fmt.Sprintf("Environment variable '%s' successfully deleted from workspace '%s'", name, workspaceIDStr)), nil
+	})
+
+	createOutboundWebhookTool := mcp.NewTool("create_outbound_webhook",
+		mcp.WithDescription("Creates a new outbound HTTP webhook configuration for task events"),
+		mcp.WithString("endpoint_url", mcp.Required(), mcp.Description("HTTP POST endpoint URL to send events")),
+		mcp.WithString("event_types", mcp.Required(), mcp.Description("Comma-separated list of event types (e.g. task.success,task.failure)")),
+		mcp.WithString("signing_secret", mcp.Description("Optional custom signing secret. If omitted, one is generated automatically.")),
+	)
+	s.AddTool(createOutboundWebhookTool, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args, ok := req.Params.Arguments.(map[string]interface{})
+		if !ok {
+			return mcp.NewToolResultError("invalid arguments"), nil
+		}
+		userID, ok := ctx.Value(userIDKey).(string)
+		if !ok {
+			return mcp.NewToolResultError("unauthorized"), nil
+		}
+		endpointURL, ok1 := args["endpoint_url"].(string)
+		eventTypesStr, ok2 := args["event_types"].(string)
+		if !ok1 || !ok2 || endpointURL == "" || eventTypesStr == "" {
+			return mcp.NewToolResultError("missing endpoint_url or event_types"), nil
+		}
+
+		signingSecret, _ := args["signing_secret"].(string)
+		if signingSecret == "" {
+			generated, err := generateSigningSecret()
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("failed to generate signing secret: %v", err)), nil
+			}
+			signingSecret = generated
+		}
+
+		encryptedSecret, err := Encrypt([]byte(signingSecret))
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("secret encryption error: %v", err)), nil
+		}
+
+		parts := strings.Split(eventTypesStr, ",")
+		var eventTypes []string
+		for _, p := range parts {
+			trimmed := strings.TrimSpace(p)
+			if trimmed != "" {
+				eventTypes = append(eventTypes, trimmed)
+			}
+		}
+
+		eventTypesJSON, err := json.Marshal(eventTypes)
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("failed to serialize event types: %v", err)), nil
+		}
+
+		row, err := queries.CreateOutboundWebhook(ctx, db.CreateOutboundWebhookParams{
+			UserID:                 userID,
+			EndpointUrl:            endpointURL,
+			EventTypes:             eventTypesJSON,
+			EncryptedSigningSecret: encryptedSecret,
+		})
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("failed to create webhook in DB: %v", err)), nil
+		}
+
+		webhookIDStr := formatUUID(row.ID)
+		writeAuditLog(ctx, AuditEvent{
+			UserID:       userID,
+			Action:       "webhook.create",
+			ResourceType: "webhook",
+			ResourceID:   webhookIDStr,
+			Metadata: map[string]interface{}{
+				"endpoint_url": endpointURL,
+				"event_types":  eventTypes,
+			},
+		})
+
+		resMap := map[string]string{
+			"status":         "success",
+			"webhook_id":     webhookIDStr,
+			"endpoint_url":   endpointURL,
+			"signing_secret": signingSecret,
+		}
+		resBytes, _ := json.Marshal(resMap)
+		return mcp.NewToolResultText(string(resBytes)), nil
+	})
+
+	listOutboundWebhooksTool := mcp.NewTool("list_outbound_webhooks",
+		mcp.WithDescription("Lists all outbound webhook configurations for the user"),
+	)
+	s.AddTool(listOutboundWebhooksTool, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		userID, ok := ctx.Value(userIDKey).(string)
+		if !ok {
+			return mcp.NewToolResultError("unauthorized"), nil
+		}
+
+		webhooks, err := queries.ListOutboundWebhooks(ctx, userID)
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("failed to list webhooks: %v", err)), nil
+		}
+
+		var md strings.Builder
+		md.WriteString("### Outbound Webhook Subscriptions:\n\n")
+		md.WriteString("| Webhook ID | Endpoint URL | Event Types | Active | Created At |\n")
+		md.WriteString("|---|---|---|---|---|\n")
+
+		for _, w := range webhooks {
+			idStr := formatUUID(w.ID)
+			createdStr := w.CreatedAt.Time.Format("2006-01-02 15:04")
+			activeStr := "True"
+			if !w.IsActive {
+				activeStr = "False"
+			}
+			
+			var eventTypes []string
+			_ = json.Unmarshal(w.EventTypes, &eventTypes)
+			eventTypesStr := strings.Join(eventTypes, ", ")
+
+			md.WriteString(fmt.Sprintf("| %s | %s | %s | %s | %s |\n", idStr, w.EndpointUrl, eventTypesStr, activeStr, createdStr))
+		}
+
+		if len(webhooks) == 0 {
+			return mcp.NewToolResultText("No outbound webhooks configured."), nil
+		}
+
+		return mcp.NewToolResultText(md.String()), nil
+	})
+
+	deleteOutboundWebhookTool := mcp.NewTool("delete_outbound_webhook",
+		mcp.WithDescription("Deletes an outbound webhook configuration"),
+		mcp.WithString("id", mcp.Required(), mcp.Description("UUID of the webhook configuration to delete")),
+	)
+	s.AddTool(deleteOutboundWebhookTool, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args, ok := req.Params.Arguments.(map[string]interface{})
+		if !ok {
+			return mcp.NewToolResultError("invalid arguments"), nil
+		}
+		userID, ok := ctx.Value(userIDKey).(string)
+		if !ok {
+			return mcp.NewToolResultError("unauthorized"), nil
+		}
+		idStr, ok := args["id"].(string)
+		if !ok {
+			return mcp.NewToolResultError("missing webhook id"), nil
+		}
+
+		var wid pgtype.UUID
+		if err := parseUUID(idStr, &wid); err != nil {
+			return mcp.NewToolResultError("invalid webhook id format"), nil
+		}
+
+		err := queries.DeleteOutboundWebhook(ctx, db.DeleteOutboundWebhookParams{
+			ID:     wid,
+			UserID: userID,
+		})
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("failed to delete webhook: %v", err)), nil
+		}
+
+		writeAuditLog(ctx, AuditEvent{
+			UserID:       userID,
+			Action:       "webhook.delete",
+			ResourceType: "webhook",
+			ResourceID:   idStr,
+		})
+
+		return mcp.NewToolResultText(fmt.Sprintf("Outbound webhook '%s' successfully deleted", idStr)), nil
+	})
+
+	getAuditLogsTool := mcp.NewTool("get_audit_logs",
+		mcp.WithDescription("Retrieves recent audit events for security and compliance monitoring"),
+		mcp.WithInteger("limit", mcp.Description("Optional maximum number of logs to retrieve (default: 20)")),
+	)
+	s.AddTool(getAuditLogsTool, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args, ok := req.Params.Arguments.(map[string]interface{})
+		limit := int64(20)
+		if ok {
+			if lim, ok := args["limit"].(float64); ok && lim > 0 {
+				limit = int64(lim)
+			} else if limInt, ok := args["limit"].(int64); ok && limInt > 0 {
+				limit = limInt
+			}
+		}
+
+		userID, ok := ctx.Value(userIDKey).(string)
+		if !ok {
+			return mcp.NewToolResultError("unauthorized"), nil
+		}
+
+		// ListAuditLogs fetches global audit logs. We retrieve 1000 items and filter for user_id in memory.
+		logs, err := queries.ListAuditLogs(ctx, 1000)
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("failed to fetch audit logs: %v", err)), nil
+		}
+
+		var userLogs []db.AuditLog
+		for _, l := range logs {
+			if l.UserID.Valid && l.UserID.String == userID {
+				userLogs = append(userLogs, l)
+				if int64(len(userLogs)) >= limit {
+					break
+				}
+			}
+		}
+
+		var md strings.Builder
+		md.WriteString("### User Audit Logs:\n\n")
+		md.WriteString("| Event ID | Action | Resource Type | Resource ID | Created At |\n")
+		md.WriteString("|---|---|---|---|---|\n")
+
+		for _, l := range userLogs {
+			idStr := formatUUID(l.ID)
+			createdStr := l.CreatedAt.Time.Format("2006-01-02 15:04:05")
+			resIDStr := l.ResourceID.String
+			if !l.ResourceID.Valid {
+				resIDStr = "N/A"
+			}
+			md.WriteString(fmt.Sprintf("| `%s` | %s | %s | %s | %s |\n", idStr, l.Action, l.ResourceType, resIDStr, createdStr))
+		}
+
+		if len(userLogs) == 0 {
+			return mcp.NewToolResultText("No audit logs found."), nil
+		}
 
 		return mcp.NewToolResultText(md.String()), nil
 	})
