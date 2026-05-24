@@ -681,4 +681,43 @@ func RevokeActiveSession(ctx context.Context, userID string, sessionID string) e
 	return nil
 }
 
+// GetCachedTask retrieves a single task from Redis.
+func GetCachedTask(ctx context.Context, taskID string) (*db.Task, error) {
+	if RedisClient == nil {
+		return nil, nil
+	}
+	key := fmt.Sprintf("cache:task:%s", taskID)
+	data, err := RedisClient.Get(ctx, key).Result()
+	if err != nil {
+		return nil, nil
+	}
+	var t db.Task
+	if err := json.Unmarshal([]byte(data), &t); err != nil {
+		log.Printf("Warning: failed to unmarshal cached task %s: %v", taskID, err)
+		return nil, nil
+	}
+	return &t, nil
+}
 
+// SetCachedTask stores a single task in Redis.
+func SetCachedTask(ctx context.Context, taskID string, t db.Task) {
+	if RedisClient == nil {
+		return
+	}
+	key := fmt.Sprintf("cache:task:%s", taskID)
+	bytes, err := json.Marshal(t)
+	if err != nil {
+		log.Printf("Warning: failed to marshal task %s for cache: %v", taskID, err)
+		return
+	}
+	_ = RedisClient.Set(ctx, key, string(bytes), 10*time.Minute).Err()
+}
+
+// InvalidateCachedTask deletes a single task cache.
+func InvalidateCachedTask(ctx context.Context, taskID string) {
+	if RedisClient == nil {
+		return
+	}
+	key := fmt.Sprintf("cache:task:%s", taskID)
+	_ = RedisClient.Del(ctx, key).Err()
+}

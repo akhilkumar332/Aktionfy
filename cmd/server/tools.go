@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"aktionfy/db"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/mark3labs/mcp-go/mcp"
@@ -452,6 +453,8 @@ func registerTools(s *server.MCPServer) {
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("db error: %v", err)), nil
 		}
+		InvalidateCachedTask(ctx, id)
+		InvalidateCachedTasks(ctx, userID)
 		writeAuditLog(ctx, AuditEvent{
 			UserID:       userID,
 			Action:       "task.delete",
@@ -488,11 +491,21 @@ func registerTools(s *server.MCPServer) {
 			return mcp.NewToolResultError("invalid task ID format"), nil
 		}
 
-		t, err := queries.GetTaskByID(ctx, db.GetTaskByIDParams{
-			ID:     tid,
-			UserID: userID,
-		})
-		if err != nil {
+		var t db.Task
+		var err error
+		cachedTask, cacheErr := GetCachedTask(ctx, id)
+		if cacheErr == nil && cachedTask != nil {
+			t = *cachedTask
+		} else {
+			t, err = queries.GetTaskByID(ctx, db.GetTaskByIDParams{
+				ID:     tid,
+				UserID: userID,
+			})
+			if err == nil {
+				SetCachedTask(ctx, id, t)
+			}
+		}
+		if err != nil && cachedTask == nil {
 			if err == pgx.ErrNoRows {
 				return mcp.NewToolResultError("task not found"), nil
 			}
@@ -622,6 +635,8 @@ func registerTools(s *server.MCPServer) {
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("db error: %v", err)), nil
 		}
+		InvalidateCachedTask(ctx, id)
+		InvalidateCachedTasks(ctx, userID)
 
 		return mcp.NewToolResultText("Task updated successfully"), nil
 	})
@@ -723,6 +738,7 @@ func registerTools(s *server.MCPServer) {
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("db error: %v", err)), nil
 		}
+		InvalidateCachedUserSecrets(ctx, userID)
 		writeAuditLog(ctx, AuditEvent{
 			UserID:       userID,
 			Action:       "secret.upsert",
@@ -742,8 +758,18 @@ func registerTools(s *server.MCPServer) {
 			return mcp.NewToolResultError("unauthorized"), nil
 		}
 
-		rows, err := queries.ListUserSecrets(ctx, userID)
-		if err != nil {
+		var rows []db.ListUserSecretsRow
+		var err error
+		cachedRows, cacheErr := GetCachedUserSecrets(ctx, userID)
+		if cacheErr == nil && cachedRows != nil {
+			rows = cachedRows
+		} else {
+			rows, err = queries.ListUserSecrets(ctx, userID)
+			if err == nil {
+				SetCachedUserSecrets(ctx, userID, rows)
+			}
+		}
+		if err != nil && cachedRows == nil {
 			return mcp.NewToolResultError(fmt.Sprintf("db error: %v", err)), nil
 		}
 
@@ -788,6 +814,7 @@ func registerTools(s *server.MCPServer) {
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("db error: %v", err)), nil
 		}
+		InvalidateCachedUserSecrets(ctx, userID)
 		writeAuditLog(ctx, AuditEvent{
 			UserID:       userID,
 			Action:       "secret.delete",
@@ -796,5 +823,290 @@ func registerTools(s *server.MCPServer) {
 		})
 
 		return mcp.NewToolResultText("Secret deleted successfully"), nil
+	})
+
+	getExecutionLogsTool := mcp.NewTool("get_execution_logs",
+		mcp.WithDescription("Retrieves recent task execution runs or detailed step-by-step trace logs"),
+		mcp.WithString("task_id", mcp.Required(), mcp.Description("UUID of the task")),
+		mcp.WithString("execution_id", mcp.Description("Optional execution run ID to fetch detailed steps")),
+		mcp.WithInteger("limit", mcp.Description("Optional maximum number of runs to return (default: 10)")),
+	)
+	s.AddTool(getExecutionLogsTool, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args, ok := req.Params.Arguments.(map[string]interface{})
+		if !ok {
+			return mcp.NewToolResultError("invalid arguments"), nil
+		}
+		userID, ok := ctx.Value(userIDKey).(string)
+		if !ok {
+			return mcp.NewToolResultError("unauthorized"), nil
+		}
+		taskIDStr, ok := args["task_id"].(string)
+		if !ok {
+			return mcp.NewToolResultError("missing task_id"), nil
+		}
+
+		var tid pgtype.UUID
+		if err := parseUUID(taskIDStr, &tid); err != nil {
+			return mcp.NewToolResultError("invalid task_id format"), nil
+		}
+
+		// Ensure task ownership
+		exists, err := queries.CheckTaskOwnership(ctx, db.CheckTaskOwnershipParams{
+			ID:     tid,
+			UserID: userID,
+		})
+		if err != nil || !exists {
+			return mcp.NewToolResultError("task not found or unauthorized"), nil
+		}
+
+		execID, hasExecID := args["execution_id"].(string)
+
+		if hasExecID && execID != "" {
+			// List detailed traces for specific execution run
+			traces, err := queries.ListExecutionTracesByExecutionID(ctx, db.ListExecutionTracesByExecutionIDParams{
+				TaskID:      tid,
+				ExecutionID: execID,
+			})
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("failed to fetch traces: %v", err)), nil
+			}
+
+			var md strings.Builder
+			md.WriteString(fmt.Sprintf("### Execution Run Logs for ID `%s`:\n\n", execID))
+			md.WriteString("| Start Time | Step Name | Duration (ms) | Status | Error Message |\n")
+			md.WriteString("|---|---|---|---|---|\n")
+
+			for _, t := range traces {
+				startStr := t.StartTime.Time.Format("2006-01-02 15:04:05")
+				status := "Success"
+				if t.IsError.Bool {
+					status = "Failed"
+				}
+				duration := "N/A"
+				if t.DurationMs.Valid {
+					duration = fmt.Sprintf("%d", t.DurationMs.Int32)
+				}
+				md.WriteString(fmt.Sprintf("| %s | %s | %s | %s | %s |\n", startStr, t.StepName, duration, status, t.ErrorMessage.String))
+			}
+
+			if len(traces) == 0 {
+				return mcp.NewToolResultText("No steps recorded for this execution run ID."), nil
+			}
+
+			return mcp.NewToolResultText(md.String()), nil
+		} else {
+			// List summary of task execution runs
+			runs, err := queries.ListTaskExecutionIDs(ctx, tid)
+			if err != nil {
+				return mcp.NewToolResultError(fmt.Sprintf("failed to fetch runs: %v", err)), nil
+			}
+
+			limit := int64(10)
+			if lim, ok := args["limit"].(float64); ok && lim > 0 {
+				limit = int64(lim)
+			} else if limInt, ok := args["limit"].(int64); ok && limInt > 0 {
+				limit = limInt
+			}
+
+			var md strings.Builder
+			md.WriteString("### Recent Task Execution Runs:\n\n")
+			md.WriteString("| Execution Run ID | Start Time | Last Activity | Status |\n")
+			md.WriteString("|---|---|---|---|\n")
+
+			count := int64(0)
+			for _, r := range runs {
+				if count >= limit {
+					break
+				}
+				status := "Success"
+				if r.IsError {
+					status = "Failed"
+				}
+				startStr := "N/A"
+				if r.StartTime.Valid {
+					startStr = r.StartTime.Time.Format("2006-01-02 15:04:05")
+				}
+				activityStr := "N/A"
+				if r.LastActivity.Valid {
+					activityStr = r.LastActivity.Time.Format("2006-01-02 15:04:05")
+				}
+				md.WriteString(fmt.Sprintf("| `%s` | %s | %s | %s |\n", r.ExecutionID, startStr, activityStr, status))
+				count++
+			}
+
+			if len(runs) == 0 {
+				return mcp.NewToolResultText("No execution history found for this task."), nil
+			}
+
+			return mcp.NewToolResultText(md.String()), nil
+		}
+	})
+
+	createWebhookTriggerTool := mcp.NewTool("create_webhook_trigger",
+		mcp.WithDescription("Creates a new inbound webhook trigger URL token for a task"),
+		mcp.WithString("task_id", mcp.Required(), mcp.Description("UUID of the task")),
+	)
+	s.AddTool(createWebhookTriggerTool, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args, ok := req.Params.Arguments.(map[string]interface{})
+		if !ok {
+			return mcp.NewToolResultError("invalid arguments"), nil
+		}
+		userID, ok := ctx.Value(userIDKey).(string)
+		if !ok {
+			return mcp.NewToolResultError("unauthorized"), nil
+		}
+		taskIDStr, ok := args["task_id"].(string)
+		if !ok {
+			return mcp.NewToolResultError("missing task_id"), nil
+		}
+
+		var tid pgtype.UUID
+		if err := parseUUID(taskIDStr, &tid); err != nil {
+			return mcp.NewToolResultError("invalid task_id format"), nil
+		}
+
+		// Ensure task ownership
+		exists, err := queries.CheckTaskOwnership(ctx, db.CheckTaskOwnershipParams{
+			ID:     tid,
+			UserID: userID,
+		})
+		if err != nil || !exists {
+			return mcp.NewToolResultError("task not found or unauthorized"), nil
+		}
+
+		token := uuid.New().String()
+		_, err = queries.CreateWebhookTrigger(ctx, db.CreateWebhookTriggerParams{
+			TaskID: pgtype.UUID{Bytes: tid.Bytes, Valid: true},
+			Token:  token,
+		})
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("failed to create webhook: %v", err)), nil
+		}
+
+		// Invalidate cache
+		InvalidateCachedTask(ctx, taskIDStr)
+		InvalidateCachedTasks(ctx, userID)
+
+		webhookUrl := fmt.Sprintf("/api/v1/webhooks/inbound/%s", token)
+		resMap := map[string]string{
+			"status":      "success",
+			"webhook_url": webhookUrl,
+			"token":       token,
+		}
+		resBytes, _ := json.Marshal(resMap)
+		return mcp.NewToolResultText(string(resBytes)), nil
+	})
+
+	listWorkspacesTool := mcp.NewTool("list_workspaces",
+		mcp.WithDescription("Lists all workspaces owned by or shared with the user"),
+	)
+	s.AddTool(listWorkspacesTool, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		userID, ok := ctx.Value(userIDKey).(string)
+		if !ok {
+			return mcp.NewToolResultError("unauthorized"), nil
+		}
+
+		var workspaces []db.Workspace
+		var err error
+		cachedWorkspaces, cacheErr := GetCachedWorkspaces(ctx, userID)
+		if cacheErr == nil && cachedWorkspaces != nil {
+			workspaces = cachedWorkspaces
+		} else {
+			workspaces, err = queries.GetUserWorkspaces(ctx, userID)
+			if err == nil {
+				SetCachedWorkspaces(ctx, userID, workspaces)
+			}
+		}
+		if err != nil && cachedWorkspaces == nil {
+			return mcp.NewToolResultError(fmt.Sprintf("failed to list workspaces: %v", err)), nil
+		}
+
+		var md strings.Builder
+		md.WriteString("| ID | Workspace Name | Created At |\n")
+		md.WriteString("|---|---|---|\n")
+
+		for _, w := range workspaces {
+			idStr := formatUUID(w.ID)
+			createdStr := w.CreatedAt.Time.Format("2006-01-02 15:04")
+			md.WriteString(fmt.Sprintf("| %s | %s | %s |\n", idStr, w.Name, createdStr))
+		}
+
+		if len(workspaces) == 0 {
+			return mcp.NewToolResultText("No workspaces found."), nil
+		}
+
+		return mcp.NewToolResultText(md.String()), nil
+	})
+
+	createWorkspaceTool := mcp.NewTool("create_workspace",
+		mcp.WithDescription("Creates a new workspace"),
+		mcp.WithString("name", mcp.Required(), mcp.Description("Name of the workspace")),
+	)
+	s.AddTool(createWorkspaceTool, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args, ok := req.Params.Arguments.(map[string]interface{})
+		if !ok {
+			return mcp.NewToolResultError("invalid arguments"), nil
+		}
+		userID, ok := ctx.Value(userIDKey).(string)
+		if !ok {
+			return mcp.NewToolResultError("unauthorized"), nil
+		}
+		name, ok := args["name"].(string)
+		if !ok || name == "" {
+			return mcp.NewToolResultError("missing workspace name"), nil
+		}
+
+		w, err := queries.CreateWorkspace(ctx, db.CreateWorkspaceParams{
+			Name:    name,
+			OwnerID: userID,
+		})
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("failed to create workspace: %v", err)), nil
+		}
+
+		InvalidateCachedWorkspaces(ctx, userID)
+
+		resMap := map[string]string{
+			"status":       "success",
+			"workspace_id": formatUUID(w.ID),
+			"name":         w.Name,
+		}
+		resBytes, _ := json.Marshal(resMap)
+		return mcp.NewToolResultText(string(resBytes)), nil
+	})
+
+	getSystemStatusTool := mcp.NewTool("get_system_status",
+		mcp.WithDescription("Retrieves the current operational status and metrics of the Aktionfy cluster"),
+	)
+	s.AddTool(getSystemStatusTool, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		uptime := time.Since(ServerStartTime).Round(time.Second)
+
+		redisStatus := "Online"
+		if RedisClient != nil {
+			if err := RedisClient.Ping(ctx).Err(); err != nil {
+				redisStatus = fmt.Sprintf("Error: %v", err)
+			}
+		} else {
+			redisStatus = "Offline/Unconfigured"
+		}
+
+		workers, err := queries.ListWorkerHeartbeats(ctx)
+		activeWorkersCount := 0
+		if err == nil {
+			now := time.Now().UTC()
+			for _, w := range workers {
+				if w.LastHeartbeat.Valid && w.LastHeartbeat.Time.After(now.Add(-2*time.Minute)) {
+					activeWorkersCount++
+				}
+			}
+		}
+
+		var md strings.Builder
+		md.WriteString("### Aktionfy System Status Report:\n\n")
+		md.WriteString(fmt.Sprintf("- **Uptime**: %s\n", uptime.String()))
+		md.WriteString(fmt.Sprintf("- **Redis Infrastructure**: %s\n", redisStatus))
+		md.WriteString(fmt.Sprintf("- **Active Reaper Nodes**: %d\n", activeWorkersCount))
+
+		return mcp.NewToolResultText(md.String()), nil
 	})
 }
