@@ -6,6 +6,7 @@ import { AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import TaskWizard from '../components/TaskWizard';
 import { useNotify } from '../context/NotificationContext';
+import { useSSE } from '../context/SSEContext';
 
 const decodeBase64 = (str) => {
     if (!str) return '';
@@ -25,6 +26,7 @@ const decodeBase64 = (str) => {
 
 const Templates = () => {
     const { notify } = useNotify();
+    const { addListener, removeListener } = useSSE();
     const isMounted = useRef(true);
     const [templates, setTemplates] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -55,8 +57,16 @@ const Templates = () => {
     }, [notify]);
 
     useEffect(() => {
-        const timer = setTimeout(() => {
+        const handleUpdate = () => {
             fetchTemplates(search);
+        };
+        addListener('template_updated', handleUpdate);
+        return () => removeListener('template_updated', handleUpdate);
+    }, [addListener, removeListener, fetchTemplates, search]);
+
+    useEffect(() => {
+        const timer = setTimeout(async () => {
+            await fetchTemplates(search);
         }, 500);
         return () => clearTimeout(timer);
     }, [search, fetchTemplates]);

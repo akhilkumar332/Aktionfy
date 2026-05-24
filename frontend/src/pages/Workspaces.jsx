@@ -4,6 +4,7 @@ import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Globe, ChevronDown, Trash2, Plus, Loader2, X, Command, Zap, RefreshCw, Key, Check } from 'lucide-react';
 import { useNotify } from '../context/NotificationContext';
+import { useSSE } from '../context/SSEContext';
 
 const WorkspaceEnvSection = ({ workspaceId }) => {
   const { notify } = useNotify();
@@ -168,6 +169,7 @@ const WorkspaceEnvSection = ({ workspaceId }) => {
 
 const Workspaces = () => {
   const { notify } = useNotify();
+  const { addListener, removeListener } = useSSE();
   const isMounted = useRef(true);
   const [workspaces, setWorkspaces] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -194,6 +196,14 @@ const Workspaces = () => {
       if (isMounted.current) setLoading(false);
     }
   }, [notify]);
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      fetchWorkspaces();
+    };
+    addListener('workspace_updated', handleUpdate);
+    return () => removeListener('workspace_updated', handleUpdate);
+  }, [addListener, removeListener, fetchWorkspaces]);
 
   useEffect(() => {
     const init = async () => {

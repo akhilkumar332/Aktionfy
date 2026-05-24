@@ -18,6 +18,10 @@ func apiEventsHandler(c echo.Context) error {
 	c.Response().Header().Set(echo.HeaderConnection, "keep-alive")
 
 	ctx := c.Request().Context()
+	if RedisClient == nil {
+		return c.JSON(http.StatusServiceUnavailable, APIResponse{Success: false, Error: "Real-time SSE event bridge is currently offline"})
+	}
+
 	pubsub := RedisClient.Subscribe(ctx, fmt.Sprintf("user:events:%s", userID))
 	defer pubsub.Close()
 

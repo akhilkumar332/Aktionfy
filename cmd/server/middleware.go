@@ -50,6 +50,21 @@ func EchoSessionMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return next(c)
 		}
 
+		if u.IsLocked.Bool {
+			// Clear cookie to force signout
+			c.SetCookie(&http.Cookie{
+				Name:     "session_id",
+				Value:    "",
+				Path:     "/",
+				MaxAge:   -1,
+				HttpOnly: true,
+			})
+			if strings.HasPrefix(c.Request().URL.Path, "/api/") {
+				return c.JSON(http.StatusForbidden, APIResponse{Success: false, Error: "This account has been locked. Please contact support."})
+			}
+			return next(c)
+		}
+
 		user := &User{
 			ID:        u.ID,
 			Email:     u.Email.String,
@@ -110,10 +125,13 @@ func EchoAuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		if apiKey == "" {
 			return echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized: Missing X-API-Key")
 		}
-
 		u, err := queries.GetUserByAPIKey(c.Request().Context(), apiKey)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized: Invalid API Key")
+		}
+
+		if u.IsLocked.Bool {
+			return echo.NewHTTPError(http.StatusForbidden, "Forbidden: This account has been locked.")
 		}
 
 		// Phase 4: Rate Limiting
@@ -188,12 +206,15 @@ func NetHttpAuthMiddleware(next http.Handler, mcpServer *server.MCPServer) http.
 		userID := ""
 		userTier := ""
 		isBridge := false
-
 		// 1. Try API Key Header
 		apiKey := r.Header.Get("X-API-Key")
 		if apiKey != "" {
 			u, err := queries.GetUserByAPIKey(r.Context(), apiKey)
 			if err == nil {
+				if u.IsLocked.Bool {
+					http.Error(w, "Forbidden: This account has been locked", http.StatusForbidden)
+					return
+				}
 				userID = u.ID
 				userTier = u.Tier.String
 				isBridge = true
@@ -211,6 +232,10 @@ func NetHttpAuthMiddleware(next http.Handler, mcpServer *server.MCPServer) http.
 						ExpiresAt: pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},
 					})
 					if err == nil {
+						if u.IsLocked.Bool {
+							http.Error(w, "Forbidden: This account has been locked", http.StatusForbidden)
+							return
+						}
 						userID = u.ID
 						userTier = u.Tier.String
 					}

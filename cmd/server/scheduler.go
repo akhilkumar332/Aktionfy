@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"aktionfy/db"
@@ -25,6 +26,7 @@ import (
 
 var promptVarRegex = regexp.MustCompile(`\{\{task\.([0-9a-fA-F-]{36})\.output\}\}`)
 var stateVarRegex = regexp.MustCompile(`\{\{state\.([a-zA-Z0-9._-]+)\}\}`)
+var activeWorkerTasks int32
 
 const (
 	PersonaArchitect = "Architect (Logic): You focus on structural integrity, technical consistency, and ensuring the output follows a logical flow. Critique the output against the available branches."
@@ -213,8 +215,10 @@ func handleTaskClaimNotification(ctx context.Context, payload string) {
 	}
 
 	workerWG.Add(1)
+	atomic.AddInt32(&activeWorkerTasks, 1)
 	go func() {
 		defer workerWG.Done()
+		defer atomic.AddInt32(&activeWorkerTasks, -1)
 		defer func() {
 			if r := recover(); r != nil {
 				log.Printf("Panic recovered in task claim worker: %v", r)
@@ -607,6 +611,10 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 	payloadBytes, err := json.Marshal(payloadMap)
 	if err != nil {
 		log.Printf("Error marshaling task trigger payload for %s: %v", taskID, err)
+		return
+	}
+	if RedisClient == nil {
+		log.Printf("Aktionfy warning: RedisClient is uninitialized. Skipping task execution publish for %s.", taskID)
 		return
 	}
 	subscribers, err := RedisClient.Publish(workerCtx, fmt.Sprintf("trigger_task:%s", t.UserID), string(payloadBytes)).Result()
@@ -1472,7 +1480,7 @@ func runWorkerHeartbeat(ctx context.Context) {
 			err := queries.UpsertWorkerHeartbeat(ctx, db.UpsertWorkerHeartbeatParams{
 				WorkerID:  workerID,
 				Hostname:  pgtype.Text{String: hostname, Valid: true},
-				TaskCount: pgtype.Int4{Int32: 0, Valid: true}, // In future, track active go-routines
+				TaskCount: pgtype.Int4{Int32: atomic.LoadInt32(&activeWorkerTasks), Valid: true},
 			})
 			if err != nil {
 				log.Printf("Heartbeat error: %v", err)

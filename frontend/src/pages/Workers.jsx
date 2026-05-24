@@ -4,9 +4,11 @@ import axios from 'axios';
 import { Activity, RefreshCw, Server, Clock, Command } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNotify } from '../context/NotificationContext';
+import { useSSE } from '../context/SSEContext';
 
 const Workers = () => {
   const { notify } = useNotify();
+  const { addListener, removeListener } = useSSE();
   const isMounted = useRef(true);
   const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,6 +32,14 @@ const Workers = () => {
       }
     }
   }, [notify]);
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      fetchWorkers();
+    };
+    addListener('worker_updated', handleUpdate);
+    return () => removeListener('worker_updated', handleUpdate);
+  }, [addListener, removeListener, fetchWorkers]);
 
   useEffect(() => {
     isMounted.current = true;

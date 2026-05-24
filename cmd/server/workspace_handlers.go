@@ -49,6 +49,12 @@ func handleCreateWorkspace(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to create workspace"})
 	}
 
+	_ = PublishEvent(c.Request().Context(), PubSubEvent{
+		UserID:    userID,
+		EventType: "workspace_updated",
+		Payload:   "{}",
+	})
+
 	return c.JSON(http.StatusCreated, APIResponse{Success: true, Data: workspace})
 }
 
@@ -126,6 +132,12 @@ func handleUpsertWorkspaceEnvVar(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to upsert environment variable"})
 	}
 
+	_ = PublishEvent(c.Request().Context(), PubSubEvent{
+		UserID:    userID,
+		EventType: "workspace_updated",
+		Payload:   "{}",
+	})
+
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: envVar})
 }
 
@@ -162,6 +174,12 @@ func handleDeleteWorkspaceEnvVar(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to delete environment variable"})
 	}
+
+	_ = PublishEvent(c.Request().Context(), PubSubEvent{
+		UserID:    userID,
+		EventType: "workspace_updated",
+		Payload:   "{}",
+	})
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Environment variable deleted"})
 }

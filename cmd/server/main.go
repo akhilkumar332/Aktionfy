@@ -495,6 +495,7 @@ func main() {
 	admin := api.Group("/admin", EchoRequireRole("admin"))
 	admin.GET("/users", apiAdminUsersHandler)
 	admin.POST("/users/update", apiAdminUpdateUserHandler)
+	admin.GET("/login-history", apiAdminLoginHistoryHandler)
 	admin.GET("/audit-logs", apiAdminAuditLogsHandler)
 	admin.GET("/usage", apiAdminUsageHandler)
 	admin.GET("/insights", handleGetSystemInsights)
@@ -505,6 +506,7 @@ func main() {
 	admin.GET("/settings", apiAdminGetSettingsHandler)
 	admin.POST("/settings", apiAdminUpdateSettingsHandler)
 	admin.POST("/prune", apiAdminPruneNowHandler)
+	admin.POST("/workers/prune", apiAdminPruneNowHandler)
 
 	e.POST("/webhooks/stripe", apiStripeWebhook)
 

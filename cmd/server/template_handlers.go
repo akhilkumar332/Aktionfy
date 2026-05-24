@@ -203,6 +203,12 @@ func handleCreateTemplate(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to create template"})
 	}
 
+	_ = PublishEvent(c.Request().Context(), PubSubEvent{
+		UserID:    userID,
+		EventType: "template_updated",
+		Payload:   "{}",
+	})
+
 	return c.JSON(http.StatusCreated, template)
 }
 

@@ -1,12 +1,15 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 
 import axios from 'axios';
 import { Search, Globe, RefreshCw, AlertCircle, CheckCircle2, Layout, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNotify } from '../context/NotificationContext';
+import { useSSE } from '../context/SSEContext';
 
 const AdminSEO = () => {
   const { notify } = useNotify();
+  const { addListener, removeListener } = useSSE();
+  const isMounted = useRef(true);
   const [data, setData] = useState({ title: '', description: '', keywords: '' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -15,15 +18,34 @@ const AdminSEO = () => {
   const fetchSEO = useCallback(async () => {
     try {
       const res = await axios.get('/api/v1/admin/seo');
-      if (res.data.success) {
+      if (res.data.success && isMounted.current) {
         setData(res.data.data || { title: 'Aktionfy', description: '', keywords: '' });
       }
     } catch (err) {
-      notify('ERROR', 'Failed to fetch SEO data', err.response?.data?.error || err.message);
+      if (isMounted.current) {
+        notify('ERROR', 'Failed to fetch SEO data', err.response?.data?.error || err.message);
+      }
     } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        setLoading(false);
+      }
     }
   }, [notify]);
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      fetchSEO();
+    };
+    addListener('seo_updated', handleUpdate);
+    return () => removeListener('seo_updated', handleUpdate);
+  }, [addListener, removeListener, fetchSEO]);
 
   useEffect(() => {
     const init = async () => {
@@ -38,12 +60,18 @@ const AdminSEO = () => {
     setMessage({ type: '', text: '' });
     try {
       await axios.post('/api/v1/admin/seo', data);
-      setMessage({ type: 'success', text: 'Neural identity manifest updated and broadcasted.' });
+      if (isMounted.current) {
+        setMessage({ type: 'success', text: 'Neural identity manifest updated and broadcasted.' });
+      }
     } catch (err) {
-      notify('ERROR', 'Failed to save SEO', err.response?.data?.error || err.message);
-      setMessage({ type: 'error', text: 'Failed to broadcast manifest updates.' });
+      if (isMounted.current) {
+        notify('ERROR', 'Failed to save SEO', err.response?.data?.error || err.message);
+        setMessage({ type: 'error', text: 'Failed to broadcast manifest updates.' });
+      }
     } finally {
-      setSaving(false);
+      if (isMounted.current) {
+        setSaving(false);
+      }
     }
   };
 

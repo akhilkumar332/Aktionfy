@@ -4,9 +4,11 @@ import axios from 'axios';
 import { Settings, Save, Trash2, RefreshCw, Zap, Shield, X, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNotify } from '../context/NotificationContext';
+import { useSSE } from '../context/SSEContext';
 
 const AdminSettings = () => {
   const { notify } = useNotify();
+  const { addListener, removeListener } = useSSE();
   const isMounted = useRef(true);
   const [settings, setSettings] = useState({ 
     worker_prune_days: 7,
@@ -42,6 +44,14 @@ const AdminSettings = () => {
       if (isMounted.current) setLoading(false);
     }
   }, [notify]);
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      fetchSettings();
+    };
+    addListener('settings_updated', handleUpdate);
+    return () => removeListener('settings_updated', handleUpdate);
+  }, [addListener, removeListener, fetchSettings]);
 
   useEffect(() => {
     const init = async () => {

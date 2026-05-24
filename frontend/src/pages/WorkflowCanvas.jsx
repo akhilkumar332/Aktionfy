@@ -18,7 +18,7 @@ import { Save, RefreshCw, Layers, X, Trash2, Play, Pause, FastForward, Rewind, A
 import DecisionNode from '../components/DecisionNode';
 import ManualRouteModal from '../components/ManualRouteModal';
 import GlobalPlaybackBar from '../components/GlobalPlaybackBar';
-import { useSSE } from '../hooks/useSSE';
+import { useSSE } from '../context/SSEContext';
 import { useNotify } from '../context/NotificationContext';
 import { decodeBase64, parseJSONField as safeParseJSON } from '../utils/wizardUtils';
 
@@ -427,16 +427,26 @@ const WorkflowCanvas = () => {
     }));
   }, [setNodes, setEdges]);
 
-  useSSE(useCallback((event) => {
-    if (event.event_type === 'task_status_changed') {
-      try {
-        const payload = typeof event.payload === 'string' ? JSON.parse(event.payload) : event.payload;
-        updateTaskStatusLocally(payload.task_id, payload.status);
-      } catch {
-        // Silently fail for real-time updates to avoid spamming the user
-      }
-    }
-  }, [updateTaskStatusLocally]));
+  const { addListener, removeListener } = useSSE();
+
+  useEffect(() => {
+    const handleTaskStatusChanged = (payload) => {
+      updateTaskStatusLocally(payload.task_id, payload.status);
+    };
+    const handleTaskUpdated = () => {
+      fetchTasks();
+    };
+
+    addListener('task_status_changed', handleTaskStatusChanged);
+    addListener('task_updated', handleTaskUpdated);
+    addListener('workspace_updated', handleTaskUpdated);
+    
+    return () => {
+      removeListener('task_status_changed', handleTaskStatusChanged);
+      removeListener('task_updated', handleTaskUpdated);
+      removeListener('workspace_updated', handleTaskUpdated);
+    };
+  }, [addListener, removeListener, updateTaskStatusLocally, fetchTasks]);
 
   useEffect(() => {
     const init = async () => {

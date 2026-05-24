@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
+import { SSEProvider } from './context/SSEContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import { lazy, Suspense } from 'react';
 
@@ -163,19 +164,21 @@ function App() {
     <ErrorBoundary>
       <NotificationProvider>
         <AuthProvider>
-          <Router>
-            <Suspense fallback={
-              <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-white font-sans">
-                <div className="flex flex-col items-center gap-4">
-                   <div className="w-10 h-10 border-2 border-brand-primary/20 border-t-brand-primary rounded-full animate-spin"></div>
-                   <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 animate-pulse">Loading View...</span>
+          <SSEProvider>
+            <Router>
+              <Suspense fallback={
+                <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-white font-sans">
+                  <div className="flex flex-col items-center gap-4">
+                     <div className="w-10 h-10 border-2 border-brand-primary/20 border-t-brand-primary rounded-full animate-spin"></div>
+                     <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 animate-pulse">Loading View...</span>
+                  </div>
                 </div>
-              </div>
-            }>
-              <AppRoutes />
-            </Suspense>
-          </Router>
-          <NotificationHub />
+              }>
+                <AppRoutes />
+              </Suspense>
+            </Router>
+            <NotificationHub />
+          </SSEProvider>
         </AuthProvider>
       </NotificationProvider>
     </ErrorBoundary>

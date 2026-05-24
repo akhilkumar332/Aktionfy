@@ -10,6 +10,7 @@ CREATE TABLE users (
     role TEXT DEFAULT 'user' CHECK (role IN ('user', 'staff', 'admin')),
     last_login TIMESTAMP WITH TIME ZONE,
     tier TEXT DEFAULT 'free' CHECK (tier IN ('free', 'plus', 'pro')),
+    is_locked BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -341,3 +342,17 @@ CREATE INDEX IF NOT EXISTS idx_dlq_tasks_task_id ON dlq_tasks (task_id);
 -- Analytics Performance
 CREATE INDEX IF NOT EXISTS idx_execution_traces_start_time ON execution_traces (start_time);
 CREATE INDEX IF NOT EXISTS idx_users_created_at ON users (created_at);
+
+-- User Login History
+CREATE TABLE IF NOT EXISTS user_login_history (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    login_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    ip_address TEXT,
+    user_agent TEXT,
+    status TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_login_history_user_id ON user_login_history (user_id);
+CREATE INDEX IF NOT EXISTS idx_user_login_history_login_time ON user_login_history (login_time DESC);
+

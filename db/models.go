@@ -153,7 +153,17 @@ type User struct {
 	Role         pgtype.Text        `json:"role"`
 	LastLogin    pgtype.Timestamptz `json:"last_login"`
 	Tier         pgtype.Text        `json:"tier"`
+	IsLocked     pgtype.Bool        `json:"is_locked"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+}
+
+type UserLoginHistory struct {
+	ID        pgtype.UUID        `json:"id"`
+	UserID    string             `json:"user_id"`
+	LoginTime pgtype.Timestamptz `json:"login_time"`
+	IPAddress pgtype.Text        `json:"ip_address"`
+	UserAgent pgtype.Text        `json:"user_agent"`
+	Status    string             `json:"status"`
 }
 
 type UserSecret struct {

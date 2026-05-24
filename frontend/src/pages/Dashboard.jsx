@@ -8,7 +8,7 @@ import {
   Terminal, Cpu, Globe, ArrowUpRight, Layers, X, Eye, EyeOff
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useSSE } from '../hooks/useSSE';
+import { useSSE } from '../context/SSEContext';
 import { useNotify } from '../context/NotificationContext';
 
 const Dashboard = () => {
@@ -61,40 +61,60 @@ const Dashboard = () => {
     return () => clearInterval(interval);
   }, [fetchData, fetchSystemStatus]);
 
-  useSSE(useCallback((event) => {
-    if (event.event_type === 'task_executed') {
-      try {
-        const payload = typeof event.payload === 'string' ? JSON.parse(event.payload) : event.payload;
-        notify(
-          payload.status === 'success' ? 'SUCCESS' : 'ERROR', 
-          `Task ${payload.task_name || payload.task_id.slice(0, 8)} executed: ${payload.status}`
-        );
-        fetchData();
-      } catch {
-        notify('ERROR', 'Error parsing task_executed payload');
-      }
-    }
+  const { addListener, removeListener } = useSSE();
 
-    if (event.event_type === 'task_status_changed') {
+  useEffect(() => {
+    const handleEvent = () => {
+      fetchData();
+      fetchSystemStatus();
+    };
+    const handleTaskExecuted = (payload) => {
+      notify(
+        payload.status === 'success' ? 'SUCCESS' : 'ERROR', 
+        `Task ${payload.task_name || payload.task_id.slice(0, 8)} executed: ${payload.status}`
+      );
+      fetchData();
+      fetchSystemStatus();
+    };
+    const handleTaskStatusChanged = () => {
       notify('SUCCESS', 'Task status updated');
       fetchData();
-    }
-
-    if (event.event_type === 'approval_required') {
-      try {
-        const payload = typeof event.payload === 'string' ? JSON.parse(event.payload) : event.payload;
-        if (isMounted.current) {
-          setPendingApprovals(prev => {
-            if (prev.find(a => a.task_id === payload.task_id)) return prev;
-            return [...prev, payload];
-          });
-        }
-        notify('ERROR', `Manual Approval Required: ${payload.task_name}`);
-      } catch {
-        notify('ERROR', 'Error parsing approval_required payload');
+      fetchSystemStatus();
+    };
+    const handleApprovalRequired = (payload) => {
+      if (isMounted.current) {
+        setPendingApprovals(prev => {
+          if (prev.find(a => a.task_id === payload.task_id)) return prev;
+          return [...prev, payload];
+        });
       }
-    }
-  }, [notify, fetchData]));
+      notify('ERROR', `Manual Approval Required: ${payload.task_name}`);
+    };
+
+    addListener('task_executed', handleTaskExecuted);
+    addListener('task_status_changed', handleTaskStatusChanged);
+    addListener('approval_required', handleApprovalRequired);
+    addListener('task_updated', handleEvent);
+    addListener('workspace_updated', handleEvent);
+    addListener('template_updated', handleEvent);
+    addListener('secret_updated', handleEvent);
+    addListener('webhook_updated', handleEvent);
+    addListener('settings_updated', handleEvent);
+    addListener('worker_updated', handleEvent);
+    
+    return () => {
+      removeListener('task_executed', handleTaskExecuted);
+      removeListener('task_status_changed', handleTaskStatusChanged);
+      removeListener('approval_required', handleApprovalRequired);
+      removeListener('task_updated', handleEvent);
+      removeListener('workspace_updated', handleEvent);
+      removeListener('template_updated', handleEvent);
+      removeListener('secret_updated', handleEvent);
+      removeListener('webhook_updated', handleEvent);
+      removeListener('settings_updated', handleEvent);
+      removeListener('worker_updated', handleEvent);
+    };
+  }, [addListener, removeListener, fetchData, fetchSystemStatus, notify]);
 
   const handleApprove = async (taskId) => {
     try {

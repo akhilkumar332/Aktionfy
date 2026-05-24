@@ -4,9 +4,11 @@ import axios from 'axios';
 import { Key, Trash2, Plus, ShieldCheck, Loader2, X, RefreshCw, Shield, Check, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNotify } from '../context/NotificationContext';
+import { useSSE } from '../context/SSEContext';
 
 const Vault = () => {
   const { notify } = useNotify();
+  const { addListener, removeListener } = useSSE();
   const isMounted = useRef(true);
   const [secrets, setSecrets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -34,6 +36,14 @@ const Vault = () => {
       if (isMounted.current) setLoading(false);
     }
   }, [notify]);
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      fetchData();
+    };
+    addListener('secret_updated', handleUpdate);
+    return () => removeListener('secret_updated', handleUpdate);
+  }, [addListener, removeListener, fetchData]);
 
   useEffect(() => {
     const init = async () => {

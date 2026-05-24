@@ -750,20 +750,20 @@ func (q *Queries) GetActiveWorkerCount(ctx context.Context) (int64, error) {
 	err := row.Scan(&count)
 	return count, err
 }
-
 const getAuthInfoByEmail = `-- name: GetAuthInfoByEmail :one
-SELECT id, password_hash FROM users WHERE email = $1
+SELECT id, password_hash, is_locked FROM users WHERE email = $1
 `
 
 type GetAuthInfoByEmailRow struct {
 	ID           string      `json:"id"`
 	PasswordHash pgtype.Text `json:"password_hash"`
+	IsLocked     pgtype.Bool `json:"is_locked"`
 }
 
 func (q *Queries) GetAuthInfoByEmail(ctx context.Context, email pgtype.Text) (GetAuthInfoByEmailRow, error) {
 	row := q.db.QueryRow(ctx, getAuthInfoByEmail, email)
 	var i GetAuthInfoByEmailRow
-	err := row.Scan(&i.ID, &i.PasswordHash)
+	err := row.Scan(&i.ID, &i.PasswordHash, &i.IsLocked)
 	return i, err
 }
 
@@ -1472,7 +1472,7 @@ func (q *Queries) GetTemplateWithSubscription(ctx context.Context, arg GetTempla
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, email, api_key, role, tier, created_at FROM users WHERE id = $1
+SELECT id, email, api_key, role, tier, is_locked, created_at FROM users WHERE id = $1
 `
 
 type GetUserRow struct {
@@ -1481,6 +1481,7 @@ type GetUserRow struct {
 	ApiKey    string             `json:"api_key"`
 	Role      pgtype.Text        `json:"role"`
 	Tier      pgtype.Text        `json:"tier"`
+	IsLocked  pgtype.Bool        `json:"is_locked"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
@@ -1493,29 +1494,31 @@ func (q *Queries) GetUser(ctx context.Context, id string) (GetUserRow, error) {
 		&i.ApiKey,
 		&i.Role,
 		&i.Tier,
+		&i.IsLocked,
 		&i.CreatedAt,
 	)
 	return i, err
 }
 
 const getUserByAPIKey = `-- name: GetUserByAPIKey :one
-SELECT id, tier FROM users WHERE api_key = $1
+SELECT id, tier, is_locked FROM users WHERE api_key = $1
 `
 
 type GetUserByAPIKeyRow struct {
-	ID   string      `json:"id"`
-	Tier pgtype.Text `json:"tier"`
+	ID       string      `json:"id"`
+	Tier     pgtype.Text `json:"tier"`
+	IsLocked pgtype.Bool `json:"is_locked"`
 }
 
 func (q *Queries) GetUserByAPIKey(ctx context.Context, apiKey string) (GetUserByAPIKeyRow, error) {
 	row := q.db.QueryRow(ctx, getUserByAPIKey, apiKey)
 	var i GetUserByAPIKeyRow
-	err := row.Scan(&i.ID, &i.Tier)
+	err := row.Scan(&i.ID, &i.Tier, &i.IsLocked)
 	return i, err
 }
 
 const getUserBySessionID = `-- name: GetUserBySessionID :one
-SELECT u.id, u.email, u.api_key, u.role, u.tier, u.created_at 
+SELECT u.id, u.email, u.api_key, u.role, u.tier, u.is_locked, u.created_at 
 FROM web_sessions s 
 JOIN users u ON s.user_id = u.id 
 WHERE s.id = $1 AND s.expires_at > $2
@@ -1532,6 +1535,7 @@ type GetUserBySessionIDRow struct {
 	ApiKey    string             `json:"api_key"`
 	Role      pgtype.Text        `json:"role"`
 	Tier      pgtype.Text        `json:"tier"`
+	IsLocked  pgtype.Bool        `json:"is_locked"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
@@ -1544,6 +1548,7 @@ func (q *Queries) GetUserBySessionID(ctx context.Context, arg GetUserBySessionID
 		&i.ApiKey,
 		&i.Role,
 		&i.Tier,
+		&i.IsLocked,
 		&i.CreatedAt,
 	)
 	return i, err
@@ -2073,9 +2078,8 @@ func (q *Queries) ListUserTasks(ctx context.Context, userID string) ([]ListUserT
 	}
 	return items, nil
 }
-
 const listUsers = `-- name: ListUsers :many
-SELECT id, email, api_key, role, tier, created_at 
+SELECT id, email, api_key, role, tier, is_locked, created_at 
 FROM users 
 WHERE email ILIKE $1 OR role ILIKE $1 OR tier ILIKE $1
 ORDER BY created_at DESC
@@ -2087,6 +2091,7 @@ type ListUsersRow struct {
 	ApiKey    string             `json:"api_key"`
 	Role      pgtype.Text        `json:"role"`
 	Tier      pgtype.Text        `json:"tier"`
+	IsLocked  pgtype.Bool        `json:"is_locked"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
@@ -2105,6 +2110,7 @@ func (q *Queries) ListUsers(ctx context.Context, email pgtype.Text) ([]ListUsers
 			&i.ApiKey,
 			&i.Role,
 			&i.Tier,
+			&i.IsLocked,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err
@@ -2713,4 +2719,100 @@ func (q *Queries) UpsertWorkspaceEnvVar(ctx context.Context, arg UpsertWorkspace
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const createLoginHistory = `-- name: CreateLoginHistory :exec
+INSERT INTO user_login_history (user_id, login_time, ip_address, user_agent, status)
+VALUES ($1, NOW(), $2, $3, $4)
+`
+
+type CreateLoginHistoryParams struct {
+	UserID    string      `json:"user_id"`
+	IPAddress pgtype.Text `json:"ip_address"`
+	UserAgent pgtype.Text `json:"user_agent"`
+	Status    string      `json:"status"`
+}
+
+func (q *Queries) CreateLoginHistory(ctx context.Context, arg CreateLoginHistoryParams) error {
+	_, err := q.db.Exec(ctx, createLoginHistory,
+		arg.UserID,
+		arg.IPAddress,
+		arg.UserAgent,
+		arg.Status,
+	)
+	return err
+}
+
+const updateUserLastLogin = `-- name: UpdateUserLastLogin :exec
+UPDATE users SET last_login = NOW() WHERE id = $1
+`
+
+func (q *Queries) UpdateUserLastLogin(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, updateUserLastLogin, id)
+	return err
+}
+
+const updateUserLock = `-- name: UpdateUserLock :exec
+UPDATE users SET is_locked = $1 WHERE id = $2
+`
+
+type UpdateUserLockParams struct {
+	IsLocked pgtype.Bool `json:"is_locked"`
+	ID       string      `json:"id"`
+}
+
+func (q *Queries) UpdateUserLock(ctx context.Context, arg UpdateUserLockParams) error {
+	_, err := q.db.Exec(ctx, updateUserLock, arg.IsLocked, arg.ID)
+	return err
+}
+
+const listUserLoginHistory = `-- name: ListUserLoginHistory :many
+SELECT lh.id, lh.user_id, lh.login_time, lh.ip_address, lh.user_agent, lh.status, u.email as user_email
+FROM user_login_history lh
+JOIN users u ON lh.user_id = u.id
+ORDER BY lh.login_time DESC
+LIMIT $1 OFFSET $2
+`
+
+type ListUserLoginHistoryParams struct {
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
+}
+
+type ListUserLoginHistoryRow struct {
+	ID        pgtype.UUID        `json:"id"`
+	UserID    string             `json:"user_id"`
+	LoginTime pgtype.Timestamptz `json:"login_time"`
+	IPAddress pgtype.Text        `json:"ip_address"`
+	UserAgent pgtype.Text        `json:"user_agent"`
+	Status    string             `json:"status"`
+	UserEmail pgtype.Text        `json:"user_email"`
+}
+
+func (q *Queries) ListUserLoginHistory(ctx context.Context, arg ListUserLoginHistoryParams) ([]ListUserLoginHistoryRow, error) {
+	rows, err := q.db.Query(ctx, listUserLoginHistory, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListUserLoginHistoryRow
+	for rows.Next() {
+		var i ListUserLoginHistoryRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.LoginTime,
+			&i.IPAddress,
+			&i.UserAgent,
+			&i.Status,
+			&i.UserEmail,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

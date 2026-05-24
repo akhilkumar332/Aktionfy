@@ -51,6 +51,10 @@ func LoginUser(ctx context.Context, email, password string) (string, error) {
 		return "", fmt.Errorf("invalid email or password")
 	}
 
+	if info.IsLocked.Bool {
+		return "", fmt.Errorf("account is locked")
+	}
+
 	err = bcrypt.CompareHashAndPassword([]byte(info.PasswordHash.String), []byte(password))
 	if err != nil {
 		return "", fmt.Errorf("invalid email or password")

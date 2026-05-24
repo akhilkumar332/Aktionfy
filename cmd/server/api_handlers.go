@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"regexp"
@@ -75,9 +76,22 @@ func apiLoginHandler(c echo.Context) error {
 	if input.Email == "" || input.Password == "" {
 		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Email and password are required"})
 	}
-
 	sessionID, err := LoginUser(c.Request().Context(), input.Email, input.Password)
 	if err != nil {
+		// Log failed login history if user exists
+		info, getErr := queries.GetAuthInfoByEmail(c.Request().Context(), pgtype.Text{String: input.Email, Valid: true})
+		if getErr == nil {
+			_ = queries.CreateLoginHistory(c.Request().Context(), db.CreateLoginHistoryParams{
+				UserID:    info.ID,
+				IPAddress: pgtype.Text{String: c.RealIP(), Valid: true},
+				UserAgent: pgtype.Text{String: c.Request().UserAgent(), Valid: true},
+				Status:    "failed",
+			})
+		}
+
+		if err.Error() == "account is locked" {
+			return c.JSON(http.StatusForbidden, APIResponse{Success: false, Error: "This account has been locked. Please contact support."})
+		}
 		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Invalid email or password"})
 	}
 
@@ -110,6 +124,16 @@ func apiLoginHandler(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch user info"})
 	}
 
+	// Update last login
+	_ = queries.UpdateUserLastLogin(c.Request().Context(), u.ID)
+
+	// Log successful login history
+	_ = queries.CreateLoginHistory(c.Request().Context(), db.CreateLoginHistoryParams{
+		UserID:    u.ID,
+		IPAddress: pgtype.Text{String: c.RealIP(), Valid: true},
+		UserAgent: pgtype.Text{String: c.Request().UserAgent(), Valid: true},
+		Status:    "success",
+	})
 	user := &User{
 		ID:        u.ID,
 		Email:     u.Email.String,
@@ -335,11 +359,13 @@ func apiMonitorHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: logs})
 }
 
+
+
 func apiAdminUsersHandler(c echo.Context) error {
 	search := c.QueryParam("search")
-	searchParam := "%" + search + "%"
+	searchPattern := "%" + search + "%"
 
-	rows, err := queries.ListUsers(c.Request().Context(), pgtype.Text{String: searchParam, Valid: true})
+	rows, err := queries.ListUsers(c.Request().Context(), pgtype.Text{String: searchPattern, Valid: true})
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch users"})
 	}
@@ -356,6 +382,7 @@ func apiAdminUsersHandler(c echo.Context) error {
 			APIKey:    maskedKey,
 			Role:      u.Role.String,
 			Tier:      u.Tier.String,
+			IsLocked:  u.IsLocked.Bool,
 			CreatedAt: u.CreatedAt.Time,
 		})
 	}
@@ -363,10 +390,44 @@ func apiAdminUsersHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: users})
 }
 
+func apiAdminLoginHistoryHandler(c echo.Context) error {
+	limitStr := c.QueryParam("limit")
+	offsetStr := c.QueryParam("offset")
+
+	limit := int32(50)
+	offset := int32(0)
+
+	if limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil {
+			limit = int32(l)
+		}
+	}
+	if offsetStr != "" {
+		if o, err := strconv.Atoi(offsetStr); err == nil {
+			offset = int32(o)
+		}
+	}
+
+	rows, err := queries.ListUserLoginHistory(c.Request().Context(), db.ListUserLoginHistoryParams{
+		Limit:  limit,
+		Offset: offset,
+	})
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to retrieve login history: " + err.Error()})
+	}
+
+	if rows == nil {
+		rows = []db.ListUserLoginHistoryRow{}
+	}
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: rows})
+}
+
 type AdminUpdateUserInput struct {
-	UserID string `json:"user_id"`
-	Role   string `json:"role"`
-	Tier   string `json:"tier"`
+	UserID   string `json:"user_id"`
+	Role     string `json:"role"`
+	Tier     string `json:"tier"`
+	IsLocked *bool  `json:"is_locked,omitempty"`
 }
 
 type AdminSystemSettingsInput struct {
@@ -446,6 +507,35 @@ func apiAdminUpdateUserHandler(c echo.Context) error {
 		}
 	}
 
+	if input.IsLocked != nil {
+		// Prevent locking yourself
+		if targetUser.ID == adminUser.ID && *input.IsLocked {
+			return c.JSON(http.StatusForbidden, APIResponse{Success: false, Error: "Cannot lock your own account"})
+		}
+
+		err := queries.UpdateUserLock(c.Request().Context(), db.UpdateUserLockParams{
+			IsLocked: pgtype.Bool{Bool: *input.IsLocked, Valid: true},
+			ID:       input.UserID,
+		})
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to update user lock status"})
+		}
+	}
+
+	// Emit SSE update event for target user
+	_ = PublishEvent(c.Request().Context(), PubSubEvent{
+		UserID:    input.UserID,
+		EventType: "user_updated",
+		Payload:   "{}",
+	})
+
+	// Emit SSE update event for admin user to refresh their view in real-time
+	_ = PublishEvent(c.Request().Context(), PubSubEvent{
+		UserID:    adminUser.ID,
+		EventType: "user_updated",
+		Payload:   "{}",
+	})
+
 	adminID := adminUser.ID
 	writeAuditLog(c.Request().Context(), AuditEvent{
 		UserID:       adminID,
@@ -453,8 +543,9 @@ func apiAdminUpdateUserHandler(c echo.Context) error {
 		ResourceType: "user",
 		ResourceID:   input.UserID,
 		Metadata: map[string]interface{}{
-			"role": input.Role,
-			"tier": input.Tier,
+			"role":      input.Role,
+			"tier":      input.Tier,
+			"is_locked": input.IsLocked,
 		},
 	})
 
@@ -578,6 +669,12 @@ func apiDeleteSecretHandler(c echo.Context) error {
 		ResourceID:   name,
 	})
 
+	_ = PublishEvent(c.Request().Context(), PubSubEvent{
+		UserID:    user.ID,
+		EventType: "secret_updated",
+		Payload:   "{}",
+	})
+
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Secret deleted"})
 }
 
@@ -675,6 +772,12 @@ func apiCreateWebhookHandler(c echo.Context) error {
 		},
 	})
 
+	_ = PublishEvent(c.Request().Context(), PubSubEvent{
+		UserID:    user.ID,
+		EventType: "webhook_updated",
+		Payload:   "{}",
+	})
+
 	return c.JSON(http.StatusCreated, APIResponse{Success: true, Data: map[string]interface{}{
 		"id":             id,
 		"endpoint_url":   input.EndpointURL,
@@ -710,6 +813,12 @@ func apiDeleteWebhookHandler(c echo.Context) error {
 		Action:       "webhook.delete",
 		ResourceType: "webhook",
 		ResourceID:   idStr,
+	})
+
+	_ = PublishEvent(c.Request().Context(), PubSubEvent{
+		UserID:    user.ID,
+		EventType: "webhook_updated",
+		Payload:   "{}",
 	})
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Webhook deleted"})
@@ -802,6 +911,12 @@ func apiUpsertSecretHandler(c echo.Context) error {
 		ResourceID:   input.Name,
 	})
 
+	_ = PublishEvent(c.Request().Context(), PubSubEvent{
+		UserID:    user.ID,
+		EventType: "secret_updated",
+		Payload:   "{}",
+	})
+
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Secret stored successfully"})
 }
 
@@ -830,6 +945,11 @@ func apiUpdateSEOHandler(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid request body"})
 	}
 
+	user := getUserFromEcho(c)
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
+
 	err := queries.UpdateSEOSettings(c.Request().Context(), db.UpdateSEOSettingsParams{
 		Title:       input.Title,
 		Description: input.Description,
@@ -839,6 +959,12 @@ func apiUpdateSEOHandler(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to update SEO settings"})
 	}
+
+	_ = PublishEvent(c.Request().Context(), PubSubEvent{
+		UserID:    user.ID,
+		EventType: "seo_updated",
+		Payload:   "{}",
+	})
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "SEO settings updated successfully"})
 }
@@ -976,6 +1102,12 @@ func apiAdminUpdateSettingsHandler(c echo.Context) error {
 		},
 	})
 
+	_ = PublishEvent(ctx, PubSubEvent{
+		UserID:    user.ID,
+		EventType: "settings_updated",
+		Payload:   "{}",
+	})
+
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Settings updated successfully"})
 }
 
@@ -989,10 +1121,12 @@ func apiAdminPruneNowHandler(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid pruning threshold in settings"})
 	}
 
-	err = queries.PruneZombieWorkers(c.Request().Context(), days)
+	res, err := dbPool.Exec(c.Request().Context(), "DELETE FROM worker_heartbeats WHERE last_heartbeat < NOW() - ($1::int * INTERVAL '1 day')", days)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to prune workers"})
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to prune workers: " + err.Error()})
 	}
+
+	rowsAffected := res.RowsAffected()
 
 	user := getUserFromEcho(c)
 	if user == nil {
@@ -1002,7 +1136,22 @@ func apiAdminPruneNowHandler(c echo.Context) error {
 		UserID:       user.ID,
 		Action:       "admin.prune_workers",
 		ResourceType: "system",
+		Metadata: map[string]interface{}{
+			"pruned_count": rowsAffected,
+		},
 	})
 
-	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Workers pruned successfully"})
+	_ = PublishEvent(c.Request().Context(), PubSubEvent{
+		UserID:    user.ID,
+		EventType: "worker_updated",
+		Payload:   "{}",
+	})
+
+	return c.JSON(http.StatusOK, APIResponse{
+		Success: true,
+		Message: fmt.Sprintf("Cleanup complete. %d zombie nodes terminated.", rowsAffected),
+		Data: map[string]interface{}{
+			"pruned_count": rowsAffected,
+		},
+	})
 }

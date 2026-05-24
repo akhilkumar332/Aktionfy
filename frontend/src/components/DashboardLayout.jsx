@@ -1,4 +1,5 @@
 import { useAuth } from '../context/AuthContext';
+import { useSSE } from '../context/SSEContext';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, Activity, Users, LogOut, Key, 
@@ -128,6 +129,7 @@ const Sidebar = ({ mobile = false, user, location, setIsSidebarOpen, handleLogou
 
 const DashboardLayout = ({ children }) => {
   const { user, logout } = useAuth();
+  const { isConnected, bridgeActive } = useSSE();
   const navigate = useNavigate();
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -320,9 +322,9 @@ const DashboardLayout = ({ children }) => {
                 title="Neural Link Assistance"
                 className="hidden md:flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-md px-3 py-1.5 text-[10px] font-black uppercase tracking-widest shadow-inner transition-all hover:border-brand-primary/50 group cursor-pointer"
               >
-                  <div className={`w-1 h-1 rounded-full animate-signal transition-colors duration-500 ${systemStatus?.bridge_active ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'}`}></div>
-                  <span className={systemStatus?.bridge_active ? 'text-zinc-500 group-hover:text-zinc-300' : 'text-red-500 group-hover:text-red-400'}>
-                    {systemStatus?.bridge_active ? 'Neural Link Active' : 'Bridge Lost'}
+                  <div className={`w-1 h-1 rounded-full animate-signal transition-colors duration-500 ${(isConnected && bridgeActive) ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'}`}></div>
+                  <span className={(isConnected && bridgeActive) ? 'text-zinc-500 group-hover:text-zinc-300' : 'text-red-500 group-hover:text-red-400'}>
+                    {(isConnected && bridgeActive) ? 'Neural Link Active' : 'Bridge Lost'}
                   </span>
               </button>
               <button 

@@ -20,6 +20,11 @@ type PubSubEvent struct {
 }
 
 func PublishEvent(ctx context.Context, event PubSubEvent) error {
+	if RedisClient == nil {
+		log.Printf("Aktionfy warning: RedisClient is uninitialized. Event '%s' skipped.", event.EventType)
+		return nil
+	}
+
 	if event.TraceContext == nil {
 		event.TraceContext = make(map[string]string)
 	}
@@ -43,6 +48,18 @@ func SubscribeToEvents(ctx context.Context, onEvent func(context.Context, PubSub
 		case <-ctx.Done():
 			return
 		default:
+			if RedisClient == nil {
+				log.Printf("Aktionfy warning: RedisClient is uninitialized. Retrying subscription in 5s...")
+				timer := time.NewTimer(5 * time.Second)
+				select {
+				case <-ctx.Done():
+					timer.Stop()
+					return
+				case <-timer.C:
+					continue
+				}
+			}
+
 			pubsub := RedisClient.Subscribe(ctx, "sys:events")
 			log.Printf("Subscribed to global Redis events (sys:events)")
 

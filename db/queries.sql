@@ -1,5 +1,5 @@
 -- name: GetUserBySessionID :one
-SELECT u.id, u.email, u.api_key, u.role, u.tier, u.created_at 
+SELECT u.id, u.email, u.api_key, u.role, u.tier, u.is_locked, u.created_at 
 FROM web_sessions s 
 JOIN users u ON s.user_id = u.id 
 WHERE s.id = $1 AND s.expires_at > $2;
@@ -19,13 +19,13 @@ ORDER BY l.execution_time DESC
 LIMIT 100;
 
 -- name: ListUsers :many
-SELECT id, email, api_key, role, tier, created_at 
+SELECT id, email, api_key, role, tier, is_locked, created_at 
 FROM users 
 WHERE email ILIKE $1 OR role ILIKE $1 OR tier ILIKE $1
 ORDER BY created_at DESC;
 
 -- name: GetUser :one
-SELECT id, email, api_key, role, tier, created_at FROM users WHERE id = $1;
+SELECT id, email, api_key, role, tier, is_locked, created_at FROM users WHERE id = $1;
 
 -- name: UpdateUserRole :exec
 UPDATE users SET role = $1 WHERE id = $2;
@@ -36,10 +36,10 @@ UPDATE users SET tier = $1 WHERE id = $2;
 -- name: CreateUser :one
 INSERT INTO users (email, password_hash, api_key) 
 VALUES ($1, $2, $3) 
-RETURNING id, email, api_key, role, tier, created_at;
+RETURNING id, email, api_key, role, tier, is_locked, created_at;
 
 -- name: GetAuthInfoByEmail :one
-SELECT id, password_hash FROM users WHERE email = $1;
+SELECT id, password_hash, is_locked FROM users WHERE email = $1;
 
 -- name: CreateWebSession :one
 INSERT INTO web_sessions (user_id, expires_at) 
@@ -56,7 +56,7 @@ SELECT email FROM users WHERE id = $1;
 UPDATE tasks SET status = 'active', locked_by = NULL WHERE locked_by = $1;
 
 -- name: GetUserByAPIKey :one
-SELECT id, tier FROM users WHERE api_key = $1;
+SELECT id, tier, is_locked FROM users WHERE api_key = $1;
 
 -- name: CreateTaskLog :one
 INSERT INTO task_logs (task_id, user_id, status, error_message, llm_response) 
@@ -466,3 +466,21 @@ SELECT COUNT(*) FROM users WHERE created_at > $1;
 
 -- name: GetCountUsersBetween :one
 SELECT COUNT(*) FROM users WHERE created_at > $1 AND created_at <= $2;
+
+-- name: CreateLoginHistory :exec
+INSERT INTO user_login_history (user_id, login_time, ip_address, user_agent, status)
+VALUES ($1, NOW(), $2, $3, $4);
+
+-- name: UpdateUserLastLogin :exec
+UPDATE users SET last_login = NOW() WHERE id = $1;
+
+-- name: UpdateUserLock :exec
+UPDATE users SET is_locked = $1 WHERE id = $2;
+
+-- name: ListUserLoginHistory :many
+SELECT lh.id, lh.user_id, lh.login_time, lh.ip_address, lh.user_agent, lh.status, u.email as user_email
+FROM user_login_history lh
+JOIN users u ON lh.user_id = u.id
+ORDER BY lh.login_time DESC
+LIMIT $1 OFFSET $2;
+

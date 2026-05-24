@@ -11,10 +11,12 @@ import {
 import { AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useNotify } from '../context/NotificationContext';
+import { useSSE } from '../context/SSEContext';
 
 const Tasks = () => {
   const navigate = useNavigate();
   const { notify } = useNotify();
+  const { addListener, removeListener } = useSSE();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
@@ -37,6 +39,18 @@ const Tasks = () => {
       setRefreshing(false);
     }
   }, [notify]);
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      fetchTasks();
+    };
+    addListener('task_updated', handleUpdate);
+    addListener('task_executed', handleUpdate);
+    return () => {
+      removeListener('task_updated', handleUpdate);
+      removeListener('task_executed', handleUpdate);
+    };
+  }, [addListener, removeListener, fetchTasks]);
 
   useEffect(() => {
     const init = async () => {

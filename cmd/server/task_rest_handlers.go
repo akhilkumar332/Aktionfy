@@ -118,6 +118,12 @@ func apiCreateTaskHandler(c echo.Context) error {
 		},
 	})
 
+	_ = PublishEvent(c.Request().Context(), PubSubEvent{
+		UserID:    userID,
+		EventType: "task_updated",
+		Payload:   "{}",
+	})
+
 	return c.JSON(http.StatusCreated, APIResponse{Success: true, Data: task})
 }
 
@@ -167,6 +173,12 @@ func apiPauseTaskHandler(c echo.Context) error {
 		ResourceID:   taskIDStr,
 	})
 
+	_ = PublishEvent(c.Request().Context(), PubSubEvent{
+		UserID:    userID,
+		EventType: "task_updated",
+		Payload:   "{}",
+	})
+
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Task paused"})
 }
 
@@ -198,6 +210,12 @@ func apiResumeTaskHandler(c echo.Context) error {
 		ResourceID:   taskIDStr,
 	})
 
+	_ = PublishEvent(c.Request().Context(), PubSubEvent{
+		UserID:    userID,
+		EventType: "task_updated",
+		Payload:   "{}",
+	})
+
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Task resumed"})
 }
 
@@ -226,6 +244,12 @@ func apiDeleteTaskHandler(c echo.Context) error {
 		Action:       "task.delete",
 		ResourceType: "task",
 		ResourceID:   taskIDStr,
+	})
+
+	_ = PublishEvent(c.Request().Context(), PubSubEvent{
+		UserID:    userID,
+		EventType: "task_updated",
+		Payload:   "{}",
 	})
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Task deleted"})
@@ -279,6 +303,12 @@ func apiTriggerTaskHandler(c echo.Context) error {
 		Action:       "task.trigger",
 		ResourceType: "task",
 		ResourceID:   taskIDStr,
+	})
+
+	_ = PublishEvent(c.Request().Context(), PubSubEvent{
+		UserID:    userID,
+		EventType: "task_updated",
+		Payload:   "{}",
 	})
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Task triggered immediately"})
@@ -507,6 +537,12 @@ func apiUpdateTaskHandler(c echo.Context) error {
 		ResourceID:   taskIDStr,
 	})
 
+	_ = PublishEvent(ctx, PubSubEvent{
+		UserID:    userID,
+		EventType: "task_updated",
+		Payload:   "{}",
+	})
+
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Task updated"})
 }
 func apiListTaskVersionsHandler(c echo.Context) error {
@@ -595,6 +631,12 @@ func apiRestoreTaskVersionHandler(c echo.Context) error {
 		Metadata: map[string]interface{}{
 			"version_id": versionIDStr,
 		},
+	})
+
+	_ = PublishEvent(ctx, PubSubEvent{
+		UserID:    userID,
+		EventType: "task_updated",
+		Payload:   "{}",
 	})
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Task restored successfully"})

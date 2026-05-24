@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNotify } from '../context/NotificationContext';
+import { useSSE } from '../context/SSEContext';
 
 const MetricsGrid = ({ usage }) => {
   if (!usage) return null;
@@ -90,6 +91,7 @@ const LogsView = ({ logs }) => (
 
 const Monitor = () => {
   const [activeTab, setActiveTab] = useState('stats');
+  const { addListener, removeListener } = useSSE();
   const [usage, setUsage] = useState(null);
   const [auditLogs, setAuditLogs] = useState([]);
   const [systemStatus, setSystemStatus] = useState(null);
@@ -142,6 +144,14 @@ const Monitor = () => {
       }
     }
   }, [notify]);
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      fetchData(false);
+    };
+    addListener('*', handleUpdate);
+    return () => removeListener('*', handleUpdate);
+  }, [addListener, removeListener, fetchData]);
 
   useEffect(() => {
     isMounted.current = true;

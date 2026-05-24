@@ -4,9 +4,11 @@ import axios from 'axios';
 import { Webhook, Trash2, Plus, ShieldCheck, Zap, Loader2, X, Activity, RefreshCw, Command, Check, Copy } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNotify } from '../context/NotificationContext';
+import { useSSE } from '../context/SSEContext';
 
 const Webhooks = () => {
   const { notify } = useNotify();
+  const { addListener, removeListener } = useSSE();
   const isMounted = useRef(true);
   const [webhooks, setWebhooks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -34,6 +36,14 @@ const Webhooks = () => {
       if (isMounted.current) setLoading(false);
     }
   }, [notify]);
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      fetchData();
+    };
+    addListener('webhook_updated', handleUpdate);
+    return () => removeListener('webhook_updated', handleUpdate);
+  }, [addListener, removeListener, fetchData]);
 
   useEffect(() => {
     const init = async () => {

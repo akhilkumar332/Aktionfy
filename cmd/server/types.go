@@ -34,6 +34,7 @@ type User struct {
 	APIKey       string    `json:"api_key"`
 	Role         string    `json:"role"`
 	Tier         string    `json:"tier"`
+	IsLocked     bool      `json:"is_locked"`
 	CreatedAt    time.Time `json:"created_at"`
 }
 
