@@ -202,3 +202,170 @@ func InvalidateCachedUserSecrets(ctx context.Context, userID string) {
 		log.Printf("Warning: failed to invalidate secrets cache in Redis for user %s: %v", userID, err)
 	}
 }
+
+// --- Task Caching ---
+
+const (
+	TaskCacheTTL      = 10 * time.Minute
+	DashboardCacheTTL = 1 * time.Minute
+)
+
+// GetCachedTasks retrieves user tasks from Redis if present.
+func GetCachedTasks(ctx context.Context, userID string) ([]db.ListUserTasksRow, error) {
+	if RedisClient == nil {
+		return nil, nil
+	}
+
+	key := fmt.Sprintf("cache:tasks:%s", userID)
+	data, err := RedisClient.Get(ctx, key).Result()
+	if err != nil {
+		return nil, nil // Cache miss or network error
+	}
+
+	var tasks []db.ListUserTasksRow
+	if err := json.Unmarshal([]byte(data), &tasks); err != nil {
+		log.Printf("Warning: failed to unmarshal cached tasks for user %s: %v", userID, err)
+		return nil, nil
+	}
+
+	return tasks, nil
+}
+
+// SetCachedTasks stores user tasks in Redis.
+func SetCachedTasks(ctx context.Context, userID string, tasks []db.ListUserTasksRow) {
+	if RedisClient == nil {
+		return
+	}
+
+	key := fmt.Sprintf("cache:tasks:%s", userID)
+	bytes, err := json.Marshal(tasks)
+	if err != nil {
+		log.Printf("Warning: failed to marshal tasks for cache, user %s: %v", userID, err)
+		return
+	}
+
+	err = RedisClient.Set(ctx, key, string(bytes), TaskCacheTTL).Err()
+	if err != nil {
+		log.Printf("Warning: failed to set tasks cache in Redis for user %s: %v", userID, err)
+	}
+}
+
+// InvalidateCachedTasks clears cached tasks and dashboard for a user.
+func InvalidateCachedTasks(ctx context.Context, userID string) {
+	if RedisClient == nil {
+		return
+	}
+
+	keys := []string{
+		fmt.Sprintf("cache:tasks:%s", userID),
+		fmt.Sprintf("cache:dashboard:%s", userID),
+	}
+	err := RedisClient.Del(ctx, keys...).Err()
+	if err != nil {
+		log.Printf("Warning: failed to invalidate tasks/dashboard cache in Redis for user %s: %v", userID, err)
+	}
+}
+
+// --- Dashboard Caching ---
+
+type CachedDashboardData struct {
+	User      interface{} `json:"user"`
+	TaskCount int64       `json:"taskCount"`
+}
+
+// GetCachedDashboard retrieves user dashboard stats from Redis if present.
+func GetCachedDashboard(ctx context.Context, userID string) (*CachedDashboardData, error) {
+	if RedisClient == nil {
+		return nil, nil
+	}
+
+	key := fmt.Sprintf("cache:dashboard:%s", userID)
+	data, err := RedisClient.Get(ctx, key).Result()
+	if err != nil {
+		return nil, nil
+	}
+
+	var dash CachedDashboardData
+	if err := json.Unmarshal([]byte(data), &dash); err != nil {
+		log.Printf("Warning: failed to unmarshal cached dashboard for user %s: %v", userID, err)
+		return nil, nil
+	}
+
+	return &dash, nil
+}
+
+// SetCachedDashboard stores user dashboard stats in Redis.
+func SetCachedDashboard(ctx context.Context, userID string, dash *CachedDashboardData) {
+	if RedisClient == nil {
+		return
+	}
+
+	key := fmt.Sprintf("cache:dashboard:%s", userID)
+	bytes, err := json.Marshal(dash)
+	if err != nil {
+		log.Printf("Warning: failed to marshal dashboard for cache, user %s: %v", userID, err)
+		return
+	}
+
+	err = RedisClient.Set(ctx, key, string(bytes), DashboardCacheTTL).Err()
+	if err != nil {
+		log.Printf("Warning: failed to set dashboard cache in Redis for user %s: %v", userID, err)
+	}
+}
+
+// --- Analytics & Insights Caching ---
+
+const (
+	InsightsCacheTTL = 1 * time.Minute
+	TrendsCacheTTL   = 5 * time.Minute
+)
+
+// GetCachedInsights retrieves the system insights from Redis.
+func GetCachedInsights(ctx context.Context) (string, error) {
+	if RedisClient == nil {
+		return "", nil
+	}
+	return RedisClient.Get(ctx, "cache:admin:insights").Result()
+}
+
+// SetCachedInsights stores the system insights in Redis.
+func SetCachedInsights(ctx context.Context, data string) {
+	if RedisClient == nil {
+		return
+	}
+	_ = RedisClient.Set(ctx, "cache:admin:insights", data, InsightsCacheTTL).Err()
+}
+
+// InvalidateCachedInsights clears the cached system insights.
+func InvalidateCachedInsights(ctx context.Context) {
+	if RedisClient == nil {
+		return
+	}
+	_ = RedisClient.Del(ctx, "cache:admin:insights").Err()
+}
+
+// GetCachedTrends retrieves analytics trends from Redis.
+func GetCachedTrends(ctx context.Context) (string, error) {
+	if RedisClient == nil {
+		return "", nil
+	}
+	return RedisClient.Get(ctx, "cache:admin:trends").Result()
+}
+
+// SetCachedTrends stores analytics trends in Redis.
+func SetCachedTrends(ctx context.Context, data string) {
+	if RedisClient == nil {
+		return
+	}
+	_ = RedisClient.Set(ctx, "cache:admin:trends", data, TrendsCacheTTL).Err()
+}
+
+// InvalidateCachedTrends clears the cached analytics trends.
+func InvalidateCachedTrends(ctx context.Context) {
+	if RedisClient == nil {
+		return
+	}
+	_ = RedisClient.Del(ctx, "cache:admin:trends").Err()
+}
+
+

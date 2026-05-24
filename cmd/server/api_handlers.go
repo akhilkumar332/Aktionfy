@@ -233,17 +233,31 @@ func apiDashboardHandler(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
 	}
 
+	// Try reading dashboard data from cache first
+	cachedDash, err := GetCachedDashboard(c.Request().Context(), user.ID)
+	if err == nil && cachedDash != nil {
+		return c.JSON(http.StatusOK, APIResponse{
+			Success: true,
+			Data:    cachedDash,
+		})
+	}
+
 	taskCount, err := queries.CountUserTasks(c.Request().Context(), user.ID)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch task count"})
 	}
 
+	dashData := &CachedDashboardData{
+		User:      user,
+		TaskCount: taskCount,
+	}
+
+	// Cache dashboard in Redis
+	SetCachedDashboard(c.Request().Context(), user.ID, dashData)
+
 	return c.JSON(http.StatusOK, APIResponse{
 		Success: true,
-		Data: map[string]interface{}{
-			"user":      user,
-			"taskCount": taskCount,
-		},
+		Data:    dashData,
 	})
 }
 
@@ -965,6 +979,53 @@ func apiWebhookDeliveriesHandler(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: deliveries})
 }
+
+func apiTestWebhookHandler(c echo.Context) error {
+	user := getUserFromEcho(c)
+	if user == nil {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
+	idStr := c.Param("id")
+	id, err := mustParseUUID(c, idStr)
+	if err != nil {
+		return err
+	}
+
+	var endpointURL string
+	var encryptedSigningSecret []byte
+	err = dbPool.QueryRow(c.Request().Context(),
+		"SELECT endpoint_url, encrypted_signing_secret FROM outbound_webhooks WHERE id = $1 AND user_id = $2",
+		id, user.ID).Scan(&endpointURL, &encryptedSigningSecret)
+	if err != nil {
+		return c.JSON(http.StatusNotFound, APIResponse{Success: false, Error: "Webhook not found"})
+	}
+
+	secret, err := Decrypt(encryptedSigningSecret)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to decrypt signing secret"})
+	}
+
+	mockEvent := PubSubEvent{
+		UserID:    user.ID,
+		EventType: "webhook_test",
+		Payload:   "{\"message\": \"This is a test notification from Aktionfy!\", \"ping\": true}",
+	}
+
+	webhookID := formatUUID(id)
+	err = deliverWebhookEvent(c.Request().Context(), webhookID, mockEvent, endpointURL, string(secret))
+	if err != nil {
+		return c.JSON(http.StatusOK, APIResponse{
+			Success: false,
+			Error:   fmt.Sprintf("Webhook delivery failed: %v", err),
+		})
+	}
+
+	return c.JSON(http.StatusOK, APIResponse{
+		Success: true,
+		Message: "Test payload delivered successfully",
+	})
+}
+
 
 func apiUpsertSecretHandler(c echo.Context) error {
 	user := getUserFromEcho(c)

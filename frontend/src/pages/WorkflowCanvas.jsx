@@ -12,9 +12,10 @@ import ReactFlow, {
 import dagre from 'dagre';
 import 'reactflow/dist/style.css';
 import TaskWizard from '../components/TaskWizard';
+import SaveTemplateModal from '../components/SaveTemplateModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
-import { Save, RefreshCw, Layers, X, Trash2, Play, Pause, FastForward, Rewind, Activity, Check, Plus } from 'lucide-react';
+import { Save, RefreshCw, Layers, X, Trash2, Play, Pause, FastForward, Rewind, Activity, Check, Plus, Sparkles } from 'lucide-react';
 import DecisionNode from '../components/DecisionNode';
 import ManualRouteModal from '../components/ManualRouteModal';
 import GlobalPlaybackBar from '../components/GlobalPlaybackBar';
@@ -37,6 +38,7 @@ const WorkflowCanvas = () => {
   const [isManualRouteOpen, setIsManualRouteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [rawTasks, setRawTasks] = useState([]);
+  const [saveTemplateTask, setSaveTemplateTask] = useState(null);
   
   // Playback states
   const [playbackMode, setPlaybackMode] = useState(false);
@@ -725,6 +727,13 @@ const WorkflowCanvas = () => {
                   </div>
                   <div className="flex items-center gap-3">
                     <button 
+                      onClick={() => setSaveTemplateTask(selectedTask)}
+                      className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-indigo-400 transition-all"
+                      title="Save as Blueprint"
+                    >
+                      <Sparkles size={18} />
+                    </button>
+                    <button 
                       onClick={() => setPlaybackMode(!playbackMode)}
                       className={`p-3 rounded-xl transition-all border ${playbackMode ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-950/40' : 'bg-zinc-900 border-zinc-800 text-zinc-400'}`}
                       title="Toggle Simulation"
@@ -929,6 +938,12 @@ const WorkflowCanvas = () => {
             />
           )}
         </AnimatePresence>
+
+        <SaveTemplateModal 
+          isOpen={!!saveTemplateTask} 
+          onClose={() => setSaveTemplateTask(null)} 
+          task={saveTemplateTask} 
+        />
       </div>
     </div>
   );

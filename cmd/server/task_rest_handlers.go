@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -133,6 +134,12 @@ func apiListTasksHandler(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
 	}
 
+	// Try reading tasks from cache first
+	cachedTasks, err := GetCachedTasks(c.Request().Context(), userID)
+	if err == nil && cachedTasks != nil {
+		return c.JSON(http.StatusOK, APIResponse{Success: true, Data: cachedTasks})
+	}
+
 	tasks, err := queries.ListUserTasks(c.Request().Context(), userID)
 	if err != nil {
 		log.Printf("Failed to list tasks for user %s: %v", userID, err)
@@ -141,6 +148,9 @@ func apiListTasksHandler(c echo.Context) error {
 	if tasks == nil {
 		tasks = []db.ListUserTasksRow{}
 	}
+
+	// Cache tasks in Redis
+	SetCachedTasks(c.Request().Context(), userID, tasks)
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: tasks})
 }
@@ -705,6 +715,12 @@ func apiLinkTaskHandler(c echo.Context) error {
 		},
 	})
 
+	_ = PublishEvent(c.Request().Context(), PubSubEvent{
+		UserID:    userID,
+		EventType: "task_updated",
+		Payload:   "{}",
+	})
+
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Tasks linked successfully"})
 }
 
@@ -733,6 +749,28 @@ func apiGetExecutionTracesHandler(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, APIResponse{Success: false, Error: "Task not found"})
 	}
 
+	// Try reading from Redis list buffer first
+	key := fmt.Sprintf("logs:%s:%s", taskIDStr, executionID)
+	if RedisClient != nil {
+		count, err := RedisClient.LLen(c.Request().Context(), key).Result()
+		if err == nil && count > 0 {
+			dataList, err := RedisClient.LRange(c.Request().Context(), key, 0, -1).Result()
+			if err == nil && len(dataList) > 0 {
+				var traces []db.ExecutionTrace
+				for _, jsonStr := range dataList {
+					var t db.ExecutionTrace
+					if err := json.Unmarshal([]byte(jsonStr), &t); err == nil {
+						traces = append(traces, t)
+					}
+				}
+				if len(traces) > 0 {
+					return c.JSON(http.StatusOK, APIResponse{Success: true, Data: traces})
+				}
+			}
+		}
+	}
+
+	// Fallback to DB
 	traces, err := queries.ListExecutionTracesByExecutionID(c.Request().Context(), db.ListExecutionTracesByExecutionIDParams{
 		TaskID:      taskID,
 		ExecutionID: executionID,

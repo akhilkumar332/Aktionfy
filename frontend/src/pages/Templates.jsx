@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { Layout, Search, Download, Sparkles, Zap, RefreshCw, X, Check } from 'lucide-react';
+import { Layout, Search, Download, Sparkles, Zap, RefreshCw, X, Check, Upload } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import TaskWizard from '../components/TaskWizard';
@@ -28,6 +28,7 @@ const Templates = () => {
     const { notify } = useNotify();
     const { addListener, removeListener } = useSSE();
     const isMounted = useRef(true);
+    const fileInputRef = useRef(null);
     const [templates, setTemplates] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
@@ -123,6 +124,79 @@ const Templates = () => {
         }
     };
 
+    const handleExportBlueprint = (template) => {
+        try {
+            let config = template.config;
+            if (typeof template.config === 'string') {
+                try {
+                    config = JSON.parse(template.config);
+                } catch {
+                    try {
+                        config = JSON.parse(decodeBase64(template.config));
+                    } catch {
+                        // ignore
+                    }
+                }
+            }
+
+            const fileData = JSON.stringify({
+                name: template.name,
+                description: template.description || '',
+                config: config
+            }, null, 2);
+
+            const blob = new Blob([fileData], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `${template.name.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_blueprint.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            notify('SUCCESS', 'Blueprint configuration exported');
+        } catch (err) {
+            notify('ERROR', 'Failed to export blueprint', err.message);
+        }
+    };
+
+    const handleImportBlueprint = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            try {
+                const data = JSON.parse(event.target.result);
+                if (!data.name || !data.config) {
+                    throw new Error("Invalid blueprint format. Missing 'name' or 'config' fields.");
+                }
+
+                setLoading(true);
+                const res = await axios.post('/api/v1/templates', {
+                    name: data.name,
+                    description: data.description || '',
+                    config: data.config,
+                    is_public: true
+                });
+
+                if (res.status === 201 || res.data) {
+                    notify('SUCCESS', 'Blueprint imported successfully');
+                    fetchTemplates(search);
+                }
+            } catch (err) {
+                notify('ERROR', 'Import failed', err.response?.data?.error || err.message);
+            } finally {
+                setLoading(false);
+                if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                }
+            }
+        };
+        reader.readAsText(file);
+    };
+
     return (
         <>
             <TaskWizard 
@@ -157,6 +231,20 @@ const Templates = () => {
                         className="pro-input pl-9 w-64 !py-1.5 !text-xs"
                       />
                    </div>
+                   <button 
+                     onClick={() => fileInputRef.current?.click()}
+                     className="flex items-center gap-2 px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-400 hover:text-white transition-all text-xs font-semibold"
+                     title="Import Blueprint JSON"
+                   >
+                     <Upload size={14} /> <span className="text-[10px] uppercase tracking-widest font-black">Import</span>
+                   </button>
+                   <input 
+                     type="file" 
+                     accept=".json" 
+                     onChange={handleImportBlueprint} 
+                     className="hidden" 
+                     ref={fileInputRef} 
+                   />
                    <button 
                      onClick={() => fetchTemplates(search)}
                      className="p-2 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-400 hover:text-white transition-all"
@@ -205,7 +293,14 @@ const Templates = () => {
                            <Download size={12} />
                            {t.uses_count || 0} Syncs
                         </div>
-                        <div className="flex items-center gap-2">
+                         <div className="flex items-center gap-2">
+                          <button 
+                            onClick={() => handleExportBlueprint(t)}
+                            className="p-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-md text-zinc-400 hover:text-white transition-all"
+                            title="Export Blueprint JSON"
+                          >
+                            <Download size={12} />
+                          </button>
                           {confirmDeploy?.id === t.id ? (
                             <div className="flex items-center gap-1 bg-brand-primary/10 border border-brand-primary/20 rounded-md p-0.5">
                               <span className="text-[9px] font-black text-brand-primary uppercase tracking-widest px-2">Deploy {confirmDeploy.count} nodes?</span>

@@ -17,6 +17,46 @@ const Webhooks = () => {
   const [submitting, setSubmitting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [createdSecret, setCreatedSecret] = useState(null);
+  const [selectedWebhook, setSelectedWebhook] = useState(null);
+  const [deliveries, setDeliveries] = useState([]);
+  const [loadingDeliveries, setLoadingDeliveries] = useState(false);
+  const [testingWebhookId, setTestingWebhookId] = useState(null);
+
+  const fetchDeliveries = useCallback(async (webhookId) => {
+    setLoadingDeliveries(true);
+    try {
+      const res = await axios.get(`/api/v1/webhooks/${webhookId}/deliveries`);
+      if (res.data.success) {
+        setDeliveries(res.data.data || []);
+      }
+    } catch (err) {
+      notify('ERROR', 'Failed to fetch deliveries', err.response?.data?.error || err.message);
+    } finally {
+      setLoadingDeliveries(false);
+    }
+  }, [notify]);
+
+  const handleTestWebhook = async (webhookId) => {
+    setTestingWebhookId(webhookId);
+    try {
+      const res = await axios.post(`/api/v1/webhooks/${webhookId}/test`);
+      if (res.data.success) {
+        notify('SUCCESS', 'Test payload delivered successfully!');
+        if (selectedWebhook?.id === webhookId) {
+          fetchDeliveries(webhookId);
+        }
+      } else {
+        notify('ERROR', 'Webhook delivery test failed', res.data.error);
+        if (selectedWebhook?.id === webhookId) {
+          fetchDeliveries(webhookId);
+        }
+      }
+    } catch (err) {
+      notify('ERROR', 'Failed to trigger test payload', err.response?.data?.error || err.message);
+    } finally {
+      setTestingWebhookId(null);
+    }
+  };
 
   useEffect(() => {
     return () => {
@@ -223,7 +263,7 @@ const Webhooks = () => {
                       <span className="text-[11px] text-zinc-400 font-semibold tabular-nums uppercase">{new Date(webhook.created_at).toLocaleDateString()}</span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex justify-end gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
                         {confirmDelete === webhook.id ? (
                           <div className="flex items-center gap-1 bg-red-500/10 border border-red-500/20 rounded-md p-0.5">
                             <button 
@@ -242,13 +282,37 @@ const Webhooks = () => {
                             </button>
                           </div>
                         ) : (
-                          <button 
-                            onClick={() => setConfirmDelete(webhook.id)}
-                            className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-red-500 transition-all shadow-sm"
-                            title="Terminate Linkage"
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                          <>
+                            <button
+                              onClick={() => handleTestWebhook(webhook.id)}
+                              disabled={testingWebhookId === webhook.id}
+                              className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-amber-400 hover:border-amber-500/30 transition-all shadow-sm disabled:opacity-50"
+                              title="Test Webhook (Ping)"
+                            >
+                              {testingWebhookId === webhook.id ? (
+                                <Loader2 size={14} className="animate-spin" />
+                              ) : (
+                                <Zap size={14} />
+                              )}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedWebhook(webhook);
+                                fetchDeliveries(webhook.id);
+                              }}
+                              className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-blue-400 hover:border-blue-500/30 transition-all shadow-sm"
+                              title="View Delivery History"
+                            >
+                              <Activity size={14} />
+                            </button>
+                            <button 
+                              onClick={() => setConfirmDelete(webhook.id)}
+                              className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-red-500 hover:border-red-500/30 transition-all shadow-sm"
+                              title="Terminate Linkage"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </>
                         )}
                       </div>
                     </td>
@@ -315,6 +379,116 @@ const Webhooks = () => {
                 >
                   <Check size={16} /> I have saved the secret
                 </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Deliveries Drawer */}
+      <AnimatePresence>
+        {selectedWebhook && (
+          <div className="fixed inset-0 z-[110] flex justify-end">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedWebhook(null)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="bg-zinc-950 border-l border-zinc-800 w-full max-w-2xl h-full relative z-10 flex flex-col shadow-2xl"
+            >
+              {/* Drawer Header */}
+              <div className="p-8 border-b border-zinc-800 flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-bold text-white uppercase tracking-tight">Delivery History</h2>
+                  <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-0.5 font-mono truncate max-w-md">
+                    {selectedWebhook.endpoint_url}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => fetchDeliveries(selectedWebhook.id)}
+                    className="p-2 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-400 hover:text-white transition-all"
+                  >
+                    <RefreshCw size={16} className={loadingDeliveries ? 'animate-spin' : ''} />
+                  </button>
+                  <button 
+                    onClick={() => setSelectedWebhook(null)} 
+                    className="text-zinc-400 hover:text-white p-2"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Drawer Content */}
+              <div className="flex-1 overflow-y-auto p-8 custom-scrollbar space-y-6">
+                {loadingDeliveries ? (
+                  <div className="flex flex-col items-center justify-center py-20 gap-3">
+                    <Loader2 className="w-8 h-8 text-zinc-600 animate-spin" />
+                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest animate-pulse">Retrieving Logs...</span>
+                  </div>
+                ) : deliveries.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
+                    <Activity size={32} className="text-zinc-700 animate-pulse" />
+                    <div>
+                      <p className="text-sm font-semibold text-zinc-300">No Webhook Deliveries</p>
+                      <p className="text-xs text-zinc-500 mt-1 max-w-sm">
+                        This webhook hasn't received any events yet. Click the "Test Connection" button to dispatch a mock ping.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleTestWebhook(selectedWebhook.id)}
+                      disabled={testingWebhookId === selectedWebhook.id}
+                      className="pro-button-secondary !py-2 !px-4 flex items-center gap-2 mt-2"
+                    >
+                      <Zap size={14} />
+                      <span className="text-[10px] uppercase tracking-widest">Test Linkage</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {deliveries.map((delivery) => (
+                      <div key={delivery.id} className="pro-card p-5 space-y-4 border border-zinc-800 hover:border-zinc-700/50 transition-all">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <span className={`w-2.5 h-2.5 rounded-full ${delivery.success ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)]'}`} />
+                            <span className="text-xs font-bold text-zinc-200 uppercase tracking-wider font-mono bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded">
+                              {delivery.event_type}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className={`text-xs font-bold font-mono px-2 py-0.5 rounded ${
+                              delivery.status_code && delivery.status_code >= 200 && delivery.status_code < 300 
+                                ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' 
+                                : 'bg-red-500/10 border border-red-500/20 text-red-400'
+                            }`}>
+                              HTTP {delivery.status_code || 'ERR'}
+                            </span>
+                            <span className="text-[10px] font-bold text-zinc-500 tabular-nums">
+                              {new Date(delivery.created_at).toLocaleTimeString()}
+                            </span>
+                          </div>
+                        </div>
+
+                        {delivery.response_body && (
+                          <div className="space-y-2">
+                            <div className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Response Body</div>
+                            <pre className="p-4 bg-zinc-900 border border-zinc-850 rounded-lg text-[10px] font-mono text-zinc-300 overflow-x-auto max-h-40 custom-scrollbar leading-relaxed">
+                              {delivery.response_body}
+                            </pre>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </motion.div>
           </div>

@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 
 import axios from 'axios';
-import { Key, Trash2, Plus, ShieldCheck, Loader2, X, RefreshCw, Shield, Check, Eye, EyeOff } from 'lucide-react';
+import { Key, Trash2, Plus, ShieldCheck, Loader2, X, RefreshCw, Shield, Check, Eye, EyeOff, Edit2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNotify } from '../context/NotificationContext';
 import { useSSE } from '../context/SSEContext';
@@ -17,6 +17,13 @@ const Vault = () => {
   const [submitting, setSubmitting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [showSecretValue, setShowSecretValue] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+
+  const handleEditClick = (secret) => {
+    setNewSecret({ name: secret.name, value: '' });
+    setEditMode(true);
+    setShowAddForm(true);
+  };
 
   useEffect(() => {
     return () => {
@@ -73,9 +80,10 @@ const Vault = () => {
     setSubmitting(true);
     try {
       await axios.post('/api/v1/secrets', newSecret);
-      notify('SUCCESS', `Secret "${newSecret.name}" encrypted and stored`);
+      notify('SUCCESS', editMode ? `Secret "${newSecret.name}" updated successfully` : `Secret "${newSecret.name}" encrypted and stored`);
       if (isMounted.current) {
         setNewSecret({ name: '', value: '' });
+        setEditMode(false);
         setShowAddForm(false);
       }
       fetchData();
@@ -102,7 +110,11 @@ const Vault = () => {
              <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
            </button>
            <button 
-            onClick={() => setShowAddForm(true)}
+            onClick={() => {
+              setEditMode(false);
+              setNewSecret({ name: '', value: '' });
+              setShowAddForm(true);
+            }}
             className="pro-button-primary !py-2 !px-5 flex items-center gap-2"
           >
             <Plus size={16} /> <span className="text-[11px] uppercase tracking-widest">Store Secret</span>
@@ -118,7 +130,11 @@ const Vault = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setShowAddForm(false)}
+              onClick={() => {
+                setShowAddForm(false);
+                setNewSecret({ name: '', value: '' });
+                setEditMode(false);
+              }}
               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             />
             <motion.div 
@@ -129,10 +145,21 @@ const Vault = () => {
             >
               <div className="flex items-center justify-between mb-8">
                 <div>
-                  <h2 className="text-lg font-bold text-white uppercase tracking-tight">Deposit Identity</h2>
-                  <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-0.5">PROTOCOL: SECURE_VAULT_DEPOSIT</p>
+                  <h2 className="text-lg font-bold text-white uppercase tracking-tight">
+                    {editMode ? "Modify Secret Payload" : "Deposit Identity"}
+                  </h2>
+                  <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-0.5">
+                    {editMode ? "PROTOCOL: SECURE_VAULT_UPDATE" : "PROTOCOL: SECURE_VAULT_DEPOSIT"}
+                  </p>
                 </div>
-                <button onClick={() => setShowAddForm(false)} className="text-zinc-400 hover:text-white p-2">
+                <button 
+                  onClick={() => {
+                    setShowAddForm(false);
+                    setNewSecret({ name: '', value: '' });
+                    setEditMode(false);
+                  }} 
+                  className="text-zinc-400 hover:text-white p-2"
+                >
                   <X size={20} />
                 </button>
               </div>
@@ -145,9 +172,10 @@ const Vault = () => {
                     value={newSecret.name}
                     onChange={(e) => setNewSecret({...newSecret, name: e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, '')})}
                     placeholder="INFRA_API_TOKEN"
-                    className="pro-input w-full font-mono !text-xs"
+                    className="pro-input w-full font-mono !text-xs disabled:opacity-50"
                     required
-                    autoFocus
+                    autoFocus={!editMode}
+                    disabled={editMode}
                   />
                 </div>
                 <div className="space-y-2">
@@ -237,7 +265,7 @@ const Vault = () => {
                       <span className="text-[11px] text-zinc-400 font-semibold tabular-nums uppercase">{new Date(secret.created_at).toLocaleDateString()}</span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex justify-end gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
                         {confirmDelete === secret.name ? (
                           <div className="flex items-center gap-1 bg-red-500/10 border border-red-500/20 rounded-md p-0.5">
                             <button 
@@ -256,13 +284,22 @@ const Vault = () => {
                             </button>
                           </div>
                         ) : (
-                          <button 
-                            onClick={() => setConfirmDelete(secret.name)}
-                            className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-red-500 transition-all"
-                            title="Terminate Linkage"
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                          <>
+                            <button 
+                              onClick={() => handleEditClick(secret)}
+                              className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-amber-400 hover:border-amber-500/30 transition-all"
+                              title="Modify Payload"
+                            >
+                              <Edit2 size={14} />
+                            </button>
+                            <button 
+                              onClick={() => setConfirmDelete(secret.name)}
+                              className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-red-500 hover:border-red-500/30 transition-all"
+                              title="Terminate Linkage"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </>
                         )}
                       </div>
                     </td>

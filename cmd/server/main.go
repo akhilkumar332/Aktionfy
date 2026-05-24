@@ -473,6 +473,7 @@ func main() {
 	api.POST("/webhooks", apiCreateWebhookHandler)
 	api.DELETE("/webhooks/:id", apiDeleteWebhookHandler)
 	api.GET("/webhooks/:id/deliveries", apiWebhookDeliveriesHandler)
+	api.POST("/webhooks/:id/test", apiTestWebhookHandler)
 
 	// Additional v1 routes moved from legacy v1 block
 	api.GET("/workspaces", handleGetWorkspaces)

@@ -97,8 +97,31 @@ const Monitor = () => {
   const [systemStatus, setSystemStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [uptime, setUptime] = useState(0);
   const isMounted = useRef(true);
   const { notify } = useNotify();
+
+  const formatUptime = (sec) => {
+    if (!sec) return '00d 00h 00m 00s';
+    const d = Math.floor(sec / (3600 * 24));
+    const h = Math.floor((sec % (3600 * 24)) / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = Math.floor(sec % 60);
+    return `${d.toString().padStart(2, '0')}d ${h.toString().padStart(2, '0')}h ${m.toString().padStart(2, '0')}m ${s.toString().padStart(2, '0')}s`;
+  };
+
+  useEffect(() => {
+    if (systemStatus?.uptime_seconds) {
+      setUptime(systemStatus.uptime_seconds);
+    }
+  }, [systemStatus]);
+
+  useEffect(() => {
+    const t = setInterval(() => {
+      setUptime((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(t);
+  }, []);
 
   const fetchData = useCallback(async (isUserInitiated = false) => {
     if (isUserInitiated) setRefreshing(true);
@@ -234,11 +257,101 @@ const Monitor = () => {
             {activeTab === 'stats' ? (
               <div className="space-y-8">
                  <MetricsGrid usage={usage} />
-                 <div className="pro-card p-8 min-h-[300px] flex items-center justify-center border-dashed opacity-50">
-                    <div className="flex flex-col items-center gap-4">
-                       <BarChart3 size={40} className="text-zinc-700" />
-                       <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest italic text-center">Historical analytics buffer synchronized.<br/>Switch to "Audit Trail" for event granularity.</span>
-                    </div>
+                 
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                   {/* Core Uptime Counter */}
+                   <div className="pro-card p-6 flex flex-col items-center justify-center relative overflow-hidden group shadow-lg">
+                     <div className="absolute top-0 right-0 p-4 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity">
+                       <Clock size={100} />
+                     </div>
+                     <span className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-4">Core Uptime Counter</span>
+                     <div className="text-xl font-black text-white font-mono tracking-wider tabular-nums bg-zinc-900 border border-zinc-800 px-4 py-3.5 rounded-xl shadow-inner">
+                       {formatUptime(uptime)}
+                     </div>
+                     <div className="flex items-center gap-1.5 mt-4 text-[9px] font-bold text-emerald-400 uppercase tracking-widest">
+                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></div>
+                       Clocking active cycles
+                     </div>
+                   </div>
+
+                   {/* P99 Signal Latency */}
+                   <div className="pro-card p-6 flex flex-col items-center justify-center relative overflow-hidden group shadow-lg">
+                     <span className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-4">P99 Signal Latency</span>
+                     <div className="relative w-28 h-28 flex items-center justify-center">
+                       <svg className="w-full h-full transform -rotate-90">
+                         <circle cx="56" cy="56" r="45" className="stroke-zinc-900 fill-none" strokeWidth="6" />
+                         <circle 
+                           cx="56" 
+                           cy="56" 
+                           r="45" 
+                           className="stroke-brand-primary fill-none transition-all duration-1000" 
+                           strokeWidth="6" 
+                           strokeDasharray="282" 
+                           strokeDashoffset={282 - (282 * Math.min((systemStatus?.p99_latency_ms || 0) / 1000, 1)) || 282} 
+                         />
+                       </svg>
+                       <div className="absolute flex flex-col items-center justify-center">
+                         <span className="text-lg font-black text-white font-mono tracking-tighter">{systemStatus?.p99_latency_ms || 0}ms</span>
+                         <span className="text-[8px] text-zinc-400 font-bold uppercase tracking-widest mt-0.5">Response</span>
+                       </div>
+                     </div>
+                     <div className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest mt-4">
+                       {(systemStatus?.p99_latency_ms || 0) < 200 ? '⚡ EXTREME FIDELITY' : (systemStatus?.p99_latency_ms || 0) < 500 ? '✅ OPERATIONAL' : '⚠️ DEGRADED'}
+                     </div>
+                   </div>
+
+                   {/* Active Bridge Channels */}
+                   <div className="pro-card p-6 flex flex-col items-center justify-center relative overflow-hidden group shadow-lg">
+                     <span className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-4">Active Bridge Channels</span>
+                     <div className="relative w-28 h-28 flex items-center justify-center">
+                       <svg className="w-full h-full transform -rotate-90">
+                         <circle cx="56" cy="56" r="45" className="stroke-zinc-900 fill-none" strokeWidth="6" />
+                         <circle 
+                           cx="56" 
+                           cy="56" 
+                           r="45" 
+                           className="stroke-blue-400 fill-none transition-all duration-1000" 
+                           strokeWidth="6" 
+                           strokeDasharray="282" 
+                           strokeDashoffset={282 - (282 * Math.min((systemStatus?.active_sessions || 0) / 10, 1)) || 282} 
+                         />
+                       </svg>
+                       <div className="absolute flex flex-col items-center justify-center">
+                         <span className="text-xl font-black text-white font-mono tracking-tighter">{systemStatus?.active_sessions || 0}</span>
+                         <span className="text-[8px] text-zinc-400 font-bold uppercase tracking-widest mt-0.5">Sessions</span>
+                       </div>
+                     </div>
+                     <div className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest mt-4 flex items-center gap-1.5 justify-center">
+                       <span className={`w-1.5 h-1.5 rounded-full ${systemStatus?.bridge_active ? 'bg-emerald-500 animate-pulse' : 'bg-zinc-600'}`} />
+                       {systemStatus?.bridge_active ? 'BRIDGE ONLINE' : 'BRIDGE DORMANT'}
+                     </div>
+                   </div>
+
+                   {/* Background Compute Nodes */}
+                   <div className="pro-card p-6 flex flex-col items-center justify-center relative overflow-hidden group shadow-lg">
+                     <span className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-4">Background Compute Nodes</span>
+                     <div className="relative w-28 h-28 flex items-center justify-center">
+                       <svg className="w-full h-full transform -rotate-90">
+                         <circle cx="56" cy="56" r="45" className="stroke-zinc-900 fill-none" strokeWidth="6" />
+                         <circle 
+                           cx="56" 
+                           cy="56" 
+                           r="45" 
+                           className="stroke-purple-400 fill-none transition-all duration-1000" 
+                           strokeWidth="6" 
+                           strokeDasharray="282" 
+                           strokeDashoffset={282 - (282 * Math.min((systemStatus?.worker_count || 0) / 5, 1)) || 282} 
+                         />
+                       </svg>
+                       <div className="absolute flex flex-col items-center justify-center">
+                         <span className="text-xl font-black text-white font-mono tracking-tighter">{systemStatus?.worker_count || 0}</span>
+                         <span className="text-[8px] text-zinc-400 font-bold uppercase tracking-widest mt-0.5">Workers</span>
+                       </div>
+                     </div>
+                     <div className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest mt-4">
+                       {systemStatus?.worker_count > 0 ? '💻 HYPER-THREADED' : '💤 NO ACTIVE WORKERS'}
+                     </div>
+                   </div>
                  </div>
               </div>
             ) : (

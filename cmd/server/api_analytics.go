@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -13,6 +14,11 @@ import (
 
 func handleGetSystemInsights(c echo.Context) error {
 	ctx := c.Request().Context()
+
+	// Try reading insights from Redis cache first
+	if cachedStr, err := GetCachedInsights(ctx); err == nil && cachedStr != "" {
+		return c.Blob(http.StatusOK, "application/json", []byte(cachedStr))
+	}
 
 	p99, err := queries.GetP99ExecutionLatency(ctx)
 	if err != nil {
@@ -72,11 +78,22 @@ func handleGetSystemInsights(c echo.Context) error {
 		"daily_tasks":     dailyTasks,
 	}
 
-	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: data})
+	resp := APIResponse{Success: true, Data: data}
+	if bytes, err := json.Marshal(resp); err == nil {
+		SetCachedInsights(ctx, string(bytes))
+	}
+
+	return c.JSON(http.StatusOK, resp)
 }
 
 func handleGetTrends(c echo.Context) error {
 	ctx := c.Request().Context()
+
+	// Try reading trends from Redis cache first
+	if cachedStr, err := GetCachedTrends(ctx); err == nil && cachedStr != "" {
+		return c.Blob(http.StatusOK, "application/json", []byte(cachedStr))
+	}
+
 	now := time.Now().UTC()
 	thirtyDaysAgo := now.Add(-30 * 24 * time.Hour)
 	sixtyDaysAgo := now.Add(-60 * 24 * time.Hour)
@@ -136,14 +153,20 @@ func handleGetTrends(c echo.Context) error {
 		return fmt.Sprintf("%.1f%%", growth)
 	}
 
-	return c.JSON(http.StatusOK, APIResponse{
+	resp := APIResponse{
 		Success: true,
 		Data: map[string]string{
 			"tasks_growth":   calcGrowth(float64(currentTasks), float64(prevTasks)),
 			"success_growth": calcGrowth(currentSuccess, prevSuccess),
 			"users_growth":   calcGrowth(float64(currentUsers), float64(prevUsers)),
 		},
-	})
+	}
+
+	if bytes, err := json.Marshal(resp); err == nil {
+		SetCachedTrends(ctx, string(bytes))
+	}
+
+	return c.JSON(http.StatusOK, resp)
 }
 
 func handleGetWorkers(c echo.Context) error {

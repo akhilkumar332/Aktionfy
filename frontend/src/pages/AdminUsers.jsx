@@ -1,14 +1,17 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { 
-  UserCog, UserCircle, Search, RefreshCw, ChevronDown, 
-  Lock, Unlock, ShieldAlert, History, Globe, Monitor, Terminal,
-  UserPlus, KeyRound, Ban, TrendingUp, Send, Trash2, UserCheck, ShieldCheck, X,
-  Activity, Eye, EyeOff, Clipboard, Check, ChevronRight, Settings, Info
+  UserPlus, RefreshCw, Search, X, TrendingUp, ChevronDown, Activity, History, Info, UserCheck, UserCog, Ban, Unlock, Lock, ShieldAlert, KeyRound
 } from 'lucide-react';
 import { useNotify } from '../context/NotificationContext';
 import { useSSE } from '../context/SSEContext';
 import { motion, AnimatePresence } from 'framer-motion';
+
+import UserTable from './admin_users/UserTable';
+import PreRegistrations from './admin_users/PreRegistrations';
+import AuditLogsViewer from './admin_users/AuditLogsViewer';
+import AccessLogsViewer from './admin_users/AccessLogsViewer';
+import UserDrawer from './admin_users/UserDrawer';
 
 const AdminUsers = () => {
   const { notify } = useNotify();
@@ -310,7 +313,6 @@ const AdminUsers = () => {
     return ua.split(' ')[0] || 'Web Agent';
   };
 
-  // Helper to resolve highly aesthetic category details for audit logs
   const resolveAuditVisuals = (action) => {
     const act = action.toLowerCase();
     if (act.includes('impersonate')) {
@@ -331,10 +333,9 @@ const AdminUsers = () => {
     if (act.includes('create') || act.includes('signup') || act.includes('invite')) {
       return { color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20', icon: UserPlus };
     }
-    return { color: 'text-zinc-400 bg-zinc-800/50 border-zinc-700/30', icon: Settings };
+    return { color: 'text-zinc-400 bg-zinc-800/50 border-zinc-700/30', icon: Info };
   };
 
-  // Filter audit logs based on search query
   const filteredAuditLogs = auditLogs.filter(log => {
     const q = auditSearch.toLowerCase();
     return (
@@ -461,187 +462,16 @@ const AdminUsers = () => {
             exit={{ opacity: 0, y: -10 }}
             className="pro-card overflow-hidden"
           >
-            <div className="overflow-x-auto custom-scrollbar">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="pro-table-header border-b border-zinc-800">
-                    <th className="px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Neural Actor</th>
-                    <th className="px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Signature</th>
-                    <th className="px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Privilege</th>
-                    <th className="px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Tier</th>
-                    <th className="px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Account Status</th>
-                    <th className="px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-zinc-400 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-800/50">
-                  {loading && users.length === 0 ? (
-                    <tr>
-                      <td colSpan="6" className="px-6 py-32">
-                         <div className="flex flex-col items-center gap-3">
-                            <RefreshCw className="w-6 h-6 text-zinc-700 animate-spin" />
-                            <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest animate-pulse">Syncing Actors...</span>
-                         </div>
-                      </td>
-                    </tr>
-                  ) : users.length === 0 ? (
-                    <tr>
-                      <td colSpan="6" className="px-6 py-32 text-center">
-                         <div className="flex flex-col items-center gap-2 opacity-40">
-                            <UserCircle size={32} className="text-zinc-300" />
-                            <span className="text-xs font-medium text-zinc-400 italic">No matching identities identified.</span>
-                         </div>
-                      </td>
-                    </tr>
-                  ) : (
-                    users.map((u) => (
-                      <tr key={u.id} className="pro-table-row group transition-colors duration-250">
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-zinc-950 border border-zinc-800 flex items-center justify-center text-zinc-400 group-hover:border-brand-primary/50 transition-all">
-                               <UserCircle size={18} />
-                            </div>
-                            <div className="flex flex-col min-w-0">
-                              <span className="text-sm font-bold text-zinc-100 truncate">{u.email?.String || u.email || 'Anonymous'}</span>
-                              <span className="text-[9px] text-zinc-500 font-mono tracking-tighter uppercase truncate font-bold">{u.id}</span>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <code className="text-[10px] bg-zinc-950 px-2.5 py-1 rounded-md border border-zinc-800 text-emerald-500 font-mono tracking-wider">
-                              {u.api_key ? `${u.api_key.substring(0, 8)}...` : 'N/A'}
-                            </code>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          {u.role?.String === 'admin' || u.role === 'admin' ? (
-                            <span className="pro-badge bg-purple-500/10 border-purple-500/20 text-purple-400">Root</span>
-                          ) : u.role?.String === 'staff' || u.role === 'staff' ? (
-                            <span className="pro-badge bg-blue-500/10 border-blue-500/20 text-blue-400">Staff</span>
-                          ) : (
-                            <span className="pro-badge bg-zinc-900 border-zinc-800 text-zinc-400">User</span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex flex-col gap-1">
-                            <div>
-                              {u.tier?.String === 'pro' || u.tier === 'pro' ? (
-                                <span className="pro-badge bg-indigo-600/10 border-brand-primary/20 text-indigo-400">Pro Node</span>
-                              ) : u.tier?.String === 'plus' || u.tier === 'plus' ? (
-                                <span className="pro-badge bg-emerald-500/10 border-emerald-500/20 text-emerald-400">Plus</span>
-                              ) : (
-                                <span className="pro-badge bg-zinc-900 border-zinc-800 text-zinc-400">Lite</span>
-                              )}
-                            </div>
-                            {((u.max_tasks_limit?.Valid && u.max_tasks_limit.Int32 >= 0) || (u.rate_limit_override?.Valid && u.rate_limit_override.Int32 >= 0)) && (
-                              <div className="flex flex-wrap gap-1 mt-1">
-                                {u.max_tasks_limit?.Valid && u.max_tasks_limit.Int32 >= 0 && (
-                                  <span className="text-[8px] px-1.5 py-0.5 bg-indigo-950/40 border border-indigo-500/30 text-indigo-400 rounded uppercase font-black">
-                                    Tasks: {u.max_tasks_limit.Int32}
-                                  </span>
-                                )}
-                                {u.rate_limit_override?.Valid && u.rate_limit_override.Int32 >= 0 && (
-                                  <span className="text-[8px] px-1.5 py-0.5 bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 rounded uppercase font-black">
-                                    Rate: {u.rate_limit_override.Int32}/m
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          {u.is_locked?.Bool || u.is_locked ? (
-                            <span className="pro-badge bg-red-500/10 border-red-500/20 text-red-400 flex items-center gap-1.5 w-fit">
-                              <ShieldAlert size={10} />
-                              Locked
-                            </span>
-                          ) : (
-                            <span className="pro-badge bg-emerald-500/10 border-emerald-500/20 text-emerald-400 flex items-center gap-1.5 w-fit">
-                              <Unlock size={10} className="text-emerald-500" />
-                              Active
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all duration-200">
-                            {/* Impersonate User */}
-                            <button 
-                              disabled={updating === u.id || u.role === 'admin' || u.role?.String === 'admin'}
-                              onClick={() => handleImpersonate(u.id)}
-                              className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-amber-400 transition-all disabled:opacity-20 pro-focus"
-                              title="Impersonate Identity"
-                            >
-                              <UserCheck size={13} />
-                            </button>
-
-                            {/* Open Security Settings Drawer */}
-                            <button 
-                              onClick={() => openDrawer(u)}
-                              className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-brand-primary transition-all pro-focus"
-                              title="Security Credentials Drawer"
-                            >
-                              <KeyRound size={13} />
-                            </button>
-
-                            {/* Quota Overrides */}
-                            <button 
-                              onClick={() => openOverrideModal(u)}
-                              className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-emerald-400 transition-all pro-focus"
-                              title="Quota Overrides"
-                            >
-                              <TrendingUp size={13} />
-                            </button>
-
-                            {/* Staff Role Toggle */}
-                            <button 
-                              disabled={updating === u.id || u.role === 'admin' || u.role?.String === 'admin'}
-                              onClick={() => handleUpdate(u.id, (u.role === 'user' || u.role?.String === 'user') ? 'staff' : 'user', u.tier?.String || u.tier)}
-                              className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white transition-all disabled:opacity-20 pro-focus"
-                              title="Toggle Staff Role"
-                            >
-                              <UserCog size={13} />
-                            </button>
-
-                            {/* Tier Toggle */}
-                            <button 
-                              disabled={updating === u.id || u.role === 'admin' || u.role?.String === 'admin'}
-                              onClick={() => handleUpdate(u.id, u.role?.String || u.role, (u.tier === 'pro' || u.tier?.String === 'pro') ? 'free' : 'pro')}
-                              className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-indigo-400 transition-all disabled:opacity-20 pro-focus"
-                              title="Toggle Tier"
-                            >
-                              <ChevronDown size={13} />
-                            </button>
-
-                            {/* Invalidate / Revoke Sessions */}
-                            <button 
-                              onClick={() => handleRevokeSessions(u.id)}
-                              className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-red-400 transition-all pro-focus"
-                              title="Revoke Sessions"
-                            >
-                              <Ban size={13} />
-                            </button>
-
-                            {/* Account Lock Toggle */}
-                            <button 
-                              disabled={updating === u.id || u.role === 'admin' || u.role?.String === 'admin'}
-                              onClick={() => handleUpdate(u.id, u.role?.String || u.role, u.tier?.String || u.tier, !(u.is_locked?.Bool || u.is_locked))}
-                              className={`p-2 border rounded-xl transition-all disabled:opacity-20 pro-focus ${
-                                (u.is_locked?.Bool || u.is_locked)
-                                  ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-400 hover:bg-emerald-900/40 hover:text-white' 
-                                  : 'bg-red-950/20 border-red-500/30 text-red-400 hover:bg-red-900/40 hover:text-white'
-                              }`}
-                              title={(u.is_locked?.Bool || u.is_locked) ? "Unlock Account" : "Lock Account"}
-                            >
-                              {(u.is_locked?.Bool || u.is_locked) ? <Unlock size={13} /> : <Lock size={13} />}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+            <UserTable 
+              users={users}
+              loading={loading}
+              updating={updating}
+              handleImpersonate={handleImpersonate}
+              openDrawer={openDrawer}
+              openOverrideModal={openOverrideModal}
+              handleUpdate={handleUpdate}
+              handleRevokeSessions={handleRevokeSessions}
+            />
           </motion.div>
         )}
 
@@ -653,84 +483,11 @@ const AdminUsers = () => {
             exit={{ opacity: 0, y: -10 }}
             className="pro-card overflow-hidden"
           >
-            <div className="overflow-x-auto custom-scrollbar">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="pro-table-header border-b border-zinc-800">
-                    <th className="px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Pre-Registered Email</th>
-                    <th className="px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Assigned Privilege</th>
-                    <th className="px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Assigned Tier</th>
-                    <th className="px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Invitation Token</th>
-                    <th className="px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Expires At</th>
-                    <th className="px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-zinc-400 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-800/50">
-                  {invitationsLoading && invitations.length === 0 ? (
-                    <tr>
-                      <td colSpan="6" className="px-6 py-32">
-                         <div className="flex flex-col items-center gap-3">
-                            <RefreshCw className="w-6 h-6 text-zinc-700 animate-spin" />
-                            <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest animate-pulse">Syncing Invitations...</span>
-                         </div>
-                      </td>
-                    </tr>
-                  ) : invitations.length === 0 ? (
-                    <tr>
-                      <td colSpan="6" className="px-6 py-32 text-center">
-                         <div className="flex flex-col items-center gap-2 opacity-40">
-                            <UserPlus size={32} className="text-zinc-600" />
-                            <span className="text-xs font-medium text-zinc-400 italic">No pending invitations pre-registered.</span>
-                         </div>
-                      </td>
-                    </tr>
-                  ) : (
-                    invitations.map((inv) => (
-                      <tr key={inv.id?.String || inv.id || Math.random().toString()} className="pro-table-row hover:bg-zinc-900/10">
-                        <td className="px-6 py-4">
-                          <span className="text-sm font-bold text-zinc-200">{inv.email}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          {inv.role === 'admin' ? (
-                            <span className="pro-badge bg-purple-500/10 border-purple-500/20 text-purple-400">Root</span>
-                          ) : inv.role === 'staff' ? (
-                            <span className="pro-badge bg-blue-500/10 border-blue-500/20 text-blue-400">Staff</span>
-                          ) : (
-                            <span className="pro-badge bg-zinc-900 border-zinc-800 text-zinc-400">User</span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4">
-                          {inv.tier === 'pro' ? (
-                            <span className="pro-badge bg-indigo-600/10 border-brand-primary/20 text-indigo-400">Pro Node</span>
-                          ) : inv.tier === 'plus' ? (
-                            <span className="pro-badge bg-emerald-500/10 border-emerald-500/20 text-emerald-400">Plus</span>
-                          ) : (
-                            <span className="pro-badge bg-zinc-900 border-zinc-800 text-zinc-400">Lite</span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4">
-                          <code className="text-[10px] bg-zinc-950 px-2.5 py-1 rounded-md border border-zinc-800 text-indigo-400 font-mono tracking-wider">
-                            {inv.invite_token}
-                          </code>
-                        </td>
-                        <td className="px-6 py-4 text-xs text-zinc-400 font-medium">
-                          {inv.expires_at?.Time ? new Date(inv.expires_at.Time).toLocaleDateString() : 'Never'}
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <button
-                            onClick={() => handleDeleteInvitation(inv.id?.String || inv.id)}
-                            className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-red-400 transition-all pro-focus"
-                            title="Delete Invitation"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+            <PreRegistrations 
+              invitations={invitations}
+              invitationsLoading={invitationsLoading}
+              handleDeleteInvitation={handleDeleteInvitation}
+            />
           </motion.div>
         )}
 
@@ -740,103 +497,16 @@ const AdminUsers = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="space-y-4"
           >
-            <div className="pro-card p-6 border-b border-zinc-800 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Info size={14} className="text-zinc-400" />
-                <span className="text-xs text-zinc-400 font-medium">Displaying up to <strong className="text-zinc-200">{auditLimit}</strong> recent system audit actions. Use search to filter surgically.</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <label htmlFor="audit-limit-select" className="text-[10px] font-black uppercase text-zinc-500 tracking-wider">Limit:</label>
-                <select
-                  id="audit-limit-select"
-                  value={auditLimit}
-                  onChange={(e) => setAuditLimit(parseInt(e.target.value))}
-                  className="bg-zinc-950 border border-zinc-800 text-xs text-zinc-300 rounded px-2 py-1 font-mono focus:border-brand-primary outline-none"
-                >
-                  <option value="50">50</option>
-                  <option value="100">100</option>
-                  <option value="200">200</option>
-                  <option value="500">500</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="pro-card divide-y divide-zinc-800/60 overflow-hidden">
-              {auditLoading && auditLogs.length === 0 ? (
-                <div className="py-32 flex flex-col items-center gap-3">
-                  <RefreshCw className="w-6 h-6 text-zinc-700 animate-spin" />
-                  <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest animate-pulse">Syncing System Activity Ledgers...</span>
-                </div>
-              ) : filteredAuditLogs.length === 0 ? (
-                <div className="py-32 text-center flex flex-col items-center gap-2">
-                  <Activity size={32} className="text-zinc-700 animate-pulse" />
-                  <span className="text-xs font-medium text-zinc-500 italic">No matching activities found.</span>
-                </div>
-              ) : (
-                filteredAuditLogs.map((log) => {
-                  const visuals = resolveAuditVisuals(log.action);
-                  const Icon = visuals.icon;
-                  const isExpanded = expandedLogId === log.id;
-                  
-                  return (
-                    <div key={log.id} className="p-5 hover:bg-zinc-900/10 transition-colors flex flex-col gap-3 group">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex items-start gap-4">
-                          <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 mt-0.5 ${visuals.color}`}>
-                            <Icon size={15} />
-                          </div>
-                          <div className="flex flex-col min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="text-xs font-black uppercase tracking-wider text-zinc-300 font-mono">{log.action}</span>
-                              <span className="text-[10px] px-2 py-0.5 bg-zinc-900 border border-zinc-800 text-zinc-400 rounded-md font-bold">{log.resource_type}</span>
-                            </div>
-                            <div className="mt-1 text-xs text-zinc-400 flex flex-wrap items-center gap-x-2 gap-y-1">
-                              <span>Actor: <strong className="text-zinc-200">{log.user_id || 'Autonomous Engine'}</strong></span>
-                              {log.resource_id && (
-                                <>
-                                  <span className="text-zinc-600 font-bold">•</span>
-                                  <span>Target: <strong className="text-zinc-300 font-mono">{log.resource_id}</strong></span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-4 shrink-0 text-right">
-                          <span className="text-[10px] text-zinc-500 font-medium">{new Date(log.created_at).toLocaleString()}</span>
-                          {Object.keys(log.metadata || {}).length > 0 && (
-                            <button
-                              onClick={() => setExpandedLogId(isExpanded ? null : log.id)}
-                              className="p-1.5 hover:bg-zinc-800 rounded text-zinc-500 hover:text-white transition-all cursor-pointer"
-                              title="Toggle metadata payload"
-                            >
-                              <ChevronRight size={14} className={`transform transition-transform ${isExpanded ? 'rotate-90 text-brand-primary' : ''}`} />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-
-                      <AnimatePresence>
-                        {isExpanded && log.metadata && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            className="overflow-hidden mt-1"
-                          >
-                            <pre className="p-4 bg-zinc-950 border border-zinc-900 rounded-lg text-[10px] font-mono text-zinc-300 overflow-x-auto custom-scrollbar leading-relaxed">
-                              {JSON.stringify(log.metadata, null, 2)}
-                            </pre>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  );
-                })
-              )}
-            </div>
+            <AuditLogsViewer 
+              auditLoading={auditLoading}
+              auditLimit={auditLimit}
+              setAuditLimit={setAuditLimit}
+              filteredAuditLogs={filteredAuditLogs}
+              expandedLogId={expandedLogId}
+              setExpandedLogId={setExpandedLogId}
+              resolveAuditVisuals={resolveAuditVisuals}
+            />
           </motion.div>
         )}
 
@@ -848,78 +518,11 @@ const AdminUsers = () => {
             exit={{ opacity: 0, y: -10 }}
             className="pro-card overflow-hidden"
           >
-            <div className="overflow-x-auto custom-scrollbar">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="pro-table-header border-b border-zinc-800">
-                    <th className="px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Actor Account</th>
-                    <th className="px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Timestamp</th>
-                    <th className="px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Network IP Address</th>
-                    <th className="px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Client Signature</th>
-                    <th className="px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Outcome</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-800/50">
-                  {historyLoading && loginHistory.length === 0 ? (
-                    <tr>
-                      <td colSpan="5" className="px-6 py-32">
-                         <div className="flex flex-col items-center gap-3">
-                            <RefreshCw className="w-6 h-6 text-zinc-700 animate-spin" />
-                            <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest animate-pulse">Syncing Access Ledgers...</span>
-                         </div>
-                      </td>
-                    </tr>
-                  ) : loginHistory.length === 0 ? (
-                    <tr>
-                      <td colSpan="5" className="px-6 py-32 text-center">
-                         <div className="flex flex-col items-center gap-2 opacity-40">
-                            <History size={32} className="text-zinc-800 mx-auto mb-2" />
-                            <span className="text-xs font-medium text-zinc-400 italic">No access events logged.</span>
-                         </div>
-                      </td>
-                    </tr>
-                  ) : (
-                    loginHistory.map((lh) => (
-                      <tr key={lh.id?.String || lh.id || Math.random().toString()} className="pro-table-row hover:bg-zinc-900/10">
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-zinc-950 border border-zinc-800 flex items-center justify-center text-zinc-500">
-                               <Terminal size={14} />
-                            </div>
-                            <div className="flex flex-col">
-                              <span className="text-sm font-bold text-zinc-200">{lh.user_email?.String || lh.user_email || 'Autonomous Node'}</span>
-                              <span className="text-[9px] text-zinc-500 font-mono">{lh.user_id}</span>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-xs text-zinc-300 font-semibold">
-                          {lh.login_time?.Time ? new Date(lh.login_time.Time).toLocaleString() : 'Unknown Cycle'}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2 text-xs font-mono text-zinc-400">
-                            <Globe size={12} className="text-zinc-600" />
-                            {lh.ip_address?.String || lh.ip_address || 'Local Socket'}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2 text-xs text-zinc-400 font-medium">
-                            <Monitor size={12} className="text-zinc-600" />
-                            {parseUserAgent(lh.user_agent?.String || lh.user_agent)}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          {lh.status === 'success' ? (
-                            <span className="pro-badge bg-emerald-500/10 border-emerald-500/20 text-emerald-400">Granted</span>
-                          ) : (
-                            <span className="pro-badge bg-red-500/10 border-red-500/20 text-red-400">Denied</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+            <AccessLogsViewer 
+              loginHistory={loginHistory}
+              historyLoading={historyLoading}
+              parseUserAgent={parseUserAgent}
+            />
           </motion.div>
         )}
       </AnimatePresence>
@@ -1111,184 +714,18 @@ const AdminUsers = () => {
       </AnimatePresence>
 
       {/* Sliding Security Credentials Drawer */}
-      <AnimatePresence>
-        {isDrawerOpen && drawerUser && (
-          <div className="fixed inset-0 z-[110] flex justify-end">
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsDrawerOpen(false)}
-              className="absolute inset-0 bg-black/60 backdrop-blur-xs"
-            />
-            {/* Drawer Body */}
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-              className="relative w-full max-w-lg h-full bg-zinc-950 border-l border-zinc-800 shadow-[0_0_50px_rgba(0,0,0,0.85)] z-10 flex flex-col"
-            >
-              {/* Header */}
-              <div className="p-6 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/10">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-brand-primary">
-                    <KeyRound size={20} />
-                  </div>
-                  <div>
-                    <h3 className="text-md font-bold text-white leading-tight">Credentials & Credentials</h3>
-                    <p className="text-[10px] text-zinc-500 font-mono tracking-tighter uppercase mt-0.5">{drawerUser.email?.String || drawerUser.email}</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setIsDrawerOpen(false)}
-                  className="p-2 text-zinc-500 hover:text-white rounded-lg hover:bg-zinc-900 transition-all pro-focus cursor-pointer"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              {/* Scrollable Content */}
-              <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
-                {/* User Context Info Card */}
-                <div className="p-4 bg-zinc-900/40 border border-zinc-800 rounded-xl space-y-3">
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Identity Context</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex flex-col">
-                      <span className="text-[9px] text-zinc-500 font-bold uppercase">Assigned Privilege</span>
-                      <span className="text-xs font-bold text-white mt-0.5">
-                        {drawerUser.role?.String || drawerUser.role}
-                      </span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[9px] text-zinc-500 font-bold uppercase">Operational Tier</span>
-                      <span className="text-xs font-bold text-brand-primary mt-0.5 uppercase">
-                        {drawerUser.tier?.String || drawerUser.tier}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* API Key Panel */}
-                <div className="space-y-3">
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Connection Signatures</h4>
-                  <div className="p-4 bg-zinc-900/30 border border-zinc-800/80 rounded-xl space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-black text-zinc-500 uppercase tracking-wider">Access API Token</span>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => setShowApiKey(!showApiKey)}
-                          className="p-1 text-zinc-500 hover:text-zinc-300 rounded hover:bg-zinc-800 transition-all cursor-pointer"
-                          title={showApiKey ? 'Hide Token' : 'Reveal Token'}
-                        >
-                          {showApiKey ? <EyeOff size={14} /> : <Eye size={14} />}
-                        </button>
-                        <button
-                          onClick={() => handleCopyKey(drawerUser.api_key)}
-                          className="p-1 text-zinc-500 hover:text-zinc-300 rounded hover:bg-zinc-800 transition-all cursor-pointer"
-                          title="Copy to clipboard"
-                        >
-                          {copiedKey ? <Check size={14} className="text-emerald-500 animate-pulse" /> : <Clipboard size={14} />}
-                        </button>
-                      </div>
-                    </div>
-                    
-                    <code className="block p-3 bg-zinc-950 border border-zinc-900 rounded-lg text-xs font-mono text-zinc-300 break-all select-all font-semibold">
-                      {showApiKey ? drawerUser.api_key : 'akt_••••••••••••••••••••••••••••••••'}
-                    </code>
-
-                    <div className="text-[10px] text-zinc-500 leading-relaxed bg-zinc-900/10 p-3 rounded-lg border border-zinc-800/40 space-y-1">
-                      <div className="font-bold text-zinc-400 uppercase tracking-wider">How to authenticate:</div>
-                      <div>• CLI Client: Set local environment `AKTIONFY_API_KEY` configuration.</div>
-                      <div>• REST Nodes: Attach standard header `X-API-Key` on requests.</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Quotas & Limits Status */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Node Limit Status</h4>
-                    <button
-                      onClick={() => {
-                        setIsDrawerOpen(false);
-                        openOverrideModal(drawerUser);
-                      }}
-                      className="text-[9px] font-black uppercase tracking-wider text-indigo-400 hover:text-white transition-all cursor-pointer"
-                    >
-                      Configure Overrides
-                    </button>
-                  </div>
-                  <div className="p-4 bg-zinc-900/40 border border-zinc-800 rounded-xl space-y-4">
-                    <div>
-                      <div className="flex justify-between text-[10px] font-semibold text-zinc-400 uppercase mb-1.5">
-                        <span>Max Task Limit capacity</span>
-                        <span className="font-mono text-white font-bold">
-                          {drawerUser.max_tasks_limit?.Valid && drawerUser.max_tasks_limit.Int32 >= 0 ? `${drawerUser.max_tasks_limit.Int32} (Override)` : 'Tier Default'}
-                        </span>
-                      </div>
-                      <div className="w-full bg-zinc-950 h-2 rounded-full overflow-hidden border border-zinc-900">
-                        <div className="bg-brand-primary h-full rounded-full" style={{ width: drawerUser.max_tasks_limit?.Valid && drawerUser.max_tasks_limit.Int32 > 0 ? '70%' : '20%' }} />
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex justify-between text-[10px] font-semibold text-zinc-400 uppercase mb-1.5">
-                        <span>Request Rate Limit Bucket</span>
-                        <span className="font-mono text-white font-bold">
-                          {drawerUser.rate_limit_override?.Valid && drawerUser.rate_limit_override.Int32 >= 0 ? `${drawerUser.rate_limit_override.Int32}/min (Override)` : 'Tier Default'}
-                        </span>
-                      </div>
-                      <div className="w-full bg-zinc-950 h-2 rounded-full overflow-hidden border border-zinc-900">
-                        <div className="bg-emerald-500 h-full rounded-full" style={{ width: drawerUser.rate_limit_override?.Valid && drawerUser.rate_limit_override.Int32 > 0 ? '80%' : '35%' }} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Operations & Revocations */}
-                <div className="space-y-3">
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Security Operations</h4>
-                  <div className="p-4 bg-red-950/10 border border-red-500/10 rounded-xl space-y-4">
-                    <div className="flex flex-col gap-1.5">
-                      <button
-                        onClick={() => handleRolloverKey(drawerUser.id)}
-                        className="w-full py-2.5 px-4 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all pro-focus flex items-center justify-center gap-2 cursor-pointer"
-                      >
-                        <KeyRound size={14} className="text-cyan-400" />
-                        Rollover API Key
-                      </button>
-                      <p className="text-[9px] text-zinc-500 italic text-center">Regenerates key instantly, invalidating any active CLI agents.</p>
-                    </div>
-
-                    <div className="flex flex-col gap-1.5 border-t border-zinc-800/60 pt-4">
-                      <button
-                        onClick={() => handleRevokeSessions(drawerUser.id)}
-                        className="w-full py-2.5 px-4 bg-red-950/20 hover:bg-red-900/30 border border-red-500/20 text-red-300 hover:text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all pro-focus flex items-center justify-center gap-2 cursor-pointer"
-                      >
-                        <Ban size={14} className="text-red-400 animate-pulse" />
-                        Quarantine Sessions
-                      </button>
-                      <p className="text-[9px] text-zinc-500 italic text-center">Instantly revokes all active browser sessions and sever SSE/MCP links.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div className="p-6 border-t border-zinc-800 bg-zinc-900/10 flex items-center gap-3">
-                <button
-                  onClick={() => setIsDrawerOpen(false)}
-                  className="flex-1 py-2 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all pro-focus cursor-pointer"
-                >
-                  Dismiss Drawer
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <UserDrawer 
+        isDrawerOpen={isDrawerOpen}
+        setIsDrawerOpen={setIsDrawerOpen}
+        drawerUser={drawerUser}
+        showApiKey={showApiKey}
+        setShowApiKey={setShowApiKey}
+        copiedKey={copiedKey}
+        handleCopyKey={handleCopyKey}
+        handleRolloverKey={handleRolloverKey}
+        handleRevokeSessions={handleRevokeSessions}
+        openOverrideModal={openOverrideModal}
+      />
     </>
   );
 };

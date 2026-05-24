@@ -25,6 +25,17 @@ func PublishEvent(ctx context.Context, event PubSubEvent) error {
 		return nil
 	}
 
+	// Auto-invalidate task/dashboard cache on task mutations/executions
+	if event.EventType == "task_updated" || event.EventType == "task_executed" || event.EventType == "task_status_changed" {
+		InvalidateCachedTasks(ctx, event.UserID)
+	}
+
+	// Auto-invalidate global insights/trends on user list or setting mutations
+	if event.EventType == "user_updated" || event.EventType == "settings_updated" {
+		InvalidateCachedInsights(ctx)
+		InvalidateCachedTrends(ctx)
+	}
+
 	if event.TraceContext == nil {
 		event.TraceContext = make(map[string]string)
 	}
@@ -94,11 +105,37 @@ func SubscribeToEvents(ctx context.Context, onEvent func(context.Context, PubSub
 	}
 }
 
-// publishTrace emits a live trace event for real-time terminal streaming
+// publishTrace emits a live trace event for real-time terminal streaming and buffers it in Redis
 func publishTrace(ctx context.Context, userID string, trace db.ExecutionTrace, err error) {
 	if err == nil {
+		BufferExecutionTrace(ctx, trace)
 		PublishTraceEvent(ctx, userID, trace)
 	}
+}
+
+// BufferExecutionTrace stores an execution trace in a Redis List with a 2-hour TTL.
+func BufferExecutionTrace(ctx context.Context, trace db.ExecutionTrace) {
+	if RedisClient == nil {
+		return
+	}
+
+	taskIDStr := formatUUID(trace.TaskID)
+	key := fmt.Sprintf("logs:%s:%s", taskIDStr, trace.ExecutionID)
+	bytes, err := json.Marshal(trace)
+	if err != nil {
+		log.Printf("Warning: failed to marshal trace for buffer: %v", err)
+		return
+	}
+
+	// RPUSH appends to the Redis List
+	err = RedisClient.RPush(ctx, key, string(bytes)).Err()
+	if err != nil {
+		log.Printf("Warning: failed to buffer trace in Redis: %v", err)
+		return
+	}
+
+	// Set TTL of 2 hours to prevent memory leaks
+	_ = RedisClient.Expire(ctx, key, 2*time.Hour).Err()
 }
 
 // PublishTraceEvent publishes a live execution trace event to the user's event stream
