@@ -36,6 +36,7 @@ if count < limit then
 	redis.call("EXPIRE", key, math.ceil(window / 1000.0) + 1)
 	return 1
 else
+	redis.call("EXPIRE", key, math.ceil(window / 1000.0) + 1)
 	return 0
 end
 `)

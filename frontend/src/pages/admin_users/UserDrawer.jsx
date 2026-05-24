@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { X, KeyRound, EyeOff, Eye, Check, Clipboard, Ban, RefreshCw, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -15,28 +15,40 @@ const UserDrawer = ({
   handleRevokeSessions,
   openOverrideModal
 }) => {
+  const isMounted = useRef(true);
   const [sessions, setSessions] = useState([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   const fetchSessions = useCallback(async () => {
     if (!drawerUser) return;
     setLoadingSessions(true);
     try {
       const res = await axios.get(`/api/v1/admin/users/${drawerUser.id}/sessions`);
-      if (res.data.success) {
+      if (res.data.success && isMounted.current) {
         setSessions(res.data.data || []);
       }
     } catch (err) {
       console.error("Failed to load user sessions", err);
     } finally {
-      setLoadingSessions(false);
+      if (isMounted.current) {
+        setLoadingSessions(false);
+      }
     }
   }, [drawerUser]);
 
   useEffect(() => {
     if (isDrawerOpen && drawerUser) {
       Promise.resolve().then(() => {
-        fetchSessions();
+        if (isMounted.current) {
+          fetchSessions();
+        }
       });
     }
   }, [isDrawerOpen, drawerUser, fetchSessions]);
@@ -45,7 +57,7 @@ const UserDrawer = ({
     if (!window.confirm("Are you sure you want to revoke this specific session?")) return;
     try {
       const res = await axios.delete(`/api/v1/admin/users/${drawerUser.id}/sessions/${sessionId}`);
-      if (res.data.success) {
+      if (res.data.success && isMounted.current) {
         fetchSessions();
       }
     } catch (err) {

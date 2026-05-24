@@ -268,10 +268,13 @@ func flushTraces(ctx context.Context) {
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		log.Printf("TraceFlusher: failed to commit transaction: %v", err)
+		log.Printf("TraceFlusher: failed to commit transaction: %v. Moving %d traces to dead-letter queue (DLQ).", err, len(rawItems))
+		dlqKey := "sys:buffered:traces:dlq"
 		for _, raw := range rawItems {
-			_ = RedisClient.RPush(ctx, key, raw).Err()
+			_ = RedisClient.RPush(ctx, dlqKey, raw).Err()
 		}
+		// Bound the DLQ size to prevent memory exhaustion
+		_ = RedisClient.LTrim(ctx, dlqKey, -5000, -1).Err()
 	}
 }
 
