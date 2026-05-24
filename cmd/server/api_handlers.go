@@ -171,6 +171,10 @@ func apiLoginHandler(c echo.Context) error {
 		UserAgent: pgtype.Text{String: c.Request().UserAgent(), Valid: true},
 		Status:    "success",
 	})
+
+	// Record active session in Redis
+	RecordActiveSession(c.Request().Context(), u.ID, sessionID, c.RealIP(), c.Request().UserAgent())
+
 	user := &User{
 		ID:        u.ID,
 		Email:     u.Email.String,
@@ -1750,3 +1754,127 @@ func apiAdminDeleteInvitationHandler(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Invitation successfully revoked"})
 }
+
+func apiListSessionsHandler(c echo.Context) error {
+	userID := getUserID(c)
+	if userID == "" {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
+	sessions := GetActiveSessions(c.Request().Context(), userID)
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: sessions})
+}
+
+func apiRevokeSessionHandler(c echo.Context) error {
+	userID := getUserID(c)
+	if userID == "" {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
+	sessionID := c.Param("id")
+	if sessionID == "" {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Session ID required"})
+	}
+
+	if err := RevokeActiveSession(c.Request().Context(), userID, sessionID); err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to revoke session: " + err.Error()})
+	}
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Session revoked successfully"})
+}
+
+func apiAdminToggleMaintenanceHandler(c echo.Context) error {
+	ctx := c.Request().Context()
+	if RedisClient == nil {
+		return c.JSON(http.StatusServiceUnavailable, APIResponse{Success: false, Error: "Redis offline"})
+	}
+
+	var input struct {
+		Enabled bool `json:"enabled"`
+	}
+	if err := c.Bind(&input); err != nil {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid request body"})
+	}
+
+	admin := getUserFromEcho(c)
+	if input.Enabled {
+		err := RedisClient.Set(ctx, "sys:maintenance", "true", 0).Err()
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to enable maintenance mode"})
+		}
+		if admin != nil {
+			writeAuditLog(ctx, AuditEvent{
+				UserID:       admin.ID,
+				Action:       "admin.enable_maintenance",
+				ResourceType: "system",
+				ResourceID:   "maintenance",
+			})
+		}
+		_ = PublishEvent(ctx, PubSubEvent{
+			UserID:    "system",
+			EventType: "maintenance_mode_changed",
+			Payload:   "{\"status\":\"enabled\"}",
+		})
+	} else {
+		err := RedisClient.Del(ctx, "sys:maintenance").Err()
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to disable maintenance mode"})
+		}
+		if admin != nil {
+			writeAuditLog(ctx, AuditEvent{
+				UserID:       admin.ID,
+				Action:       "admin.disable_maintenance",
+				ResourceType: "system",
+				ResourceID:   "maintenance",
+			})
+		}
+		_ = PublishEvent(ctx, PubSubEvent{
+			UserID:    "system",
+			EventType: "maintenance_mode_changed",
+			Payload:   "{\"status\":\"disabled\"}",
+		})
+	}
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: fmt.Sprintf("Maintenance mode set to %v", input.Enabled)})
+}
+
+func apiGetMaintenanceStatusHandler(c echo.Context) error {
+	if RedisClient == nil {
+		return c.JSON(http.StatusOK, APIResponse{Success: true, Data: map[string]interface{}{"enabled": false}})
+	}
+	exists, err := RedisClient.Exists(c.Request().Context(), "sys:maintenance").Result()
+	if err != nil {
+		return c.JSON(http.StatusOK, APIResponse{Success: true, Data: map[string]interface{}{"enabled": false}})
+	}
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: map[string]interface{}{"enabled": exists > 0}})
+}
+
+func apiAdminListSessionsHandler(c echo.Context) error {
+	userID := c.Param("id")
+	if userID == "" {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "User ID required"})
+	}
+	sessions := GetActiveSessions(c.Request().Context(), userID)
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: sessions})
+}
+
+func apiAdminRevokeSessionHandler(c echo.Context) error {
+	userID := c.Param("id")
+	sessionID := c.Param("session_id")
+	if userID == "" || sessionID == "" {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "User ID and Session ID required"})
+	}
+
+	if err := RevokeActiveSession(c.Request().Context(), userID, sessionID); err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to revoke session: " + err.Error()})
+	}
+
+	// Trigger SSE session revocation event for user
+	_ = PublishEvent(c.Request().Context(), PubSubEvent{
+		UserID:    userID,
+		EventType: "session_revoked",
+		Payload:   fmt.Sprintf("{\"session_id\":\"%s\"}", sessionID),
+	})
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Session revoked successfully"})
+}
+
+

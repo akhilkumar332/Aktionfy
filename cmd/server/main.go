@@ -201,7 +201,7 @@ func main() {
 	//     log.Printf("Current migration version: %d, dirty: %t", version, dirty)
 	// }
 
-	queries = db.New(dbPool)
+	queries = &queriesWrapper{db.New(dbPool)}
 
 	// 1.5 Initialize Redis Client
 	initRedis(cfg.RedisURL)
@@ -442,9 +442,12 @@ func main() {
 	// Unified V1 API
 	v1 := e.Group("/api/v1")
 	v1.POST("/webhooks/inbound/:token", handleInboundWebhook, IPRateLimitMiddleware)
+	v1.GET("/public/maintenance", apiGetMaintenanceStatusHandler)
 
 	// Protected API Handlers (v1)
-	api := v1.Group("", csrfMiddleware, EchoSessionMiddleware, EchoRateLimitMiddleware)
+	api := v1.Group("", csrfMiddleware, EchoSessionMiddleware, EchoMaintenanceModeMiddleware, EchoRateLimitMiddleware)
+	api.GET("/sessions", apiListSessionsHandler)
+	api.DELETE("/sessions/:id", apiRevokeSessionHandler)
 	api.GET("/dashboard", apiDashboardHandler)
 	api.GET("/system/status", apiSystemStatusHandler)
 	api.POST("/rotate-api-key", apiRotateAPIKeyHandler)
@@ -501,6 +504,8 @@ func main() {
 
 	admin := api.Group("/admin", EchoRequireRole("admin"))
 	admin.GET("/users", apiAdminUsersHandler)
+	admin.GET("/users/:id/sessions", apiAdminListSessionsHandler)
+	admin.DELETE("/users/:id/sessions/:session_id", apiAdminRevokeSessionHandler)
 	admin.POST("/users/update", apiAdminUpdateUserHandler)
 	admin.GET("/login-history", apiAdminLoginHistoryHandler)
 	admin.GET("/audit-logs", apiAdminAuditLogsHandler)
@@ -522,6 +527,7 @@ func main() {
 	admin.GET("/invitations", apiAdminListInvitationsHandler)
 	admin.POST("/invitations", apiAdminCreateInvitationHandler)
 	admin.DELETE("/invitations/:id", apiAdminDeleteInvitationHandler)
+	admin.POST("/maintenance", apiAdminToggleMaintenanceHandler)
 
 	e.POST("/webhooks/stripe", apiStripeWebhook)
 
@@ -553,6 +559,8 @@ func main() {
 	go runWorkerHeartbeat(ctx)
 	// Start Background Settings Poller
 	go runSettingsPoller(ctx)
+	// Start background trace flusher
+	go StartTraceFlusher(ctx)
 
 	// Bootstrap Admin
 	adminEmail := os.Getenv("ADMIN_EMAIL")

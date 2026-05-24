@@ -1,4 +1,6 @@
-import { X, KeyRound, EyeOff, Eye, Check, Clipboard, Ban } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
+import { X, KeyRound, EyeOff, Eye, Check, Clipboard, Ban, RefreshCw, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const UserDrawer = ({
@@ -13,6 +15,44 @@ const UserDrawer = ({
   handleRevokeSessions,
   openOverrideModal
 }) => {
+  const [sessions, setSessions] = useState([]);
+  const [loadingSessions, setLoadingSessions] = useState(false);
+
+  const fetchSessions = useCallback(async () => {
+    if (!drawerUser) return;
+    setLoadingSessions(true);
+    try {
+      const res = await axios.get(`/api/v1/admin/users/${drawerUser.id}/sessions`);
+      if (res.data.success) {
+        setSessions(res.data.data || []);
+      }
+    } catch (err) {
+      console.error("Failed to load user sessions", err);
+    } finally {
+      setLoadingSessions(false);
+    }
+  }, [drawerUser]);
+
+  useEffect(() => {
+    if (isDrawerOpen && drawerUser) {
+      Promise.resolve().then(() => {
+        fetchSessions();
+      });
+    }
+  }, [isDrawerOpen, drawerUser, fetchSessions]);
+
+  const handleRevokeSingleSession = async (sessionId) => {
+    if (!window.confirm("Are you sure you want to revoke this specific session?")) return;
+    try {
+      const res = await axios.delete(`/api/v1/admin/users/${drawerUser.id}/sessions/${sessionId}`);
+      if (res.data.success) {
+        fetchSessions();
+      }
+    } catch (err) {
+      console.error("Failed to revoke session", err);
+    }
+  };
+
   return (
     <AnimatePresence>
       {isDrawerOpen && drawerUser && (
@@ -147,6 +187,53 @@ const UserDrawer = ({
                       <div className="bg-emerald-500 h-full rounded-full" style={{ width: drawerUser.rate_limit_override?.Valid && drawerUser.rate_limit_override.Int32 > 0 ? '80%' : '35%' }} />
                     </div>
                   </div>
+                </div>
+              </div>
+
+              {/* Active Sessions List */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Active Web Sessions</h4>
+                  <button
+                    onClick={fetchSessions}
+                    disabled={loadingSessions}
+                    className="text-zinc-500 hover:text-white p-1 rounded hover:bg-zinc-800 transition-all cursor-pointer"
+                    title="Refresh Sessions"
+                  >
+                    <RefreshCw size={12} className={loadingSessions ? 'animate-spin' : ''} />
+                  </button>
+                </div>
+                <div className="p-4 bg-zinc-900/40 border border-zinc-800 rounded-xl space-y-3">
+                  {loadingSessions && sessions.length === 0 ? (
+                    <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold text-center py-4 animate-pulse">Syncing sessions...</p>
+                  ) : sessions.length === 0 ? (
+                    <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold text-center py-4">No active sessions found</p>
+                  ) : (
+                    <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
+                      {sessions.map((sess) => (
+                        <div key={sess.session_id} className="flex items-center justify-between p-2.5 bg-black/40 border border-zinc-900 rounded-lg hover:border-zinc-800 transition-colors">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-bold text-white font-mono break-all max-w-[120px] truncate">{sess.ip_address || "Unknown IP"}</span>
+                              <span className="text-[9px] text-zinc-550 font-medium">
+                                {sess.last_active ? new Date(sess.last_active).toLocaleTimeString() : ""}
+                              </span>
+                            </div>
+                            <p className="text-[8px] text-zinc-500 truncate max-w-[240px]" title={sess.user_agent}>
+                              {sess.user_agent || "Unknown Browser"}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => handleRevokeSingleSession(sess.session_id)}
+                            className="p-1.5 bg-red-950/20 hover:bg-red-900/30 border border-red-500/20 text-red-400 hover:text-white rounded transition-colors cursor-pointer"
+                            title="Revoke Session"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 

@@ -65,9 +65,17 @@ type DBPool interface {
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 }
 
+type queriesWrapper struct {
+	*db.Queries
+}
+
+func (qw *queriesWrapper) CreateExecutionTrace(ctx context.Context, params db.CreateExecutionTraceParams) (db.ExecutionTrace, error) {
+	return createExecutionTrace(ctx, params)
+}
+
 var (
 	dbPool            DBPool
-	queries           *db.Queries
+	queries           *queriesWrapper
 	RedisClient       *redis.Client
 	ServerStartTime   time.Time
 	appConfig         runtimeConfig

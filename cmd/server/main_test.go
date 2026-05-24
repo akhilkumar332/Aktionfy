@@ -9,7 +9,7 @@ import (
 
 func TestMain(m *testing.M) {
 	mock := &mockDB{}
-	queries = db.New(mock)
+	queries = &queriesWrapper{db.New(mock)}
 	dbPool = mock
 	os.Exit(m.Run())
 }

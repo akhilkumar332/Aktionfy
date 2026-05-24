@@ -99,6 +99,9 @@ func EchoSessionMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 
 		log.Printf("Session Validated: UserID=%s, Email=%s, Role=%s", user.ID, user.Email, user.Role)
 
+		// Record session metadata in Redis to update last active timestamp asynchronously
+		go RecordActiveSession(context.Background(), u.ID, cookie.Value, c.RealIP(), c.Request().UserAgent())
+
 		c.Set("user", user)
 		c.Set("user_id", user.ID)
 		c.Set("user_role", user.Role)
@@ -375,3 +378,29 @@ func SamplingInterceptorMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
+// EchoMaintenanceModeMiddleware checks if global maintenance mode is active in Redis.
+func EchoMaintenanceModeMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		if RedisClient == nil {
+			return next(c)
+		}
+
+		// Check if maintenance mode is active in Redis
+		isMaintenance, err := RedisClient.Exists(c.Request().Context(), "sys:maintenance").Result()
+		if err == nil && isMaintenance > 0 {
+			// Get user from context
+			user, _ := c.Get("user").(*User)
+			if user != nil && user.Role == "admin" {
+				return next(c)
+			}
+			return c.JSON(http.StatusServiceUnavailable, APIResponse{
+				Success: false,
+				Error:   "Aktionfy is currently undergoing scheduled maintenance. Please try again later.",
+			})
+		}
+
+		return next(c)
+	}
+}
+

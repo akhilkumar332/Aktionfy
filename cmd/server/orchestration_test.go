@@ -46,7 +46,7 @@ func TestResolvePromptVariables(t *testing.T) {
 	defer func() { queries = oldQueries }()
 
 	mock := &flexibleMockDB{}
-	queries = db.New(&dbTXWrapper{mock})
+	queries = &queriesWrapper{db.New(&dbTXWrapper{mock})}
 
 	ctx := context.Background()
 	userID := "user-123"

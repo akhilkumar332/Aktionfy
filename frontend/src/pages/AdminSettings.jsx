@@ -20,12 +20,28 @@ const AdminSettings = () => {
   const [saving, setSaving] = useState(false);
   const [pruning, setPruning] = useState(false);
   const [confirmPrune, setConfirmPrune] = useState(false);
+  const [maintenanceEnabled, setMaintenanceEnabled] = useState(false);
+  const [maintenanceLoading, setMaintenanceLoading] = useState(true);
+  const [togglingMaintenance, setTogglingMaintenance] = useState(false);
 
   useEffect(() => {
     return () => {
       isMounted.current = false;
     };
   }, []);
+
+  const fetchMaintenanceStatus = useCallback(async () => {
+    try {
+      const res = await axios.get('/api/v1/public/maintenance');
+      if (res.data.success && isMounted.current) {
+        setMaintenanceEnabled(res.data.data.enabled);
+      }
+    } catch (err) {
+      notify('ERROR', 'Failed to fetch maintenance status', err.response?.data?.error || err.message);
+    } finally {
+      if (isMounted.current) setMaintenanceLoading(false);
+    }
+  }, [notify]);
 
   const fetchSettings = useCallback(async () => {
     try {
@@ -38,12 +54,13 @@ const AdminSettings = () => {
           scheduler_poll_interval_seconds: 30
         });
       }
+      await fetchMaintenanceStatus();
     } catch (err) {
       notify('ERROR', 'Failed to load system settings', err.response?.data?.error || err.message);
     } finally {
       if (isMounted.current) setLoading(false);
     }
-  }, [notify]);
+  }, [notify, fetchMaintenanceStatus]);
 
   useEffect(() => {
     const handleUpdate = () => {
@@ -52,6 +69,16 @@ const AdminSettings = () => {
     addListener('settings_updated', handleUpdate);
     return () => removeListener('settings_updated', handleUpdate);
   }, [addListener, removeListener, fetchSettings]);
+
+  useEffect(() => {
+    const handleMaintenanceChange = (payload) => {
+      if (payload && isMounted.current) {
+        setMaintenanceEnabled(payload.status === 'enabled');
+      }
+    };
+    addListener('maintenance_mode_changed', handleMaintenanceChange);
+    return () => removeListener('maintenance_mode_changed', handleMaintenanceChange);
+  }, [addListener, removeListener]);
 
   useEffect(() => {
     const init = async () => {
@@ -70,6 +97,22 @@ const AdminSettings = () => {
       notify('ERROR', 'Failed to synchronize configuration', err.response?.data?.error || err.message);
     } finally {
       if (isMounted.current) setSaving(false);
+    }
+  };
+
+  const handleToggleMaintenance = async () => {
+    setTogglingMaintenance(true);
+    try {
+      const targetState = !maintenanceEnabled;
+      const res = await axios.post('/api/v1/admin/maintenance', { enabled: targetState });
+      if (res.data.success) {
+        setMaintenanceEnabled(targetState);
+        notify('SUCCESS', targetState ? 'System set to Maintenance Mode. Non-admin routes are now restricted.' : 'System maintenance mode deactivated.');
+      }
+    } catch (err) {
+      notify('ERROR', 'Failed to toggle maintenance mode', err.response?.data?.error || err.message);
+    } finally {
+      if (isMounted.current) setTogglingMaintenance(false);
     }
   };
 
@@ -209,6 +252,39 @@ const AdminSettings = () => {
                   </button>
                 </div>
               </form>
+
+              <div className="bg-zinc-950 border border-zinc-800/50 rounded-3xl p-12 shadow-lg relative overflow-hidden backdrop-blur-xl group hover:border-zinc-800 transition-all">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-10">
+                  <div className="flex items-center gap-6">
+                    <div className={`p-5 rounded-xl border transition-colors ${
+                      maintenanceEnabled ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : 'bg-zinc-800/50 text-zinc-400 border-zinc-800'
+                    }`}>
+                      <Settings size={28} />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-black text-white uppercase tracking-tighter mb-1">Global Maintenance Mode</h2>
+                      <p className="text-[10px] font-bold text-zinc-300 uppercase tracking-widest">
+                        {maintenanceEnabled ? 'Restricting traffic: only administrators can access APIs' : 'Deactivated: all clients can connect normally'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button 
+                      type="button"
+                      onClick={handleToggleMaintenance}
+                      disabled={togglingMaintenance || maintenanceLoading}
+                      className={`px-10 py-5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-3 disabled:opacity-50 whitespace-nowrap ${
+                        maintenanceEnabled 
+                          ? 'bg-amber-600 text-white shadow-[0_20px_50px_rgba(245,158,11,0.2)] hover:bg-amber-500' 
+                          : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300'
+                      }`}
+                    >
+                      {togglingMaintenance ? <RefreshCw size={16} className="animate-spin" /> : <Settings size={16} />}
+                      {maintenanceEnabled ? 'Deactivate Maintenance' : 'Activate Maintenance'}
+                    </button>
+                  </div>
+                </div>
+              </div>
 
               <div className="bg-red-500/5 border border-red-500/10 rounded-3xl p-12 shadow-lg relative overflow-hidden backdrop-blur-xl group hover:border-red-500/20 transition-all">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-10">

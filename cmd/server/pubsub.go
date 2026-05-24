@@ -8,6 +8,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 )
@@ -152,3 +154,124 @@ func PublishTraceEvent(ctx context.Context, userID string, trace db.ExecutionTra
 		Payload:   string(payload),
 	})
 }
+
+// createExecutionTrace queues a trace in Redis if online, otherwise writes to PostgreSQL.
+func createExecutionTrace(ctx context.Context, params db.CreateExecutionTraceParams) (db.ExecutionTrace, error) {
+	if RedisClient == nil {
+		return queries.CreateExecutionTrace(ctx, params)
+	}
+
+	traceIDRaw := uuid.New()
+	var traceID pgtype.UUID
+	_ = parseUUID(traceIDRaw.String(), &traceID)
+	now := time.Now().UTC()
+
+	trace := db.ExecutionTrace{
+		ID:           traceID,
+		TaskID:       params.TaskID,
+		ExecutionID:  params.ExecutionID,
+		WorkerID:     params.WorkerID,
+		StepName:     params.StepName,
+		StartTime:    pgtype.Timestamptz{Time: now, Valid: true},
+		InputData:    params.InputData,
+		OutputData:   params.OutputData,
+		IsError:      params.IsError,
+		ErrorMessage: params.ErrorMessage,
+		Metadata:     params.Metadata,
+	}
+
+	bytes, err := json.Marshal(trace)
+	if err == nil {
+		_ = RedisClient.RPush(ctx, "sys:buffered:traces", string(bytes)).Err()
+	} else {
+		log.Printf("Warning: failed to marshal trace: %v", err)
+	}
+
+	return trace, nil
+}
+
+// StartTraceFlusher launches the background worker that flushes buffered execution traces to PostgreSQL.
+func StartTraceFlusher(ctx context.Context) {
+	if RedisClient == nil {
+		return
+	}
+	ticker := time.NewTicker(2 * time.Second)
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("Panic in StartTraceFlusher: %v", r)
+			}
+		}()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				flushTraces(ctx)
+			}
+		}
+	}()
+}
+
+func flushTraces(ctx context.Context) {
+	if RedisClient == nil {
+		return
+	}
+
+	key := "sys:buffered:traces"
+	lenVal, err := RedisClient.LLen(ctx, key).Result()
+	if err != nil || lenVal == 0 {
+		return
+	}
+
+	batchSize := int64(100)
+	if lenVal < batchSize {
+		batchSize = lenVal
+	}
+
+	var traces []db.ExecutionTrace
+	var rawItems []string
+	for i := int64(0); i < batchSize; i++ {
+		val, err := RedisClient.LPop(ctx, key).Result()
+		if err != nil {
+			break
+		}
+		var t db.ExecutionTrace
+		if err := json.Unmarshal([]byte(val), &t); err == nil {
+			traces = append(traces, t)
+			rawItems = append(rawItems, val)
+		}
+	}
+
+	if len(traces) == 0 {
+		return
+	}
+
+	tx, err := dbPool.Begin(ctx)
+	if err != nil {
+		log.Printf("TraceFlusher: failed to begin transaction: %v", err)
+		for _, raw := range rawItems {
+			_ = RedisClient.RPush(ctx, key, raw).Err()
+		}
+		return
+	}
+	defer tx.Rollback(ctx)
+
+	for _, t := range traces {
+		_, err = tx.Exec(ctx, `
+			INSERT INTO execution_traces (id, task_id, execution_id, worker_id, step_name, start_time, end_time, duration_ms, input_data, output_data, is_error, error_message, metadata)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		`, t.ID, t.TaskID, t.ExecutionID, t.WorkerID, t.StepName, t.StartTime, t.EndTime, t.DurationMs, t.InputData, t.OutputData, t.IsError, t.ErrorMessage, t.Metadata)
+		if err != nil {
+			log.Printf("TraceFlusher: error inserting trace: %v", err)
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		log.Printf("TraceFlusher: failed to commit transaction: %v", err)
+		for _, raw := range rawItems {
+			_ = RedisClient.RPush(ctx, key, raw).Err()
+		}
+	}
+}
+

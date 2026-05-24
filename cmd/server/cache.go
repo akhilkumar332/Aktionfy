@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"aktionfy/db"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -601,4 +602,83 @@ func InvalidateAdminUsersCache(ctx context.Context) {
 		_ = RedisClient.Del(ctx, iter.Val()).Err()
 	}
 }
+
+// ActiveSessionMeta stores user-agent, IP, and activity time for a session.
+type ActiveSessionMeta struct {
+	SessionID  string `json:"session_id"`
+	IPAddress  string `json:"ip_address"`
+	UserAgent  string `json:"user_agent"`
+	LastActive string `json:"last_active"`
+}
+
+// RecordActiveSession stores/updates session metadata in Redis.
+func RecordActiveSession(ctx context.Context, userID string, sessionID string, ip string, userAgent string) {
+	if RedisClient == nil {
+		return
+	}
+	metaKey := fmt.Sprintf("session:meta:%s:%s", userID, sessionID)
+	data := map[string]string{
+		"session_id":  sessionID,
+		"ip_address":  ip,
+		"user_agent":  userAgent,
+		"last_active": time.Now().UTC().Format(time.RFC3339),
+	}
+	_ = RedisClient.HMSet(ctx, metaKey, data).Err()
+	_ = RedisClient.Expire(ctx, metaKey, 24*time.Hour).Err()
+
+	// Track in active session IDs set
+	idsKey := fmt.Sprintf("cache:user:session-ids:%s", userID)
+	_ = RedisClient.SAdd(ctx, idsKey, sessionID).Err()
+	_ = RedisClient.Expire(ctx, idsKey, 24*time.Hour).Err()
+}
+
+// GetActiveSessions returns all active session metadata for a user.
+func GetActiveSessions(ctx context.Context, userID string) []ActiveSessionMeta {
+	if RedisClient == nil {
+		return []ActiveSessionMeta{}
+	}
+	idsKey := fmt.Sprintf("cache:user:session-ids:%s", userID)
+	sessionIDs, err := RedisClient.SMembers(ctx, idsKey).Result()
+	if err != nil {
+		return []ActiveSessionMeta{}
+	}
+
+	var active []ActiveSessionMeta
+	for _, sessID := range sessionIDs {
+		metaKey := fmt.Sprintf("session:meta:%s:%s", userID, sessID)
+		fields, err := RedisClient.HGetAll(ctx, metaKey).Result()
+		if err == nil && len(fields) > 0 {
+			active = append(active, ActiveSessionMeta{
+				SessionID:  fields["session_id"],
+				IPAddress:  fields["ip_address"],
+				UserAgent:  fields["user_agent"],
+				LastActive: fields["last_active"],
+			})
+		}
+	}
+	return active
+}
+
+// RevokeActiveSession deletes session from Redis cache and database.
+func RevokeActiveSession(ctx context.Context, userID string, sessionID string) error {
+	// 1. Delete from Redis
+	if RedisClient != nil {
+		metaKey := fmt.Sprintf("session:meta:%s:%s", userID, sessionID)
+		_ = RedisClient.Del(ctx, metaKey).Err()
+		idsKey := fmt.Sprintf("cache:user:session-ids:%s", userID)
+		_ = RedisClient.SRem(ctx, idsKey, sessionID).Err()
+		
+		// Invalidate cached user session too
+		sessCacheKey := fmt.Sprintf("cache:user:session:%s", sessionID)
+		_ = RedisClient.Del(ctx, sessCacheKey).Err()
+	}
+
+	// 2. Delete from DB
+	var pgSessID pgtype.UUID
+	if err := parseUUID(sessionID, &pgSessID); err == nil {
+		return queries.DeleteWebSession(ctx, pgSessID)
+	}
+	return nil
+}
+
 
