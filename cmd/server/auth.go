@@ -98,16 +98,27 @@ func CheckUserQuota(ctx context.Context, userID string, tier string) error {
 		return fmt.Errorf("failed to fetch task count: %w", err)
 	}
 
-	limit := QuotaFree
-	switch tier {
-	case TierPlus:
-		limit = QuotaPlus
-	case TierPro:
-		limit = QuotaPro
+	u, err := queries.GetUser(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("failed to fetch user for quota check: %w", err)
 	}
 
-	if int(taskCount) >= limit {
-		return fmt.Errorf("quota exceeded: %s tier allows maximum %d tasks", tier, limit)
+	limit := QuotaFree
+	if u.MaxTasksLimit.Valid {
+		limit = int(u.MaxTasksLimit.Int32)
+		if int(taskCount) >= limit {
+			return fmt.Errorf("quota exceeded: custom limits allow maximum %d tasks", limit)
+		}
+	} else {
+		switch tier {
+		case TierPlus:
+			limit = QuotaPlus
+		case TierPro:
+			limit = QuotaPro
+		}
+		if int(taskCount) >= limit {
+			return fmt.Errorf("quota exceeded: %s tier allows maximum %d tasks", tier, limit)
+		}
 	}
 
 	return nil

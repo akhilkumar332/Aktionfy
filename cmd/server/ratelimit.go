@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -57,13 +58,25 @@ func (rl *rateLimiter) Allow(ctx context.Context, userID string) bool {
 		return true
 	}
 
+	rate := RateTokensPerSec
+	capacity := BurstCapacity
+
+	// Check for user-specific rate overrides
+	if !strings.HasPrefix(userID, "ip:") {
+		u, err := queries.GetUser(ctx, userID)
+		if err == nil && u.RateLimitOverride.Valid {
+			rate = float64(u.RateLimitOverride.Int32)
+			capacity = float64(u.RateLimitOverride.Int32 * 2)
+		}
+	}
+
 	now := time.Now().UTC().UnixMilli()
 	key := "ratelimit:" + userID
 
 	ctx, cancel := context.WithTimeout(ctx, 100*time.Millisecond)
 	defer cancel()
 
-	result, err := rateLimitScript.Run(ctx, rl.client, []string{key}, RateTokensPerSec, BurstCapacity, now).Result()
+	result, err := rateLimitScript.Run(ctx, rl.client, []string{key}, rate, capacity, now).Result()
 	if err != nil {
 		log.Printf("WARNING: Rate limit Lua script error for user %s: %v. Failing open.", userID, err)
 		return true

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -17,16 +19,17 @@ import (
 )
 
 type AuthInput struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email       string `json:"email"`
+	Password    string `json:"password"`
+	InviteToken string `json:"invite_token,omitempty"`
 }
 
 type APIResponse struct {
 	Success   bool        `json:"success"`
 	Message   string      `json:"message,omitempty"`
-	Data      interface{} `json:"data,omitempty"`
 	Error     string      `json:"error,omitempty"`
-	CSRFToken string      `json:"csrfToken,omitempty"`
+	Data      interface{} `json:"data,omitempty"`
+	CSRFToken string      `json:"csrf_token,omitempty"`
 }
 
 func apiCSRFHandler(c echo.Context) error {
@@ -46,10 +49,44 @@ func apiSignupHandler(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Email and password are required"})
 	}
 
+	var invitedRole = "user"
+	var invitedTier = "free"
+	if input.InviteToken != "" {
+		inv, err := queries.GetUserInvitationByToken(c.Request().Context(), input.InviteToken)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid or expired invitation token"})
+		}
+		if inv.ExpiresAt.Time.Before(time.Now()) {
+			return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invitation has expired"})
+		}
+		if !strings.EqualFold(inv.Email, input.Email) {
+			return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "This invitation belongs to a different email address"})
+		}
+		invitedRole = inv.Role
+		invitedTier = inv.Tier
+	}
+
 	user, err := RegisterUser(c.Request().Context(), input.Email, input.Password)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: err.Error()})
 	}
+
+	if input.InviteToken != "" {
+		_ = queries.UpdateUserRole(c.Request().Context(), db.UpdateUserRoleParams{
+			Role: pgtype.Text{String: invitedRole, Valid: true},
+			ID:   user.ID,
+		})
+		_ = queries.UpdateUserTier(c.Request().Context(), db.UpdateUserTierParams{
+			Tier: pgtype.Text{String: invitedTier, Valid: true},
+			ID:   user.ID,
+		})
+		user.Role = invitedRole
+		user.Tier = invitedTier
+
+		inv, _ := queries.GetUserInvitationByToken(c.Request().Context(), input.InviteToken)
+		_ = queries.DeleteUserInvitation(c.Request().Context(), inv.ID)
+	}
+
 	writeAuditLog(c.Request().Context(), AuditEvent{
 		UserID:       user.ID,
 		Action:       "auth.signup",
@@ -376,14 +413,28 @@ func apiAdminUsersHandler(c echo.Context) error {
 		if len(maskedKey) > 8 {
 			maskedKey = maskedKey[:4] + "...." + maskedKey[len(maskedKey)-4:]
 		}
+
+		var maxTasks *int
+		if u.MaxTasksLimit.Valid {
+			v := int(u.MaxTasksLimit.Int32)
+			maxTasks = &v
+		}
+		var rateLimit *int
+		if u.RateLimitOverride.Valid {
+			v := int(u.RateLimitOverride.Int32)
+			rateLimit = &v
+		}
+
 		users = append(users, User{
-			ID:        u.ID,
-			Email:     u.Email.String,
-			APIKey:    maskedKey,
-			Role:      u.Role.String,
-			Tier:      u.Tier.String,
-			IsLocked:  u.IsLocked.Bool,
-			CreatedAt: u.CreatedAt.Time,
+			ID:                u.ID,
+			Email:             u.Email.String,
+			APIKey:            maskedKey,
+			Role:              u.Role.String,
+			Tier:              u.Tier.String,
+			IsLocked:          u.IsLocked.Bool,
+			MaxTasksLimit:     maxTasks,
+			RateLimitOverride: rateLimit,
+			CreatedAt:         u.CreatedAt.Time,
 		})
 	}
 
@@ -424,10 +475,12 @@ func apiAdminLoginHistoryHandler(c echo.Context) error {
 }
 
 type AdminUpdateUserInput struct {
-	UserID   string `json:"user_id"`
-	Role     string `json:"role"`
-	Tier     string `json:"tier"`
-	IsLocked *bool  `json:"is_locked,omitempty"`
+	UserID            string `json:"user_id"`
+	Role              string `json:"role"`
+	Tier              string `json:"tier"`
+	IsLocked          *bool  `json:"is_locked,omitempty"`
+	MaxTasksLimit     *int   `json:"max_tasks_limit,omitempty"`
+	RateLimitOverride *int   `json:"rate_limit_override,omitempty"`
 }
 
 type AdminSystemSettingsInput struct {
@@ -519,6 +572,36 @@ func apiAdminUpdateUserHandler(c echo.Context) error {
 		})
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to update user lock status"})
+		}
+	}
+
+	if input.MaxTasksLimit != nil || input.RateLimitOverride != nil {
+		params := db.UpdateUserQuotasParams{
+			ID: input.UserID,
+		}
+		if input.MaxTasksLimit != nil {
+			if *input.MaxTasksLimit < 0 {
+				params.MaxTasksLimit = pgtype.Int4{Valid: false}
+			} else {
+				params.MaxTasksLimit = pgtype.Int4{Int32: int32(*input.MaxTasksLimit), Valid: true}
+			}
+		} else {
+			params.MaxTasksLimit = targetUser.MaxTasksLimit
+		}
+
+		if input.RateLimitOverride != nil {
+			if *input.RateLimitOverride < 0 {
+				params.RateLimitOverride = pgtype.Int4{Valid: false}
+			} else {
+				params.RateLimitOverride = pgtype.Int4{Int32: int32(*input.RateLimitOverride), Valid: true}
+			}
+		} else {
+			params.RateLimitOverride = targetUser.RateLimitOverride
+		}
+
+		err := queries.UpdateUserQuotas(c.Request().Context(), params)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to update user quota overrides"})
 		}
 	}
 
@@ -1154,4 +1237,266 @@ func apiAdminPruneNowHandler(c echo.Context) error {
 			"pruned_count": rowsAffected,
 		},
 	})
+}
+
+func apiAdminImpersonateUserHandler(c echo.Context) error {
+	var input ImpersonateRequest
+	if err := c.Bind(&input); err != nil {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid request body"})
+	}
+
+	admin := getUserFromEcho(c)
+	if admin == nil || admin.Role != "admin" {
+		return c.JSON(http.StatusForbidden, APIResponse{Success: false, Error: "Forbidden: Root admin credentials required"})
+	}
+
+	target, err := queries.GetUser(c.Request().Context(), input.UserID)
+	if err != nil {
+		return c.JSON(http.StatusNotFound, APIResponse{Success: false, Error: "Target user not found"})
+	}
+
+	if target.ID == admin.ID {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Cannot impersonate yourself"})
+	}
+
+	expiry := time.Now().Add(1 * time.Hour)
+	sessID, err := queries.CreateWebSession(c.Request().Context(), db.CreateWebSessionParams{
+		UserID:    pgtype.Text{String: target.ID, Valid: true},
+		ExpiresAt: pgtype.Timestamptz{Time: expiry, Valid: true},
+	})
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to establish impersonation session"})
+	}
+
+	// Store admin's current session cookie so we can restore it on stop-impersonate
+	adminCookie, err := c.Cookie("session_id")
+	if err == nil {
+		c.SetCookie(&http.Cookie{
+			Name:     "original_session_id",
+			Value:    adminCookie.Value,
+			Path:     "/",
+			HttpOnly: true,
+			Secure:   appConfig.secureCookies(),
+			SameSite: http.SameSiteLaxMode,
+			Expires:  time.Now().Add(24 * time.Hour),
+		})
+	}
+
+	// Set session cookie to target user
+	c.SetCookie(&http.Cookie{
+		Name:     "session_id",
+		Value:    sessID.String(),
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   appConfig.secureCookies(),
+		SameSite: http.SameSiteLaxMode,
+		Expires:  expiry,
+	})
+
+	writeAuditLog(c.Request().Context(), AuditEvent{
+		UserID:       admin.ID,
+		Action:       "admin.impersonate_start",
+		ResourceType: "user",
+		ResourceID:   target.ID,
+		Metadata: map[string]interface{}{
+			"impersonated_email": target.Email.String,
+		},
+	})
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Impersonation session established"})
+}
+
+func apiAdminStopImpersonateHandler(c echo.Context) error {
+	origCookie, err := c.Cookie("original_session_id")
+	if err != nil || origCookie.Value == "" {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "No active impersonation session found"})
+	}
+
+	// Restore original session ID cookie
+	c.SetCookie(&http.Cookie{
+		Name:     "session_id",
+		Value:    origCookie.Value,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   appConfig.secureCookies(),
+		SameSite: http.SameSiteLaxMode,
+		Expires:  time.Now().Add(24 * time.Hour),
+	})
+
+	// Clear original_session_id cookie
+	c.SetCookie(&http.Cookie{
+		Name:     "original_session_id",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   appConfig.secureCookies(),
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   -1,
+	})
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Impersonation session terminated"})
+}
+
+func apiAdminRevokeSessionsHandler(c echo.Context) error {
+	var input struct {
+		UserID string `json:"user_id"`
+	}
+	if err := c.Bind(&input); err != nil {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid request body"})
+	}
+
+	if RedisClient == nil {
+		return c.JSON(http.StatusServiceUnavailable, APIResponse{Success: false, Error: "Redis is offline"})
+	}
+
+	ctx := c.Request().Context()
+	// Delete user sessions from Redis
+	_ = RedisClient.Del(ctx, fmt.Sprintf("session:%s", input.UserID)).Err()
+	_ = RedisClient.Del(ctx, fmt.Sprintf("bridge:session:%s", input.UserID)).Err()
+	_ = RedisClient.Del(ctx, fmt.Sprintf("conn_count:%s", input.UserID)).Err()
+
+	// Push session revocation event to user's stream
+	_ = PublishEvent(ctx, PubSubEvent{
+		UserID:    input.UserID,
+		EventType: "user_sessions_revoked",
+		Payload:   "{}",
+	})
+
+	admin := getUserFromEcho(c)
+	if admin != nil {
+		writeAuditLog(ctx, AuditEvent{
+			UserID:       admin.ID,
+			Action:       "admin.revoke_sessions",
+			ResourceType: "user",
+			ResourceID:   input.UserID,
+		})
+	}
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "All active sessions and bridge heartbeats revoked successfully"})
+}
+
+func apiAdminRolloverKeyHandler(c echo.Context) error {
+	var input struct {
+		UserID string `json:"user_id"`
+	}
+	if err := c.Bind(&input); err != nil {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid request body"})
+	}
+
+	newKey, err := RotateAPIKey(c.Request().Context(), input.UserID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to rollover API key: " + err.Error()})
+	}
+
+	_ = PublishEvent(c.Request().Context(), PubSubEvent{
+		UserID:    input.UserID,
+		EventType: "user_updated",
+		Payload:   "{}",
+	})
+
+	admin := getUserFromEcho(c)
+	if admin != nil {
+		writeAuditLog(c.Request().Context(), AuditEvent{
+			UserID:       admin.ID,
+			Action:       "admin.rollover_api_key",
+			ResourceType: "user",
+			ResourceID:   input.UserID,
+		})
+	}
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "API Key rotated successfully", Data: map[string]string{"api_key": newKey}})
+}
+
+func apiAdminCreateInvitationHandler(c echo.Context) error {
+	var input CreateInvitationInput
+	if err := c.Bind(&input); err != nil {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid request body"})
+	}
+
+	if input.Email == "" || input.Role == "" || input.Tier == "" {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "All fields are required"})
+	}
+
+	// Generate secure invitation token
+	b := make([]byte, 16)
+	_, _ = rand.Read(b)
+	token := hex.EncodeToString(b)
+
+	admin := getUserFromEcho(c)
+	if admin == nil {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
+
+	expiry := time.Now().Add(7 * 24 * time.Hour) // 7 days default expiration
+	err := queries.CreateUserInvitation(c.Request().Context(), db.CreateUserInvitationParams{
+		Email:       input.Email,
+		Role:        input.Role,
+		Tier:        input.Tier,
+		InviteToken: token,
+		ExpiresAt:   pgtype.Timestamptz{Time: expiry, Valid: true},
+		CreatedBy:   pgtype.Text{String: admin.ID, Valid: true},
+	})
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to create invitation: " + err.Error()})
+	}
+
+	writeAuditLog(c.Request().Context(), AuditEvent{
+		UserID:       admin.ID,
+		Action:       "admin.create_invitation",
+		ResourceType: "invitation",
+		ResourceID:   input.Email,
+	})
+
+	// Emit SSE updates for admin users
+	_ = PublishEvent(c.Request().Context(), PubSubEvent{
+		UserID:    admin.ID,
+		EventType: "invitations_updated",
+		Payload:   "{}",
+	})
+
+	return c.JSON(http.StatusCreated, APIResponse{Success: true, Message: "Invitation successfully pre-registered", Data: map[string]string{"token": token}})
+}
+
+func apiAdminListInvitationsHandler(c echo.Context) error {
+	rows, err := queries.ListUserInvitations(c.Request().Context())
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to retrieve invitations: " + err.Error()})
+	}
+
+	if rows == nil {
+		rows = []db.UserInvitation{}
+	}
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: rows})
+}
+
+func apiAdminDeleteInvitationHandler(c echo.Context) error {
+	idStr := c.Param("id")
+	var id pgtype.UUID
+	if err := parseUUID(idStr, &id); err != nil {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid invitation ID"})
+	}
+
+	err := queries.DeleteUserInvitation(c.Request().Context(), id)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to delete invitation"})
+	}
+
+	admin := getUserFromEcho(c)
+	if admin != nil {
+		writeAuditLog(c.Request().Context(), AuditEvent{
+			UserID:       admin.ID,
+			Action:       "admin.delete_invitation",
+			ResourceType: "invitation",
+			ResourceID:   idStr,
+		})
+
+		_ = PublishEvent(c.Request().Context(), PubSubEvent{
+			UserID:    admin.ID,
+			EventType: "invitations_updated",
+			Payload:   "{}",
+		})
+	}
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Invitation successfully revoked"})
 }

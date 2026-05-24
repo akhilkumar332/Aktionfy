@@ -1,5 +1,5 @@
 -- name: GetUserBySessionID :one
-SELECT u.id, u.email, u.api_key, u.role, u.tier, u.is_locked, u.created_at 
+SELECT u.id, u.email, u.api_key, u.role, u.tier, u.is_locked, u.max_tasks_limit, u.rate_limit_override, u.created_at 
 FROM web_sessions s 
 JOIN users u ON s.user_id = u.id 
 WHERE s.id = $1 AND s.expires_at > $2;
@@ -19,13 +19,13 @@ ORDER BY l.execution_time DESC
 LIMIT 100;
 
 -- name: ListUsers :many
-SELECT id, email, api_key, role, tier, is_locked, created_at 
+SELECT id, email, api_key, role, tier, is_locked, max_tasks_limit, rate_limit_override, created_at 
 FROM users 
 WHERE email ILIKE $1 OR role ILIKE $1 OR tier ILIKE $1
 ORDER BY created_at DESC;
 
 -- name: GetUser :one
-SELECT id, email, api_key, role, tier, is_locked, created_at FROM users WHERE id = $1;
+SELECT id, email, api_key, role, tier, is_locked, max_tasks_limit, rate_limit_override, created_at FROM users WHERE id = $1;
 
 -- name: UpdateUserRole :exec
 UPDATE users SET role = $1 WHERE id = $2;
@@ -36,7 +36,7 @@ UPDATE users SET tier = $1 WHERE id = $2;
 -- name: CreateUser :one
 INSERT INTO users (email, password_hash, api_key) 
 VALUES ($1, $2, $3) 
-RETURNING id, email, api_key, role, tier, is_locked, created_at;
+RETURNING id, email, api_key, role, tier, is_locked, max_tasks_limit, rate_limit_override, created_at;
 
 -- name: GetAuthInfoByEmail :one
 SELECT id, password_hash, is_locked FROM users WHERE email = $1;
@@ -56,7 +56,7 @@ SELECT email FROM users WHERE id = $1;
 UPDATE tasks SET status = 'active', locked_by = NULL WHERE locked_by = $1;
 
 -- name: GetUserByAPIKey :one
-SELECT id, tier, is_locked FROM users WHERE api_key = $1;
+SELECT id, tier, is_locked, max_tasks_limit, rate_limit_override FROM users WHERE api_key = $1;
 
 -- name: CreateTaskLog :one
 INSERT INTO task_logs (task_id, user_id, status, error_message, llm_response) 
@@ -483,4 +483,23 @@ FROM user_login_history lh
 JOIN users u ON lh.user_id = u.id
 ORDER BY lh.login_time DESC
 LIMIT $1 OFFSET $2;
+
+-- name: UpdateUserQuotas :exec
+UPDATE users SET max_tasks_limit = $1, rate_limit_override = $2 WHERE id = $3;
+
+-- name: CreateUserInvitation :exec
+INSERT INTO user_invitations (email, role, tier, invite_token, expires_at, created_by)
+VALUES ($1, $2, $3, $4, $5, $6);
+
+-- name: GetUserInvitationByToken :one
+SELECT id, email, role, tier, invite_token, expires_at, created_by FROM user_invitations WHERE invite_token = $1;
+
+-- name: ListUserInvitations :many
+SELECT id, email, role, tier, invite_token, expires_at, created_by FROM user_invitations ORDER BY created_at DESC;
+
+-- name: DeleteUserInvitation :exec
+DELETE FROM user_invitations WHERE id = $1;
+
+-- name: RegenerateUserAPIKey :exec
+UPDATE users SET api_key = $1 WHERE id = $2;
 

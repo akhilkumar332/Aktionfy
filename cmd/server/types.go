@@ -28,14 +28,27 @@ type TaskLog struct {
 }
 
 type User struct {
-	ID           string    `json:"id"`
-	Email        string    `json:"email"`
-	PasswordHash string    `json:"-"`
-	APIKey       string    `json:"api_key"`
-	Role         string    `json:"role"`
-	Tier         string    `json:"tier"`
-	IsLocked     bool      `json:"is_locked"`
-	CreatedAt    time.Time `json:"created_at"`
+	ID                string    `json:"id"`
+	Email             string    `json:"email"`
+	PasswordHash      string    `json:"-"`
+	APIKey            string    `json:"api_key"`
+	Role              string    `json:"role"`
+	Tier              string    `json:"tier"`
+	IsLocked          bool      `json:"is_locked"`
+	MaxTasksLimit     *int      `json:"max_tasks_limit,omitempty"`
+	RateLimitOverride *int      `json:"rate_limit_override,omitempty"`
+	MasqueraderEmail  *string   `json:"masquerader_email,omitempty"`
+	CreatedAt         time.Time `json:"created_at"`
+}
+
+type ImpersonateRequest struct {
+	UserID string `json:"user_id"`
+}
+
+type CreateInvitationInput struct {
+	Email string `json:"email"`
+	Role  string `json:"role"`
+	Tier  string `json:"tier"`
 }
 
 // Task represents a scheduled task in the database

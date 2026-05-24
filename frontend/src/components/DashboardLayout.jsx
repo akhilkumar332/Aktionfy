@@ -4,7 +4,8 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, Activity, Users, LogOut, Key, 
   ListTodo, Webhook, Folder, FileText, Share2, BarChart3, 
-  Settings, Menu, X, Zap, ChevronRight, Search, Command
+  Settings, Menu, X, Zap, ChevronRight, Search, Command,
+  ShieldAlert
 } from 'lucide-react';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -251,6 +252,17 @@ const DashboardLayout = ({ children }) => {
     navigate('/');
   };
 
+  const handleStopImpersonating = async () => {
+    try {
+      const res = await axios.post('/api/v1/admin/users/stop-impersonate');
+      if (res.data.success) {
+        window.location.href = '/admin/users';
+      }
+    } catch (err) {
+      console.error('Failed to stop impersonating:', err);
+    }
+  };
+
   const isFullBleed = location.pathname === '/canvas';
 
   // Keyboard shortcuts
@@ -298,6 +310,22 @@ const DashboardLayout = ({ children }) => {
 
       {/* Main Content Area */}
       <div className={`flex-1 lg:pl-64 flex flex-col min-w-0 min-h-screen`}>
+        {user?.masquerader_email && (
+          <div className="bg-amber-500/10 border-b border-amber-500/20 px-6 py-2.5 flex items-center justify-between z-50 backdrop-blur-md">
+            <div className="flex items-center gap-3 text-amber-400 text-xs font-semibold">
+              <ShieldAlert size={16} className="animate-pulse shrink-0" />
+              <span>
+                Impersonating <strong className="text-zinc-100 font-bold underline">{user.email}</strong> (Original Admin: {user.masquerader_email})
+              </span>
+            </div>
+            <button
+              onClick={handleStopImpersonating}
+              className="px-3 py-1 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 hover:border-amber-500 text-amber-200 hover:text-white rounded-md text-[10px] uppercase font-black tracking-widest transition-all cursor-pointer pro-focus"
+            >
+              Exit Masquerade
+            </button>
+          </div>
+        )}
         {/* Header Action Bar */}
         {!isFullBleed && (
           <header className="h-16 border-b border-zinc-800 bg-zinc-950/50 backdrop-blur-md sticky top-0 z-40 px-6 flex items-center justify-between">

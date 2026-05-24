@@ -502,7 +502,7 @@ func (q *Queries) CreateTemplateSubscription(ctx context.Context, arg CreateTemp
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (email, password_hash, api_key) 
 VALUES ($1, $2, $3) 
-RETURNING id, email, api_key, role, tier, created_at
+RETURNING id, email, api_key, role, tier, is_locked, max_tasks_limit, rate_limit_override, created_at
 `
 
 type CreateUserParams struct {
@@ -512,12 +512,15 @@ type CreateUserParams struct {
 }
 
 type CreateUserRow struct {
-	ID        string             `json:"id"`
-	Email     pgtype.Text        `json:"email"`
-	ApiKey    string             `json:"api_key"`
-	Role      pgtype.Text        `json:"role"`
-	Tier      pgtype.Text        `json:"tier"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	ID                string             `json:"id"`
+	Email             pgtype.Text        `json:"email"`
+	ApiKey            string             `json:"api_key"`
+	Role              pgtype.Text        `json:"role"`
+	Tier              pgtype.Text        `json:"tier"`
+	IsLocked          pgtype.Bool        `json:"is_locked"`
+	MaxTasksLimit     pgtype.Int4        `json:"max_tasks_limit"`
+	RateLimitOverride pgtype.Int4        `json:"rate_limit_override"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error) {
@@ -529,6 +532,9 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 		&i.ApiKey,
 		&i.Role,
 		&i.Tier,
+		&i.IsLocked,
+		&i.MaxTasksLimit,
+		&i.RateLimitOverride,
 		&i.CreatedAt,
 	)
 	return i, err
@@ -1472,17 +1478,19 @@ func (q *Queries) GetTemplateWithSubscription(ctx context.Context, arg GetTempla
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, email, api_key, role, tier, is_locked, created_at FROM users WHERE id = $1
+SELECT id, email, api_key, role, tier, is_locked, max_tasks_limit, rate_limit_override, created_at FROM users WHERE id = $1
 `
 
 type GetUserRow struct {
-	ID        string             `json:"id"`
-	Email     pgtype.Text        `json:"email"`
-	ApiKey    string             `json:"api_key"`
-	Role      pgtype.Text        `json:"role"`
-	Tier      pgtype.Text        `json:"tier"`
-	IsLocked  pgtype.Bool        `json:"is_locked"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	ID                string             `json:"id"`
+	Email             pgtype.Text        `json:"email"`
+	ApiKey            string             `json:"api_key"`
+	Role              pgtype.Text        `json:"role"`
+	Tier              pgtype.Text        `json:"tier"`
+	IsLocked          pgtype.Bool        `json:"is_locked"`
+	MaxTasksLimit     pgtype.Int4        `json:"max_tasks_limit"`
+	RateLimitOverride pgtype.Int4        `json:"rate_limit_override"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
 }
 
 func (q *Queries) GetUser(ctx context.Context, id string) (GetUserRow, error) {
@@ -1495,30 +1503,40 @@ func (q *Queries) GetUser(ctx context.Context, id string) (GetUserRow, error) {
 		&i.Role,
 		&i.Tier,
 		&i.IsLocked,
+		&i.MaxTasksLimit,
+		&i.RateLimitOverride,
 		&i.CreatedAt,
 	)
 	return i, err
 }
 
 const getUserByAPIKey = `-- name: GetUserByAPIKey :one
-SELECT id, tier, is_locked FROM users WHERE api_key = $1
+SELECT id, tier, is_locked, max_tasks_limit, rate_limit_override FROM users WHERE api_key = $1
 `
 
 type GetUserByAPIKeyRow struct {
-	ID       string      `json:"id"`
-	Tier     pgtype.Text `json:"tier"`
-	IsLocked pgtype.Bool `json:"is_locked"`
+	ID                string      `json:"id"`
+	Tier              pgtype.Text `json:"tier"`
+	IsLocked          pgtype.Bool `json:"is_locked"`
+	MaxTasksLimit     pgtype.Int4 `json:"max_tasks_limit"`
+	RateLimitOverride pgtype.Int4 `json:"rate_limit_override"`
 }
 
 func (q *Queries) GetUserByAPIKey(ctx context.Context, apiKey string) (GetUserByAPIKeyRow, error) {
 	row := q.db.QueryRow(ctx, getUserByAPIKey, apiKey)
 	var i GetUserByAPIKeyRow
-	err := row.Scan(&i.ID, &i.Tier, &i.IsLocked)
+	err := row.Scan(
+		&i.ID,
+		&i.Tier,
+		&i.IsLocked,
+		&i.MaxTasksLimit,
+		&i.RateLimitOverride,
+	)
 	return i, err
 }
 
 const getUserBySessionID = `-- name: GetUserBySessionID :one
-SELECT u.id, u.email, u.api_key, u.role, u.tier, u.is_locked, u.created_at 
+SELECT u.id, u.email, u.api_key, u.role, u.tier, u.is_locked, u.max_tasks_limit, u.rate_limit_override, u.created_at 
 FROM web_sessions s 
 JOIN users u ON s.user_id = u.id 
 WHERE s.id = $1 AND s.expires_at > $2
@@ -1530,13 +1548,15 @@ type GetUserBySessionIDParams struct {
 }
 
 type GetUserBySessionIDRow struct {
-	ID        string             `json:"id"`
-	Email     pgtype.Text        `json:"email"`
-	ApiKey    string             `json:"api_key"`
-	Role      pgtype.Text        `json:"role"`
-	Tier      pgtype.Text        `json:"tier"`
-	IsLocked  pgtype.Bool        `json:"is_locked"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	ID                string             `json:"id"`
+	Email             pgtype.Text        `json:"email"`
+	ApiKey            string             `json:"api_key"`
+	Role              pgtype.Text        `json:"role"`
+	Tier              pgtype.Text        `json:"tier"`
+	IsLocked          pgtype.Bool        `json:"is_locked"`
+	MaxTasksLimit     pgtype.Int4        `json:"max_tasks_limit"`
+	RateLimitOverride pgtype.Int4        `json:"rate_limit_override"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
 }
 
 func (q *Queries) GetUserBySessionID(ctx context.Context, arg GetUserBySessionIDParams) (GetUserBySessionIDRow, error) {
@@ -1549,6 +1569,8 @@ func (q *Queries) GetUserBySessionID(ctx context.Context, arg GetUserBySessionID
 		&i.Role,
 		&i.Tier,
 		&i.IsLocked,
+		&i.MaxTasksLimit,
+		&i.RateLimitOverride,
 		&i.CreatedAt,
 	)
 	return i, err
@@ -2079,20 +2101,22 @@ func (q *Queries) ListUserTasks(ctx context.Context, userID string) ([]ListUserT
 	return items, nil
 }
 const listUsers = `-- name: ListUsers :many
-SELECT id, email, api_key, role, tier, is_locked, created_at 
+SELECT id, email, api_key, role, tier, is_locked, max_tasks_limit, rate_limit_override, created_at 
 FROM users 
 WHERE email ILIKE $1 OR role ILIKE $1 OR tier ILIKE $1
 ORDER BY created_at DESC
 `
 
 type ListUsersRow struct {
-	ID        string             `json:"id"`
-	Email     pgtype.Text        `json:"email"`
-	ApiKey    string             `json:"api_key"`
-	Role      pgtype.Text        `json:"role"`
-	Tier      pgtype.Text        `json:"tier"`
-	IsLocked  pgtype.Bool        `json:"is_locked"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	ID                string             `json:"id"`
+	Email             pgtype.Text        `json:"email"`
+	ApiKey            string             `json:"api_key"`
+	Role              pgtype.Text        `json:"role"`
+	Tier              pgtype.Text        `json:"tier"`
+	IsLocked          pgtype.Bool        `json:"is_locked"`
+	MaxTasksLimit     pgtype.Int4        `json:"max_tasks_limit"`
+	RateLimitOverride pgtype.Int4        `json:"rate_limit_override"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
 }
 
 func (q *Queries) ListUsers(ctx context.Context, email pgtype.Text) ([]ListUsersRow, error) {
@@ -2111,6 +2135,8 @@ func (q *Queries) ListUsers(ctx context.Context, email pgtype.Text) ([]ListUsers
 			&i.Role,
 			&i.Tier,
 			&i.IsLocked,
+			&i.MaxTasksLimit,
+			&i.RateLimitOverride,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err
@@ -2815,4 +2841,121 @@ func (q *Queries) ListUserLoginHistory(ctx context.Context, arg ListUserLoginHis
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateUserQuotas = `-- name: UpdateUserQuotas :exec
+UPDATE users SET max_tasks_limit = $1, rate_limit_override = $2 WHERE id = $3
+`
+
+type UpdateUserQuotasParams struct {
+	MaxTasksLimit     pgtype.Int4 `json:"max_tasks_limit"`
+	RateLimitOverride pgtype.Int4 `json:"rate_limit_override"`
+	ID                string      `json:"id"`
+}
+
+func (q *Queries) UpdateUserQuotas(ctx context.Context, arg UpdateUserQuotasParams) error {
+	_, err := q.db.Exec(ctx, updateUserQuotas, arg.MaxTasksLimit, arg.RateLimitOverride, arg.ID)
+	return err
+}
+
+const createUserInvitation = `-- name: CreateUserInvitation :exec
+INSERT INTO user_invitations (email, role, tier, invite_token, expires_at, created_by)
+VALUES ($1, $2, $3, $4, $5, $6)
+`
+
+type CreateUserInvitationParams struct {
+	Email       string             `json:"email"`
+	Role        string             `json:"role"`
+	Tier        string             `json:"tier"`
+	InviteToken string             `json:"invite_token"`
+	ExpiresAt   pgtype.Timestamptz `json:"expires_at"`
+	CreatedBy   pgtype.Text        `json:"created_by"`
+}
+
+func (q *Queries) CreateUserInvitation(ctx context.Context, arg CreateUserInvitationParams) error {
+	_, err := q.db.Exec(ctx, createUserInvitation,
+		arg.Email,
+		arg.Role,
+		arg.Tier,
+		arg.InviteToken,
+		arg.ExpiresAt,
+		arg.CreatedBy,
+	)
+	return err
+}
+
+const getUserInvitationByToken = `-- name: GetUserInvitationByToken :one
+SELECT id, email, role, tier, invite_token, expires_at, created_by FROM user_invitations WHERE invite_token = $1
+`
+
+func (q *Queries) GetUserInvitationByToken(ctx context.Context, inviteToken string) (UserInvitation, error) {
+	row := q.db.QueryRow(ctx, getUserInvitationByToken, inviteToken)
+	var i UserInvitation
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Role,
+		&i.Tier,
+		&i.InviteToken,
+		&i.CreatedAt,
+		&i.ExpiresAt,
+		&i.CreatedBy,
+	)
+	return i, err
+}
+
+const listUserInvitations = `-- name: ListUserInvitations :many
+SELECT id, email, role, tier, invite_token, expires_at, created_by FROM user_invitations ORDER BY created_at DESC
+`
+
+func (q *Queries) ListUserInvitations(ctx context.Context) ([]UserInvitation, error) {
+	rows, err := q.db.Query(ctx, listUserInvitations)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []UserInvitation
+	for rows.Next() {
+		var i UserInvitation
+		if err := rows.Scan(
+			&i.ID,
+			&i.Email,
+			&i.Role,
+			&i.Tier,
+			&i.InviteToken,
+			&i.CreatedAt,
+			&i.ExpiresAt,
+			&i.CreatedBy,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const deleteUserInvitation = `-- name: DeleteUserInvitation :exec
+DELETE FROM user_invitations WHERE id = $1
+`
+
+func (q *Queries) DeleteUserInvitation(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteUserInvitation, id)
+	return err
+}
+
+const regenerateUserAPIKey = `-- name: RegenerateUserAPIKey :exec
+UPDATE users SET api_key = $1 WHERE id = $2
+`
+
+type RegenerateUserAPIKeyParams struct {
+	ApiKey string `json:"api_key"`
+	ID     string `json:"id"`
+}
+
+func (q *Queries) RegenerateUserAPIKey(ctx context.Context, arg RegenerateUserAPIKeyParams) error {
+	_, err := q.db.Exec(ctx, regenerateUserAPIKey, arg.ApiKey, arg.ID)
+	return err
 }

@@ -506,6 +506,13 @@ func main() {
 	admin.POST("/settings", apiAdminUpdateSettingsHandler)
 	admin.POST("/prune", apiAdminPruneNowHandler)
 	admin.POST("/workers/prune", apiAdminPruneNowHandler)
+	admin.POST("/users/impersonate", apiAdminImpersonateUserHandler)
+	admin.POST("/users/stop-impersonate", apiAdminStopImpersonateHandler)
+	admin.POST("/users/revoke-sessions", apiAdminRevokeSessionsHandler)
+	admin.POST("/users/rollover-key", apiAdminRolloverKeyHandler)
+	admin.GET("/invitations", apiAdminListInvitationsHandler)
+	admin.POST("/invitations", apiAdminCreateInvitationHandler)
+	admin.DELETE("/invitations/:id", apiAdminDeleteInvitationHandler)
 
 	e.POST("/webhooks/stripe", apiStripeWebhook)
 

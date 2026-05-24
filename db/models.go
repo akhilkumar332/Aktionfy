@@ -146,15 +146,28 @@ type Template struct {
 }
 
 type User struct {
-	ID           string             `json:"id"`
-	ApiKey       string             `json:"api_key"`
-	Email        pgtype.Text        `json:"email"`
-	PasswordHash pgtype.Text        `json:"password_hash"`
-	Role         pgtype.Text        `json:"role"`
-	LastLogin    pgtype.Timestamptz `json:"last_login"`
-	Tier         pgtype.Text        `json:"tier"`
-	IsLocked     pgtype.Bool        `json:"is_locked"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	ID                string             `json:"id"`
+	ApiKey            string             `json:"api_key"`
+	Email             pgtype.Text        `json:"email"`
+	PasswordHash      pgtype.Text        `json:"password_hash"`
+	Role              pgtype.Text        `json:"role"`
+	LastLogin         pgtype.Timestamptz `json:"last_login"`
+	Tier              pgtype.Text        `json:"tier"`
+	IsLocked          pgtype.Bool        `json:"is_locked"`
+	MaxTasksLimit     pgtype.Int4        `json:"max_tasks_limit"`
+	RateLimitOverride pgtype.Int4        `json:"rate_limit_override"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+}
+
+type UserInvitation struct {
+	ID          pgtype.UUID        `json:"id"`
+	Email       string             `json:"email"`
+	Role        string             `json:"role"`
+	Tier        string             `json:"tier"`
+	InviteToken string             `json:"invite_token"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	ExpiresAt   pgtype.Timestamptz `json:"expires_at"`
+	CreatedBy   pgtype.Text        `json:"created_by"`
 }
 
 type UserLoginHistory struct {

@@ -65,13 +65,26 @@ func EchoSessionMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return next(c)
 		}
 
+		var maxTasks *int
+		if u.MaxTasksLimit.Valid {
+			v := int(u.MaxTasksLimit.Int32)
+			maxTasks = &v
+		}
+		var rateLimit *int
+		if u.RateLimitOverride.Valid {
+			v := int(u.RateLimitOverride.Int32)
+			rateLimit = &v
+		}
+
 		user := &User{
-			ID:        u.ID,
-			Email:     u.Email.String,
-			APIKey:    u.ApiKey,
-			Role:      u.Role.String,
-			Tier:      u.Tier.String,
-			CreatedAt: u.CreatedAt.Time,
+			ID:                u.ID,
+			Email:             u.Email.String,
+			APIKey:            u.ApiKey,
+			Role:              u.Role.String,
+			Tier:              u.Tier.String,
+			MaxTasksLimit:     maxTasks,
+			RateLimitOverride: rateLimit,
+			CreatedAt:         u.CreatedAt.Time,
 		}
 
 		log.Printf("Session Validated: UserID=%s, Email=%s, Role=%s", user.ID, user.Email, user.Role)
@@ -79,6 +92,23 @@ func EchoSessionMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		c.Set("user", user)
 		c.Set("user_id", user.ID)
 		c.Set("user_role", user.Role)
+
+		// Check for masquerading original session
+		origCookie, err := c.Cookie("original_session_id")
+		if err == nil && origCookie.Value != "" {
+			var origSessID pgtype.UUID
+			if parseUUID(origCookie.Value, &origSessID) == nil {
+				adminUser, err := queries.GetUserBySessionID(c.Request().Context(), db.GetUserBySessionIDParams{
+					ID:        origSessID,
+					ExpiresAt: pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},
+				})
+				if err == nil {
+					c.Set("masquerader_id", adminUser.ID)
+					c.Set("masquerader_email", adminUser.Email.String)
+					user.MasqueraderEmail = &adminUser.Email.String
+				}
+			}
+		}
 
 		// Also add to request context for downstream non-echo handlers if any
 		ctx := context.WithValue(c.Request().Context(), userKey, user)
