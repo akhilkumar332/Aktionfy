@@ -106,7 +106,7 @@ func CheckUserQuota(ctx context.Context, userID string, tier string) error {
 	limit := QuotaFree
 	if u.MaxTasksLimit.Valid {
 		limit = int(u.MaxTasksLimit.Int32)
-		if int(taskCount) >= limit {
+		if limit >= 0 && int(taskCount) >= limit {
 			return fmt.Errorf("quota exceeded: custom limits allow maximum %d tasks", limit)
 		}
 	} else {
