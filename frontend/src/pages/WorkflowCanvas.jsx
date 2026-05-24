@@ -570,7 +570,7 @@ const WorkflowCanvas = () => {
   };
 
   return (
-    <div className="h-screen w-full flex flex-col bg-zinc-950 text-white overflow-hidden selection:bg-indigo-600">
+    <div className="h-screen w-full flex flex-col relative bg-zinc-950 text-white overflow-hidden selection:bg-indigo-600">
       <header className="px-10 py-8 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-zinc-950 backdrop-blur-xl border-b border-zinc-800/50 z-20">
         <div>
           <motion.h1 
@@ -628,7 +628,7 @@ const WorkflowCanvas = () => {
         </div>
       </header>
 
-      <div className="flex-1 relative bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-repeat opacity-[0.03] pointer-events-none absolute inset-0"></div>
+      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-repeat opacity-[0.03] pointer-events-none z-10"></div>
 
       <div className="flex-1 relative">
         {loading && nodes.length === 0 ? (

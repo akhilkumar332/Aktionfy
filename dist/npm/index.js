@@ -164,14 +164,26 @@ async function main() {
 main();
 
 async function callGeminiDirectly(params, apiKey) {
+  console.warn("Aktionfy Bridge Call: params =", JSON.stringify(params, null, 2));
   const contents = params.messages.map(m => {
     let role = m.role === 'assistant' ? 'model' : 'user';
     let text = '';
-    if (m.content.type === 'text') {
+    
+    if (Array.isArray(m.content)) {
+      text = m.content.map(c => {
+        if (c && c.type === 'text') {
+          return c.text;
+        } else if (c && c.type === 'image') {
+          return `[Image Content Block]`;
+        }
+        return c ? (c.text || JSON.stringify(c)) : '';
+      }).join('\n');
+    } else if (m.content && m.content.type === 'text') {
       text = m.content.text;
     } else {
-      text = JSON.stringify(m.content);
+      text = m.content ? (m.content.text || JSON.stringify(m.content)) : '';
     }
+
     return {
       role: role,
       parts: [{ text: text }]
@@ -184,6 +196,17 @@ async function callGeminiDirectly(params, apiKey) {
 
   const model = process.env.GEMINI_MODEL || (params.includeModelSuggest === 'high' ? 'gemini-2.0-pro-exp' : 'gemini-2.0-flash');
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  const maxOutputTokens = Math.max(params.maxTokens || 1000, 8192);
+
+  console.warn("Aktionfy Bridge Call: URL =", url);
+  console.warn("Aktionfy Bridge Call: requestBody =", JSON.stringify({
+    contents,
+    systemInstruction,
+    generationConfig: {
+      temperature: params.temperature,
+      maxOutputTokens: maxOutputTokens
+    }
+  }, null, 2));
 
   const response = await fetch(url, {
     method: 'POST',
@@ -193,7 +216,7 @@ async function callGeminiDirectly(params, apiKey) {
       systemInstruction,
       generationConfig: {
         temperature: params.temperature,
-        maxOutputTokens: params.maxTokens
+        maxOutputTokens: maxOutputTokens
       }
     })
   });
@@ -204,7 +227,10 @@ async function callGeminiDirectly(params, apiKey) {
   }
 
   const json = await response.json();
-  const text = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  console.warn("Aktionfy Bridge Call: response =", JSON.stringify(json, null, 2));
+  
+  // Join all parts of the candidate's content
+  const text = json.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
 
   return {
     role: 'assistant',

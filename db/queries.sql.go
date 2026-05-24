@@ -1863,9 +1863,9 @@ func (q *Queries) ListPublicTemplates(ctx context.Context, name string) ([]Templ
 const listTaskExecutionIDs = `-- name: ListTaskExecutionIDs :many
 SELECT 
     execution_id, 
-    MIN(start_time) as start_time,
-    MAX(start_time) as last_activity,
-    BOOL_OR(is_error) as is_error
+    MIN(start_time)::timestamptz as start_time,
+    MAX(start_time)::timestamptz as last_activity,
+    COALESCE(BOOL_OR(is_error), FALSE)::boolean as is_error
 FROM execution_traces
 WHERE task_id = $1
 GROUP BY execution_id

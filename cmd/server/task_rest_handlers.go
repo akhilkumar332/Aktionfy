@@ -731,7 +731,8 @@ func apiListTaskExecutionsHandler(c echo.Context) error {
 
 	executions, err := queries.ListTaskExecutionIDs(c.Request().Context(), taskID)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch task executions"})
+		log.Printf("ListTaskExecutionIDs query failed for task %s: %v", taskIDStr, err)
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch task executions: " + err.Error()})
 	}
 	if executions == nil {
 		executions = []db.ListTaskExecutionIDsRow{}
