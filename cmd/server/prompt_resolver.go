@@ -44,6 +44,25 @@ func resolvePrompt(ctx context.Context, userID string, taskID pgtype.UUID, execu
 				return val
 			}
 
+			if RedisClient != nil {
+				allLeasesKey := fmt.Sprintf("secret:lease:all:%s", userID)
+				isLeased, err := RedisClient.SIsMember(ctx, allLeasesKey, secretName).Result()
+				if err == nil && isLeased {
+					leaseKey := fmt.Sprintf("secret:lease:has:%s:%s", userID, secretName)
+					exists, err := RedisClient.Exists(ctx, leaseKey).Result()
+					if err == nil && exists == 0 {
+						_ = queries.DeleteUserSecret(ctx, db.DeleteUserSecretParams{
+							UserID: userID,
+							Name:   secretName,
+						})
+						_ = RedisClient.SRem(ctx, allLeasesKey, secretName).Err()
+						val := fmt.Sprintf("[SECRET %s EXPIRED]", secretName)
+						resolvedSecrets[secretName] = val
+						return val
+					}
+				}
+			}
+
 			encryptedVal, err := queries.GetUserSecret(ctx, db.GetUserSecretParams{
 				UserID: userID,
 				Name:   secretName,

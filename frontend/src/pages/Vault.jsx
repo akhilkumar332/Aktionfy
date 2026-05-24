@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 
 import axios from 'axios';
-import { Key, Trash2, Plus, ShieldCheck, Loader2, X, RefreshCw, Shield, Check, Eye, EyeOff, Edit2 } from 'lucide-react';
+import { Key, Trash2, Plus, ShieldCheck, Loader2, X, RefreshCw, Shield, Check, Eye, EyeOff, Edit2, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNotify } from '../context/NotificationContext';
 import { useSSE } from '../context/SSEContext';
@@ -13,14 +13,14 @@ const Vault = () => {
   const [secrets, setSecrets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newSecret, setNewSecret] = useState({ name: '', value: '' });
+  const [newSecret, setNewSecret] = useState({ name: '', value: '', ttl: '' });
   const [submitting, setSubmitting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [showSecretValue, setShowSecretValue] = useState(false);
   const [editMode, setEditMode] = useState(false);
 
   const handleEditClick = (secret) => {
-    setNewSecret({ name: secret.name, value: '' });
+    setNewSecret({ name: secret.name, value: '', ttl: secret.ttl ? String(secret.ttl) : '' });
     setEditMode(true);
     setShowAddForm(true);
   };
@@ -79,10 +79,15 @@ const Vault = () => {
     }
     setSubmitting(true);
     try {
-      await axios.post('/api/v1/secrets', newSecret);
+      const payload = {
+        name: newSecret.name,
+        value: newSecret.value,
+        ttl: newSecret.ttl ? parseInt(newSecret.ttl, 10) : 0
+      };
+      await axios.post('/api/v1/secrets', payload);
       notify('SUCCESS', editMode ? `Secret "${newSecret.name}" updated successfully` : `Secret "${newSecret.name}" encrypted and stored`);
       if (isMounted.current) {
-        setNewSecret({ name: '', value: '' });
+        setNewSecret({ name: '', value: '', ttl: '' });
         setEditMode(false);
         setShowAddForm(false);
       }
@@ -112,7 +117,7 @@ const Vault = () => {
            <button 
             onClick={() => {
               setEditMode(false);
-              setNewSecret({ name: '', value: '' });
+              setNewSecret({ name: '', value: '', ttl: '' });
               setShowAddForm(true);
             }}
             className="pro-button-primary !py-2 !px-5 flex items-center gap-2"
@@ -132,7 +137,7 @@ const Vault = () => {
               exit={{ opacity: 0 }}
               onClick={() => {
                 setShowAddForm(false);
-                setNewSecret({ name: '', value: '' });
+                setNewSecret({ name: '', value: '', ttl: '' });
                 setEditMode(false);
               }}
               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
@@ -155,7 +160,7 @@ const Vault = () => {
                 <button 
                   onClick={() => {
                     setShowAddForm(false);
-                    setNewSecret({ name: '', value: '' });
+                    setNewSecret({ name: '', value: '', ttl: '' });
                     setEditMode(false);
                   }} 
                   className="text-zinc-400 hover:text-white p-2"
@@ -198,6 +203,17 @@ const Vault = () => {
                       {showSecretValue ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
+                 <div className="space-y-2">
+                   <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-1">Temporary Lease (Seconds)</label>
+                   <input 
+                     type="number"
+                     value={newSecret.ttl || ''}
+                     onChange={(e) => setNewSecret({...newSecret, ttl: e.target.value})}
+                     placeholder="Enter lease lifetime e.g. 3600 (optional)"
+                     className="pro-input w-full font-mono !text-xs"
+                     min="0"
+                   />
+                 </div>
                 </div>
                 <button 
                   disabled={submitting}
@@ -257,9 +273,15 @@ const Vault = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-center">
-                       <span className="pro-badge bg-zinc-950 border-zinc-800 text-zinc-400 w-fit mx-auto flex items-center gap-1.5 ring-1 ring-zinc-800/50">
-                          <Shield size={10} className="text-emerald-500/50" /> Locked
-                       </span>
+                       {secret.is_leased ? (
+                         <span className="pro-badge bg-indigo-950/45 border-indigo-500/20 text-indigo-300 w-fit mx-auto flex items-center gap-1.5 ring-1 ring-indigo-500/10">
+                            <Clock size={10} className="text-indigo-400 animate-pulse" /> Lease: {secret.ttl}s
+                         </span>
+                       ) : (
+                         <span className="pro-badge bg-zinc-950 border-zinc-800 text-zinc-400 w-fit mx-auto flex items-center gap-1.5 ring-1 ring-zinc-800/50">
+                            <Shield size={10} className="text-emerald-500/50" /> Locked
+                         </span>
+                       )}
                     </td>
                     <td className="px-6 py-4 text-center">
                       <span className="text-[11px] text-zinc-400 font-semibold tabular-nums uppercase">{new Date(secret.created_at).toLocaleDateString()}</span>

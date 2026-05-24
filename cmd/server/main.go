@@ -487,6 +487,7 @@ func main() {
 	api.GET("/workspaces/:id/presence", handleGetWorkspacePresence)
 	api.POST("/workspaces/:id/presence", handleWorkspacePresenceHeartbeat)
 	api.GET("/templates", handleListPublicTemplates)
+	api.GET("/templates/trending", handleGetTrendingTemplates)
 	api.POST("/templates", handleCreateTemplate)
 	api.POST("/templates/:id/increment-uses", handleIncrementTemplateUses)
 	api.POST("/blueprints/deploy", apiDeployBlueprintHandler)

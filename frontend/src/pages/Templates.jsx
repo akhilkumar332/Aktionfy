@@ -27,6 +27,7 @@ const decodeBase64 = (str) => {
 const Templates = () => {
     const { notify } = useNotify();
     const { addListener, removeListener } = useSSE();
+    const [trending, setTrending] = useState([]);
     const isMounted = useRef(true);
     const fileInputRef = useRef(null);
     const [templates, setTemplates] = useState([]);
@@ -41,6 +42,17 @@ const Templates = () => {
         return () => {
             isMounted.current = false;
         };
+    }, []);
+
+    const fetchTrending = useCallback(async () => {
+        try {
+            const res = await axios.get('/api/v1/templates/trending');
+            if (res.data.success && isMounted.current) {
+                setTrending(res.data.data || []);
+            }
+        } catch (err) {
+            // silent error fallback
+        }
     }, []);
     
     const fetchTemplates = useCallback(async (query = '') => {
@@ -68,9 +80,10 @@ const Templates = () => {
     useEffect(() => {
         const timer = setTimeout(async () => {
             await fetchTemplates(search);
+            await fetchTrending();
         }, 500);
         return () => clearTimeout(timer);
-    }, [search, fetchTemplates]);
+    }, [search, fetchTemplates, fetchTrending]);
 
     const handleDeployBundle = async (templateId) => {
         setLoading(true);
@@ -253,6 +266,37 @@ const Templates = () => {
                    </button>
                 </div>
             </header>
+
+            {trending.length > 0 && (
+              <div className="mb-12 space-y-4">
+                 <div className="flex items-center gap-2 text-indigo-400 ml-1">
+                    <Sparkles size={14} className="animate-pulse" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">Popular Blueprints Leaderboard</span>
+                 </div>
+                 <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    {trending.map((t, idx) => (
+                      <div 
+                        key={`trend-${t.id}`}
+                        onClick={() => handleUseBlueprint(t)}
+                        className="bg-zinc-950/60 border border-zinc-800/60 rounded-xl p-5 hover:border-indigo-500/30 transition-all cursor-pointer relative overflow-hidden group flex flex-col justify-between"
+                      >
+                        <div className="absolute top-0 right-0 p-3 text-[9px] font-mono text-indigo-500/20 font-black">
+                           #{idx + 1}
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-black text-white uppercase tracking-tight truncate mb-1 group-hover:text-indigo-400 transition-colors">{t.name}</h4>
+                          <p className="text-[10px] text-zinc-400 line-clamp-2 leading-relaxed">
+                            {t.description || "Baseline neural configuration."}
+                          </p>
+                        </div>
+                        <div className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider mt-4">
+                           {t.uses_count || 0} deploys
+                        </div>
+                      </div>
+                    ))}
+                 </div>
+              </div>
+            )}
 
             <AnimatePresence mode="wait">
               {loading && templates.length === 0 ? (

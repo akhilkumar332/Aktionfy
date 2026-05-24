@@ -735,13 +735,25 @@ func apiListSecretsHandler(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
 	}
 
-	// Attempt to resolve from Redis cache first
-	cached, _ := GetCachedUserSecrets(c.Request().Context(), user.ID)
-	if cached != nil {
-		return c.JSON(http.StatusOK, APIResponse{Success: true, Data: cached})
+	ctx := c.Request().Context()
+	hasLeased := false
+	if RedisClient != nil {
+		allLeasesKey := fmt.Sprintf("secret:lease:all:%s", user.ID)
+		leasedCount, _ := RedisClient.SCard(ctx, allLeasesKey).Result()
+		if leasedCount > 0 {
+			hasLeased = true
+		}
 	}
 
-	rows, err := queries.ListUserSecrets(c.Request().Context(), user.ID)
+	// Attempt to resolve from Redis cache first (only if no leased secrets exist)
+	if !hasLeased {
+		cached, _ := GetCachedUserSecrets(ctx, user.ID)
+		if cached != nil {
+			return c.JSON(http.StatusOK, APIResponse{Success: true, Data: cached})
+		}
+	}
+
+	rows, err := queries.ListUserSecrets(ctx, user.ID)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch secrets"})
 	}
@@ -749,11 +761,75 @@ func apiListSecretsHandler(c echo.Context) error {
 		rows = []db.ListUserSecretsRow{}
 	}
 
-	// Populate Redis cache for subsequent calls
-	SetCachedUserSecrets(c.Request().Context(), user.ID, rows)
+	type secretResponse struct {
+		ID        pgtype.UUID        `json:"id"`
+		Name      string             `json:"name"`
+		CreatedAt pgtype.Timestamptz `json:"created_at"`
+		IsLeased  bool               `json:"is_leased"`
+		TTL       int64              `json:"ttl"`
+	}
 
-	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: rows})
+	activeRows := []db.ListUserSecretsRow{}
+	respData := []secretResponse{}
+
+	if RedisClient != nil {
+		allLeasesKey := fmt.Sprintf("secret:lease:all:%s", user.ID)
+		for _, row := range rows {
+			isLeased, err := RedisClient.SIsMember(ctx, allLeasesKey, row.Name).Result()
+			if err == nil && isLeased {
+				leaseKey := fmt.Sprintf("secret:lease:has:%s:%s", user.ID, row.Name)
+				ttlDuration, err := RedisClient.TTL(ctx, leaseKey).Result()
+				if err == nil {
+					if ttlDuration <= 0 {
+						// Expired! Lazily delete from DB
+						_ = queries.DeleteUserSecret(ctx, db.DeleteUserSecretParams{
+							UserID: user.ID,
+							Name:   row.Name,
+						})
+						_ = RedisClient.SRem(ctx, allLeasesKey, row.Name).Err()
+						continue
+					}
+					respData = append(respData, secretResponse{
+						ID:        row.ID,
+						Name:      row.Name,
+						CreatedAt: row.CreatedAt,
+						IsLeased:  true,
+						TTL:       int64(ttlDuration.Seconds()),
+					})
+					activeRows = append(activeRows, row)
+					continue
+				}
+			}
+			respData = append(respData, secretResponse{
+				ID:        row.ID,
+				Name:      row.Name,
+				CreatedAt: row.CreatedAt,
+				IsLeased:  false,
+				TTL:       0,
+			})
+			activeRows = append(activeRows, row)
+		}
+	} else {
+		for _, row := range rows {
+			respData = append(respData, secretResponse{
+				ID:        row.ID,
+				Name:      row.Name,
+				CreatedAt: row.CreatedAt,
+				IsLeased:  false,
+				TTL:       0,
+			})
+			activeRows = append(activeRows, row)
+		}
+	}
+
+	// Populate Redis cache for subsequent calls (only if no leased secrets exist)
+	if !hasLeased {
+		SetCachedUserSecrets(ctx, user.ID, activeRows)
+	}
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: respData})
 }
+
 
 func apiDeleteSecretHandler(c echo.Context) error {
 	user := getUserFromEcho(c)
@@ -776,6 +852,14 @@ func apiDeleteSecretHandler(c echo.Context) error {
 		ResourceID:   name,
 	})
 
+	if RedisClient != nil {
+		leaseKey := fmt.Sprintf("secret:lease:has:%s:%s", user.ID, name)
+		_ = RedisClient.Del(c.Request().Context(), leaseKey).Err()
+
+		allLeasesKey := fmt.Sprintf("secret:lease:all:%s", user.ID)
+		_ = RedisClient.SRem(c.Request().Context(), allLeasesKey, name).Err()
+	}
+
 	// Invalidate secrets cache after deletion
 	InvalidateCachedUserSecrets(c.Request().Context(), user.ID)
 
@@ -791,6 +875,7 @@ func apiDeleteSecretHandler(c echo.Context) error {
 type UpsertSecretInput struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
+	TTL   int    `json:"ttl"` // optional lease TTL in seconds
 }
 
 func apiListWebhooksHandler(c echo.Context) error {
@@ -1060,6 +1145,21 @@ func apiUpsertSecretHandler(c echo.Context) error {
 	})
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to store secret"})
+	}
+
+	// Set lease in Redis if TTL > 0
+	if RedisClient != nil && input.TTL > 0 {
+		leaseKey := fmt.Sprintf("secret:lease:has:%s:%s", user.ID, input.Name)
+		_ = RedisClient.Set(c.Request().Context(), leaseKey, "1", time.Duration(input.TTL)*time.Second).Err()
+
+		allLeasesKey := fmt.Sprintf("secret:lease:all:%s", user.ID)
+		_ = RedisClient.SAdd(c.Request().Context(), allLeasesKey, input.Name).Err()
+	} else if RedisClient != nil && input.TTL == 0 {
+		leaseKey := fmt.Sprintf("secret:lease:has:%s:%s", user.ID, input.Name)
+		_ = RedisClient.Del(c.Request().Context(), leaseKey).Err()
+
+		allLeasesKey := fmt.Sprintf("secret:lease:all:%s", user.ID)
+		_ = RedisClient.SRem(c.Request().Context(), allLeasesKey, input.Name).Err()
 	}
 	writeAuditLog(c.Request().Context(), AuditEvent{
 		UserID:       user.ID,

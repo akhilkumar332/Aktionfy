@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/labstack/echo/v4"
+	"github.com/redis/go-redis/v9"
 )
 
 type createTemplateRequest struct {
@@ -264,8 +265,46 @@ func handleIncrementTemplateUses(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to increment uses"})
 	}
 
+	// Update Redis popularity leaderboard
+	if RedisClient != nil {
+		leaderboardKey := "templates:popularity:leaderboard"
+		_ = RedisClient.ZAdd(c.Request().Context(), leaderboardKey, redis.Z{
+			Score:  float64(uses.Int32),
+			Member: templateIDStr,
+		}).Err()
+	}
+
 	// Invalidate public templates cache after uses_count change
 	InvalidateCachedPublicTemplates(c.Request().Context())
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: map[string]int32{"uses_count": uses.Int32}})
 }
+
+// handleGetTrendingTemplates returns the top 5 most deployed blueprints from the Redis leaderboard.
+func handleGetTrendingTemplates(c echo.Context) error {
+	ctx := c.Request().Context()
+	
+	if RedisClient == nil {
+		return c.JSON(http.StatusOK, APIResponse{Success: true, Data: []db.Template{}})
+	}
+
+	leaderboardKey := "templates:popularity:leaderboard"
+	results, err := RedisClient.ZRevRange(ctx, leaderboardKey, 0, 4).Result()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch trending blueprints"})
+	}
+
+	templates := []db.Template{}
+	for _, idStr := range results {
+		var id pgtype.UUID
+		if err := parseUUID(idStr, &id); err == nil {
+			t, err := queries.GetTemplateByIDRaw(ctx, id)
+			if err == nil {
+				templates = append(templates, t)
+			}
+		}
+	}
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: templates})
+}
+
