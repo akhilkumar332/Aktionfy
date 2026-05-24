@@ -14,6 +14,12 @@ func handleGetWorkspaces(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
 	}
 
+	// Attempt to resolve from Redis cache first
+	cached, _ := GetCachedWorkspaces(c.Request().Context(), userID)
+	if cached != nil {
+		return c.JSON(http.StatusOK, APIResponse{Success: true, Data: cached})
+	}
+
 	workspaces, err := queries.GetUserWorkspaces(c.Request().Context(), userID)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch workspaces"})
@@ -21,6 +27,10 @@ func handleGetWorkspaces(c echo.Context) error {
 	if workspaces == nil {
 		workspaces = []db.Workspace{}
 	}
+
+	// Populate Redis cache for subsequent calls
+	SetCachedWorkspaces(c.Request().Context(), userID, workspaces)
+
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: workspaces})
 }
 
@@ -48,6 +58,9 @@ func handleCreateWorkspace(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to create workspace"})
 	}
+
+	// Invalidate cache immediately on new workspace creation
+	InvalidateCachedWorkspaces(c.Request().Context(), userID)
 
 	_ = PublishEvent(c.Request().Context(), PubSubEvent{
 		UserID:    userID,
