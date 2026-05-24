@@ -182,7 +182,7 @@ async function callGeminiDirectly(params, apiKey) {
     parts: [{ text: params.systemPrompt }]
   } : undefined;
 
-  const model = params.includeModelSuggest === 'high' ? 'gemini-1.5-pro' : 'gemini-1.5-flash';
+  const model = process.env.GEMINI_MODEL || (params.includeModelSuggest === 'high' ? 'gemini-2.0-pro-exp' : 'gemini-2.0-flash');
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const response = await fetch(url, {
