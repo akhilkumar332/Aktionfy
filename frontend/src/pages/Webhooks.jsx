@@ -191,8 +191,44 @@ const Webhooks = () => {
                     autoFocus
                   />
                 </div>
+
+                <div className="space-y-3">
+                  <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-1">Event Types</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {['task_executed', 'task_failed', 'task_updated', 'workspace_updated'].map((evt) => {
+                      const isSelected = newWebhook.event_types.includes(evt);
+                      return (
+                        <button
+                          type="button"
+                          key={evt}
+                          onClick={() => {
+                            setNewWebhook(prev => {
+                              const types = prev.event_types.includes(evt)
+                                ? prev.event_types.filter(t => t !== evt)
+                                : [...prev.event_types, evt];
+                              return { ...prev, event_types: types };
+                            });
+                          }}
+                          className={`flex items-center gap-2 p-3 rounded-md border text-[10px] font-medium transition-all ${
+                            isSelected 
+                              ? 'bg-amber-500/10 border-amber-500 text-amber-500 shadow-md shadow-amber-500/5' 
+                              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-white'
+                          }`}
+                        >
+                          <div className={`w-3 h-3 rounded-sm border flex items-center justify-center transition-all ${
+                            isSelected ? 'bg-amber-500 border-amber-500 text-black' : 'border-zinc-700'
+                          }`}>
+                            {isSelected && <Check size={8} strokeWidth={4} />}
+                          </div>
+                          <span>{evt.replace('_', ' ')}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 <button 
-                  disabled={submitting}
+                  disabled={submitting || newWebhook.event_types.length === 0}
                   className="pro-button-primary w-full !py-3 !text-[11px] uppercase tracking-[0.2em] disabled:opacity-50"
                 >
                   {submitting ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />}

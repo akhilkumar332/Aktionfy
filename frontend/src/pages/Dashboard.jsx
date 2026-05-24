@@ -29,22 +29,9 @@ const Dashboard = () => {
       const timeStr = new Date(now - (8 - i) * 30000).toLocaleTimeString(undefined, {
         hour: '2-digit', minute: '2-digit', second: '2-digit'
       });
-      return { time: timeStr, latency: Math.floor(Math.random() * 10) + 15 };
+      return { time: timeStr, latency: 0 };
     });
   });
-
-  useEffect(() => {
-    if (systemStatus) {
-      setLatencyHistory(prev => {
-        const now = new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        const newHistory = [...prev, { time: now, latency: systemStatus.p99_latency_ms || 0 }];
-        if (newHistory.length > 8) {
-          return newHistory.slice(newHistory.length - 8);
-        }
-        return newHistory;
-      });
-    }
-  }, [systemStatus]);
 
   useEffect(() => {
     return () => {
@@ -64,10 +51,20 @@ const Dashboard = () => {
   }, [notify]);
 
   const fetchSystemStatus = useCallback(async () => {
+    if (document.hidden) return;
     try {
       const res = await axios.get('/api/v1/system/status');
       if (res.data.success && isMounted.current) {
-        setSystemStatus(res.data.data);
+        const status = res.data.data;
+        setSystemStatus(status);
+        setLatencyHistory(prev => {
+          const now = new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          const newHistory = [...prev, { time: now, latency: status.p99_latency_ms || 0 }];
+          if (newHistory.length > 8) {
+            return newHistory.slice(newHistory.length - 8);
+          }
+          return newHistory;
+        });
       }
     } catch {
       // Fail silently for background telemetry polling to avoid console/UI noise

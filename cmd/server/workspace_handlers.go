@@ -288,3 +288,42 @@ func handleGetWorkspacePresence(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: presenceList})
 }
+
+func handleDeleteWorkspace(c echo.Context) error {
+	workspaceIDStr := c.Param("id")
+	var workspaceID pgtype.UUID
+	if err := parseUUID(workspaceIDStr, &workspaceID); err != nil {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid workspace ID"})
+	}
+
+	userID := getUserID(c)
+	if userID == "" {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
+
+	// Verify access / ownership
+	hasAccess, err := queries.CheckWorkspaceAccess(c.Request().Context(), db.CheckWorkspaceAccessParams{
+		ID:      workspaceID,
+		OwnerID: userID,
+	})
+	if err != nil || !hasAccess {
+		return c.JSON(http.StatusForbidden, APIResponse{Success: false, Error: "Forbidden"})
+	}
+
+	ctx := c.Request().Context()
+	_, err = dbPool.Exec(ctx, "DELETE FROM workspaces WHERE id = $1 AND owner_id = $2", workspaceID, userID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to delete workspace"})
+	}
+
+	// Invalidate cache immediately
+	InvalidateCachedWorkspaces(ctx, userID)
+
+	_ = PublishEvent(ctx, PubSubEvent{
+		UserID:    userID,
+		EventType: "workspace_updated",
+		Payload:   "{}",
+	})
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Workspace deleted successfully"})
+}

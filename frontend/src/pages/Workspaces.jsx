@@ -177,6 +177,20 @@ const Workspaces = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState('');
   const [creating, setCreating] = useState(false);
+  const [confirmDeleteWorkspace, setConfirmDeleteWorkspace] = useState(null);
+
+  const handleDeleteWorkspace = async (e, workspaceId) => {
+    e.stopPropagation();
+    try {
+      await axios.delete(`/api/v1/workspaces/${workspaceId}`);
+      notify('SUCCESS', 'Compute cluster decommissioned successfully');
+      fetchWorkspaces();
+    } catch (err) {
+      notify('ERROR', 'Failed to decommission compute cluster', err.response?.data?.error || err.message);
+    } finally {
+      if (isMounted.current) setConfirmDeleteWorkspace(null);
+    }
+  };
 
   useEffect(() => {
     return () => {
@@ -334,12 +348,38 @@ const Workspaces = () => {
                     </div>
                   </div>
                 </div>
-                <motion.div 
-                  animate={{ rotate: expandedId === w.id ? 180 : 0 }}
-                  className="text-zinc-700 group-hover:text-zinc-400"
-                >
-                  <ChevronDown size={20} />
-                </motion.div>
+                <div className="flex items-center gap-3" onClick={e => e.stopPropagation()}>
+                  {confirmDeleteWorkspace === w.id ? (
+                    <div className="flex items-center gap-1 bg-red-500/10 border border-red-500/20 rounded-md p-0.5 relative z-20">
+                      <button 
+                        onClick={(e) => handleDeleteWorkspace(e, w.id)}
+                        className="p-1.5 text-red-500 hover:bg-red-500 hover:text-white rounded transition-all"
+                      >
+                        <Check size={12} />
+                      </button>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setConfirmDeleteWorkspace(null); }}
+                        className="p-1.5 text-zinc-400 hover:bg-zinc-700 hover:text-white rounded transition-all"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); setConfirmDeleteWorkspace(w.id); }}
+                      className="p-2 bg-zinc-900 text-zinc-300 border border-zinc-800 rounded-md transition-all opacity-0 group-hover:opacity-100 hover:text-red-500 shadow-sm relative z-20"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                  <motion.div 
+                    animate={{ rotate: expandedId === w.id ? 180 : 0 }}
+                    className="text-zinc-700 group-hover:text-zinc-400 cursor-pointer"
+                    onClick={() => setExpandedId(expandedId === w.id ? null : w.id)}
+                  >
+                    <ChevronDown size={20} />
+                  </motion.div>
+                </div>
               </div>
 
               <AnimatePresence>

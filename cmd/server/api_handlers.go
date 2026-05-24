@@ -416,6 +416,16 @@ func apiAdminUsersHandler(c echo.Context) error {
 	search := c.QueryParam("search")
 	searchPattern := "%" + search + "%"
 
+	cacheKey := fmt.Sprintf("cache:admin:users:%s", search)
+	if RedisClient != nil {
+		if data, err := RedisClient.Get(c.Request().Context(), cacheKey).Result(); err == nil {
+			var cachedUsers []User
+			if json.Unmarshal([]byte(data), &cachedUsers) == nil {
+				return c.JSON(http.StatusOK, APIResponse{Success: true, Data: cachedUsers})
+			}
+		}
+	}
+
 	rows, err := queries.ListUsers(c.Request().Context(), pgtype.Text{String: searchPattern, Valid: true})
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch users"})
@@ -450,6 +460,12 @@ func apiAdminUsersHandler(c echo.Context) error {
 			RateLimitOverride: rateLimit,
 			CreatedAt:         u.CreatedAt.Time,
 		})
+	}
+
+	if RedisClient != nil {
+		if bytes, err := json.Marshal(users); err == nil {
+			_ = RedisClient.Set(c.Request().Context(), cacheKey, string(bytes), 30*time.Second).Err()
+		}
 	}
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: users})
@@ -645,6 +661,8 @@ func apiAdminUpdateUserHandler(c echo.Context) error {
 			"is_locked": input.IsLocked,
 		},
 	})
+	InvalidateUserCaches(c.Request().Context(), input.UserID)
+	InvalidateAdminUsersCache(c.Request().Context())
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "User updated successfully"})
 }
@@ -1239,6 +1257,16 @@ func apiAdminAuditLogsHandler(c echo.Context) error {
 		limit = parsed
 	}
 
+	cacheKey := fmt.Sprintf("cache:admin:audit_logs:%d", limit)
+	if RedisClient != nil {
+		if data, err := RedisClient.Get(c.Request().Context(), cacheKey).Result(); err == nil {
+			var cachedLogs []AuditLogEntry
+			if json.Unmarshal([]byte(data), &cachedLogs) == nil {
+				return c.JSON(http.StatusOK, APIResponse{Success: true, Data: cachedLogs})
+			}
+		}
+	}
+
 	rows, err := queries.ListAuditLogs(c.Request().Context(), int32(limit))
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch audit logs"})
@@ -1268,26 +1296,60 @@ func apiAdminAuditLogsHandler(c echo.Context) error {
 		logs = append(logs, entry)
 	}
 
+	if RedisClient != nil {
+		if bytes, err := json.Marshal(logs); err == nil {
+			_ = RedisClient.Set(c.Request().Context(), cacheKey, string(bytes), 15*time.Second).Err()
+		}
+	}
+
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: logs})
 }
 
 func apiAdminUsageHandler(c echo.Context) error {
+	cacheKey := "cache:admin:usage_metrics"
+	if RedisClient != nil {
+		if data, err := RedisClient.Get(c.Request().Context(), cacheKey).Result(); err == nil {
+			var cachedMetrics map[string]int64
+			if json.Unmarshal([]byte(data), &cachedMetrics) == nil {
+				return c.JSON(http.StatusOK, APIResponse{Success: true, Data: cachedMetrics})
+			}
+		}
+	}
+
 	metrics, err := queries.GetSystemUsageMetrics(c.Request().Context())
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch metrics"})
 	}
 
-	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: map[string]int64{
+	res := map[string]int64{
 		"users":            metrics.UserCount,
 		"tasks":            metrics.TaskCount,
 		"task_successes":   metrics.SuccessCount,
 		"task_failures":    metrics.FailureCount,
 		"task_missed":      metrics.MissedCount,
 		"audit_log_events": metrics.AuditCount,
-	}})
+	}
+
+	if RedisClient != nil {
+		if bytes, err := json.Marshal(res); err == nil {
+			_ = RedisClient.Set(c.Request().Context(), cacheKey, string(bytes), 1*time.Minute).Err()
+		}
+	}
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: res})
 }
 
 func apiAdminGetSettingsHandler(c echo.Context) error {
+	cacheKey := "cache:admin:settings"
+	if RedisClient != nil {
+		if data, err := RedisClient.Get(c.Request().Context(), cacheKey).Result(); err == nil {
+			var cachedSettings map[string]int32
+			if json.Unmarshal([]byte(data), &cachedSettings) == nil {
+				return c.JSON(http.StatusOK, APIResponse{Success: true, Data: cachedSettings})
+			}
+		}
+	}
+
 	var pruneDays, jsTimeout, reaperThreshold, pollInterval int32
 	ctx := c.Request().Context()
 	err := dbPool.QueryRow(ctx, "SELECT worker_prune_days, js_timeout_ms, reaper_stuck_threshold_minutes, scheduler_poll_interval_seconds FROM system_settings WHERE id = 1").Scan(&pruneDays, &jsTimeout, &reaperThreshold, &pollInterval)
@@ -1295,14 +1357,22 @@ func apiAdminGetSettingsHandler(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch settings"})
 	}
 
+	res := map[string]int32{
+		"worker_prune_days":              pruneDays,
+		"js_timeout_ms":                  jsTimeout,
+		"reaper_stuck_threshold_minutes": reaperThreshold,
+		"scheduler_poll_interval_seconds": pollInterval,
+	}
+
+	if RedisClient != nil {
+		if bytes, err := json.Marshal(res); err == nil {
+			_ = RedisClient.Set(ctx, cacheKey, string(bytes), 5*time.Minute).Err()
+		}
+	}
+
 	return c.JSON(http.StatusOK, APIResponse{
 		Success: true,
-		Data: map[string]int32{
-			"worker_prune_days":                pruneDays,
-			"js_timeout_ms":                    jsTimeout,
-			"reaper_stuck_threshold_minutes":   reaperThreshold,
-			"scheduler_poll_interval_seconds": pollInterval,
-		},
+		Data:    res,
 	})
 }
 
@@ -1345,6 +1415,9 @@ func apiAdminUpdateSettingsHandler(c echo.Context) error {
 
 	// Sync local setting cache immediately
 	syncSettings(ctx)
+	if RedisClient != nil {
+		_ = RedisClient.Del(ctx, "cache:admin:settings").Err()
+	}
 
 	user := getUserFromEcho(c)
 	if user == nil {

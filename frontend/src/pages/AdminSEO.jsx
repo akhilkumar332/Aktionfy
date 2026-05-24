@@ -189,14 +189,69 @@ const AdminSEO = () => {
                 </div>
               </form>
 
-              <div className="bg-zinc-100/[0.01] border border-dashed border-zinc-800 rounded-2xl p-10 flex flex-col items-center justify-center text-center gap-6">
-                 <div className="w-16 h-16 bg-zinc-100/5 rounded-full flex items-center justify-center border border-zinc-800/50 text-zinc-700">
-                    <Search size={32} />
-                 </div>
-                 <div>
-                    <h3 className="text-lg font-black text-zinc-300 uppercase tracking-widest">Signal Preview</h3>
-                    <p className="text-[10px] text-zinc-700 font-bold uppercase tracking-widest mt-2 max-w-sm">Changes will propagate to global search indexes within 24-48 neural cycles.</p>
-                 </div>
+              <div className="bg-zinc-950 border border-zinc-800/50 rounded-3xl p-12 shadow-lg relative overflow-hidden backdrop-blur-xl space-y-8">
+                <div className="flex items-center gap-4">
+                   <div className="p-3 bg-zinc-100/5 rounded-xl border border-zinc-800/50 text-zinc-400">
+                      <Search size={20} />
+                   </div>
+                   <div>
+                      <h3 className="text-lg font-black text-white uppercase tracking-tighter">Global Index Preview</h3>
+                      <p className="text-[9px] text-zinc-300 font-bold uppercase tracking-widest mt-0.5">Real-time Search Engine Simulator</p>
+                   </div>
+                </div>
+
+                {/* Google Search Result Simulator */}
+                <div className="bg-black/30 border border-zinc-900 rounded-xl p-8 max-w-2xl font-sans relative z-10">
+                  <div className="flex items-center gap-2 mb-2 text-xs text-zinc-400">
+                    <div className="w-4 h-4 rounded-full bg-zinc-800 flex items-center justify-center text-[9px] font-bold text-zinc-200">A</div>
+                    <span>https://aktionfy.com</span>
+                  </div>
+                  <h3 className="text-xl text-indigo-400 hover:underline cursor-pointer font-medium mb-1 truncate">
+                    {data.title || 'Aktionfy | Autonomous Task Orchestration'}
+                  </h3>
+                  <p className="text-sm text-zinc-400 leading-normal line-clamp-2">
+                    {data.description || 'Define your autonomous task execution pipelines. Schedule jobs, configure triggers, and scale workers in a secure sandbox environment.'}
+                  </p>
+                </div>
+
+                {/* Character Counter Progress Indicators */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t border-zinc-900 relative z-10">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-[0.2em]">
+                      <span className="text-zinc-400">Title Length Check</span>
+                      <span className={data.title.length > 60 ? 'text-rose-500 font-bold' : 'text-emerald-500 font-bold'}>
+                        {data.title.length} / 60 Chars
+                      </span>
+                    </div>
+                    <div className="w-full h-2 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800">
+                      <div 
+                        className={`h-full transition-all duration-300 ${data.title.length > 60 ? 'bg-rose-500' : 'bg-emerald-500'}`}
+                        style={{ width: `${Math.min(100, (data.title.length / 60) * 100)}%` }}
+                      />
+                    </div>
+                    {data.title.length > 60 && (
+                      <p className="text-[9px] text-rose-500 font-black uppercase tracking-widest animate-pulse">⚠️ Optimal Google search title limit exceeded (truncation risk)</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-[0.2em]">
+                      <span className="text-zinc-400">Description Length Check</span>
+                      <span className={data.description.length > 160 ? 'text-rose-500 font-bold' : 'text-emerald-500 font-bold'}>
+                        {data.description.length} / 160 Chars
+                      </span>
+                    </div>
+                    <div className="w-full h-2 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800">
+                      <div 
+                        className={`h-full transition-all duration-300 ${data.description.length > 160 ? 'bg-rose-500' : 'bg-emerald-500'}`}
+                        style={{ width: `${Math.min(100, (data.description.length / 160) * 100)}%` }}
+                      />
+                    </div>
+                    {data.description.length > 160 && (
+                      <p className="text-[9px] text-rose-500 font-black uppercase tracking-widest animate-pulse">⚠️ Optimal Google search description limit exceeded (truncation risk)</p>
+                    )}
+                  </div>
+                </div>
               </div>
             </motion.div>
           )}

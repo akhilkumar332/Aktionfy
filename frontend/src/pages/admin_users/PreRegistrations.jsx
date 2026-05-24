@@ -38,8 +38,8 @@ const PreRegistrations = ({
               </td>
             </tr>
           ) : (
-            invitations.map((inv) => (
-              <tr key={inv.id?.String || inv.id || Math.random().toString()} className="pro-table-row hover:bg-zinc-900/10">
+            invitations.map((inv, index) => (
+              <tr key={inv.id?.String || inv.id || `invite-${index}`} className="pro-table-row hover:bg-zinc-900/10">
                 <td className="px-6 py-4">
                   <span className="text-sm font-bold text-zinc-200">{inv.email}</span>
                 </td>

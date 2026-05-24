@@ -6,11 +6,13 @@ import { History, ArrowLeft, RefreshCw, Clock, CheckCircle2, AlertCircle, Comman
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNotify } from '../context/NotificationContext';
+import { useSSE } from '../context/SSEContext';
 
 const TaskHistory = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { notify } = useNotify();
+  const { addListener, removeListener } = useSSE();
   const isMounted = useRef(true);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -72,11 +74,22 @@ const TaskHistory = () => {
   }, [id, notify]);
 
   useEffect(() => {
-    const init = async () => {
-      await fetchHistory();
-    };
-    init();
+    Promise.resolve().then(() => {
+      fetchHistory();
+    });
   }, [fetchHistory]);
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      fetchHistory();
+    };
+    addListener('task_updated', handleUpdate);
+    addListener('task_executed', handleUpdate);
+    return () => {
+      removeListener('task_updated', handleUpdate);
+      removeListener('task_executed', handleUpdate);
+    };
+  }, [addListener, removeListener, fetchHistory]);
 
   const handleRestore = async (versionId) => {
     setRestoring(versionId);

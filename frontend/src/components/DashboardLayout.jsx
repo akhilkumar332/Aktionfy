@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Activity, Users, LogOut, Key, 
   ListTodo, Webhook, Folder, FileText, Share2, BarChart3, 
   Settings, Menu, X, Zap, ChevronRight, Search, Command,
-  ShieldAlert
+  ShieldAlert, Globe
 } from 'lucide-react';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -61,6 +61,7 @@ const navGroups = [
       { icon: Activity, label: 'Monitoring', path: '/monitor', roles: ['staff', 'admin'] },
       { icon: BarChart3, label: 'Analytics', path: '/admin/insights', roles: ['admin'] },
       { icon: Users, label: 'Users', path: '/admin/users', roles: ['admin'] },
+      { icon: Globe, label: 'SEO Settings', path: '/admin/seo', roles: ['admin'] },
       { icon: Zap, label: 'Workers', path: '/admin/workers', roles: ['admin'] },
       { icon: Settings, label: 'Settings', path: '/admin/settings', roles: ['admin'] },
     ]

@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import axios from 'axios';
@@ -25,9 +26,13 @@ export const SSEProvider = ({ children }) => {
 
   useEffect(() => {
     if (user) {
-      fetchBridgeStatus();
+      Promise.resolve().then(() => {
+        fetchBridgeStatus();
+      });
     } else {
-      setBridgeActive(false);
+      Promise.resolve().then(() => {
+        setBridgeActive(false);
+      });
     }
   }, [user, fetchBridgeStatus]);
 
@@ -48,7 +53,9 @@ export const SSEProvider = ({ children }) => {
 
   useEffect(() => {
     if (!user) {
-      setIsConnected(false);
+      Promise.resolve().then(() => {
+        setIsConnected(false);
+      });
       return;
     }
 

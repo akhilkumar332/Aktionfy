@@ -50,7 +50,7 @@ const Templates = () => {
             if (res.data.success && isMounted.current) {
                 setTrending(res.data.data || []);
             }
-        } catch (err) {
+        } catch {
             // silent error fallback
         }
     }, []);

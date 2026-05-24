@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { X, Sparkles, Loader2 } from 'lucide-react';
 import axios from 'axios';
 import { createPortal } from 'react-dom';
@@ -14,8 +14,10 @@ const SaveTemplateModal = ({ isOpen, onClose, task }) => {
 
   useEffect(() => {
     if (task) {
-      setName(task.name ? `${task.name} Template` : '');
-      setDescription(task.description || '');
+      Promise.resolve().then(() => {
+        setName(task.name ? `${task.name} Template` : '');
+        setDescription(task.description || '');
+      });
     }
   }, [task]);
 

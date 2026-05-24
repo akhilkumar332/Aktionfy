@@ -433,3 +433,172 @@ func RecordTaskExecutionTelemetry(ctx context.Context, userID string, taskID str
 	_ = RedisClient.ZRemRangeByScore(ctx, keyGlobal, "-inf", fmt.Sprintf("%d", thirtyDaysAgo)).Err()
 	_ = RedisClient.ZRemRangeByScore(ctx, keyTask, "-inf", fmt.Sprintf("%d", thirtyDaysAgo)).Err()
 }
+
+// --- User Auth & Session Caching ---
+
+const (
+	UserCacheTTL = 2 * time.Minute
+)
+
+// GetCachedUserBySession retrieves the user session data from Redis.
+func GetCachedUserBySession(ctx context.Context, sessionID string) (*db.GetUserBySessionIDRow, error) {
+	if RedisClient == nil {
+		return nil, nil
+	}
+	key := fmt.Sprintf("cache:user:session:%s", sessionID)
+	data, err := RedisClient.Get(ctx, key).Result()
+	if err != nil {
+		return nil, nil // Cache miss
+	}
+	var row db.GetUserBySessionIDRow
+	if err := json.Unmarshal([]byte(data), &row); err != nil {
+		log.Printf("Warning: failed to unmarshal cached user by session: %v", err)
+		return nil, nil
+	}
+	return &row, nil
+}
+
+// SetCachedUserBySession stores the user session data in Redis and tracks the session ID for user-scoped invalidation.
+func SetCachedUserBySession(ctx context.Context, sessionID string, row db.GetUserBySessionIDRow) {
+	if RedisClient == nil {
+		return
+	}
+	key := fmt.Sprintf("cache:user:session:%s", sessionID)
+	bytes, err := json.Marshal(row)
+	if err != nil {
+		log.Printf("Warning: failed to marshal user session row: %v", err)
+		return
+	}
+	_ = RedisClient.Set(ctx, key, string(bytes), UserCacheTTL).Err()
+
+	// Track this session ID for the user to support user-scoped invalidation
+	setKey := fmt.Sprintf("cache:user:session-ids:%s", row.ID)
+	_ = RedisClient.SAdd(ctx, setKey, sessionID).Err()
+	_ = RedisClient.Expire(ctx, setKey, UserCacheTTL).Err()
+}
+
+// InvalidateCachedUserBySession deletes the cached user session data from Redis.
+func InvalidateCachedUserBySession(ctx context.Context, sessionID string) {
+	if RedisClient == nil {
+		return
+	}
+	key := fmt.Sprintf("cache:user:session:%s", sessionID)
+	_ = RedisClient.Del(ctx, key).Err()
+}
+
+// GetCachedUserByAPIKey retrieves the user API key row from Redis.
+func GetCachedUserByAPIKey(ctx context.Context, apiKey string) (*db.GetUserByAPIKeyRow, error) {
+	if RedisClient == nil {
+		return nil, nil
+	}
+	key := fmt.Sprintf("cache:user:apikey:%s", apiKey)
+	data, err := RedisClient.Get(ctx, key).Result()
+	if err != nil {
+		return nil, nil // Cache miss
+	}
+	var row db.GetUserByAPIKeyRow
+	if err := json.Unmarshal([]byte(data), &row); err != nil {
+		log.Printf("Warning: failed to unmarshal cached user by apiKey: %v", err)
+		return nil, nil
+	}
+	return &row, nil
+}
+
+// SetCachedUserByAPIKey stores the user API key row in Redis.
+func SetCachedUserByAPIKey(ctx context.Context, apiKey string, row db.GetUserByAPIKeyRow) {
+	if RedisClient == nil {
+		return
+	}
+	key := fmt.Sprintf("cache:user:apikey:%s", apiKey)
+	bytes, err := json.Marshal(row)
+	if err != nil {
+		log.Printf("Warning: failed to marshal user api key row: %v", err)
+		return
+	}
+	_ = RedisClient.Set(ctx, key, string(bytes), UserCacheTTL).Err()
+}
+
+// InvalidateCachedUserByAPIKey deletes the cached API key lookup from Redis.
+func InvalidateCachedUserByAPIKey(ctx context.Context, apiKey string) {
+	if RedisClient == nil {
+		return
+	}
+	key := fmt.Sprintf("cache:user:apikey:%s", apiKey)
+	_ = RedisClient.Del(ctx, key).Err()
+}
+
+// GetCachedUser retrieves db.GetUserRow from Redis.
+func GetCachedUser(ctx context.Context, userID string) (*db.GetUserRow, error) {
+	if RedisClient == nil {
+		return nil, nil
+	}
+	key := fmt.Sprintf("cache:user:profile:%s", userID)
+	data, err := RedisClient.Get(ctx, key).Result()
+	if err != nil {
+		return nil, nil // Cache miss
+	}
+	var u db.GetUserRow
+	if err := json.Unmarshal([]byte(data), &u); err != nil {
+		log.Printf("Warning: failed to unmarshal cached user profile: %v", err)
+		return nil, nil
+	}
+	return &u, nil
+}
+
+// SetCachedUser stores db.GetUserRow in Redis.
+func SetCachedUser(ctx context.Context, userID string, u db.GetUserRow) {
+	if RedisClient == nil {
+		return
+	}
+	key := fmt.Sprintf("cache:user:profile:%s", userID)
+	bytes, err := json.Marshal(u)
+	if err != nil {
+		log.Printf("Warning: failed to marshal user profile: %v", err)
+		return
+	}
+	_ = RedisClient.Set(ctx, key, string(bytes), UserCacheTTL).Err()
+}
+
+// InvalidateCachedUser deletes the cached db.GetUserRow from Redis.
+func InvalidateCachedUser(ctx context.Context, userID string) {
+	if RedisClient == nil {
+		return
+	}
+	key := fmt.Sprintf("cache:user:profile:%s", userID)
+	_ = RedisClient.Del(ctx, key).Err()
+}
+
+// InvalidateUserCaches invalidates all API key, session, and profile caches associated with a user ID.
+func InvalidateUserCaches(ctx context.Context, userID string) {
+	if RedisClient == nil {
+		return
+	}
+	// 1. Get user details from DB to find current API key
+	u, err := queries.GetUser(ctx, userID)
+	if err == nil {
+		InvalidateCachedUserByAPIKey(ctx, u.ApiKey)
+	}
+	InvalidateCachedUser(ctx, userID)
+
+	// 2. Get all tracked session IDs for the user and delete their cache keys
+	setKey := fmt.Sprintf("cache:user:session-ids:%s", userID)
+	sessionIDs, err := RedisClient.SMembers(ctx, setKey).Result()
+	if err == nil {
+		for _, sessID := range sessionIDs {
+			InvalidateCachedUserBySession(ctx, sessID)
+		}
+	}
+	_ = RedisClient.Del(ctx, setKey).Err()
+}
+
+// InvalidateAdminUsersCache clears all admin users cache using a key SCAN.
+func InvalidateAdminUsersCache(ctx context.Context) {
+	if RedisClient == nil {
+		return
+	}
+	iter := RedisClient.Scan(ctx, 0, "cache:admin:users:*", 100).Iterator()
+	for iter.Next(ctx) {
+		_ = RedisClient.Del(ctx, iter.Val()).Err()
+	}
+}
+

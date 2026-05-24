@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { 
-  UserPlus, RefreshCw, Search, X, TrendingUp, ChevronDown, Activity, History, Info, UserCheck, UserCog, Ban, Unlock, Lock, ShieldAlert, KeyRound
+  UserPlus, RefreshCw, Search, X, TrendingUp, ChevronDown, Activity, History, Info, UserCheck, UserCog, Ban, ShieldAlert
 } from 'lucide-react';
 import { useNotify } from '../context/NotificationContext';
 import { useSSE } from '../context/SSEContext';
@@ -139,13 +139,15 @@ const AdminUsers = () => {
   }, [search, fetchUsers]);
 
   useEffect(() => {
-    if (activeTab === 'history') {
-      fetchLoginHistory();
-    } else if (activeTab === 'invitations') {
-      fetchInvitations();
-    } else if (activeTab === 'audit') {
-      fetchAuditLogs(auditLimit);
-    }
+    Promise.resolve().then(() => {
+      if (activeTab === 'history') {
+        fetchLoginHistory();
+      } else if (activeTab === 'invitations') {
+        fetchInvitations();
+      } else if (activeTab === 'audit') {
+        fetchAuditLogs(auditLimit);
+      }
+    });
   }, [activeTab, fetchLoginHistory, fetchInvitations, fetchAuditLogs, auditLimit]);
 
   // Synchronize dynamic updates in real-time

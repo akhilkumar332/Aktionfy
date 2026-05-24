@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"aktionfy/db"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -63,8 +64,18 @@ func (rl *rateLimiter) Allow(ctx context.Context, userID string) bool {
 
 	// Check for user-specific rate overrides
 	if !strings.HasPrefix(userID, "ip:") {
-		u, err := queries.GetUser(ctx, userID)
-		if err == nil && u.RateLimitOverride.Valid {
+		var u db.GetUserRow
+		var err error
+		cachedUser, cacheErr := GetCachedUser(ctx, userID)
+		if cacheErr == nil && cachedUser != nil {
+			u = *cachedUser
+		} else {
+			u, err = queries.GetUser(ctx, userID)
+			if err == nil {
+				SetCachedUser(ctx, userID, u)
+			}
+		}
+		if (err == nil || cachedUser != nil) && u.RateLimitOverride.Valid {
 			rate = float64(u.RateLimitOverride.Int32)
 			capacity = float64(u.RateLimitOverride.Int32 * 2)
 		}

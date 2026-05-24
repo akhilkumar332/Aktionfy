@@ -481,6 +481,7 @@ func main() {
 	// Additional v1 routes moved from legacy v1 block
 	api.GET("/workspaces", handleGetWorkspaces)
 	api.POST("/workspaces", handleCreateWorkspace)
+	api.DELETE("/workspaces/:id", handleDeleteWorkspace)
 	api.GET("/workspaces/:id/env", handleListWorkspaceEnvVars)
 	api.POST("/workspaces/:id/env", handleUpsertWorkspaceEnvVar)
 	api.DELETE("/workspaces/:id/env/:name", handleDeleteWorkspaceEnvVar)

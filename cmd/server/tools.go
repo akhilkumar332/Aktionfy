@@ -214,8 +214,18 @@ func registerTools(s *server.MCPServer) {
 			return mcp.NewToolResultError("unauthorized"), nil
 		}
 
-		rows, err := queries.ListUserTasks(ctx, userID)
-		if err != nil {
+		var rows []db.ListUserTasksRow
+		var err error
+		cachedRows, cacheErr := GetCachedTasks(ctx, userID)
+		if cacheErr == nil && cachedRows != nil {
+			rows = cachedRows
+		} else {
+			rows, err = queries.ListUserTasks(ctx, userID)
+			if err == nil {
+				SetCachedTasks(ctx, userID, rows)
+			}
+		}
+		if err != nil && cachedRows == nil {
 			return mcp.NewToolResultError(fmt.Sprintf("db error: %v", err)), nil
 		}
 

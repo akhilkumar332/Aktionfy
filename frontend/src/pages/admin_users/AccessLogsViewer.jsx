@@ -37,8 +37,8 @@ const AccessLogsViewer = ({
               </td>
             </tr>
           ) : (
-            loginHistory.map((lh) => (
-              <tr key={lh.id?.String || lh.id || Math.random().toString()} className="pro-table-row hover:bg-zinc-900/10">
+            loginHistory.map((lh, index) => (
+              <tr key={lh.id?.String || lh.id || `access-log-${index}`} className="pro-table-row hover:bg-zinc-900/10">
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-zinc-950 border border-zinc-800 flex items-center justify-center text-zinc-500">

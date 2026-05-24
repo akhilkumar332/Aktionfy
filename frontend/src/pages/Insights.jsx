@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 
 import axios from 'axios';
 import { 
@@ -9,14 +9,24 @@ import { BarChart3, Activity, Zap, Users, ShieldCheck, ArrowRight, Server, Globe
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useNotify } from '../context/NotificationContext';
+import { useSSE } from '../context/SSEContext';
 
 const Insights = () => {
   const { notify } = useNotify();
+  const { addListener, removeListener } = useSSE();
   const [data, setData] = useState(null);
   const [trends, setTrends] = useState(null);
   const [hourlyHeatmap, setHourlyHeatmap] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+
+  const isMountedRef = useRef(true);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const fetchInsights = useCallback(async () => {
     try {
@@ -25,28 +35,43 @@ const Insights = () => {
           axios.get('/api/v1/admin/analytics/trends'),
           axios.get('/api/v1/admin/analytics/hourly-heatmap')
       ]);        
-      if (insightsRes.data.success) {
+      if (isMountedRef.current && insightsRes.data.success) {
         setData(insightsRes.data.data);
       }
-      if (trendsRes.data.success) {
+      if (isMountedRef.current && trendsRes.data.success) {
         setTrends(trendsRes.data.data);
       }
-      if (heatmapRes.data.success) {
+      if (isMountedRef.current && heatmapRes.data.success) {
         setHourlyHeatmap(heatmapRes.data.data);
       }
     } catch (err) {
-      notify('ERROR', 'Failed to fetch insights', err.response?.data?.error || err.message);
+      if (isMountedRef.current) {
+        notify('ERROR', 'Failed to fetch insights', err.response?.data?.error || err.message);
+      }
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   }, [notify]);
 
   useEffect(() => {
-    const init = async () => {
-      await fetchInsights();
-    };
-    init();
+    Promise.resolve().then(() => {
+      fetchInsights();
+    });
   }, [fetchInsights]);
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      fetchInsights();
+    };
+    addListener('task_executed', handleUpdate);
+    addListener('worker_updated', handleUpdate);
+    return () => {
+      removeListener('task_executed', handleUpdate);
+      removeListener('worker_updated', handleUpdate);
+    };
+  }, [addListener, removeListener, fetchInsights]);
 
   const chartColors = {
     primary: '#d97706', 

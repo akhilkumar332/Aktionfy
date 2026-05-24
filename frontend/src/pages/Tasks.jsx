@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import TaskWizard from '../components/TaskWizard';
 import ExecutionTracesModal from '../components/ExecutionTracesModal';
 import SaveTemplateModal from '../components/SaveTemplateModal';
@@ -27,6 +27,14 @@ const Tasks = () => {
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [saveTemplateTask, setSaveTemplateTask] = useState(null);
 
+  const isMountedRef = useRef(true);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   // Search & Filter States
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -44,14 +52,18 @@ const Tasks = () => {
     setRefreshing(true);
     try {
       const res = await axios.get('/api/v1/tasks');
-      if (res.data.success) {
+      if (isMountedRef.current && res.data.success) {
         setTasks(res.data.data || []);
       }
     } catch (err) {
-      notify('ERROR', 'Failed to fetch tasks', err.response?.data?.error || err.message);
+      if (isMountedRef.current) {
+        notify('ERROR', 'Failed to fetch tasks', err.response?.data?.error || err.message);
+      }
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   }, [notify]);
 
@@ -68,10 +80,9 @@ const Tasks = () => {
   }, [addListener, removeListener, fetchTasks]);
 
   useEffect(() => {
-    const init = async () => {
-      await fetchTasks();
-    };
-    init();
+    Promise.resolve().then(() => {
+      fetchTasks();
+    });
   }, [fetchTasks]);
 
   const handleEdit = (task) => {

@@ -38,12 +38,22 @@ func EchoSessionMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return next(c)
 		}
 
-		u, err := queries.GetUserBySessionID(c.Request().Context(), db.GetUserBySessionIDParams{
-			ID:        sessionID,
-			ExpiresAt: pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},
-		})
+		var u db.GetUserBySessionIDRow
+		var dbErr error
+		cachedUser, cacheErr := GetCachedUserBySession(c.Request().Context(), cookie.Value)
+		if cacheErr == nil && cachedUser != nil {
+			u = *cachedUser
+		} else {
+			u, dbErr = queries.GetUserBySessionID(c.Request().Context(), db.GetUserBySessionIDParams{
+				ID:        sessionID,
+				ExpiresAt: pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},
+			})
+			if dbErr == nil {
+				SetCachedUserBySession(c.Request().Context(), cookie.Value, u)
+			}
+		}
 
-		if err != nil {
+		if dbErr != nil && cachedUser == nil {
 			if strings.HasPrefix(c.Request().URL.Path, "/api/") {
 				return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
 			}
@@ -239,8 +249,18 @@ func NetHttpAuthMiddleware(next http.Handler, mcpServer *server.MCPServer) http.
 		// 1. Try API Key Header
 		apiKey := r.Header.Get("X-API-Key")
 		if apiKey != "" {
-			u, err := queries.GetUserByAPIKey(r.Context(), apiKey)
-			if err == nil {
+			var u db.GetUserByAPIKeyRow
+			var err error
+			cachedUser, cacheErr := GetCachedUserByAPIKey(r.Context(), apiKey)
+			if cacheErr == nil && cachedUser != nil {
+				u = *cachedUser
+			} else {
+				u, err = queries.GetUserByAPIKey(r.Context(), apiKey)
+				if err == nil {
+					SetCachedUserByAPIKey(r.Context(), apiKey, u)
+				}
+			}
+			if err == nil || cachedUser != nil {
 				if u.IsLocked.Bool {
 					http.Error(w, "Forbidden: This account has been locked", http.StatusForbidden)
 					return
@@ -257,11 +277,21 @@ func NetHttpAuthMiddleware(next http.Handler, mcpServer *server.MCPServer) http.
 			if err == nil && cookie.Value != "" {
 				var sessionID pgtype.UUID
 				if err := parseUUID(cookie.Value, &sessionID); err == nil {
-					u, err := queries.GetUserBySessionID(r.Context(), db.GetUserBySessionIDParams{
-						ID:        sessionID,
-						ExpiresAt: pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},
-					})
-					if err == nil {
+					var u db.GetUserBySessionIDRow
+					var err error
+					cachedUser, cacheErr := GetCachedUserBySession(r.Context(), cookie.Value)
+					if cacheErr == nil && cachedUser != nil {
+						u = *cachedUser
+					} else {
+						u, err = queries.GetUserBySessionID(r.Context(), db.GetUserBySessionIDParams{
+							ID:        sessionID,
+							ExpiresAt: pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},
+						})
+						if err == nil {
+							SetCachedUserBySession(r.Context(), cookie.Value, u)
+						}
+					}
+					if err == nil || cachedUser != nil {
 						if u.IsLocked.Bool {
 							http.Error(w, "Forbidden: This account has been locked", http.StatusForbidden)
 							return

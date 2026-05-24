@@ -77,6 +77,7 @@ const WorkflowCanvas = () => {
   }, [rawTasks]);
   
   const isMountedRef = useRef(true);
+  const lockTimerRef = useRef(null);
 
   const [presenceUsers, setPresenceUsers] = useState([]);
   const [currentWorkspaceId, setCurrentWorkspaceId] = useState(null);
@@ -98,7 +99,7 @@ const WorkflowCanvas = () => {
         if (res.data.success && isMountedRef.current && res.data.data?.length > 0) {
           setCurrentWorkspaceId(res.data.data[0].id);
         }
-      } catch (e) {
+      } catch {
         // ignore
       }
     };
@@ -113,7 +114,7 @@ const WorkflowCanvas = () => {
         await axios.post(`/api/v1/workspaces/${currentWorkspaceId}/presence`, {
           active_task_id: selectedTask ? selectedTask.id : ''
         });
-      } catch (e) {
+      } catch {
         // ignore
       }
     };
@@ -124,7 +125,7 @@ const WorkflowCanvas = () => {
         if (res.data.success && isMountedRef.current) {
           setPresenceUsers(res.data.data || []);
         }
-      } catch (e) {
+      } catch {
         // ignore
       }
     };
@@ -141,7 +142,6 @@ const WorkflowCanvas = () => {
     };
   }, [currentWorkspaceId, selectedTask]);
 
-  const lockTimerRef = useRef(null);
 
   const releaseTaskLock = useCallback(async (taskId) => {
     if (lockTimerRef.current) {
@@ -151,7 +151,7 @@ const WorkflowCanvas = () => {
     if (taskId) {
       try {
         await axios.post(`/api/v1/tasks/${taskId}/unlock`);
-      } catch (e) {
+      } catch {
         // ignore
       }
     }
@@ -173,7 +173,7 @@ const WorkflowCanvas = () => {
         lockTimerRef.current = setInterval(async () => {
           try {
             await axios.post(`/api/v1/tasks/${task.id}/lock`);
-          } catch (e) {
+          } catch {
             // ignore
           }
         }, 10000);

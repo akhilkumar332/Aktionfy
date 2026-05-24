@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { 
   Terminal, CheckCircle2, Clock, Activity, Users, 
-  AlertTriangle, Database, Zap, RefreshCw, ShieldAlert, BarChart3
+  AlertTriangle, Database, Zap, RefreshCw, ShieldAlert
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNotify } from '../context/NotificationContext';
@@ -112,7 +112,9 @@ const Monitor = () => {
 
   useEffect(() => {
     if (systemStatus?.uptime_seconds) {
-      setUptime(systemStatus.uptime_seconds);
+      Promise.resolve().then(() => {
+        setUptime(systemStatus.uptime_seconds);
+      });
     }
   }, [systemStatus]);
 

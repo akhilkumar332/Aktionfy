@@ -1,4 +1,4 @@
-import { RefreshCw, Info, Activity, ChevronRight, Settings } from 'lucide-react';
+import { RefreshCw, Info, Activity, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const AuditLogsViewer = ({
