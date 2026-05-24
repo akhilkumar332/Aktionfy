@@ -720,6 +720,13 @@ func apiListSecretsHandler(c echo.Context) error {
 	if user == nil {
 		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
 	}
+
+	// Attempt to resolve from Redis cache first
+	cached, _ := GetCachedUserSecrets(c.Request().Context(), user.ID)
+	if cached != nil {
+		return c.JSON(http.StatusOK, APIResponse{Success: true, Data: cached})
+	}
+
 	rows, err := queries.ListUserSecrets(c.Request().Context(), user.ID)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch secrets"})
@@ -727,6 +734,9 @@ func apiListSecretsHandler(c echo.Context) error {
 	if rows == nil {
 		rows = []db.ListUserSecretsRow{}
 	}
+
+	// Populate Redis cache for subsequent calls
+	SetCachedUserSecrets(c.Request().Context(), user.ID, rows)
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: rows})
 }
@@ -751,6 +761,9 @@ func apiDeleteSecretHandler(c echo.Context) error {
 		ResourceType: "secret",
 		ResourceID:   name,
 	})
+
+	// Invalidate secrets cache after deletion
+	InvalidateCachedUserSecrets(c.Request().Context(), user.ID)
 
 	_ = PublishEvent(c.Request().Context(), PubSubEvent{
 		UserID:    user.ID,
@@ -993,6 +1006,9 @@ func apiUpsertSecretHandler(c echo.Context) error {
 		ResourceType: "secret",
 		ResourceID:   input.Name,
 	})
+
+	// Invalidate secrets cache after upsert
+	InvalidateCachedUserSecrets(c.Request().Context(), user.ID)
 
 	_ = PublishEvent(c.Request().Context(), PubSubEvent{
 		UserID:    user.ID,

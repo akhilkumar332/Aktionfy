@@ -203,6 +203,9 @@ func handleCreateTemplate(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to create template"})
 	}
 
+	// Invalidate public templates cache on creation
+	InvalidateCachedPublicTemplates(c.Request().Context())
+
 	_ = PublishEvent(c.Request().Context(), PubSubEvent{
 		UserID:    userID,
 		EventType: "template_updated",
@@ -221,6 +224,12 @@ func handleListPublicTemplates(c echo.Context) error {
 	search := c.QueryParam("search")
 	searchParam := "%" + search + "%"
 
+	// Attempt to resolve from Redis cache first
+	cached, _ := GetCachedPublicTemplates(c.Request().Context(), search)
+	if cached != nil {
+		return c.JSON(http.StatusOK, APIResponse{Success: true, Data: cached})
+	}
+
 	templates, err := queries.ListPublicTemplates(c.Request().Context(), searchParam)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to list public templates"})
@@ -228,6 +237,9 @@ func handleListPublicTemplates(c echo.Context) error {
 	if templates == nil {
 		templates = []db.Template{}
 	}
+
+	// Populate Redis cache for subsequent calls
+	SetCachedPublicTemplates(c.Request().Context(), search, templates)
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: templates})
 }
@@ -251,6 +263,9 @@ func handleIncrementTemplateUses(c echo.Context) error {
 		}
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to increment uses"})
 	}
+
+	// Invalidate public templates cache after uses_count change
+	InvalidateCachedPublicTemplates(c.Request().Context())
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: map[string]int32{"uses_count": uses.Int32}})
 }
