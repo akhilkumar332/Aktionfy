@@ -140,20 +140,10 @@ func apiLoginHandler(c echo.Context) error {
 		Expires:  time.Now().UTC().Add(24 * time.Hour),
 	})
 
-	// Parse session ID into pgtype.UUID
-	sessID, err := mustParseUUID(c, sessionID)
+	// Fetch user info from Redis cache
+	u, err := GetCachedUserBySession(c.Request().Context(), sessionID)
 	if err != nil {
-		return err
-	}
-
-	// Fetch user info to return
-	u, err := queries.GetUserBySessionID(c.Request().Context(), db.GetUserBySessionIDParams{
-		ID:        sessID,
-		ExpiresAt: pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},
-	})
-
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch user info"})
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch user info from cache"})
 	}
 
 	// Update last login
@@ -1417,9 +1407,11 @@ func apiAdminUpdateSettingsHandler(c echo.Context) error {
 	syncSettings(ctx)
 
 	// Notify all other nodes to sync their in-memory settings immediately
-	PublishEvent(ctx, "sys:events", "system", "settings_updated", map[string]interface{}{})
-
-
+	PublishEvent(ctx, PubSubEvent{
+		UserID:    "system",
+		EventType: "settings_updated",
+		Payload:   "{}",
+	})
 	user := getUserFromEcho(c)
 	if user == nil {
 		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
