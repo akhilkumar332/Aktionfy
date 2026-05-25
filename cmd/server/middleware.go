@@ -39,14 +39,26 @@ func EchoSessionMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		}
 
 		cachedUser, cacheErr := GetCachedUserBySession(c.Request().Context(), cookie.Value)
-		if cacheErr != nil || cachedUser == nil {
-			if strings.HasPrefix(c.Request().URL.Path, "/api/") {
-				return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+		var u db.GetUserBySessionIDRow
+
+		if cacheErr == nil && cachedUser != nil {
+			u = *cachedUser
+		} else {
+			// Fallback to database on cache miss
+			dbUser, err := queries.GetUserBySessionID(c.Request().Context(), db.GetUserBySessionIDParams{
+				ID:        sessionID,
+				ExpiresAt: pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},
+			})
+			if err != nil {
+				if strings.HasPrefix(c.Request().URL.Path, "/api/") {
+					return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+				}
+				return next(c)
 			}
-			return next(c)
+			u = dbUser
+			// Populate cache
+			SetCachedUserBySession(c.Request().Context(), cookie.Value, u)
 		}
-		
-		u := *cachedUser
 
 		if u.IsLocked.Bool {
 			// Clear cookie to force signout
@@ -267,8 +279,26 @@ func NetHttpAuthMiddleware(next http.Handler, mcpServer *server.MCPServer) http.
 			cookie, err := r.Cookie("session_id")
 			if err == nil && cookie.Value != "" {
 				cachedUser, cacheErr := GetCachedUserBySession(r.Context(), cookie.Value)
+				var u db.GetUserBySessionIDRow
+				var err error
 				if cacheErr == nil && cachedUser != nil {
-					u := *cachedUser
+					u = *cachedUser
+				} else {
+					var sessUUID pgtype.UUID
+					if parseUUID(cookie.Value, &sessUUID) == nil {
+						u, err = queries.GetUserBySessionID(r.Context(), db.GetUserBySessionIDParams{
+							ID:        sessUUID,
+							ExpiresAt: pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},
+						})
+						if err == nil {
+							SetCachedUserBySession(r.Context(), cookie.Value, u)
+						}
+					} else {
+						err = fmt.Errorf("invalid session id format")
+					}
+				}
+
+				if err == nil && (cachedUser != nil || u.ID != "") {
 					if u.IsLocked.Bool {
 						http.Error(w, "Forbidden: This account has been locked", http.StatusForbidden)
 						return

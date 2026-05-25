@@ -1458,6 +1458,12 @@ func runReaper(ctx context.Context) {
 	for {
 		select {
 		case <-reapTicker.C:
+			if RedisClient != nil {
+				acquired, _ := RedisClient.SetNX(ctx, "lock:sys:reaper", "locked", 45*time.Second).Result()
+				if !acquired {
+					continue
+				}
+			}
 			threshold := time.Now().Add(-CurrentSystemSettings.GetReaperThreshold())
 			rows, err := queries.ReapStuckTasks(ctx, pgtype.Timestamptz{Time: threshold, Valid: true})
 			if err != nil {
@@ -1466,6 +1472,12 @@ func runReaper(ctx context.Context) {
 				log.Printf("Reaper: recovered %d stuck tasks", rows)
 			}
 		case <-pruneTicker.C:
+			if RedisClient != nil {
+				acquired, _ := RedisClient.SetNX(ctx, "lock:sys:pruner", "locked", 45*time.Minute).Result()
+				if !acquired {
+					continue
+				}
+			}
 			// Prune zombie workers
 			pruneDays, err := queries.GetSystemSettings(ctx)
 			if err != nil {

@@ -274,7 +274,7 @@ const WorkflowCanvas = () => {
                     className="absolute -top-12 left-1/2 -translate-x-1/2 bg-indigo-600/90 text-white text-[8px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border border-indigo-400 shadow-[0_0_20px_rgba(79,70,229,0.4)] backdrop-blur-sm z-50 flex items-center gap-2 whitespace-nowrap"
                   >
                     <div className="w-1 h-1 rounded-full bg-white animate-pulse"></div>
-                    {editor.email.split('@')[0]} CALIBRATING...
+                    {(editor.email || 'Admin').split('@')[0]} CALIBRATING...
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -551,6 +551,8 @@ const WorkflowCanvas = () => {
         if (normalizeUUID(node.id) === targetId) {
             const updatedTask = { ...node.data.task, status };
             const isProcessing = status === 'processing';
+            const editor = node.data.editor; // Access from existing node data
+            
             return {
                 ...node,
                 data: {
@@ -558,6 +560,19 @@ const WorkflowCanvas = () => {
                     task: updatedTask,
                     label: (
                         <div className={`flex flex-col items-center gap-2 transition-all duration-500 ${isProcessing ? 'scale-110' : ''}`}>
+                          <AnimatePresence>
+                            {editor && (
+                              <motion.div 
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                className="absolute -top-12 left-1/2 -translate-x-1/2 bg-indigo-600/90 text-white text-[8px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border border-indigo-400 shadow-[0_0_20px_rgba(79,70,229,0.4)] backdrop-blur-sm z-50 flex items-center gap-2 whitespace-nowrap"
+                              >
+                                <div className="w-1 h-1 rounded-full bg-white animate-pulse"></div>
+                                {editor.email.split('@')[0]} CALIBRATING...
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                           <div className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-400 opacity-60">{updatedTask.trigger_type}</div>
                           <div className="font-black text-white text-xs tracking-tight uppercase">{updatedTask.name}</div>
                           <div className={`flex items-center gap-2 text-[8px] font-black uppercase px-3 py-1 rounded-full border transition-all ${
@@ -811,9 +826,9 @@ const WorkflowCanvas = () => {
                   <div 
                     key={user.user_id} 
                     className="inline-block h-6 w-6 rounded-full ring-2 ring-zinc-950 bg-indigo-950 border border-indigo-500/30 flex items-center justify-center text-[8px] font-black text-indigo-300 cursor-help"
-                    title={`${user.email} ${user.active_task_id ? '(Calibrating Node)' : '(Viewing Canvas)'}`}
+                    title={`${user.email || 'Admin'} ${user.active_task_id ? '(Calibrating Node)' : '(Viewing Canvas)'}`}
                   >
-                    {user.email.substring(0, 2).toUpperCase()}
+                    {(user.email || '??').substring(0, 2).toUpperCase()}
                   </div>
                 ))}
               </div>
@@ -1047,7 +1062,7 @@ const WorkflowCanvas = () => {
                            <div className="bg-zinc-900 border border-zinc-800/50 rounded-2xl p-8 space-y-8 shrink-0">
                              <div className="flex items-center justify-between">
                                <div className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400">Telemetry Deck</div>
-                               <div className="text-[10px] font-black font-mono text-zinc-400 opacity-60">FRM_{currentTraceIndex + 1} // TOTAL_{traces.length}</div>
+                               <div className="text-[10px] font-black font-mono text-zinc-400 opacity-60">FRM_{currentTraceIndex >= 0 ? currentTraceIndex + 1 : 0} // TOTAL_{traces.length}</div>
                              </div>
                              
                              <div className="flex items-center justify-center gap-6">
@@ -1074,7 +1089,7 @@ const WorkflowCanvas = () => {
                                </button>
                                <button 
                                  onClick={() => {
-                                   if (currentTraceIndex < traces.length - 1) {
+                                   if (currentTraceIndex >= 0 && currentTraceIndex < traces.length - 1) {
                                      const nextTrace = traces[currentTraceIndex + 1];
                                      const start = new Date(traces[0].start_time).getTime();
                                      const nextStart = new Date(nextTrace.start_time).getTime();
@@ -1095,10 +1110,12 @@ const WorkflowCanvas = () => {
                                  value={Math.max(0, currentTraceIndex)}
                                  onChange={(e) => {
                                    const idx = parseInt(e.target.value);
-                                   const targetTrace = traces[idx];
-                                   const start = new Date(traces[0].start_time).getTime();
-                                   const targetStart = new Date(targetTrace.start_time).getTime();
-                                   setGlobalTime((targetStart - start) / 1000);
+                                   if (idx >= 0 && idx < traces.length) {
+                                     const targetTrace = traces[idx];
+                                     const start = new Date(traces[0].start_time).getTime();
+                                     const targetStart = new Date(targetTrace.start_time).getTime();
+                                     setGlobalTime((targetStart - start) / 1000);
+                                   }
                                  }}
                                  className="w-full h-1 bg-zinc-900 rounded-full appearance-none cursor-pointer accent-brand-primary"
                                />
@@ -1110,7 +1127,7 @@ const WorkflowCanvas = () => {
                              <div className="bg-zinc-900 border border-zinc-800/50 rounded-2xl p-8 space-y-8 flex-1 flex flex-col min-h-0">
                                <div className="shrink-0">
                                  <div className="text-[9px] font-black uppercase text-zinc-300 tracking-widest mb-1.5">Step Designation</div>
-                                 <div className="text-xl font-bold text-white tracking-tight italic">{traces[currentTraceIndex].step_name}</div>
+                                 <div className="text-xl font-bold text-white tracking-tight italic">{currentTraceIndex >= 0 ? traces[currentTraceIndex].step_name : 'IDLE'}</div>
                                </div>
                                <div className="grid grid-cols-1 gap-6 flex-1 min-h-0 overflow-hidden">
                                  <div className="flex flex-col min-h-0 overflow-hidden">
@@ -1119,7 +1136,7 @@ const WorkflowCanvas = () => {
                                       <div className="text-[9px] font-black uppercase text-zinc-300 tracking-widest">Inbound Payload</div>
                                    </div>
                                    <pre className="text-[11px] bg-black/40 p-4 rounded-xl text-emerald-400/80 overflow-auto border border-zinc-800/50 font-mono flex-1 custom-scrollbar">
-                                     {traces[currentTraceIndex].input_data ? 
+                                     {currentTraceIndex >= 0 && traces[currentTraceIndex].input_data ? 
                                        (typeof safeParseJSON(traces[currentTraceIndex].input_data) === 'object' ? 
                                          JSON.stringify(safeParseJSON(traces[currentTraceIndex].input_data), null, 2) : 
                                          traces[currentTraceIndex].input_data) : 'NULL'}
@@ -1131,7 +1148,7 @@ const WorkflowCanvas = () => {
                                       <div className="text-[9px] font-black uppercase text-zinc-300 tracking-widest">Outbound Result</div>
                                    </div>
                                    <pre className="text-[11px] bg-black/40 p-4 rounded-xl text-indigo-400/80 overflow-auto border border-zinc-800/50 font-mono flex-1 custom-scrollbar">
-                                     {traces[currentTraceIndex].output_data ? 
+                                     {currentTraceIndex >= 0 && traces[currentTraceIndex].output_data ? 
                                        (typeof safeParseJSON(traces[currentTraceIndex].output_data) === 'object' ? 
                                          JSON.stringify(safeParseJSON(traces[currentTraceIndex].output_data), null, 2) : 
                                          traces[currentTraceIndex].output_data) : 'NULL'}
@@ -1141,7 +1158,7 @@ const WorkflowCanvas = () => {
                                <div className="flex items-center justify-between pt-6 border-t border-zinc-800/50 shrink-0">
                                  <div className="text-[9px] font-black uppercase text-zinc-300 tracking-widest">Temporal Duration</div>
                                  <div className="text-xs font-black text-white font-mono bg-zinc-900 px-3 py-1.5 rounded-lg border border-zinc-800/50">
-                                   {((new Date(traces[currentTraceIndex].end_time) - new Date(traces[currentTraceIndex].start_time)) / 1000).toFixed(3)}s
+                                   {currentTraceIndex >= 0 ? ((new Date(traces[currentTraceIndex].end_time) - new Date(traces[currentTraceIndex].start_time)) / 1000).toFixed(3) : '0.000'}s
                                  </div>
                                </div>
                              </div>

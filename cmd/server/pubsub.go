@@ -32,6 +32,14 @@ func PublishEvent(ctx context.Context, event PubSubEvent) error {
 		InvalidateCachedTasks(ctx, event.UserID)
 	}
 
+	// Auto-invalidate workspaces and secrets on mutations
+	if event.EventType == "workspace_updated" {
+		InvalidateCachedWorkspaces(ctx, event.UserID)
+	}
+	if event.EventType == "secret_updated" {
+		InvalidateCachedUserSecrets(ctx, event.UserID)
+	}
+
 	// Auto-invalidate global insights/trends on user list or setting mutations
 	if event.EventType == "user_updated" || event.EventType == "settings_updated" {
 		InvalidateCachedInsights(ctx)

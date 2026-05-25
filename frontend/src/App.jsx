@@ -30,6 +30,7 @@ import DocumentationLayout from './components/DocumentationLayout';
 import NotificationHub from './components/NotificationHub';
 import CommandPalette from './components/shared/CommandPalette';
 import { AnimatePresence, motion } from 'framer-motion';
+import { ReactFlowProvider } from '@xyflow/react';
 
 import { 
   Overview, 
@@ -139,7 +140,11 @@ const AppRoutes = () => {
         <Route path="/webhooks" element={<Webhooks />} />
         <Route path="/workspaces" element={<Workspaces />} />
         <Route path="/templates" element={<Templates />} />
-        <Route path="/canvas" element={<WorkflowCanvas />} />
+        <Route path="/canvas" element={
+          <ReactFlowProvider>
+            <WorkflowCanvas />
+          </ReactFlowProvider>
+        } />
       </Route>
       
       {/* 3. Staff/Admin Routes Group */}

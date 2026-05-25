@@ -481,6 +481,16 @@ func apiAdminLoginHistoryHandler(c echo.Context) error {
 		}
 	}
 
+	cacheKey := fmt.Sprintf("cache:admin:login_history:%d:%d", limit, offset)
+	if RedisClient != nil {
+		if data, err := RedisClient.Get(c.Request().Context(), cacheKey).Result(); err == nil {
+			var cachedRows []db.ListUserLoginHistoryRow
+			if json.Unmarshal([]byte(data), &cachedRows) == nil {
+				return c.JSON(http.StatusOK, APIResponse{Success: true, Data: cachedRows})
+			}
+		}
+	}
+
 	rows, err := queries.ListUserLoginHistory(c.Request().Context(), db.ListUserLoginHistoryParams{
 		Limit:  limit,
 		Offset: offset,
@@ -491,6 +501,12 @@ func apiAdminLoginHistoryHandler(c echo.Context) error {
 
 	if rows == nil {
 		rows = []db.ListUserLoginHistoryRow{}
+	}
+
+	if RedisClient != nil {
+		if bytes, err := json.Marshal(rows); err == nil {
+			_ = RedisClient.Set(c.Request().Context(), cacheKey, string(bytes), 15*time.Second).Err()
+		}
 	}
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: rows})
