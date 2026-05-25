@@ -61,6 +61,12 @@ const Insights = () => {
     Promise.resolve().then(() => {
       fetchInsights();
     });
+    
+    // Live polling for real-time metric updates
+    const interval = setInterval(() => {
+      fetchInsights();
+    }, 5000);
+    return () => clearInterval(interval);
   }, [fetchInsights]);
 
   useEffect(() => {
@@ -199,7 +205,7 @@ const Insights = () => {
               <MetricCard 
                 icon={Server} 
                 label="AI Token Cost" 
-                value={data?.ai_cost ? `$${data.ai_cost}` : '$142.50'} 
+                value={data?.ai_token_cost ? `$${data.ai_token_cost.toFixed(2)}` : '$0.00'} 
                 trend="+15%" 
                 color="text-purple-400"
                 bg="bg-purple-500/10"

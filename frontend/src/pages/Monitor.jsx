@@ -280,7 +280,7 @@ const Monitor = () => {
       await fetchData(false, logLimit);
     };
     init();
-    const interval = setInterval(() => fetchData(false, logLimit), 60000);
+    const interval = setInterval(() => fetchData(false, logLimit), 5000);
     return () => {
       isMounted.current = false;
       clearInterval(interval);
@@ -500,16 +500,16 @@ const Monitor = () => {
                            className="stroke-amber-400 fill-none transition-all duration-1000" 
                            strokeWidth="6" 
                            strokeDasharray="282" 
-                           strokeDashoffset={282 - (282 * Math.min((systemStatus?.cpu_usage || 24) / 100, 1)) || 282} 
+                           strokeDashoffset={282 - (282 * Math.min((systemStatus?.cpu_load_percent || 24) / 100, 1)) || 282} 
                          />
                        </svg>
                        <div className="absolute flex flex-col items-center justify-center">
-                         <span className="text-xl font-black text-white font-mono tracking-tighter">{systemStatus?.cpu_usage || 24}%</span>
+                         <span className="text-xl font-black text-white font-mono tracking-tighter">{Math.round(systemStatus?.cpu_load_percent || 24)}%</span>
                          <span className="text-[8px] text-zinc-400 font-bold uppercase tracking-widest mt-0.5">Usage</span>
                        </div>
                      </div>
                      <div className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest mt-4">
-                       {(systemStatus?.cpu_usage || 24) < 70 ? '🟢 OPTIMAL' : '⚠️ HIGH LOAD'}
+                       {(systemStatus?.cpu_load_percent || 24) < 70 ? '🟢 OPTIMAL' : '⚠️ HIGH LOAD'}
                      </div>
                    </div>
 
@@ -526,16 +526,16 @@ const Monitor = () => {
                            className="stroke-indigo-400 fill-none transition-all duration-1000" 
                            strokeWidth="6" 
                            strokeDasharray="282" 
-                           strokeDashoffset={282 - (282 * Math.min((systemStatus?.memory_usage || 62) / 100, 1)) || 282} 
+                           strokeDashoffset={282 - (282 * Math.min(((systemStatus?.memory_mb || 620) / 1024), 1)) || 282} 
                          />
                        </svg>
                        <div className="absolute flex flex-col items-center justify-center">
-                         <span className="text-xl font-black text-white font-mono tracking-tighter">{systemStatus?.memory_usage || 62}%</span>
-                         <span className="text-[8px] text-zinc-400 font-bold uppercase tracking-widest mt-0.5">Capacity</span>
+                         <span className="text-xl font-black text-white font-mono tracking-tighter">{Math.round((systemStatus?.memory_mb || 620) / 1024 * 100)}%</span>
+                         <span className="text-[8px] text-zinc-400 font-bold uppercase tracking-widest mt-0.5">{systemStatus?.memory_mb || 620}MB</span>
                        </div>
                      </div>
                      <div className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest mt-4">
-                       {(systemStatus?.memory_usage || 62) < 80 ? '🔵 STABLE ALLOCATION' : '⚠️ MEMORY PRESSURE'}
+                       {((systemStatus?.memory_mb || 620) / 1024 * 100) < 85 ? '🟢 EFFICIENT' : '⚠️ OOM RISK'}
                      </div>
                    </div>
                  </div>

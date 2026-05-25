@@ -136,12 +136,8 @@ const DashboardLayout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isBridgeAssistantOpen, setIsBridgeAssistantOpen] = useState(false);
   const [systemStatus, setSystemStatus] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchTasks, setSearchTasks] = useState([]);
-  const [selectedIndex, setSelectedIndex] = useState(0);
   const isMounted = useRef(true);
 
   useEffect(() => {
@@ -150,81 +146,6 @@ const DashboardLayout = ({ children }) => {
       isMounted.current = false;
     };
   }, []);
-
-  useEffect(() => {
-    if (isSearchOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isSearchOpen]);
-
-  const closeSearch = () => {
-    setIsSearchOpen(false);
-    setTimeout(() => {
-      setSearchQuery('');
-      setSelectedIndex(0);
-    }, 200); // Clear after animation
-  };
-
-  useEffect(() => {
-    if (isSearchOpen && searchTasks.length === 0) {
-      axios.get('/api/v1/tasks').then(res => {
-        if (res.data.success && isMounted.current) {
-          setSearchTasks(res.data.data || []);
-        }
-      }).catch(() => {});
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSearchOpen]);
-
-  const searchResults = (() => {
-    const q = searchQuery.toLowerCase();
-    const results = [];
-    
-    navGroups.forEach(group => {
-      group.items.forEach(item => {
-        if (!item.roles || item.roles.includes(user?.role)) {
-          if (item.label.toLowerCase().includes(q) || group.title.toLowerCase().includes(q)) {
-            results.push({ type: 'nav', label: item.label, path: item.path, icon: item.icon, group: group.title });
-          }
-        }
-      });
-    });
-
-    searchTasks.forEach(task => {
-      const taskIdStr = String(task.id);
-      if (task.name.toLowerCase().includes(q) || taskIdStr.toLowerCase().includes(q)) {
-        results.push({ type: 'task', label: task.name, id: taskIdStr, path: `/tasks/${taskIdStr}/history`, icon: ListTodo, group: 'Tasks' });
-      }
-    });
-
-    return results;
-  })();
-
-  const handleSearchKeyDown = (e) => {
-    if (searchResults.length === 0) {
-      if (e.key === 'Escape') closeSearch();
-      return;
-    }
-
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setSelectedIndex((prev) => (prev + 1) % searchResults.length);
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setSelectedIndex((prev) => (prev - 1 + searchResults.length) % searchResults.length);
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      navigate(searchResults[selectedIndex].path);
-      closeSearch();
-    } else if (e.key === 'Escape') {
-      closeSearch();
-    }
-  };
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -383,7 +304,10 @@ const DashboardLayout = ({ children }) => {
                   </span>
               </button>
               <button 
-                onClick={() => setIsSearchOpen(true)}
+                onClick={() => {
+                  const event = new KeyboardEvent('keydown', { key: 'k', metaKey: true });
+                  window.dispatchEvent(event);
+                }}
                 className="p-2 text-zinc-500 hover:text-white bg-zinc-900 border border-zinc-800 rounded-md transition-all pro-focus group relative"
                 aria-label="Search Command (Cmd+K)"
               >
@@ -403,96 +327,6 @@ const DashboardLayout = ({ children }) => {
         </main>
       </div>
 
-      {/* Command Search Overlay - Visual Only */}
-      <AnimatePresence>
-        {isSearchOpen && (
-          <div className="fixed inset-0 z-[120] flex items-start justify-center pt-[15vh] px-6">
-             <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={closeSearch}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.98, y: -10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.98, y: -10 }}
-              className="w-full max-w-2xl bg-zinc-950 border border-zinc-800 rounded-xl shadow-[0_40px_100px_rgba(0,0,0,0.8)] overflow-hidden z-10"
-            >
-               <div className="flex items-center gap-4 p-6 border-b border-zinc-800">
-                  <Search size={20} className="text-zinc-600" />
-                  <input 
-                    type="text" 
-                    placeholder="Search tasks, docs, or run commands..." 
-                    className="flex-1 bg-transparent border-none outline-none text-lg font-medium text-white placeholder:text-zinc-700"
-                    value={searchQuery}
-                    onChange={(e) => {
-                      setSearchQuery(e.target.value);
-                      setSelectedIndex(0);
-                    }}
-                    onKeyDown={handleSearchKeyDown}
-                    autoFocus
-                    aria-label="Search Aktionfy"
-                    role="combobox"
-                    aria-expanded="true"
-                    aria-controls="search-results"
-                    aria-haspopup="listbox"
-                  />
-                  <div className="px-2 py-1 bg-zinc-900 border border-zinc-800 rounded text-[10px] font-black text-zinc-500 tracking-widest">ESC</div>
-               </div>
-               <div className="p-4 max-h-[400px] overflow-y-auto custom-scrollbar" id="search-results" role="listbox">
-                  {searchResults.length > 0 ? (
-                    <div className="space-y-1">
-                      {searchResults.map((item, idx) => {
-                        const Icon = item.icon;
-                        const isSelected = idx === selectedIndex;
-                        return (
-                          <button 
-                            key={`${item.type}-${item.id || item.path}`} 
-                            onClick={() => {
-                              navigate(item.path);
-                              closeSearch();
-                            }}
-                            onMouseEnter={() => setSelectedIndex(idx)}
-                            className={`w-full text-left px-4 py-3 rounded-lg transition-colors flex items-center justify-between group ${isSelected ? 'bg-zinc-900' : 'hover:bg-zinc-900/50'}`}
-                            role="option"
-                            aria-selected={isSelected}
-                          >
-                            <div className="flex items-center gap-3">
-                              <Icon size={16} className={isSelected ? 'text-brand-primary' : 'text-zinc-500'} />
-                              <div className="flex flex-col">
-                                <span className={`text-sm font-semibold transition-colors ${isSelected ? 'text-white' : 'text-zinc-300'}`}>{item.label}</span>
-                                {item.type === 'task' && <span className="text-[10px] text-zinc-500 font-mono mt-0.5">{item.id.substring(0, 8)}...</span>}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <span className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">{item.group}</span>
-                              <ChevronRight size={14} className={`transition-all ${isSelected ? 'text-zinc-500 opacity-100' : 'text-zinc-700 opacity-0 group-hover:opacity-100'}`} />
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="py-8 text-center flex flex-col items-center gap-2">
-                       <Search size={24} className="text-zinc-700" />
-                       <span className="text-xs text-zinc-500 font-medium">No results found for "{searchQuery}"</span>
-                    </div>
-                  )}
-               </div>
-               <div className="p-4 bg-zinc-900/50 border-t border-zinc-800 flex items-center gap-6">
-                  <div className="flex items-center gap-2 text-[9px] font-black text-zinc-600 uppercase tracking-widest">
-                     <span className="p-1 bg-zinc-800 border border-zinc-700 rounded text-zinc-400">⏎</span> Select
-                  </div>
-                  <div className="flex items-center gap-2 text-[9px] font-black text-zinc-600 uppercase tracking-widest">
-                     <span className="p-1 bg-zinc-800 border border-zinc-700 rounded text-zinc-400">↑↓</span> Navigate
-                  </div>
-               </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
       <BridgeAssistant 
         isOpen={isBridgeAssistantOpen} 

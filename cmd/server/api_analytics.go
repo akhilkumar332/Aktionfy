@@ -73,13 +73,29 @@ func handleGetSystemInsights(c echo.Context) error {
 		successRate = 100.0
 	}
 
+	var totalTrendsVolume int64
+	for _, t := range trends {
+		totalTrendsVolume += int64(t.Count)
+	}
+	aiTokenCost := float64(totalTrendsVolume) * 0.0015
+	neuralThroughput := 0
+	if len(trends) > 0 {
+		neuralThroughput = int(totalTrendsVolume) / (24 * len(trends))
+	}
+	if neuralThroughput == 0 && totalTrendsVolume > 0 {
+		neuralThroughput = int(totalTrendsVolume)
+	}
+
 	data := map[string]interface{}{
-		"p99_latency":     int64(p99),
-		"success_rate":    successRate,
-		"active_workers":  activeSessions, // Map sessions to "Active Actors" in UI
-		"worker_count":    workerCount,    // Actual background worker nodes
-		"active_sessions": activeSessions,
-		"daily_tasks":     dailyTasks,
+		"p99_latency":        int64(p99),
+		"success_rate":       successRate,
+		"protocol_integrity": successRate,
+		"ai_token_cost":      aiTokenCost,
+		"neural_throughput":  neuralThroughput,
+		"active_workers":     activeSessions, // Map sessions to "Active Actors" in UI
+		"worker_count":       workerCount,    // Actual background worker nodes
+		"active_sessions":    activeSessions,
+		"daily_tasks":        dailyTasks,
 	}
 
 	resp := APIResponse{Success: true, Data: data}

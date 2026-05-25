@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -327,14 +328,30 @@ func apiSystemStatusHandler(c echo.Context) error {
 		log.Printf("Error fetching P99 latency: %v", err)
 	}
 
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	memoryMB := m.Alloc / 1024 / 1024
+
+	// Estimate CPU load based on active goroutines relative to a baseline (e.g., 50)
+	goroutines := runtime.NumGoroutine()
+	cpuLoadPercent := float64(goroutines) / 50.0 * 100.0
+	if cpuLoadPercent > 100.0 {
+		cpuLoadPercent = 100.0
+	}
+	if cpuLoadPercent < 1.0 {
+		cpuLoadPercent = 1.0
+	}
+
 	return c.JSON(http.StatusOK, APIResponse{
 		Success: true,
 		Data: map[string]interface{}{
-			"uptime_seconds":  time.Since(ServerStartTime).Seconds(),
-			"active_sessions": activeSessions,
-			"worker_count":    workerCount,
-			"bridge_active":   GlobalSessionManager.IsOnline(c.Request().Context(), user.ID),
-			"p99_latency_ms":  p99,
+			"uptime_seconds":   time.Since(ServerStartTime).Seconds(),
+			"active_sessions":  activeSessions,
+			"worker_count":     workerCount,
+			"bridge_active":    GlobalSessionManager.IsOnline(c.Request().Context(), user.ID),
+			"p99_latency_ms":   p99,
+			"memory_mb":        memoryMB,
+			"cpu_load_percent": cpuLoadPercent,
 		},
 	})
 }
