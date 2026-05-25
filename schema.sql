@@ -11,6 +11,8 @@ CREATE TABLE users (
     last_login TIMESTAMP WITH TIME ZONE,
     tier TEXT DEFAULT 'free' CHECK (tier IN ('free', 'plus', 'pro')),
     is_locked BOOLEAN DEFAULT FALSE,
+    max_tasks_limit INTEGER DEFAULT NULL,
+    rate_limit_override INTEGER DEFAULT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -342,6 +344,21 @@ CREATE INDEX IF NOT EXISTS idx_dlq_tasks_task_id ON dlq_tasks (task_id);
 -- Analytics Performance
 CREATE INDEX IF NOT EXISTS idx_execution_traces_start_time ON execution_traces (start_time);
 CREATE INDEX IF NOT EXISTS idx_users_created_at ON users (created_at);
+CREATE INDEX IF NOT EXISTS idx_users_api_key ON users(api_key);
+
+CREATE TABLE IF NOT EXISTS user_invitations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email TEXT UNIQUE NOT NULL,
+    role TEXT NOT NULL DEFAULT 'user',
+    tier TEXT NOT NULL DEFAULT 'free',
+    invite_token TEXT UNIQUE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_by TEXT REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_invitations_token ON user_invitations (invite_token);
+CREATE INDEX IF NOT EXISTS idx_user_invitations_email ON user_invitations (email);
 
 -- User Login History
 CREATE TABLE IF NOT EXISTS user_login_history (

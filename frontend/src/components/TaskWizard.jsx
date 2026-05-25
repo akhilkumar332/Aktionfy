@@ -211,7 +211,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
     { id: 5, name: 'Deploy', icon: Sparkles }
   ];
 
-  if (!isOpen) return null;
+  if (!isOpen && !loading) return null;
 
   const isCurrentStepValid = validateStep(step, formData);
 

@@ -459,6 +459,70 @@ func registerTools(s *server.MCPServer) {
 		return mcp.NewToolResultText(string(resBytes)), nil
 	})
 
+	bulkActionTasksTool := mcp.NewTool("bulk_action_tasks",
+		mcp.WithDescription("Perform bulk actions on multiple tasks"),
+		mcp.WithString("action", mcp.Required(), mcp.Description("Action to perform: delete, pause, resume")),
+		mcp.WithString("task_ids", mcp.Required(), mcp.Description("Comma-separated list of task UUIDs")),
+	)
+
+	s.AddTool(bulkActionTasksTool, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args, ok := req.Params.Arguments.(map[string]interface{})
+		if !ok {
+			return mcp.NewToolResultError("invalid arguments"), nil
+		}
+		userID, ok := ctx.Value(userIDKey).(string)
+		if !ok {
+			return mcp.NewToolResultError("unauthorized"), nil
+		}
+
+		action, ok := args["action"].(string)
+		if !ok || (action != "delete" && action != "pause" && action != "resume") {
+			return mcp.NewToolResultError("invalid action. Must be delete, pause, or resume"), nil
+		}
+
+		taskIDsStr, ok := args["task_ids"].(string)
+		if !ok || taskIDsStr == "" {
+			return mcp.NewToolResultError("missing task_ids"), nil
+		}
+
+		taskIDs := strings.Split(taskIDsStr, ",")
+		successCount := 0
+
+		for _, idStr := range taskIDs {
+			idStr = strings.TrimSpace(idStr)
+			var taskID pgtype.UUID
+			if err := parseUUID(idStr, &taskID); err != nil {
+				continue
+			}
+			switch action {
+			case "delete":
+				if queries.DeleteTask(ctx, db.DeleteTaskParams{ID: taskID, UserID: userID}) == nil {
+					successCount++
+				}
+			case "pause":
+				if queries.UpdateTaskStatus(ctx, db.UpdateTaskStatusParams{Status: pgtype.Text{String: "paused", Valid: true}, ID: taskID, UserID: userID}) == nil {
+					successCount++
+				}
+			case "resume":
+				if queries.UpdateTaskStatus(ctx, db.UpdateTaskStatusParams{Status: pgtype.Text{String: "active", Valid: true}, ID: taskID, UserID: userID}) == nil {
+					successCount++
+				}
+			}
+		}
+
+		writeAuditLog(ctx, AuditEvent{
+			UserID:       userID,
+			Action:       "task.bulk_" + action + "_mcp",
+			ResourceType: "tasks",
+			Metadata: map[string]interface{}{
+				"requested_count": len(taskIDs),
+				"success_count":   successCount,
+			},
+		})
+
+		return mcp.NewToolResultText(fmt.Sprintf("Successfully processed %d tasks for action %s", successCount, action)), nil
+	})
+
 	deleteTaskTool := mcp.NewTool("delete_task",
 		mcp.WithDescription("Deletes a scheduled task"),
 		mcp.WithString("id", mcp.Required(), mcp.Description("Task ID")),

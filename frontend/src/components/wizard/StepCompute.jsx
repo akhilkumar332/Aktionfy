@@ -13,18 +13,18 @@ const StepCompute = ({ formData, updateFormData, showVariableSelector, setShowVa
         <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Execution Architecture</label>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { id: 'mcp_sampling', icon: Cpu, label: 'LLM Node', color: 'indigo-500' },
-            { id: 'native_action', icon: Terminal, label: 'Sandbox', color: 'blue-500' },
-            { id: 'decision_router', icon: GitBranch, label: 'Router', color: 'emerald-500' },
-            { id: 'swarm_router', icon: Users, label: 'Swarm', color: 'purple-500' }
+            { id: 'mcp_sampling', icon: Cpu, label: 'LLM Node', textClass: 'text-indigo-500', borderClass: 'border-indigo-500/50', ringClass: 'ring-indigo-500/30' },
+            { id: 'native_action', icon: Terminal, label: 'Sandbox', textClass: 'text-blue-500', borderClass: 'border-blue-500/50', ringClass: 'ring-blue-500/30' },
+            { id: 'decision_router', icon: GitBranch, label: 'Router', textClass: 'text-emerald-500', borderClass: 'border-emerald-500/50', ringClass: 'ring-emerald-500/30' },
+            { id: 'swarm_router', icon: Users, label: 'Swarm', textClass: 'text-purple-500', borderClass: 'border-purple-500/50', ringClass: 'ring-purple-500/30' }
           ].map((type) => (
             <button 
               key={type.id}
               type="button"
               onClick={() => updateFormData('task_type', type.id)}
-              className={`p-4 rounded-xl border transition-all flex flex-col items-center gap-3 text-center ${formData.task_type === type.id ? `bg-zinc-900 border-${type.color}/50 ring-1 ring-${type.color}/30 shadow-lg` : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'}`}
+              className={`p-4 rounded-xl border transition-all flex flex-col items-center gap-3 text-center ${formData.task_type === type.id ? `bg-zinc-900 ${type.borderClass} ring-1 ${type.ringClass} shadow-lg` : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'}`}
             >
-              <type.icon size={20} className={formData.task_type === type.id ? `text-${type.color}` : 'text-zinc-600'} />
+              <type.icon size={20} className={formData.task_type === type.id ? type.textClass : 'text-zinc-600'} />
               <span className="text-[10px] font-bold text-white uppercase tracking-widest leading-none">{type.label}</span>
             </button>
           ))}
@@ -49,16 +49,16 @@ const StepCompute = ({ formData, updateFormData, showVariableSelector, setShowVa
           <div className="space-y-6 bg-zinc-950 border border-zinc-800 rounded-2xl p-6 shadow-inner">
             <div className="grid grid-cols-2 gap-3">
               {[
-                { id: 'voting', label: 'Democratic', icon: Check, color: 'emerald-500' },
-                { id: 'supervisor', label: 'Hierarchical', icon: Shield, color: 'indigo-500' }
+                { id: 'voting', label: 'Democratic', icon: Check, textClass: 'text-emerald-500', borderClass: 'border-emerald-500/50', ringClass: 'ring-emerald-500/30' },
+                { id: 'supervisor', label: 'Hierarchical', icon: Shield, textClass: 'text-indigo-500', borderClass: 'border-indigo-500/50', ringClass: 'ring-indigo-500/30' }
               ].map((mode) => (
                 <button 
                   key={mode.id}
                   type="button"
                   onClick={() => updateFormData('swarm_config', { ...formData.swarm_config, consensus_mode: mode.id })}
-                  className={`p-4 rounded-xl border transition-all flex items-center justify-center gap-2 ${formData.swarm_config.consensus_mode === mode.id ? `bg-zinc-900 border-${mode.color}/50 ring-1 ring-${mode.color}/30` : 'bg-zinc-900 border-zinc-800'}`}
+                  className={`p-4 rounded-xl border transition-all flex items-center justify-center gap-2 ${formData.swarm_config.consensus_mode === mode.id ? `bg-zinc-900 ${mode.borderClass} ring-1 ${mode.ringClass}` : 'bg-zinc-900 border-zinc-800'}`}
                 >
-                  <mode.icon size={14} className={formData.swarm_config.consensus_mode === mode.id ? `text-${mode.color}` : 'text-zinc-600'} />
+                  <mode.icon size={14} className={formData.swarm_config.consensus_mode === mode.id ? mode.textClass : 'text-zinc-600'} />
                   <span className="text-[10px] font-bold text-white uppercase tracking-widest">{mode.label}</span>
                 </button>
               ))}

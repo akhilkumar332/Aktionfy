@@ -2,8 +2,8 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
 import axios from 'axios';
-import { History, ArrowLeft, RefreshCw, Clock, CheckCircle2, AlertCircle, Command, GitBranch, Terminal, X, Check, Play, Zap } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { History, ArrowLeft, RefreshCw, Clock, CheckCircle2, AlertCircle, Command, GitBranch, Terminal, X, Check, Play, Zap, Activity } from 'lucide-react';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNotify } from '../context/NotificationContext';
 import { useSSE } from '../context/SSEContext';
@@ -24,6 +24,9 @@ const TaskHistory = () => {
   const [diffActive, setDiffActive] = useState(null);
   const [diffHistoric, setDiffHistoric] = useState(null);
   const [diffLabel, setDiffLabel] = useState('');
+  
+  const [dateRange, setDateRange] = useState('24h');
+  const [durationData] = useState([]);
 
   const handleTriggerTask = async () => {
     setTriggering(true);
@@ -156,45 +159,101 @@ const TaskHistory = () => {
 
       <div className="space-y-6">
         {!loading && history.length > 0 && (
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-zinc-950 border border-zinc-800/50 rounded-3xl p-10 shadow-lg backdrop-blur-xl relative overflow-hidden mb-12"
-          >
-            <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-500/5 blur-[80px] -translate-y-1/2 translate-x-1/2"></div>
-            
-            <div className="flex items-center justify-between mb-8 relative z-10">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-zinc-100/5 rounded-xl border border-zinc-800/50 text-zinc-400">
-                  <Zap size={20} className="text-indigo-400" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-black text-white uppercase tracking-tighter">Hourly Node Chrono-Flux</h2>
-                  <p className="text-[9px] text-zinc-300 font-bold uppercase tracking-widest mt-0.5">Execution load for this node over the last 24 hours</p>
-                </div>
+          <>
+            <div className="flex justify-end mb-4">
+              <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 p-1.5 rounded-lg">
+                <Clock size={14} className="text-zinc-500 ml-2" />
+                <select 
+                  value={dateRange}
+                  onChange={(e) => setDateRange(e.target.value)}
+                  className="bg-transparent text-xs text-zinc-300 font-bold uppercase tracking-wider focus:outline-none border-none cursor-pointer pr-4"
+                >
+                  <option value="24h">Last 24 Hours</option>
+                  <option value="7d">Last 7 Days</option>
+                  <option value="30d">Last 30 Days</option>
+                </select>
               </div>
             </div>
 
-            <div className="h-48 w-full relative z-10">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={hourlyHeatmap}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.05)" vertical={false} />
-                  <XAxis dataKey="label" stroke="#475569" fontSize={9} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#475569" fontSize={9} tickLine={false} axisLine={false} />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#050505', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '1.5rem', padding: '1rem' }}
-                    itemStyle={{ color: '#818cf8', fontWeight: 900, fontSize: '12px' }}
-                    labelStyle={{ color: '#64748b', marginBottom: '4px', fontSize: '10px' }}
-                  />
-                  <Bar dataKey="count" fill="#6366f1" radius={[6, 6, 0, 0]} barSize={24}>
-                    {hourlyHeatmap.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.count > 0 ? '#6366f1' : 'rgba(255, 255, 255, 0.05)'} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-zinc-950 border border-zinc-800/50 rounded-3xl p-10 shadow-lg backdrop-blur-xl relative overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-500/5 blur-[80px] -translate-y-1/2 translate-x-1/2"></div>
+                
+                <div className="flex items-center justify-between mb-8 relative z-10">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-zinc-100/5 rounded-xl border border-zinc-800/50 text-zinc-400">
+                      <Zap size={20} className="text-indigo-400" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-black text-white uppercase tracking-tighter">Hourly Chrono-Flux</h2>
+                      <p className="text-[9px] text-zinc-300 font-bold uppercase tracking-widest mt-0.5">Execution load over time</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="h-48 w-full relative z-10">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={hourlyHeatmap}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.05)" vertical={false} />
+                      <XAxis dataKey="label" stroke="#475569" fontSize={9} tickLine={false} axisLine={false} />
+                      <YAxis stroke="#475569" fontSize={9} tickLine={false} axisLine={false} />
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: '#050505', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '1.5rem', padding: '1rem' }}
+                        itemStyle={{ color: '#818cf8', fontWeight: 900, fontSize: '12px' }}
+                        labelStyle={{ color: '#64748b', marginBottom: '4px', fontSize: '10px' }}
+                      />
+                      <Bar dataKey="count" fill="#6366f1" radius={[6, 6, 0, 0]} barSize={24}>
+                        {hourlyHeatmap.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.count > 0 ? '#6366f1' : 'rgba(255, 255, 255, 0.05)'} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </motion.div>
+
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="bg-zinc-950 border border-zinc-800/50 rounded-3xl p-10 shadow-lg backdrop-blur-xl relative overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/5 blur-[80px] -translate-y-1/2 translate-x-1/2"></div>
+                
+                <div className="flex items-center justify-between mb-8 relative z-10">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-zinc-100/5 rounded-xl border border-zinc-800/50 text-zinc-400">
+                      <Activity size={20} className="text-emerald-400" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-black text-white uppercase tracking-tighter">Execution Duration</h2>
+                      <p className="text-[9px] text-zinc-300 font-bold uppercase tracking-widest mt-0.5">Latency trend (ms)</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="h-48 w-full relative z-10">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={durationData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.05)" vertical={false} />
+                      <XAxis dataKey="label" stroke="#475569" fontSize={9} tickLine={false} axisLine={false} />
+                      <YAxis stroke="#475569" fontSize={9} tickLine={false} axisLine={false} />
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: '#050505', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '1.5rem', padding: '1rem' }}
+                        itemStyle={{ color: '#10b981', fontWeight: 900, fontSize: '12px' }}
+                        labelStyle={{ color: '#64748b', marginBottom: '4px', fontSize: '10px' }}
+                      />
+                      <Line type="monotone" dataKey="duration" stroke="#10b981" strokeWidth={3} dot={{ r: 4, fill: '#10b981', strokeWidth: 0 }} activeDot={{ r: 6 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </motion.div>
             </div>
-          </motion.div>
+          </>
         )}
 
         {loading ? (
@@ -218,7 +277,6 @@ const TaskHistory = () => {
           </motion.div>
         ) : (
           <div className="relative">
-            {/* Timeline Line */}
             <div className="absolute left-[31px] top-0 bottom-0 w-px bg-gradient-to-b from-blue-500 via-white/10 to-transparent opacity-30"></div>
             
             <div className="space-y-12">
@@ -230,7 +288,6 @@ const TaskHistory = () => {
                   key={version.id}
                   className="relative pl-20"
                 >
-                  {/* Timeline Dot */}
                   <div className={`absolute left-0 w-16 h-16 flex items-center justify-center rounded-xl border backdrop-blur-xl z-10 transition-all duration-500 ${
                     index === 0 ? 'bg-blue-500 border-blue-400 text-white shadow-[0_0_30px_rgba(59,130,246,0.4)]' : 'bg-zinc-950 border-zinc-800 text-zinc-300'
                   }`}>
@@ -329,7 +386,6 @@ const TaskHistory = () => {
         )}
       </div>
 
-      {/* Version Diff Modal */}
       <AnimatePresence>
         {diffModalOpen && diffActive && diffHistoric && (
           <div className="fixed inset-0 z-[120] flex items-center justify-center p-6">
@@ -346,7 +402,6 @@ const TaskHistory = () => {
               exit={{ opacity: 0, scale: 0.95 }}
               className="w-full max-w-4xl bg-zinc-950 border border-zinc-800 rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.85)] z-10 flex flex-col max-h-[85vh] overflow-hidden"
             >
-              {/* Header */}
               <div className="p-6 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/10">
                 <div className="flex items-center gap-3">
                   <GitBranch size={20} className="text-indigo-400" />
@@ -363,9 +418,7 @@ const TaskHistory = () => {
                 </button>
               </div>
 
-              {/* Side-by-Side Panels */}
               <div className="flex-1 overflow-y-auto p-6 custom-scrollbar grid grid-cols-1 md:grid-cols-2 gap-6 min-h-0">
-                {/* Column 1: Active Configuration */}
                 <div className="space-y-6">
                   <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 border-b border-zinc-800 pb-2">Active Configuration</h4>
                   

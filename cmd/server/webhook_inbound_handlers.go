@@ -50,8 +50,8 @@ func handleInboundWebhook(c echo.Context) error {
 				log.Printf("Panic recovered in inbound webhook worker: %v", r)
 			}
 		}()
-		// Use a fresh context for the long-running background operation
-		workerCtx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+		// Use WithoutCancel to preserve trace IDs but allow the request to finish
+		workerCtx, cancel := context.WithTimeout(context.WithoutCancel(c.Request().Context()), 60*time.Second)
 		defer cancel()
 		handleDispatchTask(workerCtx, claimedTask, p)
 	}(payload)

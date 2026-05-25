@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"aktionfy/db"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -92,8 +91,9 @@ func GetCachedPublicTemplates(ctx context.Context, search string) ([]db.Template
 		return nil, nil
 	}
 
-	key := fmt.Sprintf("cache:templates:public:%s", normalizeSearchKey(search))
-	data, err := RedisClient.Get(ctx, key).Result()
+	hashKey := "cache:templates:public"
+	fieldKey := normalizeSearchKey(search)
+	data, err := RedisClient.HGet(ctx, hashKey, fieldKey).Result()
 	if err != nil {
 		return nil, nil
 	}
@@ -114,17 +114,19 @@ func SetCachedPublicTemplates(ctx context.Context, search string, templates []db
 		return
 	}
 
-	key := fmt.Sprintf("cache:templates:public:%s", normalizeSearchKey(search))
+	hashKey := "cache:templates:public"
+	fieldKey := normalizeSearchKey(search)
 	bytes, err := json.Marshal(templates)
 	if err != nil {
 		log.Printf("Warning: failed to marshal templates for cache, search '%s': %v", search, err)
 		return
 	}
 
-	err = RedisClient.Set(ctx, key, string(bytes), TemplateCacheTTL).Err()
+	err = RedisClient.HSet(ctx, hashKey, fieldKey, string(bytes)).Err()
 	if err != nil {
 		log.Printf("Warning: failed to set templates cache in Redis for search '%s': %v", search, err)
 	}
+	_ = RedisClient.Expire(ctx, hashKey, TemplateCacheTTL).Err()
 }
 
 // InvalidateCachedPublicTemplates clears all public template caches using key-prefix scan.
@@ -135,15 +137,10 @@ func InvalidateCachedPublicTemplates(ctx context.Context) {
 		return
 	}
 
-	// Use SCAN with pattern to find and delete all template cache keys
-	iter := RedisClient.Scan(ctx, 0, "cache:templates:public:*", 100).Iterator()
-	for iter.Next(ctx) {
-		if err := RedisClient.Del(ctx, iter.Val()).Err(); err != nil {
-			log.Printf("Warning: failed to delete template cache key %s: %v", iter.Val(), err)
-		}
-	}
-	if err := iter.Err(); err != nil {
-		log.Printf("Warning: failed to scan template cache keys for invalidation: %v", err)
+	// Invalidate the entire hash instead of scanning
+	err := RedisClient.Del(ctx, "cache:templates:public").Err()
+	if err != nil {
+		log.Printf("Warning: failed to delete template cache hash: %v", err)
 	}
 }
 
@@ -438,7 +435,8 @@ func RecordTaskExecutionTelemetry(ctx context.Context, userID string, taskID str
 // --- User Auth & Session Caching ---
 
 const (
-	UserCacheTTL = 2 * time.Minute
+	UserCacheTTL   = 2 * time.Minute
+	UserSessionTTL = 24 * time.Hour
 )
 
 // GetCachedUserBySession retrieves the user session data from Redis.
@@ -470,12 +468,12 @@ func SetCachedUserBySession(ctx context.Context, sessionID string, row db.GetUse
 		log.Printf("Warning: failed to marshal user session row: %v", err)
 		return
 	}
-	_ = RedisClient.Set(ctx, key, string(bytes), UserCacheTTL).Err()
+	_ = RedisClient.Set(ctx, key, string(bytes), UserSessionTTL).Err()
 
 	// Track this session ID for the user to support user-scoped invalidation
 	setKey := fmt.Sprintf("cache:user:session-ids:%s", row.ID)
 	_ = RedisClient.SAdd(ctx, setKey, sessionID).Err()
-	_ = RedisClient.Expire(ctx, setKey, UserCacheTTL).Err()
+	_ = RedisClient.Expire(ctx, setKey, UserSessionTTL).Err()
 }
 
 // InvalidateCachedUserBySession deletes the cached user session data from Redis.
@@ -597,10 +595,7 @@ func InvalidateAdminUsersCache(ctx context.Context) {
 	if RedisClient == nil {
 		return
 	}
-	iter := RedisClient.Scan(ctx, 0, "cache:admin:users:*", 100).Iterator()
-	for iter.Next(ctx) {
-		_ = RedisClient.Del(ctx, iter.Val()).Err()
-	}
+	_ = RedisClient.Del(ctx, "cache:admin:users").Err()
 }
 
 // ActiveSessionMeta stores user-agent, IP, and activity time for a session.
@@ -659,9 +654,8 @@ func GetActiveSessions(ctx context.Context, userID string) []ActiveSessionMeta {
 	return active
 }
 
-// RevokeActiveSession deletes session from Redis cache and database.
+// RevokeActiveSession deletes session from Redis cache
 func RevokeActiveSession(ctx context.Context, userID string, sessionID string) error {
-	// 1. Delete from Redis
 	if RedisClient != nil {
 		metaKey := fmt.Sprintf("session:meta:%s:%s", userID, sessionID)
 		_ = RedisClient.Del(ctx, metaKey).Err()
@@ -673,11 +667,6 @@ func RevokeActiveSession(ctx context.Context, userID string, sessionID string) e
 		_ = RedisClient.Del(ctx, sessCacheKey).Err()
 	}
 
-	// 2. Delete from DB
-	var pgSessID pgtype.UUID
-	if err := parseUUID(sessionID, &pgSessID); err == nil {
-		return queries.DeleteWebSession(ctx, pgSessID)
-	}
 	return nil
 }
 

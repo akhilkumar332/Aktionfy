@@ -48,24 +48,24 @@ const DecisionNode = ({ data, selected }) => {
       <Handle
         type="target"
         position={Position.Top}
-        className={`!${isSwarm ? 'bg-purple-500' : 'bg-indigo-500'} !w-2 !h-2 !border-none`}
+        className={`${isSwarm ? '!bg-purple-500' : '!bg-indigo-500'} !w-2 !h-2 !border-none`}
       />
       <Handle
         type="source"
         position={Position.Bottom}
-        className={`!${isSwarm ? 'bg-purple-500' : 'bg-indigo-500'} !w-2 !h-2 !border-none`}
+        className={`${isSwarm ? '!bg-purple-500' : '!bg-indigo-500'} !w-2 !h-2 !border-none`}
       />
       <Handle
         type="source"
         position={Position.Right}
         id="right"
-        className={`!${isSwarm ? 'bg-purple-500' : 'bg-indigo-500'} !w-2 !h-2 !border-none`}
+        className={`${isSwarm ? '!bg-purple-500' : '!bg-indigo-500'} !w-2 !h-2 !border-none`}
       />
       <Handle
         type="source"
         position={Position.Left}
         id="left"
-        className={`!${isSwarm ? 'bg-purple-500' : 'bg-indigo-500'} !w-2 !h-2 !border-none`}
+        className={`${isSwarm ? '!bg-purple-500' : '!bg-indigo-500'} !w-2 !h-2 !border-none`}
       />
     </div>
   );

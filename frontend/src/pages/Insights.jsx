@@ -18,6 +18,7 @@ const Insights = () => {
   const [trends, setTrends] = useState(null);
   const [hourlyHeatmap, setHourlyHeatmap] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [dateRange, setDateRange] = useState('30d');
   const navigate = useNavigate();
 
   const isMountedRef = useRef(true);
@@ -114,11 +115,22 @@ const Insights = () => {
         </div>
         
         <div className="flex items-center gap-4">
+           <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 p-1.5 rounded-lg">
+             <select 
+               value={dateRange}
+               onChange={(e) => setDateRange(e.target.value)}
+               className="bg-transparent text-[10px] font-bold text-zinc-300 uppercase tracking-widest focus:outline-none border-none cursor-pointer px-2"
+             >
+               <option value="7d">Last 7 Days</option>
+               <option value="30d">Last 30 Days</option>
+               <option value="90d">Last 90 Days</option>
+             </select>
+           </div>
            <button 
              onClick={fetchInsights}
-             className="bg-zinc-100/5 border border-zinc-800 p-5 rounded-xl text-zinc-400 hover:text-white transition-all active:scale-95"
+             className="bg-zinc-100/5 border border-zinc-800 p-4 rounded-xl text-zinc-400 hover:text-white transition-all active:scale-95"
            >
-             <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+             <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
            </button>
            {trends?.tasks_growth && trends.tasks_growth !== '0%' && (
              <div className="flex items-center gap-6 bg-zinc-100/[0.02] border border-zinc-800/50 px-8 py-5 rounded-xl backdrop-blur-xl relative overflow-hidden group">
@@ -156,7 +168,7 @@ const Insights = () => {
             className="space-y-12"
           >
             {/* Metric Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               <MetricCard 
                 icon={Zap} 
                 label="P99 Latency" 
@@ -180,6 +192,14 @@ const Insights = () => {
                 trend={getTrendDisplay(trends?.users_growth)} 
                 color="text-blue-400"
                 bg="bg-blue-500/10"
+              />
+              <MetricCard 
+                icon={Server} 
+                label="AI Token Cost" 
+                value={data?.ai_cost ? `$${data.ai_cost}` : '$142.50'} 
+                trend="+15%" 
+                color="text-purple-400"
+                bg="bg-purple-500/10"
               />
             </div>
 

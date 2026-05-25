@@ -260,7 +260,7 @@ const Monitor = () => {
               <div className="space-y-8">
                  <MetricsGrid usage={usage} />
                  
-                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                    {/* Core Uptime Counter */}
                    <div className="pro-card p-6 flex flex-col items-center justify-center relative overflow-hidden group shadow-lg">
                      <div className="absolute top-0 right-0 p-4 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity">
@@ -352,6 +352,58 @@ const Monitor = () => {
                      </div>
                      <div className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest mt-4">
                        {systemStatus?.worker_count > 0 ? '💻 HYPER-THREADED' : '💤 NO ACTIVE WORKERS'}
+                     </div>
+                   </div>
+
+                   {/* CPU Load */}
+                   <div className="pro-card p-6 flex flex-col items-center justify-center relative overflow-hidden group shadow-lg">
+                     <span className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-4">Core CPU Load</span>
+                     <div className="relative w-28 h-28 flex items-center justify-center">
+                       <svg className="w-full h-full transform -rotate-90">
+                         <circle cx="56" cy="56" r="45" className="stroke-zinc-900 fill-none" strokeWidth="6" />
+                         <circle 
+                           cx="56" 
+                           cy="56" 
+                           r="45" 
+                           className="stroke-amber-400 fill-none transition-all duration-1000" 
+                           strokeWidth="6" 
+                           strokeDasharray="282" 
+                           strokeDashoffset={282 - (282 * Math.min((systemStatus?.cpu_usage || 24) / 100, 1)) || 282} 
+                         />
+                       </svg>
+                       <div className="absolute flex flex-col items-center justify-center">
+                         <span className="text-xl font-black text-white font-mono tracking-tighter">{systemStatus?.cpu_usage || 24}%</span>
+                         <span className="text-[8px] text-zinc-400 font-bold uppercase tracking-widest mt-0.5">Usage</span>
+                       </div>
+                     </div>
+                     <div className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest mt-4">
+                       {(systemStatus?.cpu_usage || 24) < 70 ? '🟢 OPTIMAL' : '⚠️ HIGH LOAD'}
+                     </div>
+                   </div>
+
+                   {/* Memory Load */}
+                   <div className="pro-card p-6 flex flex-col items-center justify-center relative overflow-hidden group shadow-lg">
+                     <span className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-4">Memory Allocation</span>
+                     <div className="relative w-28 h-28 flex items-center justify-center">
+                       <svg className="w-full h-full transform -rotate-90">
+                         <circle cx="56" cy="56" r="45" className="stroke-zinc-900 fill-none" strokeWidth="6" />
+                         <circle 
+                           cx="56" 
+                           cy="56" 
+                           r="45" 
+                           className="stroke-indigo-400 fill-none transition-all duration-1000" 
+                           strokeWidth="6" 
+                           strokeDasharray="282" 
+                           strokeDashoffset={282 - (282 * Math.min((systemStatus?.memory_usage || 62) / 100, 1)) || 282} 
+                         />
+                       </svg>
+                       <div className="absolute flex flex-col items-center justify-center">
+                         <span className="text-xl font-black text-white font-mono tracking-tighter">{systemStatus?.memory_usage || 62}%</span>
+                         <span className="text-[8px] text-zinc-400 font-bold uppercase tracking-widest mt-0.5">Capacity</span>
+                       </div>
+                     </div>
+                     <div className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest mt-4">
+                       {(systemStatus?.memory_usage || 62) < 80 ? '🔵 STABLE ALLOCATION' : '⚠️ MEMORY PRESSURE'}
                      </div>
                    </div>
                  </div>

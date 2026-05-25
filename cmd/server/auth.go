@@ -5,9 +5,9 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"time"
 
 	"aktionfy/db"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -60,16 +60,29 @@ func LoginUser(ctx context.Context, email, password string) (string, error) {
 		return "", fmt.Errorf("invalid email or password")
 	}
 
-	sessionID, err := queries.CreateWebSession(ctx, db.CreateWebSessionParams{
-		UserID:    pgtype.Text{String: info.ID, Valid: true},
-		ExpiresAt: pgtype.Timestamptz{Time: time.Now().UTC().Add(24 * time.Hour), Valid: true},
-	})
+	sessUUID := uuid.New().String()
 
+	// Fetch full user data to populate cache
+	u, err := queries.GetUser(ctx, info.ID)
 	if err != nil {
-		return "", fmt.Errorf("failed to create session: %w", err)
+		return "", fmt.Errorf("failed to fetch user info: %w", err)
 	}
 
-	return formatUUID(sessionID), nil
+	row := db.GetUserBySessionIDRow{
+		ID:                u.ID,
+		Email:             u.Email,
+		ApiKey:            u.ApiKey,
+		Role:              u.Role,
+		Tier:              u.Tier,
+		IsLocked:          u.IsLocked,
+		MaxTasksLimit:     u.MaxTasksLimit,
+		RateLimitOverride: u.RateLimitOverride,
+		CreatedAt:         u.CreatedAt,
+	}
+
+	SetCachedUserBySession(ctx, sessUUID, row)
+
+	return sessUUID, nil
 }
 
 // RotateAPIKey generates a new API key for the user and updates the DB

@@ -154,19 +154,21 @@ const Tasks = () => {
   // Filter and Sort Logic
   const filteredTasks = tasks
     .filter(task => {
-      const matchesSearch = task.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                            task.id.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = (task.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+                            (task.id || '').toLowerCase().includes(searchQuery.toLowerCase());
       const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
       return matchesSearch && matchesStatus;
     })
     .sort((a, b) => {
       let comparison = 0;
       if (sortBy === 'name') {
-        comparison = a.name.localeCompare(b.name);
+        comparison = (a.name || '').localeCompare(b.name || '');
       } else if (sortBy === 'created_at') {
-        comparison = new Date(a.created_at || 0) - new Date(b.created_at || 0);
+        comparison = (new Date(a.created_at || 0) - new Date(b.created_at || 0));
       } else if (sortBy === 'next_run') {
-        comparison = new Date(a.next_run || 0) - new Date(b.next_run || 0);
+        const dateA = a.next_run ? new Date(a.next_run).getTime() : 0;
+        const dateB = b.next_run ? new Date(b.next_run).getTime() : 0;
+        comparison = dateA - dateB;
       } else if (sortBy === 'version_count') {
         comparison = (a.version_count || 0) - (b.version_count || 0);
       }
@@ -188,6 +190,8 @@ const Tasks = () => {
       return new Set(paginatedTasks.map(t => t.id));
     });
   };
+
+  const [viewMode, setViewMode] = useState('list');
 
   return (
     <>
@@ -271,6 +275,23 @@ const Tasks = () => {
               <SlidersHorizontal size={14} className={sortOrder === 'asc' ? 'rotate-180 transition-transform' : 'transition-transform'} />
             </button>
           </div>
+
+          <div className="h-6 w-px bg-zinc-800 mx-1"></div>
+
+          <div className="flex items-center bg-zinc-950 border border-zinc-800 rounded-lg p-0.5">
+             <button 
+               onClick={() => setViewMode('list')}
+               className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+             >
+               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+             </button>
+             <button 
+               onClick={() => setViewMode('grid')}
+               className={`p-1.5 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+             >
+               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+             </button>
+          </div>
         </div>
       </div>
 
@@ -333,183 +354,270 @@ const Tasks = () => {
       </AnimatePresence>
 
       <div className="pro-card overflow-hidden">
-        <div className="overflow-x-auto custom-scrollbar">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="pro-table-header">
-                <th className="px-6 py-4 w-12">
-                  <input
-                    type="checkbox"
-                    checked={paginatedTasks.length > 0 && selectedTasks.size === paginatedTasks.length}
-                    onChange={toggleSelectAll}
-                    className="accent-indigo-600 rounded bg-zinc-950 border-zinc-800 cursor-pointer"
-                  />
-                </th>
-                <th className="px-6 py-4">Designation</th>
-                <th className="px-6 py-4">Vector</th>
-                <th className="px-6 py-4 text-center">Status</th>
-                <th className="px-6 py-4 text-center">Next Run</th>
-                <th className="px-6 py-4 text-right">Overrides</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-800/50">
-              {loading && tasks.length === 0 ? (
-                <tr>
-                  <td colSpan="6" className="px-6 py-32">
-                     <div className="flex flex-col items-center gap-3">
-                        <RefreshCw className="w-6 h-6 text-zinc-700 animate-spin" />
-                        <span className="text-[11px] font-semibold text-zinc-300 uppercase tracking-widest">Querying Registry...</span>
-                     </div>
-                  </td>
+        {viewMode === 'list' ? (
+          <div className="overflow-x-auto custom-scrollbar">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="pro-table-header">
+                  <th className="px-6 py-4 w-12">
+                    <input
+                      type="checkbox"
+                      checked={paginatedTasks.length > 0 && selectedTasks.size === paginatedTasks.length}
+                      onChange={toggleSelectAll}
+                      className="accent-indigo-600 rounded bg-zinc-950 border-zinc-800 cursor-pointer"
+                    />
+                  </th>
+                  <th className="px-6 py-4">Designation</th>
+                  <th className="px-6 py-4">Vector</th>
+                  <th className="px-6 py-4 text-center">Status</th>
+                  <th className="px-6 py-4 text-center">Next Run</th>
+                  <th className="px-6 py-4 text-right">Overrides</th>
                 </tr>
-              ) : tasks.length === 0 ? (
-                <tr>
-                  <td colSpan="6" className="px-6 py-32 text-center">
-                     <div className="flex flex-col items-center gap-4 opacity-30">
-                        <Activity size={32} className="text-zinc-300" />
-                        <span className="text-xs font-medium text-zinc-400 italic">No active orchestration streams identified. Initialize your first node to begin.</span>
-                     </div>
-                  </td>
-                </tr>
-              ) : paginatedTasks.length === 0 ? (
-                <tr>
-                  <td colSpan="6" className="px-6 py-16 text-center">
-                    <span className="text-xs text-zinc-500 italic">No streams matches search filters.</span>
-                  </td>
-                </tr>
-              ) : (
-                paginatedTasks.map((task) => (
-                  <tr key={task.id} className={`pro-table-row group ${selectedTasks.has(task.id) ? 'bg-indigo-500/[0.02]' : ''}`}>
-                    <td className="px-6 py-4">
-                      <input
-                        type="checkbox"
-                        checked={selectedTasks.has(task.id)}
-                        onChange={() => toggleSelectTask(task.id)}
-                        className="accent-indigo-600 rounded bg-zinc-950 border-zinc-800 cursor-pointer"
-                      />
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-4">
-                        <div className="w-8 h-8 rounded-md bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-400 group-hover:border-indigo-500/50 transition-all">
-                           <Cpu size={16} />
-                        </div>
-                        <div className="flex flex-col min-w-0">
-                           <div className="flex items-center gap-2">
-                              <span className="text-sm font-semibold text-zinc-100 truncate">{task.name}</span>
-                              {task.version_count > 1 && (
-                                <span className="text-[9px] font-bold text-zinc-400 bg-zinc-900 border border-zinc-800 px-1.5 py-0.5 rounded-md">v{task.version_count}</span>
-                              )}
-                           </div>
-                           <div className="flex items-center gap-2 text-[10px] text-zinc-500 font-mono tracking-tighter opacity-60">
-                              <Command size={10} /> {task.id.substring(0, 13)}
-                              {task.depends_on_task_id && <LinkIcon size={10} className="ml-1 text-indigo-400/50" />}
-                           </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                       <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">{task.trigger_type}</span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <div className="flex flex-col items-center gap-1">
-                        {task.status === 'active' ? (
-                          <span className="pro-badge bg-emerald-500/10 border-emerald-500/20 text-emerald-400">active</span>
-                        ) : task.status === 'paused' ? (
-                          <span className="pro-badge bg-amber-500/10 border-amber-500/20 text-amber-400">paused</span>
-                        ) : (
-                          <span className="pro-badge bg-red-500/10 border-red-500/20 text-red-400">{task.status}</span>
-                        )}
-                        {task.status === 'error' && task.last_error && (
-                          <span className="text-[8px] text-red-400/60 font-mono max-w-[120px] truncate hover:whitespace-normal hover:overflow-visible hover:max-w-none hover:bg-zinc-900 hover:p-2 hover:rounded-md hover:z-10 transition-all cursor-help" title={task.last_error}>
-                            {task.last_error}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                       <div className="flex flex-col items-center">
-                          <span className="text-xs font-semibold text-zinc-300 tabular-nums">{new Date(task.next_run).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                          <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-tighter">{new Date(task.next_run).toLocaleDateString()}</span>
+              </thead>
+              <tbody className="divide-y divide-zinc-800/50">
+                {loading && tasks.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="px-6 py-32">
+                       <div className="flex flex-col items-center gap-3">
+                          <RefreshCw className="w-6 h-6 text-zinc-700 animate-spin" />
+                          <span className="text-[11px] font-semibold text-zinc-300 uppercase tracking-widest">Querying Registry...</span>
                        </div>
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                           onClick={() => handleAction(task.id, 'trigger')}
-                           className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-emerald-400 transition-all shadow-sm"
-                           title="Execute Immediately"
-                        >
-                           <Activity size={14} />
-                        </button>
-                        <button 
-                           onClick={() => setTraceTask(task)}
-                           className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-indigo-400 transition-all shadow-sm"
-                           title="Execution Traces"
-                        >
-                           <Terminal size={14} />
-                        </button>
-                        <button 
-                           onClick={() => handleClone(task)}
-                           className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-white transition-all shadow-sm"
-                           title="Clone Node"
-                        >
-                           <Copy size={14} />
-                        </button>
-                        <button 
-                           onClick={() => setSaveTemplateTask(task)}
-                           className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-indigo-400 transition-all shadow-sm"
-                           title="Save as Blueprint"
-                        >
-                           <Sparkles size={14} />
-                        </button>
-                        <button 
-                           onClick={() => handleEdit(task)}
-                           className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-white transition-all shadow-sm"
-                           title="Calibrate Node"
-                        >
-                           <Settings size={14} />
-                        </button>
-                        <button 
-                           onClick={() => navigate(`/tasks/${task.id}/history`)} 
-                           className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-white transition-all shadow-sm" 
-                           title="Neural Archive"
-                        >
-                           <History size={14} />
-                        </button>
-                        {task.status === 'active' ? (
-                          <button onClick={() => handleAction(task.id, 'pause')} className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-amber-500 transition-all shadow-sm" title="Freeze Node"><Pause size={14} /></button>
-                        ) : (
-                          <button onClick={() => handleAction(task.id, 'resume')} className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-emerald-500 transition-all shadow-sm" title="Thaw Node"><Play size={14} /></button>
-                        )}
-                        
-                        {confirmDelete === task.id ? (
-                          <div className="flex items-center gap-1 bg-red-500/10 border border-red-500/20 rounded-md p-0.5">
-                            <button 
-                              onClick={() => handleAction(task.id, 'delete')}
-                              className="p-1 text-red-500 hover:bg-red-500 hover:text-white rounded transition-all"
-                              title="Confirm Terminate"
-                            >
-                              <Check size={14} />
-                            </button>
-                            <button 
-                              onClick={() => setConfirmDelete(null)}
-                              className="p-1 text-zinc-400 hover:bg-zinc-700 hover:text-white rounded transition-all"
-                              title="Cancel"
-                            >
-                              <X size={14} />
-                            </button>
-                          </div>
-                        ) : (
-                          <button onClick={() => setConfirmDelete(task.id)} className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-red-500 transition-all shadow-sm" title="Purge Node"><Trash2 size={14} /></button>
-                        )}
-                      </div>
+                  </tr>
+                ) : tasks.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="px-6 py-32 text-center">
+                       <div className="flex flex-col items-center gap-4 opacity-30">
+                          <Activity size={32} className="text-zinc-300" />
+                          <span className="text-xs font-medium text-zinc-400 italic">No active orchestration streams identified. Initialize your first node to begin.</span>
+                       </div>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ) : paginatedTasks.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="px-6 py-16 text-center">
+                      <span className="text-xs text-zinc-500 italic">No streams matches search filters.</span>
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedTasks.map((task) => (
+                    <tr key={task.id} className={`pro-table-row group ${selectedTasks.has(task.id) ? 'bg-indigo-500/[0.02]' : ''}`}>
+                      <td className="px-6 py-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedTasks.has(task.id)}
+                          onChange={() => toggleSelectTask(task.id)}
+                          className="accent-indigo-600 rounded bg-zinc-950 border-zinc-800 cursor-pointer"
+                        />
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-8 h-8 rounded-md bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-400 group-hover:border-indigo-500/50 transition-all">
+                             <Cpu size={16} />
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                             <div className="flex items-center gap-2">
+                                <span className="text-sm font-semibold text-zinc-100 truncate">{task.name}</span>
+                                {task.version_count > 1 && (
+                                  <span className="text-[9px] font-bold text-zinc-400 bg-zinc-900 border border-zinc-800 px-1.5 py-0.5 rounded-md">v{task.version_count}</span>
+                                )}
+                             </div>
+                             <div className="flex items-center gap-2 text-[10px] text-zinc-500 font-mono tracking-tighter opacity-60">
+                                <Command size={10} /> {task.id?.substring(0, 13)}
+                                {task.depends_on_task_id && <LinkIcon size={10} className="ml-1 text-indigo-400/50" />}
+                             </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                         <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">{task.trigger_type}</span>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <div className="flex flex-col items-center gap-1">
+                          {task.status === 'active' ? (
+                            <span className="pro-badge bg-emerald-500/10 border-emerald-500/20 text-emerald-400">active</span>
+                          ) : task.status === 'paused' ? (
+                            <span className="pro-badge bg-amber-500/10 border-amber-500/20 text-amber-400">paused</span>
+                          ) : (
+                            <span className="pro-badge bg-red-500/10 border-red-500/20 text-red-400">{task.status}</span>
+                          )}
+                          {task.status === 'error' && task.last_error && (
+                            <div className="text-[10px] text-red-400 truncate group/tooltip relative">
+                              {task.last_error.substring(0, 30)}...
+                              <div className="absolute left-0 bottom-full mb-2 hidden group-hover/tooltip:block bg-zinc-900 border border-zinc-700 text-zinc-300 p-2 rounded shadow-xl z-50 whitespace-normal max-w-xs break-words">
+                                {task.last_error}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                         <div className="flex flex-col items-center">
+                            <span className="text-xs font-semibold text-zinc-300 tabular-nums">
+                              {task.next_run ? new Date(task.next_run).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}
+                            </span>
+                            <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-tighter">
+                              {task.next_run ? new Date(task.next_run).toLocaleDateString() : ''}
+                            </span>
+                         </div>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                             onClick={() => handleAction(task.id, 'trigger')}
+                             className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-emerald-400 transition-all shadow-sm"
+                             title="Execute Immediately"
+                          >
+                             <Activity size={14} />
+                          </button>
+                          <button 
+                             onClick={() => setTraceTask(task)}
+                             className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-indigo-400 transition-all shadow-sm"
+                             title="Execution Traces"
+                          >
+                             <Terminal size={14} />
+                          </button>
+                          <button 
+                             onClick={() => handleClone(task)}
+                             className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-white transition-all shadow-sm"
+                             title="Clone Node"
+                          >
+                             <Copy size={14} />
+                          </button>
+                          <button 
+                             onClick={() => setSaveTemplateTask(task)}
+                             className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-indigo-400 transition-all shadow-sm"
+                             title="Save as Blueprint"
+                          >
+                             <Sparkles size={14} />
+                          </button>
+                          <button 
+                             onClick={() => handleEdit(task)}
+                             className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-white transition-all shadow-sm"
+                             title="Calibrate Node"
+                          >
+                             <Settings size={14} />
+                          </button>
+                          <button 
+                             onClick={() => navigate(`/tasks/${task.id}/history`)} 
+                             className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-white transition-all shadow-sm" 
+                             title="Neural Archive"
+                          >
+                             <History size={14} />
+                          </button>
+                          {task.status === 'active' ? (
+                            <button onClick={() => handleAction(task.id, 'pause')} className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-amber-500 transition-all shadow-sm" title="Freeze Node"><Pause size={14} /></button>
+                          ) : (
+                            <button onClick={() => handleAction(task.id, 'resume')} className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-emerald-500 transition-all shadow-sm" title="Thaw Node"><Play size={14} /></button>
+                          )}
+                          
+                          {confirmDelete === task.id ? (
+                            <div className="flex items-center gap-1 bg-red-500/10 border border-red-500/20 rounded-md p-0.5">
+                              <button 
+                                onClick={() => handleAction(task.id, 'delete')}
+                                className="p-1 text-red-500 hover:bg-red-500 hover:text-white rounded transition-all"
+                                title="Confirm Terminate"
+                              >
+                                <Check size={14} />
+                              </button>
+                              <button 
+                                onClick={() => setConfirmDelete(null)}
+                                className="p-1 text-zinc-400 hover:bg-zinc-700 hover:text-white rounded transition-all"
+                                title="Cancel"
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
+                          ) : (
+                            <button onClick={() => setConfirmDelete(task.id)} className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-red-500 transition-all shadow-sm" title="Purge Node"><Trash2 size={14} /></button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 bg-zinc-950/50">
+            {loading && tasks.length === 0 ? (
+              <div className="col-span-full py-32 flex flex-col items-center gap-3">
+                 <RefreshCw className="w-6 h-6 text-zinc-700 animate-spin" />
+                 <span className="text-[11px] font-semibold text-zinc-300 uppercase tracking-widest">Querying Registry...</span>
+              </div>
+            ) : tasks.length === 0 ? (
+              <div className="col-span-full py-32 flex flex-col items-center gap-4 opacity-30">
+                 <Activity size={32} className="text-zinc-300" />
+                 <span className="text-xs font-medium text-zinc-400 italic">No active orchestration streams identified. Initialize your first node to begin.</span>
+              </div>
+            ) : paginatedTasks.length === 0 ? (
+              <div className="col-span-full py-16 text-center">
+                <span className="text-xs text-zinc-500 italic">No streams matches search filters.</span>
+              </div>
+            ) : (
+              paginatedTasks.map((task) => (
+                <div key={task.id} className={`pro-card p-6 flex flex-col gap-4 relative group transition-all hover:bg-zinc-800/20 border ${selectedTasks.has(task.id) ? 'border-indigo-500/50 bg-indigo-500/5' : 'border-zinc-800/50'}`}>
+                  <div className="absolute top-4 right-4 z-10">
+                    <input
+                      type="checkbox"
+                      checked={selectedTasks.has(task.id)}
+                      onChange={() => toggleSelectTask(task.id)}
+                      className="accent-indigo-600 rounded bg-zinc-950 border-zinc-800 cursor-pointer"
+                    />
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 group-hover:text-indigo-400 group-hover:border-indigo-500/50 transition-all shadow-inner">
+                       <Cpu size={20} />
+                    </div>
+                    <div className="pr-6">
+                       <h3 className="text-white font-bold text-sm truncate max-w-[140px]">{task.name}</h3>
+                       <div className="flex items-center gap-2 text-zinc-500 text-[10px] font-mono mt-1">
+                         <Command size={10} /> <span>{task.id?.substring(0, 13)}</span>
+                       </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-col gap-2 mt-2">
+                    <div className="flex items-center justify-between bg-zinc-950/50 p-3 rounded-lg border border-zinc-800/30">
+                      <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Vector</span>
+                      <span className="text-[11px] font-bold text-zinc-300 uppercase">{task.trigger_type}</span>
+                    </div>
+                    <div className="flex items-center justify-between bg-zinc-950/50 p-3 rounded-lg border border-zinc-800/30">
+                      <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Next Run</span>
+                      <span className="text-xs font-semibold text-zinc-300 tabular-nums">
+                        {task.next_run ? new Date(task.next_run).toLocaleString(undefined, {
+                          month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                        }) : 'Not Scheduled'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between mt-2 pt-4 border-t border-zinc-800/50">
+                    <div className="flex items-center gap-2">
+                      {task.status === 'active' ? (
+                        <span className="pro-badge bg-emerald-500/10 border-emerald-500/20 text-emerald-400">active</span>
+                      ) : task.status === 'paused' ? (
+                        <span className="pro-badge bg-amber-500/10 border-amber-500/20 text-amber-400">paused</span>
+                      ) : (
+                        <span className="pro-badge bg-red-500/10 border-red-500/20 text-red-400">{task.status}</span>
+                      )}
+                    </div>
+                    <div className="flex gap-1">
+                      <button onClick={() => setTraceTask(task)} className="p-1.5 text-zinc-400 hover:text-indigo-400 transition-colors" title="Traces"><Terminal size={14} /></button>
+                      <button onClick={() => handleEdit(task)} className="p-1.5 text-zinc-400 hover:text-white transition-colors" title="Settings"><Settings size={14} /></button>
+                      {task.status === 'active' ? (
+                        <button onClick={() => handleAction(task.id, 'pause')} className="p-1.5 text-zinc-400 hover:text-amber-500 transition-colors" title="Freeze"><Pause size={14} /></button>
+                      ) : (
+                        <button onClick={() => handleAction(task.id, 'resume')} className="p-1.5 text-zinc-400 hover:text-emerald-500 transition-colors" title="Thaw"><Play size={14} /></button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
 
         {/* Pagination Footer Controls */}
         {totalPages > 1 && (

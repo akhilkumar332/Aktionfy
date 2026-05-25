@@ -513,12 +513,30 @@ const Webhooks = () => {
                           </div>
                         </div>
 
-                        {delivery.response_body && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <div className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Response Body</div>
-                            <pre className="p-4 bg-zinc-900 border border-zinc-850 rounded-lg text-[10px] font-mono text-zinc-300 overflow-x-auto max-h-40 custom-scrollbar leading-relaxed">
-                              {delivery.response_body}
+                            <div className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Request Payload Preview</div>
+                            <pre className="p-4 bg-black/40 border border-zinc-800 rounded-lg text-[10px] font-mono text-zinc-500 overflow-x-auto max-h-40 custom-scrollbar leading-relaxed italic">
+                              {JSON.stringify({ event: delivery.event_type, timestamp: delivery.created_at, webhook_id: delivery.webhook_id }, null, 2)}
                             </pre>
+                          </div>
+                          {delivery.response_body && (
+                            <div className="space-y-2">
+                              <div className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Response Body</div>
+                              <pre className="p-4 bg-zinc-900 border border-zinc-850 rounded-lg text-[10px] font-mono text-zinc-300 overflow-x-auto max-h-40 custom-scrollbar leading-relaxed">
+                                {delivery.response_body}
+                              </pre>
+                            </div>
+                          )}
+                        </div>
+                        {(!delivery.success || delivery.status_code >= 400) && (
+                          <div className="pt-2 border-t border-zinc-800/50 flex justify-end">
+                            <button 
+                              onClick={() => handleTestWebhook(selectedWebhook.id)}
+                              className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-amber-500 hover:text-amber-400 transition-colors"
+                            >
+                              <RefreshCw size={12} /> Retry Delivery
+                            </button>
                           </div>
                         )}
                       </div>

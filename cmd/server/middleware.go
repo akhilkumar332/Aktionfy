@@ -38,27 +38,15 @@ func EchoSessionMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return next(c)
 		}
 
-		var u db.GetUserBySessionIDRow
-		var dbErr error
 		cachedUser, cacheErr := GetCachedUserBySession(c.Request().Context(), cookie.Value)
-		if cacheErr == nil && cachedUser != nil {
-			u = *cachedUser
-		} else {
-			u, dbErr = queries.GetUserBySessionID(c.Request().Context(), db.GetUserBySessionIDParams{
-				ID:        sessionID,
-				ExpiresAt: pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},
-			})
-			if dbErr == nil {
-				SetCachedUserBySession(c.Request().Context(), cookie.Value, u)
-			}
-		}
-
-		if dbErr != nil && cachedUser == nil {
+		if cacheErr != nil || cachedUser == nil {
 			if strings.HasPrefix(c.Request().URL.Path, "/api/") {
 				return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
 			}
 			return next(c)
 		}
+		
+		u := *cachedUser
 
 		if u.IsLocked.Bool {
 			// Clear cookie to force signout
@@ -278,30 +266,15 @@ func NetHttpAuthMiddleware(next http.Handler, mcpServer *server.MCPServer) http.
 		if userID == "" {
 			cookie, err := r.Cookie("session_id")
 			if err == nil && cookie.Value != "" {
-				var sessionID pgtype.UUID
-				if err := parseUUID(cookie.Value, &sessionID); err == nil {
-					var u db.GetUserBySessionIDRow
-					var err error
-					cachedUser, cacheErr := GetCachedUserBySession(r.Context(), cookie.Value)
-					if cacheErr == nil && cachedUser != nil {
-						u = *cachedUser
-					} else {
-						u, err = queries.GetUserBySessionID(r.Context(), db.GetUserBySessionIDParams{
-							ID:        sessionID,
-							ExpiresAt: pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},
-						})
-						if err == nil {
-							SetCachedUserBySession(r.Context(), cookie.Value, u)
-						}
+				cachedUser, cacheErr := GetCachedUserBySession(r.Context(), cookie.Value)
+				if cacheErr == nil && cachedUser != nil {
+					u := *cachedUser
+					if u.IsLocked.Bool {
+						http.Error(w, "Forbidden: This account has been locked", http.StatusForbidden)
+						return
 					}
-					if err == nil || cachedUser != nil {
-						if u.IsLocked.Bool {
-							http.Error(w, "Forbidden: This account has been locked", http.StatusForbidden)
-							return
-						}
-						userID = u.ID
-						userTier = u.Tier.String
-					}
+					userID = u.ID
+					userTier = u.Tier.String
 				}
 			}
 		}

@@ -194,9 +194,12 @@ const AdminSettings = () => {
                     <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.3em] ml-2">Node Pruning Lease (Days)</label>
                     <input 
                       type="number"
+                      min="1"
+                      max="365"
+                      required
                       value={settings.worker_prune_days}
                       onChange={(e) => setSettings({ ...settings, worker_prune_days: parseInt(e.target.value) || 0 })}
-                      className="w-full bg-black/40 border border-zinc-800/50 rounded-xl p-6 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner"
+                      className="w-full bg-black/40 border border-zinc-800/50 rounded-xl p-6 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner invalid:border-red-500/50"
                     />
                     <p className="text-[10px] text-zinc-300 font-medium ml-4 leading-relaxed max-w-lg">
                       Inactive workers are permanently deregistered from the pool after remaining silent for this period.
@@ -207,9 +210,12 @@ const AdminSettings = () => {
                     <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.3em] ml-2">Sandbox JS Timeout (Milliseconds)</label>
                     <input 
                       type="number"
+                      min="100"
+                      max="60000"
+                      required
                       value={settings.js_timeout_ms}
                       onChange={(e) => setSettings({ ...settings, js_timeout_ms: parseInt(e.target.value) || 0 })}
-                      className="w-full bg-black/40 border border-zinc-800/50 rounded-xl p-6 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner"
+                      className="w-full bg-black/40 border border-zinc-800/50 rounded-xl p-6 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner invalid:border-red-500/50"
                     />
                     <p className="text-[10px] text-zinc-300 font-medium ml-4 leading-relaxed max-w-lg">
                       Maximum execution duration permitted for native JS actions before halting the task with a timeout error.
@@ -220,9 +226,12 @@ const AdminSettings = () => {
                     <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.3em] ml-2">Stuck Task Reaper Lease (Minutes)</label>
                     <input 
                       type="number"
+                      min="1"
+                      max="1440"
+                      required
                       value={settings.reaper_stuck_threshold_minutes}
                       onChange={(e) => setSettings({ ...settings, reaper_stuck_threshold_minutes: parseInt(e.target.value) || 0 })}
-                      className="w-full bg-black/40 border border-zinc-800/50 rounded-xl p-6 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner"
+                      className="w-full bg-black/40 border border-zinc-800/50 rounded-xl p-6 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner invalid:border-red-500/50"
                     />
                     <p className="text-[10px] text-zinc-300 font-medium ml-4 leading-relaxed max-w-lg">
                       Tasks left in the processing state for longer than this limit are reaped and returned to active queue.
@@ -233,9 +242,12 @@ const AdminSettings = () => {
                     <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.3em] ml-2">Scheduler Poll Interval (Seconds)</label>
                     <input 
                       type="number"
+                      min="5"
+                      max="3600"
+                      required
                       value={settings.scheduler_poll_interval_seconds}
                       onChange={(e) => setSettings({ ...settings, scheduler_poll_interval_seconds: parseInt(e.target.value) || 0 })}
-                      className="w-full bg-black/40 border border-zinc-800/50 rounded-xl p-6 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner"
+                      className="w-full bg-black/40 border border-zinc-800/50 rounded-xl p-6 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner invalid:border-red-500/50"
                     />
                     <p className="text-[10px] text-zinc-300 font-medium ml-4 leading-relaxed max-w-lg">
                       The default interval at which the background database schedulers check for due/runnable schedules.

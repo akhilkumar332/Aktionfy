@@ -129,7 +129,7 @@ const ExecutionTracesModal = ({ isOpen, onClose, taskId, taskName }) => {
     }
   }, [selectedExecutionId, fetchTraces]);
 
-  if (!isOpen) return null;
+  if (!isOpen && !loadingExecutions) return null;
 
   const getShortId = (id) => {
     if (!id) return 'UNKNOWN';

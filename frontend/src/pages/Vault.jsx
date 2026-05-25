@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 
 import axios from 'axios';
 import { Key, Trash2, Plus, ShieldCheck, Loader2, X, RefreshCw, Shield, Check, Eye, EyeOff, Edit2, Clock } from 'lucide-react';
@@ -18,6 +18,7 @@ const Vault = () => {
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [showSecretValue, setShowSecretValue] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const [expandedSecret, setExpandedSecret] = useState(null);
 
   const handleEditClick = (secret) => {
     setNewSecret({ name: secret.name, value: '', ttl: secret.ttl ? String(secret.ttl) : '' });
@@ -260,72 +261,121 @@ const Vault = () => {
                 </tr>
               ) : (
                 secrets.map((secret) => (
-                  <tr key={secret.name} className="pro-table-row group">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-4">
-                        <div className="w-8 h-8 rounded-md bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-400 group-hover:border-brand-primary/50 transition-all">
-                           <Key size={16} />
-                        </div>
-                        <div className="flex flex-col min-w-0">
-                           <span className="text-sm font-semibold text-zinc-100 truncate font-mono uppercase tracking-widest">{secret.name}</span>
-                           <span className="text-[10px] text-zinc-300 font-bold uppercase tracking-tighter opacity-60">AES_256_GCM_BUFFER</span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                       {secret.is_leased ? (
-                         <span className="pro-badge bg-indigo-950/45 border-indigo-500/20 text-indigo-300 w-fit mx-auto flex items-center gap-1.5 ring-1 ring-indigo-500/10">
-                            <Clock size={10} className="text-indigo-400 animate-pulse" /> Lease: {secret.ttl}s
-                         </span>
-                       ) : (
-                         <span className="pro-badge bg-zinc-950 border-zinc-800 text-zinc-400 w-fit mx-auto flex items-center gap-1.5 ring-1 ring-zinc-800/50">
-                            <Shield size={10} className="text-emerald-500/50" /> Locked
-                         </span>
-                       )}
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="text-[11px] text-zinc-400 font-semibold tabular-nums uppercase">{new Date(secret.created_at).toLocaleDateString()}</span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
-                        {confirmDelete === secret.name ? (
-                          <div className="flex items-center gap-1 bg-red-500/10 border border-red-500/20 rounded-md p-0.5">
-                            <button 
-                              onClick={() => handleDelete(secret.name)}
-                              className="p-1 text-red-500 hover:bg-red-500 hover:text-white rounded transition-all"
-                              title="Confirm Terminate"
-                            >
-                              <Check size={14} />
-                            </button>
-                            <button 
-                              onClick={() => setConfirmDelete(null)}
-                              className="p-1 text-zinc-400 hover:bg-zinc-700 hover:text-white rounded transition-all"
-                              title="Cancel"
-                            >
-                              <X size={14} />
-                            </button>
+                  <React.Fragment key={secret.name}>
+                    <tr className="pro-table-row group">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-8 h-8 rounded-md bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-400 group-hover:border-brand-primary/50 transition-all">
+                             <Key size={16} />
                           </div>
-                        ) : (
-                          <>
-                            <button 
-                              onClick={() => handleEditClick(secret)}
-                              className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-amber-400 hover:border-amber-500/30 transition-all"
-                              title="Modify Payload"
+                          <div className="flex flex-col min-w-0">
+                             <span className="text-sm font-semibold text-zinc-100 truncate font-mono uppercase tracking-widest">{secret.name}</span>
+                             <span className="text-[10px] text-zinc-300 font-bold uppercase tracking-tighter opacity-60">AES_256_GCM_BUFFER</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                         {secret.is_leased ? (
+                           <span className="pro-badge bg-indigo-950/45 border-indigo-500/20 text-indigo-300 w-fit mx-auto flex items-center gap-1.5 ring-1 ring-indigo-500/10">
+                              <Clock size={10} className="text-indigo-400 animate-pulse" /> Lease: {secret.ttl}s
+                           </span>
+                         ) : (
+                           <span className="pro-badge bg-zinc-950 border-zinc-800 text-zinc-400 w-fit mx-auto flex items-center gap-1.5 ring-1 ring-zinc-800/50">
+                              <Shield size={10} className="text-emerald-500/50" /> Locked
+                           </span>
+                         )}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <span className="text-[11px] text-zinc-400 font-semibold tabular-nums uppercase">{new Date(secret.created_at).toLocaleDateString()}</span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex justify-end gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
+                          {confirmDelete === secret.name ? (
+                            <div className="flex items-center gap-1 bg-red-500/10 border border-red-500/20 rounded-md p-0.5">
+                              <button 
+                                onClick={() => handleDelete(secret.name)}
+                                className="p-1 text-red-500 hover:bg-red-500 hover:text-white rounded transition-all"
+                                title="Confirm Terminate"
+                              >
+                                <Check size={14} />
+                              </button>
+                              <button 
+                                onClick={() => setConfirmDelete(null)}
+                                className="p-1 text-zinc-400 hover:bg-zinc-700 hover:text-white rounded transition-all"
+                                title="Cancel"
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <button 
+                                onClick={() => setExpandedSecret(expandedSecret === secret.name ? null : secret.name)}
+                                className={`p-1.5 border rounded-md transition-all ${
+                                  expandedSecret === secret.name 
+                                    ? 'bg-brand-primary/10 border-brand-primary/30 text-brand-primary' 
+                                    : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white'
+                                }`}
+                                title="View Versions"
+                              >
+                                <RefreshCw size={14} />
+                              </button>
+                              <button 
+                                onClick={() => handleEditClick(secret)}
+                                className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-amber-400 hover:border-amber-500/30 transition-all"
+                                title="Modify Payload"
+                              >
+                                <Edit2 size={14} />
+                              </button>
+                              <button 
+                                onClick={() => setConfirmDelete(secret.name)}
+                                className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-red-500 hover:border-red-500/30 transition-all"
+                                title="Terminate Linkage"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                    <AnimatePresence>
+                      {expandedSecret === secret.name && (
+                        <tr className="bg-zinc-900/50 border-b border-zinc-800/50">
+                          <td colSpan="4" className="px-6 py-4">
+                            <motion.div 
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              className="overflow-hidden"
                             >
-                              <Edit2 size={14} />
-                            </button>
-                            <button 
-                              onClick={() => setConfirmDelete(secret.name)}
-                              className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-red-500 hover:border-red-500/30 transition-all"
-                              title="Terminate Linkage"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
+                              <div className="py-4">
+                                <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-4">Version History</h4>
+                                <div className="space-y-2 max-w-2xl">
+                                  {[1, 2].map((v) => (
+                                    <div key={v} className="flex items-center justify-between p-3 bg-zinc-950 border border-zinc-800/50 rounded-lg">
+                                      <div className="flex items-center gap-3">
+                                        <span className="text-[10px] font-mono text-zinc-500 bg-zinc-900 px-2 py-0.5 rounded">v{3 - v}</span>
+                                        <span className="text-[10px] text-zinc-400 font-medium">Updated by system actor</span>
+                                      </div>
+                                      <div className="flex items-center gap-4">
+                                        <span className="text-[10px] text-zinc-500 tabular-nums">
+                                          {new Date(Date.now() - v * 86400000).toLocaleDateString()}
+                                        </span>
+                                        <button className="text-[10px] font-bold text-amber-500 hover:text-amber-400 uppercase tracking-widest">
+                                          Restore
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </motion.div>
+                          </td>
+                        </tr>
+                      )}
+                    </AnimatePresence>
+                  </React.Fragment>
                 ))
               )}
             </tbody>

@@ -100,7 +100,15 @@ func apiDeployBlueprintHandler(c echo.Context) error {
 	idMap := make(map[string]pgtype.UUID)
 	createdTasks := make([]db.Task, 0, len(tasks))
 
+	userTier := "free"
+	if t, ok := c.Get("user_tier").(string); ok && t != "" {
+		userTier = t
+	}
+
 	for _, bt := range tasks {
+		if err := CheckUserQuota(c.Request().Context(), userID, userTier); err != nil {
+			return c.JSON(http.StatusPaymentRequired, APIResponse{Success: false, Error: err.Error()})
+		}
 		prompt := bt.AgentPrompt
 		for k, v := range req.Variables {
 			prompt = strings.ReplaceAll(prompt, fmt.Sprintf("{{%s}}", k), v)
@@ -225,23 +233,29 @@ func handleListPublicTemplates(c echo.Context) error {
 	search := c.QueryParam("search")
 	searchParam := "%" + search + "%"
 
-	// Attempt to resolve from Redis cache first
 	cached, _ := GetCachedPublicTemplates(c.Request().Context(), search)
 	if cached != nil {
 		return c.JSON(http.StatusOK, APIResponse{Success: true, Data: cached})
 	}
 
-	templates, err := queries.ListPublicTemplates(c.Request().Context(), searchParam)
+	sfKey := fmt.Sprintf("ListPublicTemplates:%s", search)
+	v, err, _ := CacheGroup.Do(sfKey, func() (interface{}, error) {
+		templates, err := queries.ListPublicTemplates(c.Request().Context(), searchParam)
+		if err != nil {
+			return nil, err
+		}
+		if templates == nil {
+			templates = []db.Template{}
+		}
+		SetCachedPublicTemplates(c.Request().Context(), search, templates)
+		return templates, nil
+	})
+
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to list public templates"})
 	}
-	if templates == nil {
-		templates = []db.Template{}
-	}
 
-	// Populate Redis cache for subsequent calls
-	SetCachedPublicTemplates(c.Request().Context(), search, templates)
-
+	templates := v.([]db.Template)
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: templates})
 }
 
@@ -308,3 +322,111 @@ func handleGetTrendingTemplates(c echo.Context) error {
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: templates})
 }
 
+func handleListUserTemplates(c echo.Context) error {
+	userID := getUserID(c)
+	if userID == "" {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
+
+	templates, err := queries.ListUserTemplates(c.Request().Context(), userID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to list templates"})
+	}
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: templates})
+}
+
+func handleUpdateTemplate(c echo.Context) error {
+	templateIDStr := c.Param("id")
+	var templateID pgtype.UUID
+	if err := parseUUID(templateIDStr, &templateID); err != nil {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid template ID"})
+	}
+
+	userID := getUserID(c)
+	if userID == "" {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
+
+	var req struct {
+		Name        *string         `json:"name"`
+		Description *string         `json:"description"`
+		Config      json.RawMessage `json:"config"`
+		IsPublic    *bool           `json:"is_public"`
+	}
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid request body"})
+	}
+
+	existingTemplate, err := queries.GetTemplateByIDRaw(c.Request().Context(), templateID)
+	if err != nil {
+		return c.JSON(http.StatusNotFound, APIResponse{Success: false, Error: "Template not found"})
+	}
+
+	newName := existingTemplate.Name
+	if req.Name != nil && *req.Name != "" {
+		newName = *req.Name
+	}
+
+	var descOpt pgtype.Text
+	if req.Description != nil {
+		descOpt = pgtype.Text{String: *req.Description, Valid: *req.Description != ""}
+	} else {
+		descOpt = existingTemplate.Description
+	}
+	
+	var configOpt []byte
+	if len(req.Config) > 0 {
+		configOpt = req.Config
+	} else {
+		configOpt = existingTemplate.Config
+	}
+
+	isPub := existingTemplate.IsPublic.Bool
+	if req.IsPublic != nil {
+		isPub = *req.IsPublic
+	}
+
+	template, err := queries.UpdateTemplate(c.Request().Context(), db.UpdateTemplateParams{
+		Name:        newName,
+		Description: descOpt,
+		Config:      configOpt,
+		IsPublic:    pgtype.Bool{Bool: isPub, Valid: true},
+		ID:          templateID,
+		OwnerID:     userID,
+	})
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to update template"})
+	}
+
+	InvalidateCachedPublicTemplates(c.Request().Context())
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: template})
+}
+
+func handleDeleteTemplate(c echo.Context) error {
+	templateIDStr := c.Param("id")
+	var templateID pgtype.UUID
+	if err := parseUUID(templateIDStr, &templateID); err != nil {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid template ID"})
+	}
+
+	userID := getUserID(c)
+	if userID == "" {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
+
+	err := queries.DeleteTemplate(c.Request().Context(), db.DeleteTemplateParams{
+		ID:      templateID,
+		OwnerID: userID,
+	})
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to delete template"})
+	}
+
+	InvalidateCachedPublicTemplates(c.Request().Context())
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Template deleted successfully"})
+}

@@ -1155,8 +1155,8 @@ Synthesize the views and pick the final branch. Respond ONLY with JSON: {"choice
 		ExecutionID: executionID,
 		WorkerID:    workerID,
 		StepName:    "Swarm Debate Conclusion",
-		OutputData:  pgtype.Text{String: fmt.Sprintf("Choice: %s", choice), Valid: true},
-		Metadata:    transcriptJSON,
+		OutputData:  pgtype.Text{String: string(transcriptJSON), Valid: true},
+		Metadata:    nil,
 	}); err != nil {
 		log.Printf("Trace error: %v", err)
 	}
@@ -1722,8 +1722,8 @@ func executeSwarmRouter(ctx context.Context, mcpServer *server.MCPServer, t db.T
 		ExecutionID: executionID,
 		WorkerID:    workerID,
 		StepName:    "Swarm Consensus Reached",
-		OutputData:  pgtype.Text{String: consensusDetails, Valid: true},
-		Metadata:    consensusMetadata,
+		OutputData:  pgtype.Text{String: consensusDetails + "\n\nRaw LLM metadata:\n" + string(consensusMetadata), Valid: true},
+		Metadata:    nil,
 	})
 
 	// Match choice and activate task

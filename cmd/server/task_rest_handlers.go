@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"time"
+	"strconv"
 
 	"aktionfy/db"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -97,8 +98,8 @@ func apiCreateTaskHandler(c echo.Context) error {
 		IsBundleRoot:        pgtype.Bool{Bool: req.IsBundleRoot, Valid: true},
 		NextRun:             pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},
 		SwarmConfig:         req.SwarmConfig,
-		MaxRetries:          int32(req.MaxRetries),
-		BackoffStrategy:     pgtype.Text{String: req.BackoffStrategy, Valid: req.BackoffStrategy != ""},
+		MaxRetries:          pgtype.Int4{Int32: int32(req.MaxRetries), Valid: true},
+		BackoffStrategy:     pgtype.Text{String: req.BackoffStrategy, Valid: true},
 	}
 
 	task, err := queries.CreateTask(c.Request().Context(), params)
@@ -134,25 +135,152 @@ func apiListTasksHandler(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
 	}
 
-	// Try reading tasks from cache first
-	cachedTasks, err := GetCachedTasks(c.Request().Context(), userID)
-	if err == nil && cachedTasks != nil {
-		return c.JSON(http.StatusOK, APIResponse{Success: true, Data: cachedTasks})
+	search := c.QueryParam("search")
+	status := c.QueryParam("status")
+	
+	limitStr := c.QueryParam("limit")
+	offsetStr := c.QueryParam("offset")
+	
+	limit := int32(50)
+	if limitStr != "" {
+		if parsed, err := strconv.Atoi(limitStr); err == nil && parsed > 0 && parsed <= 100 {
+			limit = int32(parsed)
+		}
+	}
+	
+	offset := int32(0)
+	if offsetStr != "" {
+		if parsed, err := strconv.Atoi(offsetStr); err == nil && parsed >= 0 {
+			offset = int32(parsed)
+		}
 	}
 
-	tasks, err := queries.ListUserTasks(c.Request().Context(), userID)
+	sfKey := fmt.Sprintf("ListTasks:%s:%s:%s:%d:%d", userID, search, status, limit, offset)
+	v, err, _ := CacheGroup.Do(sfKey, func() (interface{}, error) {
+		tasks, err := queries.SearchUserTasks(c.Request().Context(), db.SearchUserTasksParams{
+			UserID:    userID,
+			Search:    search,
+			Status:    status,
+			LimitVal:  limit,
+			OffsetVal: offset,
+		})
+		if err != nil {
+			return nil, err
+		}
+		if tasks == nil {
+			tasks = []db.SearchUserTasksRow{}
+		}
+		return tasks, nil
+	})
+
 	if err != nil {
 		log.Printf("Failed to list tasks for user %s: %v", userID, err)
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to list tasks"})
 	}
-	if tasks == nil {
-		tasks = []db.ListUserTasksRow{}
+
+	tasks := v.([]db.SearchUserTasksRow)
+	total := int64(0)
+	if len(tasks) > 0 {
+		total = tasks[0].TotalCount
 	}
 
-	// Cache tasks in Redis
-	SetCachedTasks(c.Request().Context(), userID, tasks)
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"success": true,
+		"data": tasks,
+		"total": total,
+	})
+}
 
-	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: tasks})
+func apiGetTaskHandler(c echo.Context) error {
+	userID := getUserID(c)
+	if userID == "" {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
+
+	taskIDStr := c.Param("id")
+	taskID, err := mustParseUUID(c, taskIDStr)
+	if err != nil {
+		return err
+	}
+
+	task, err := queries.GetTaskByID(c.Request().Context(), db.GetTaskByIDParams{
+		ID:     taskID,
+		UserID: userID,
+	})
+	if err != nil {
+		return c.JSON(http.StatusNotFound, APIResponse{Success: false, Error: "Task not found"})
+	}
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: task})
+}
+
+type BulkTasksRequest struct {
+	Action  string   `json:"action"` // "delete", "pause", "resume"
+	TaskIDs []string `json:"task_ids"`
+}
+
+func apiBulkTasksHandler(c echo.Context) error {
+	userID := getUserID(c)
+	if userID == "" {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
+
+	var req BulkTasksRequest
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid request body"})
+	}
+
+	if len(req.TaskIDs) == 0 {
+		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "No task IDs provided"})
+	}
+
+	successCount := 0
+	for _, idStr := range req.TaskIDs {
+		taskID, err := parseUUIDString(idStr)
+		if err != nil {
+			continue
+		}
+		
+		ctx := c.Request().Context()
+		switch req.Action {
+		case "delete":
+			if queries.DeleteTask(ctx, db.DeleteTaskParams{ID: taskID, UserID: userID}) == nil {
+				successCount++
+			}
+		case "pause":
+			if queries.UpdateTaskStatus(ctx, db.UpdateTaskStatusParams{Status: pgtype.Text{String: "paused", Valid: true}, ID: taskID, UserID: userID}) == nil {
+				successCount++
+			}
+		case "resume":
+			if queries.UpdateTaskStatus(ctx, db.UpdateTaskStatusParams{Status: pgtype.Text{String: "active", Valid: true}, ID: taskID, UserID: userID}) == nil {
+				successCount++
+			}
+		}
+	}
+
+	writeAuditLog(c.Request().Context(), AuditEvent{
+		UserID:       userID,
+		Action:       "task.bulk_" + req.Action,
+		ResourceType: "tasks",
+		Metadata: map[string]interface{}{
+			"requested_count": len(req.TaskIDs),
+			"success_count":   successCount,
+		},
+	})
+
+	return c.JSON(http.StatusOK, APIResponse{
+		Success: true,
+		Data: map[string]interface{}{
+			"success_count": successCount,
+			"action":        req.Action,
+		},
+	})
+}
+
+func parseUUIDString(s string) (pgtype.UUID, error) {
+	var u pgtype.UUID
+	err := u.Scan(s)
+	return u, err
 }
 
 func apiPauseTaskHandler(c echo.Context) error {

@@ -93,32 +93,49 @@ func initTracer(ctx context.Context) func(context.Context) error {
 	}
 }
 
-func runSettingsPoller(ctx context.Context) {
-	ticker := time.NewTicker(60 * time.Second)
-	defer ticker.Stop()
-
-	// Do an initial sync immediately
-	syncSettings(ctx)
-
-	for {
-		select {
-		case <-ticker.C:
-			syncSettings(ctx)
-		case <-ctx.Done():
-			return
-		}
-	}
-}
 func syncSettings(ctx context.Context) {
 	var js, reaper, poll int
+	
+	// 1. Try to fetch from Redis first
+	if RedisClient != nil {
+		data, err := RedisClient.Get(ctx, "sys:settings").Result()
+		if err == nil {
+			var settings map[string]int
+			if json.Unmarshal([]byte(data), &settings) == nil {
+				CurrentSystemSettings.Update(settings["js_timeout_ms"], settings["reaper_stuck_threshold_minutes"], settings["scheduler_poll_interval_seconds"])
+				return
+			}
+		}
+	}
+
+	// 2. Fallback to DB
 	timeoutCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-	err := dbPool.QueryRow(timeoutCtx, "SELECT js_timeout_ms, reaper_stuck_threshold_minutes, scheduler_poll_interval_seconds FROM system_settings WHERE id = 1").Scan(&js, &reaper, &poll)
+	
+	// We also fetch worker_prune_days to cache it, though CurrentSystemSettings doesn't use it
+	var pruneDays int
+	err := dbPool.QueryRow(timeoutCtx, "SELECT js_timeout_ms, reaper_stuck_threshold_minutes, scheduler_poll_interval_seconds, worker_prune_days FROM system_settings WHERE id = 1").Scan(&js, &reaper, &poll, &pruneDays)
 	if err != nil {
 		log.Printf("Error syncing system settings: %v", err)
 		return
 	}
+	
+	// 3. Update memory
 	CurrentSystemSettings.Update(js, reaper, poll)
+	
+	// 4. Update Redis cache
+	if RedisClient != nil {
+		res := map[string]int{
+			"js_timeout_ms":                  js,
+			"reaper_stuck_threshold_minutes": reaper,
+			"scheduler_poll_interval_seconds": poll,
+			"worker_prune_days":              pruneDays,
+		}
+		if bytes, err := json.Marshal(res); err == nil {
+			// Cache indefinitely, it gets cleared on update
+			_ = RedisClient.Set(ctx, "sys:settings", string(bytes), 0).Err()
+		}
+	}
 }
 
 func main() {
@@ -455,6 +472,8 @@ func main() {
 	api.POST("/tasks", apiCreateTaskHandler)
 	api.GET("/tasks/export", apiExportTasksHandler)
 	api.POST("/tasks/import", apiImportTasksHandler)
+	api.POST("/tasks/bulk", apiBulkTasksHandler)
+	api.GET("/tasks/:id", apiGetTaskHandler)
 	api.POST("/tasks/:id/link", apiLinkTaskHandler)
 	api.POST("/tasks/:id/trigger", apiTriggerTaskHandler)
 	api.POST("/tasks/:id/pause", apiPauseTaskHandler)
@@ -484,15 +503,22 @@ func main() {
 	// Additional v1 routes moved from legacy v1 block
 	api.GET("/workspaces", handleGetWorkspaces)
 	api.POST("/workspaces", handleCreateWorkspace)
+	api.PATCH("/workspaces/:id", handleUpdateWorkspace)
 	api.DELETE("/workspaces/:id", handleDeleteWorkspace)
+	api.GET("/workspaces/:id/members", handleListWorkspaceMembers)
+	api.POST("/workspaces/:id/members", handleAddWorkspaceMember)
+	api.DELETE("/workspaces/:id/members/:user_id", handleRemoveWorkspaceMember)
 	api.GET("/workspaces/:id/env", handleListWorkspaceEnvVars)
 	api.POST("/workspaces/:id/env", handleUpsertWorkspaceEnvVar)
 	api.DELETE("/workspaces/:id/env/:name", handleDeleteWorkspaceEnvVar)
 	api.GET("/workspaces/:id/presence", handleGetWorkspacePresence)
 	api.POST("/workspaces/:id/presence", handleWorkspacePresenceHeartbeat)
 	api.GET("/templates", handleListPublicTemplates)
+	api.GET("/templates/me", handleListUserTemplates)
 	api.GET("/templates/trending", handleGetTrendingTemplates)
 	api.POST("/templates", handleCreateTemplate)
+	api.PATCH("/templates/:id", handleUpdateTemplate)
+	api.DELETE("/templates/:id", handleDeleteTemplate)
 	api.POST("/templates/:id/increment-uses", handleIncrementTemplateUses)
 	api.POST("/blueprints/deploy", apiDeployBlueprintHandler)
 
@@ -558,9 +584,11 @@ func main() {
 	go runReaper(ctx)
 	go runWorkerHeartbeat(ctx)
 	// Start Background Settings Poller
-	go runSettingsPoller(ctx)
-	// Start background trace flusher
+	syncSettings(ctx)
+	// Start background flushers
 	go StartTraceFlusher(ctx)
+	go StartAuditLogFlusher(ctx)
+	go StartLoginHistoryFlusher(ctx)
 
 	// Bootstrap Admin
 	adminEmail := os.Getenv("ADMIN_EMAIL")

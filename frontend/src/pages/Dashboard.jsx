@@ -5,7 +5,7 @@ import axios from 'axios';
 import { 
   Crown, Key, RefreshCw, Copy, Check, 
   ShieldCheck, Zap, ShieldAlert, 
-  Terminal, Cpu, Globe, ArrowUpRight, Layers, X, Eye, EyeOff, Activity
+  Terminal, Cpu, Globe, ArrowUpRight, Layers, X, Eye, EyeOff, Activity, Calendar
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSSE } from '../context/SSEContext';
@@ -16,6 +16,10 @@ const Dashboard = () => {
   const { user, checkAuth } = useAuth();
   const { notify } = useNotify();
   const isMounted = useRef(true);
+  
+  const [isLoading, setIsLoading] = useState(true);
+  const [timeRange, setTimeRange] = useState('7d');
+  
   const [taskCount, setTaskCount] = useState(0);
   const [copied, setCopied] = useState(false);
   const [rotating, setRotating] = useState(false);
@@ -41,14 +45,14 @@ const Dashboard = () => {
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await axios.get('/api/v1/dashboard');
+      const res = await axios.get(`/api/v1/dashboard?range=${timeRange}`);
       if (res.data.success && isMounted.current) {
         setTaskCount(res.data.data.taskCount);
       }
     } catch (err) {
       notify('ERROR', 'Failed to fetch dashboard data', err.response?.data?.error || err.message);
     }
-  }, [notify]);
+  }, [notify, timeRange]);
 
   const fetchSystemStatus = useCallback(async () => {
     if (document.hidden) return;
@@ -73,8 +77,9 @@ const Dashboard = () => {
 
   useEffect(() => {
     const init = async () => {
-      await fetchData();
-      await fetchSystemStatus();
+      setIsLoading(true);
+      await Promise.all([fetchData(), fetchSystemStatus()]);
+      if (isMounted.current) setIsLoading(false);
     };
     init();
     const interval = setInterval(fetchSystemStatus, 30000);
@@ -207,19 +212,36 @@ const Dashboard = () => {
           <p className="text-zinc-400 text-sm font-medium mt-1">Global orchestration overview and system health.</p>
         </div>
         
-        <div className="flex items-center gap-4 bg-zinc-900 border border-zinc-800 px-4 py-2.5 rounded-lg shadow-sm">
-           <div className="flex flex-col">
-              <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-none">Cluster Status</span>
-              <span className={`text-xs font-bold flex items-center gap-1.5 mt-1 ${systemStatus?.bridge_active ? 'text-emerald-500' : 'text-red-500'}`}>
-                 <div className={`w-1 h-1 rounded-full animate-pulse ${systemStatus?.bridge_active ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
-                 {systemStatus?.bridge_active ? 'Nominal' : 'Signal Lost'}
-              </span>
-           </div>
-           <div className="h-6 w-px bg-zinc-800 mx-2"></div>
-           <div className="flex flex-col">
-              <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-none">Latency</span>
-              <span className="text-xs font-bold text-zinc-200 mt-1 tabular-nums font-mono">{systemStatus?.p99_latency_ms || 0}ms</span>
-           </div>
+        <div className="flex flex-col sm:flex-row items-center gap-4">
+          <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 p-1.5 rounded-lg">
+            <Calendar size={14} className="text-zinc-500 ml-2" />
+            <select 
+              value={timeRange}
+              onChange={(e) => setTimeRange(e.target.value)}
+              className="bg-transparent text-xs text-zinc-300 font-bold uppercase tracking-wider focus:outline-none border-none cursor-pointer pr-4"
+            >
+              <option value="24h">Last 24 Hours</option>
+              <option value="7d">Last 7 Days</option>
+              <option value="30d">Last 30 Days</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-4 bg-zinc-900 border border-zinc-800 px-4 py-2.5 rounded-lg shadow-sm">
+             <div className="flex flex-col">
+                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-none">Cluster Status</span>
+                <span className={`text-xs font-bold flex items-center gap-1.5 mt-1 ${systemStatus?.bridge_active ? 'text-emerald-500' : 'text-red-500'}`}>
+                   <div className={`w-1 h-1 rounded-full animate-pulse ${systemStatus?.bridge_active ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
+                   {systemStatus?.bridge_active ? 'Nominal' : 'Signal Lost'}
+                </span>
+             </div>
+             <div className="h-6 w-px bg-zinc-800 mx-2"></div>
+             <div className="flex flex-col">
+                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-none">Latency</span>
+                <span className="text-xs font-bold text-zinc-200 mt-1 tabular-nums font-mono">
+                  {isLoading ? <div className="h-4 w-8 bg-zinc-800 animate-pulse rounded" /> : `${systemStatus?.p99_latency_ms || 0}ms`}
+                </span>
+             </div>
+          </div>
         </div>
       </header>
 
@@ -269,8 +291,14 @@ const Dashboard = () => {
               <ArrowUpRight size={18} className="text-zinc-700 group-hover:text-zinc-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
            </div>
            <div className="space-y-1">
-              <p className="text-4xl font-bold text-white tabular-nums tracking-tighter">{taskCount}</p>
-              <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Active Neural Streams</p>
+              <div className="h-10 flex items-center">
+                {isLoading ? (
+                  <div className="h-8 w-16 bg-zinc-800/50 rounded animate-pulse" />
+                ) : (
+                  <p className="text-4xl font-bold text-white tabular-nums tracking-tighter">{taskCount}</p>
+                )}
+              </div>
+              <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-2">Active Neural Streams</p>
            </div>
            <p className="text-xs text-zinc-400 mt-6 leading-relaxed opacity-80">Persistent orchestration threads executing across the cluster.</p>
         </Link>
@@ -284,20 +312,30 @@ const Dashboard = () => {
               <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-400 shadow-inner">
                  <Crown size={20} className="text-amber-500/50" />
               </div>
-              <span className={`pro-badge ${user?.tier === 'pro' ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' : 'bg-zinc-800 border-zinc-700 text-zinc-400'}`}>
-                 {user?.tier}
-              </span>
+              {isLoading ? (
+                <div className="h-6 w-16 bg-zinc-800/50 rounded-full animate-pulse" />
+              ) : (
+                <span className={`pro-badge ${user?.tier === 'pro' ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' : 'bg-zinc-800 border-zinc-700 text-zinc-400'}`}>
+                   {user?.tier}
+                </span>
+              )}
            </div>
            <div className="space-y-1 relative z-10">
-              <p className="text-3xl font-bold text-white uppercase tracking-tight">{user?.tier} Node</p>
-              <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Access Privilege Level</p>
+              <div className="h-9 flex items-center">
+                {isLoading ? (
+                  <div className="h-7 w-24 bg-zinc-800/50 rounded animate-pulse" />
+                ) : (
+                  <p className="text-3xl font-bold text-white uppercase tracking-tight">{user?.tier} Node</p>
+                )}
+              </div>
+              <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-2">Access Privilege Level</p>
            </div>
-           {user?.tier === 'free' && (
+           {!isLoading && user?.tier === 'free' && (
              <button onClick={handleUpgrade} className="pro-button-primary w-full mt-8 !bg-zinc-100 !text-black hover:!bg-zinc-100 text-[11px] uppercase tracking-[0.2em] font-black">Elevate Tier</button>
            )}
         </div>
 
-        {/* Latency Trend Chart */}
+        {/* Execution Timeline Chart */}
         <div className="pro-card p-8 flex flex-col justify-between border-zinc-800/50 relative overflow-hidden group">
            <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-500/5 blur-[80px] -translate-y-1/2 translate-x-1/2"></div>
            
@@ -307,8 +345,8 @@ const Dashboard = () => {
                     <Activity size={20} className="text-indigo-400" />
                  </div>
                  <div>
-                    <h3 className="text-lg font-bold text-white tracking-tight leading-none">Latency Trend</h3>
-                    <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest mt-1">Real-time fidelity index</p>
+                    <h3 className="text-lg font-bold text-white tracking-tight leading-none">Execution Timeline</h3>
+                    <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest mt-1">Real-time latency index</p>
                  </div>
               </div>
               <div className="flex items-center gap-1.5 px-3 py-1 bg-zinc-950 border border-zinc-800 rounded-md">

@@ -140,6 +140,17 @@ FROM tasks t
 WHERE t.user_id = $1
 ORDER BY t.created_at DESC;
 
+-- name: SearchUserTasks :many
+SELECT t.*,
+    (SELECT error_message FROM dlq_tasks dt WHERE dt.task_id = t.id ORDER BY failed_at DESC LIMIT 1) as last_error,
+    COUNT(*) OVER() AS total_count
+FROM tasks t
+WHERE t.user_id = $1
+  AND (sqlc.arg('search')::text = '' OR t.name ILIKE '%' || sqlc.arg('search') || '%')
+  AND (sqlc.arg('status')::text = '' OR t.status = sqlc.arg('status'))
+ORDER BY t.created_at DESC
+LIMIT sqlc.arg('limit_val') OFFSET sqlc.arg('offset_val');
+
 -- name: GetTaskByID :one
 SELECT * FROM tasks WHERE id = $1 AND user_id = $2;
 
@@ -219,6 +230,24 @@ INSERT INTO workspaces (name, owner_id) VALUES ($1, $2) RETURNING *;
 SELECT w.* FROM workspaces w 
 LEFT JOIN workspace_members wm ON w.id = wm.workspace_id 
 WHERE w.owner_id = $1 OR wm.user_id = $1;
+
+-- name: UpdateWorkspace :one
+UPDATE workspaces SET name = COALESCE($1, name) WHERE id = $2 AND owner_id = $3 RETURNING *;
+
+-- name: DeleteWorkspace :exec
+DELETE FROM workspaces WHERE id = $1 AND owner_id = $2;
+
+-- name: ListWorkspaceMembers :many
+SELECT u.id, u.email, u.role, wm.role as workspace_role
+FROM workspace_members wm
+JOIN users u ON wm.user_id = u.id
+WHERE wm.workspace_id = $1;
+
+-- name: AddWorkspaceMember :exec
+INSERT INTO workspace_members (workspace_id, user_id, role) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING;
+
+-- name: RemoveWorkspaceMember :exec
+DELETE FROM workspace_members WHERE workspace_id = $1 AND user_id = $2;
 
 -- name: CreateWebhookTrigger :one
 INSERT INTO webhook_triggers (task_id, token) VALUES ($1, $2) RETURNING *;

@@ -6,14 +6,34 @@ import (
 	"fmt"
 	"regexp"
 
+	"time"
 	"aktionfy/db"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
 var secretRegex = regexp.MustCompile(`\{\{secrets\.([a-zA-Z0-9_-]+)\}\}`)
 var envVarRegex = regexp.MustCompile(`\{\{env\.([a-zA-Z0-9_-]+)\}\}`)
-var webhookBodyRegex = regexp.MustCompile(`\{\{webhook\.body\.([a-zA-Z0-9_-]+)\}\}`)
+var webhookBodyRegex = regexp.MustCompile(`\{\{webhook\.body\.([a-zA-Z0-9._-]+)\}\}`)
 var stateRegex = regexp.MustCompile(`\{\{state\.([a-zA-Z0-9._-]+)\}\}`)
+var builtinRegex = regexp.MustCompile(`\{\{(now|today|uuid)\}\}`)
+
+func resolveDotNotation(m map[string]interface{}, path string) (interface{}, bool) {
+	parts := regexp.MustCompile(`\.`).Split(path, -1)
+	var current interface{} = m
+	for _, part := range parts {
+		if curMap, ok := current.(map[string]interface{}); ok {
+			if next, exists := curMap[part]; exists {
+				current = next
+			} else {
+				return nil, false
+			}
+		} else {
+			return nil, false
+		}
+	}
+	return current, true
+}
 
 func resolvePrompt(ctx context.Context, userID string, taskID pgtype.UUID, executionID string, rawPrompt string, parentTaskID pgtype.UUID, triggerPayload map[string]interface{}) (string, int, bool, error) {
 	resolved := rawPrompt
@@ -116,8 +136,12 @@ func resolvePrompt(ctx context.Context, userID string, taskID pgtype.UUID, execu
 				return match
 			}
 			key := submatches[1]
-			if val, ok := triggerPayload[key]; ok {
-				return fmt.Sprintf("%v", val)
+			if val, ok := resolveDotNotation(triggerPayload, key); ok {
+				if strVal, isStr := val.(string); isStr {
+					return strVal
+				}
+				jsonVal, _ := json.Marshal(val)
+				return string(jsonVal)
 			}
 			return match
 		})
@@ -137,13 +161,36 @@ func resolvePrompt(ctx context.Context, userID string, taskID pgtype.UUID, execu
 					return match
 				}
 				key := submatches[1]
-				if val, ok := stateMap[key]; ok {
-					return fmt.Sprintf("%v", val)
+				if val, ok := resolveDotNotation(stateMap, key); ok {
+					if strVal, isStr := val.(string); isStr {
+						return strVal
+					}
+					jsonVal, _ := json.Marshal(val)
+					return string(jsonVal)
 				}
 				return match
 			})
 		}
 	}
+
+	// 4.5 Resolve Built-in Variables: {{now}}, {{today}}, {{uuid}}
+	resolved = builtinRegex.ReplaceAllStringFunc(resolved, func(match string) string {
+		submatches := builtinRegex.FindStringSubmatch(match)
+		if len(submatches) < 2 {
+			return match
+		}
+		key := submatches[1]
+		switch key {
+		case "now":
+			return time.Now().UTC().Format(time.RFC3339)
+		case "today":
+			return time.Now().UTC().Format("2006-01-02")
+		case "uuid":
+			u := uuid.New()
+			return u.String()
+		}
+		return match
+	})
 
 	chained := false
 	// 5. Resolve Chaining Context

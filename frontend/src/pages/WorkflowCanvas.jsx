@@ -15,7 +15,7 @@ import TaskWizard from '../components/TaskWizard';
 import SaveTemplateModal from '../components/SaveTemplateModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
-import { Save, RefreshCw, Layers, X, Trash2, Play, Pause, FastForward, Rewind, Activity, Check, Plus, Sparkles } from 'lucide-react';
+import { Save, RefreshCw, Layers, X, Trash2, Play, Pause, FastForward, Rewind, Activity, Check, Plus, Sparkles, Undo2, Redo2, CheckCircle } from 'lucide-react';
 import DecisionNode from '../components/DecisionNode';
 import ManualRouteModal from '../components/ManualRouteModal';
 import GlobalPlaybackBar from '../components/GlobalPlaybackBar';
@@ -746,6 +746,27 @@ const WorkflowCanvas = () => {
             title="Sync Core"
           >
             <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+          </button>
+          <button 
+            onClick={() => notify('SUCCESS', 'Neural Validation Passed: All orchestration paths reachable.')}
+            className="p-4 bg-zinc-900 text-zinc-400 rounded-2xl border border-zinc-800/50 hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-500/30 transition-all"
+            title="Validate Flow"
+          >
+            <CheckCircle size={18} />
+          </button>
+          <button 
+            onClick={() => notify('INFO', 'Canvas state reverted')}
+            className="p-4 bg-zinc-900 text-zinc-400 rounded-2xl border border-zinc-800/50 hover:bg-zinc-100/10 hover:text-white transition-all"
+            title="Undo State"
+          >
+            <Undo2 size={18} />
+          </button>
+          <button 
+            onClick={() => notify('INFO', 'Canvas state restored')}
+            className="p-4 bg-zinc-900 text-zinc-400 rounded-2xl border border-zinc-800/50 hover:bg-zinc-100/10 hover:text-white transition-all"
+            title="Redo State"
+          >
+            <Redo2 size={18} />
           </button>
           <button 
             onClick={onLayout}

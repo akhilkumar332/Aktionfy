@@ -120,7 +120,7 @@ func apiLoginHandler(c echo.Context) error {
 		if getErr == nil {
 			_ = queries.CreateLoginHistory(c.Request().Context(), db.CreateLoginHistoryParams{
 				UserID:    info.ID,
-				IPAddress: pgtype.Text{String: c.RealIP(), Valid: true},
+				IpAddress: pgtype.Text{String: c.RealIP(), Valid: true},
 				UserAgent: pgtype.Text{String: c.Request().UserAgent(), Valid: true},
 				Status:    "failed",
 			})
@@ -167,7 +167,7 @@ func apiLoginHandler(c echo.Context) error {
 	// Log successful login history
 	_ = queries.CreateLoginHistory(c.Request().Context(), db.CreateLoginHistoryParams{
 		UserID:    u.ID,
-		IPAddress: pgtype.Text{String: c.RealIP(), Valid: true},
+		IpAddress: pgtype.Text{String: c.RealIP(), Valid: true},
 		UserAgent: pgtype.Text{String: c.Request().UserAgent(), Valid: true},
 		Status:    "success",
 	})
@@ -1712,16 +1712,16 @@ func apiAdminCreateInvitationHandler(c echo.Context) error {
 }
 
 func apiAdminListInvitationsHandler(c echo.Context) error {
-	rows, err := queries.ListUserInvitations(c.Request().Context())
+	invites, err := queries.ListUserInvitations(c.Request().Context())
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to retrieve invitations: " + err.Error()})
 	}
 
-	if rows == nil {
-		rows = []db.UserInvitation{}
+	if len(invites) == 0 {
+		invites = []db.ListUserInvitationsRow{}
 	}
 
-	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: rows})
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: invites})
 }
 
 func apiAdminDeleteInvitationHandler(c echo.Context) error {

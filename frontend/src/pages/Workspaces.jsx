@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Globe, ChevronDown, Trash2, Plus, Loader2, X, Command, Zap, RefreshCw, Key, Check } from 'lucide-react';
+import { Globe, ChevronDown, Trash2, Plus, Loader2, X, Command, Zap, RefreshCw, Key, Check, Settings, Users, Activity as ActivityIcon } from 'lucide-react';
 import { useNotify } from '../context/NotificationContext';
 import { useSSE } from '../context/SSEContext';
 
@@ -78,7 +78,7 @@ const WorkspaceEnvSection = ({ workspaceId }) => {
   };
 
   return (
-    <div className="mt-6 pt-6 border-t border-zinc-800 space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center gap-2 ml-1">
          <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Environment Variables</span>
       </div>
@@ -107,7 +107,7 @@ const WorkspaceEnvSection = ({ workspaceId }) => {
                   <span className="text-xs font-mono font-bold text-zinc-100 flex items-center gap-2">
                      <Key size={10} className="text-zinc-300" /> {env.name}
                   </span>
-                  <span className="text-[9px] font-mono text-zinc-400 truncate max-w-[150px] sm:max-w-xs uppercase">VALUE: {env.value.substring(0, 20)}{env.value.length > 20 ? '...' : ''}</span>
+                  <span className="text-[9px] font-mono text-zinc-400 truncate max-w-[150px] sm:max-w-xs uppercase">{env.value.substring(0, 20)}{env.value.length > 20 ? '...' : ''}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   {confirmDelete === env.name ? (
@@ -163,6 +163,61 @@ const WorkspaceEnvSection = ({ workspaceId }) => {
           Inject
         </button>
       </form>
+    </div>
+  );
+};
+
+const WorkspaceDetails = ({ workspaceId }) => {
+  const [activeTab, setActiveTab] = useState('env');
+  
+  return (
+    <div className="mt-6 pt-6 border-t border-zinc-800">
+      <div className="flex items-center gap-4 mb-6 border-b border-zinc-800/50 pb-4 overflow-x-auto custom-scrollbar">
+        <button onClick={() => setActiveTab('env')} className={`text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 px-2 py-1 rounded transition-colors ${activeTab === 'env' ? 'text-brand-primary bg-brand-primary/10' : 'text-zinc-500 hover:text-zinc-300'}`}>
+          <Key size={12} /> Environment
+        </button>
+        <button onClick={() => setActiveTab('members')} className={`text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 px-2 py-1 rounded transition-colors ${activeTab === 'members' ? 'text-brand-primary bg-brand-primary/10' : 'text-zinc-500 hover:text-zinc-300'}`}>
+          <Users size={12} /> Members & Roles
+        </button>
+        <button onClick={() => setActiveTab('activity')} className={`text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 px-2 py-1 rounded transition-colors ${activeTab === 'activity' ? 'text-brand-primary bg-brand-primary/10' : 'text-zinc-500 hover:text-zinc-300'}`}>
+          <ActivityIcon size={12} /> Activity Feed
+        </button>
+        <button onClick={() => setActiveTab('settings')} className={`text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 px-2 py-1 rounded transition-colors ${activeTab === 'settings' ? 'text-brand-primary bg-brand-primary/10' : 'text-zinc-500 hover:text-zinc-300'}`}>
+          <Settings size={12} /> Settings & Archive
+        </button>
+      </div>
+      
+      {activeTab === 'env' && <WorkspaceEnvSection workspaceId={workspaceId} />}
+      {activeTab === 'members' && (
+        <div className="py-12 text-center bg-zinc-950 border border-zinc-800/50 border-dashed rounded-xl">
+          <div className="w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Users size={20} className="text-zinc-500" />
+          </div>
+          <p className="text-[10px] text-zinc-300 font-bold uppercase tracking-widest">Role-Based Access Control</p>
+          <p className="text-[9px] text-zinc-500 font-medium uppercase tracking-widest mt-2 max-w-xs mx-auto leading-relaxed">Assign precise permissions (Admin, Editor, Viewer) to team members.</p>
+        </div>
+      )}
+      {activeTab === 'activity' && (
+        <div className="py-12 text-center bg-zinc-950 border border-zinc-800/50 border-dashed rounded-xl">
+          <div className="w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4">
+            <ActivityIcon size={20} className="text-zinc-500" />
+          </div>
+          <p className="text-[10px] text-zinc-300 font-bold uppercase tracking-widest">Audit Activity Feed</p>
+          <p className="text-[9px] text-zinc-500 font-medium uppercase tracking-widest mt-2 max-w-xs mx-auto leading-relaxed">Trace deployment events, settings modifications, and structural changes.</p>
+        </div>
+      )}
+      {activeTab === 'settings' && (
+        <div className="py-10 bg-zinc-950 border border-zinc-800/50 border-dashed rounded-xl flex flex-col items-center justify-center">
+          <div className="w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Settings size={20} className="text-zinc-500" />
+          </div>
+          <p className="text-[10px] text-zinc-300 font-bold uppercase tracking-widest">Cluster Configuration</p>
+          <p className="text-[9px] text-zinc-500 font-medium uppercase tracking-widest mt-2 max-w-xs mx-auto leading-relaxed text-center mb-6">Modify cluster metadata, transfer root ownership, or initiate archival protocol.</p>
+          <button className="pro-button-secondary !py-2 !px-5 !text-[9px] uppercase tracking-widest border-red-500/20 text-red-500 hover:bg-red-500/10 transition-colors flex items-center gap-2">
+            <Trash2 size={12} /> Archive Cluster
+          </button>
+        </div>
+      )}
     </div>
   );
 };
@@ -392,7 +447,7 @@ const Workspaces = () => {
                     className="overflow-hidden"
                     onClick={e => e.stopPropagation()}
                   >
-                    <WorkspaceEnvSection workspaceId={w.id} />
+                    <WorkspaceDetails workspaceId={w.id} />
                   </motion.div>
                 )}
               </AnimatePresence>
