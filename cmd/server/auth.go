@@ -106,7 +106,9 @@ func RotateAPIKey(ctx context.Context, userID string) (string, error) {
 
 // CheckUserQuota verifies if a user has reached their task limit
 func CheckUserQuota(ctx context.Context, userID string, tier string) error {
-	taskCount, err := queries.CountUserTasks(ctx, userID)
+	taskCount, err := GetCachedTaskCount(ctx, userID, func() (int64, error) {
+		return queries.CountUserTasks(ctx, userID)
+	})
 	if err != nil {
 		return fmt.Errorf("failed to fetch task count: %w", err)
 	}

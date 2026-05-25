@@ -12,6 +12,7 @@ import PreRegistrations from './admin_users/PreRegistrations';
 import AuditLogsViewer from './admin_users/AuditLogsViewer';
 import AccessLogsViewer from './admin_users/AccessLogsViewer';
 import UserDrawer from './admin_users/UserDrawer';
+import ConfirmDialog from '../components/shared/ConfirmDialog';
 
 const AdminUsers = () => {
   const { notify } = useNotify();
@@ -54,7 +55,13 @@ const AdminUsers = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [drawerUser, setDrawerUser] = useState(null);
   const [showApiKey, setShowApiKey] = useState(false);
-  const [copiedKey, setCopiedKey] = useState(false);
+  const [overrideTaskLimit, setOverrideTaskLimit] = useState('');
+  
+  const [confirmState, setConfirmState] = useState({ isOpen: false, title: '', message: '', type: 'warning', action: null });
+
+  const confirmAction = (title, message, type, action) => {
+    setConfirmState({ isOpen: true, title, message, type, action });
+  };
 
   const fetchUsers = useCallback(async (query = '') => {
     try {
@@ -207,29 +214,41 @@ const AdminUsers = () => {
     }
   };
 
-  const handleRevokeSessions = async (userId) => {
-    if (!window.confirm("CAUTION: This will immediately revoke ALL active web/CLI sessions and MCP bridge links, forcing an instant logout for this user. Continue?")) return;
-    try {
-      const res = await axios.post('/api/v1/admin/users/revoke-sessions', { user_id: userId });
-      if (res.data.success) {
-        notify('SUCCESS', 'All active sessions and bridge heartbeats terminated instantly');
+  const handleRevokeSessions = (userId) => {
+    confirmAction(
+      "Revoke Sessions?", 
+      "CAUTION: This will immediately revoke ALL active web/CLI sessions and MCP bridge links, forcing an instant logout for this user. Continue?",
+      "danger",
+      async () => {
+        try {
+          const res = await axios.post('/api/v1/admin/users/revoke-sessions', { user_id: userId });
+          if (res.data.success) {
+            notify('SUCCESS', 'All active sessions and bridge heartbeats terminated instantly');
+          }
+        } catch (err) {
+          notify('ERROR', 'Failed to revoke sessions', err.response?.data?.error || err.message);
+        }
       }
-    } catch (err) {
-      notify('ERROR', 'Failed to revoke sessions', err.response?.data?.error || err.message);
-    }
+    );
   };
 
-  const handleRolloverKey = async (userId) => {
-    if (!window.confirm("WARNING: This will instantly regenerate the user's API Key and break any active CLI integrations or MCP bridge agents using the old key. Continue?")) return;
-    try {
-      const res = await axios.post('/api/v1/admin/users/rollover-key', { user_id: userId });
-      if (res.data.success) {
-        notify('SUCCESS', 'API Key successfully rotated and broadcasted');
-        await fetchUsers(search);
+  const handleRolloverKey = (userId) => {
+    confirmAction(
+      "Rotate API Key?",
+      "WARNING: This will instantly regenerate the user's API Key and break any active CLI integrations or MCP bridge agents using the old key. Continue?",
+      "danger",
+      async () => {
+        try {
+          const res = await axios.post('/api/v1/admin/users/rollover-key', { user_id: userId });
+          if (res.data.success) {
+            notify('SUCCESS', 'API Key successfully rotated and broadcasted');
+            await fetchUsers(search);
+          }
+        } catch (err) {
+          notify('ERROR', 'Failed to rotate API Key', err.response?.data?.error || err.message);
+        }
       }
-    } catch (err) {
-      notify('ERROR', 'Failed to rotate API Key', err.response?.data?.error || err.message);
-    }
+    );
   };
 
   const handleCreateInvitation = async (e) => {
@@ -253,17 +272,23 @@ const AdminUsers = () => {
     }
   };
 
-  const handleDeleteInvitation = async (inviteId) => {
-    if (!window.confirm("Are you sure you want to delete and revoke this invitation link?")) return;
-    try {
-      const res = await axios.delete(`/api/v1/admin/invitations/${inviteId}`);
-      if (res.data.success) {
-        notify('SUCCESS', 'Invitation revoked successfully');
-        await fetchInvitations();
+  const handleDeleteInvitation = (inviteId) => {
+    confirmAction(
+      "Revoke Invitation?",
+      "Are you sure you want to delete and revoke this invitation link?",
+      "warning",
+      async () => {
+        try {
+          const res = await axios.delete(`/api/v1/admin/invitations/${inviteId}`);
+          if (res.data.success) {
+            notify('SUCCESS', 'Invitation revoked successfully');
+            await fetchInvitations();
+          }
+        } catch (err) {
+          notify('ERROR', 'Failed to revoke invitation', err.response?.data?.error || err.message);
+        }
       }
-    } catch (err) {
-      notify('ERROR', 'Failed to revoke invitation', err.response?.data?.error || err.message);
-    }
+    );
   };
 
   const openOverrideModal = (user) => {
@@ -727,6 +752,18 @@ const AdminUsers = () => {
         handleRolloverKey={handleRolloverKey}
         handleRevokeSessions={handleRevokeSessions}
         openOverrideModal={openOverrideModal}
+      />
+
+      <ConfirmDialog 
+        isOpen={confirmState.isOpen}
+        title={confirmState.title}
+        message={confirmState.message}
+        type={confirmState.type}
+        onClose={() => setConfirmState({ ...confirmState, isOpen: false })}
+        onConfirm={() => {
+          if (confirmState.action) confirmState.action();
+          setConfirmState({ ...confirmState, isOpen: false });
+        }}
       />
     </>
   );

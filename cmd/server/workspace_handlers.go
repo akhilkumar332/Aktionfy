@@ -95,7 +95,9 @@ func handleListWorkspaceEnvVars(c echo.Context) error {
 		return c.JSON(http.StatusForbidden, APIResponse{Success: false, Error: "Forbidden"})
 	}
 
-	envVars, err := queries.ListWorkspaceEnvVars(c.Request().Context(), workspaceID)
+	envVars, err := GetCachedWorkspaceEnvVars(c.Request().Context(), workspaceIDStr, func() ([]db.WorkspaceEnvVar, error) {
+		return queries.ListWorkspaceEnvVars(c.Request().Context(), workspaceID)
+	})
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch environment variables"})
 	}
@@ -148,6 +150,8 @@ func handleUpsertWorkspaceEnvVar(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to upsert environment variable"})
 	}
 
+	InvalidateCachedWorkspaceEnvVars(c.Request().Context(), workspaceIDStr)
+
 	_ = PublishEvent(c.Request().Context(), PubSubEvent{
 		UserID:    userID,
 		EventType: "workspace_updated",
@@ -190,6 +194,8 @@ func handleDeleteWorkspaceEnvVar(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to delete environment variable"})
 	}
+
+	InvalidateCachedWorkspaceEnvVars(c.Request().Context(), workspaceIDStr)
 
 	_ = PublishEvent(c.Request().Context(), PubSubEvent{
 		UserID:    userID,

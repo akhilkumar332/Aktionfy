@@ -13,6 +13,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useNotify } from '../context/NotificationContext';
 import { useSSE } from '../context/SSEContext';
+import { SkeletonRow } from '../components/SkeletonLoader';
+import { Download, Pause, Play } from 'lucide-react';
 
 const Tasks = () => {
   const navigate = useNavigate();
@@ -151,6 +153,41 @@ const Tasks = () => {
     });
   };
 
+  const exportCSV = () => {
+    const headers = ['ID', 'Name', 'Type', 'Status', 'Next Run', 'Created At'];
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + headers.join(',') + '\n'
+      + filteredTasks.map(t => `${t.id},"${t.name || ''}",${t.trigger_type},${t.status},${t.next_run || ''},${t.created_at || ''}`).join('\n');
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `aktionfy_tasks_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Don't trigger if user is typing in an input or textarea
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+      
+      if (e.key === '/') {
+        e.preventDefault();
+        document.getElementById('task-search-input')?.focus();
+      } else if (e.key === 'c' || e.key === 'C') {
+        e.preventDefault();
+        setSelectedTask(null);
+        setIsWizardOpen(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // Filter and Sort Logic
   const filteredTasks = tasks
     .filter(task => {
@@ -209,15 +246,23 @@ const Tasks = () => {
           >
             <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
           </button>
-          <button 
-            onClick={() => {
-              setSelectedTask(null);
-              setIsWizardOpen(true);
-            }}
-            className="pro-button-primary !py-2 !px-5 flex items-center gap-2"
-          >
-            <Plus size={16} /> <span className="text-[11px] uppercase tracking-widest">Deploy Node</span>
-          </button>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={exportCSV}
+              className="pro-button-secondary !py-2.5"
+            >
+              <Download size={16} /> Export CSV
+            </button>
+            <button 
+              onClick={() => {
+                setSelectedTask(null);
+                setIsWizardOpen(true);
+              }}
+              className="pro-button-primary !py-2.5"
+            >
+              <Plus size={16} /> Initialize Node
+            </button>
+          </div>
         </div>
       </header>
 
@@ -225,16 +270,18 @@ const Tasks = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 bg-zinc-900/30 border border-zinc-800/40 p-4 rounded-xl">
         <div className="flex-1 flex items-center gap-3 bg-zinc-950 border border-zinc-800/80 px-3.5 py-2 rounded-lg group">
           <Search size={16} className="text-zinc-500 group-focus-within:text-indigo-400 transition-colors" />
-          <input 
-            type="text"
-            placeholder="Search streams by designation name or address..."
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="bg-transparent border-none outline-none text-xs text-zinc-200 w-full placeholder:text-zinc-600"
-          />
+          <input
+                id="task-search-input"
+                type="text"
+                placeholder="Search index or UID..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="bg-transparent border-none text-white text-sm focus:outline-none w-full placeholder:text-zinc-600"
+              />
+              <span className="hidden sm:flex text-[10px] text-zinc-500 font-mono border border-zinc-800 px-1.5 py-0.5 rounded bg-zinc-900">/</span>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
@@ -375,15 +422,12 @@ const Tasks = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800/50">
-                {loading && tasks.length === 0 ? (
-                  <tr>
-                    <td colSpan="6" className="px-6 py-32">
-                       <div className="flex flex-col items-center gap-3">
-                          <RefreshCw className="w-6 h-6 text-zinc-700 animate-spin" />
-                          <span className="text-[11px] font-semibold text-zinc-300 uppercase tracking-widest">Querying Registry...</span>
-                       </div>
-                    </td>
-                  </tr>
+                {loading ? (
+                  <>
+                    <SkeletonRow columns={6} />
+                    <SkeletonRow columns={6} />
+                    <SkeletonRow columns={6} />
+                  </>
                 ) : tasks.length === 0 ? (
                   <tr>
                     <td colSpan="6" className="px-6 py-32 text-center">
@@ -435,9 +479,13 @@ const Tasks = () => {
                       <td className="px-6 py-4 text-center">
                         <div className="flex flex-col items-center gap-1">
                           {task.status === 'active' ? (
-                            <span className="pro-badge bg-emerald-500/10 border-emerald-500/20 text-emerald-400">active</span>
+                            <button onClick={() => handleAction(task.id, 'pause')} className="pro-badge bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 cursor-pointer flex items-center gap-1" title="Click to Pause">
+                              <Pause size={10} /> active
+                            </button>
                           ) : task.status === 'paused' ? (
-                            <span className="pro-badge bg-amber-500/10 border-amber-500/20 text-amber-400">paused</span>
+                            <button onClick={() => handleAction(task.id, 'resume')} className="pro-badge bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20 cursor-pointer flex items-center gap-1" title="Click to Resume">
+                              <Play size={10} /> paused
+                            </button>
                           ) : (
                             <span className="pro-badge bg-red-500/10 border-red-500/20 text-red-400">{task.status}</span>
                           )}

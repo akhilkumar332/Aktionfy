@@ -188,6 +188,7 @@ func registerTools(s *server.MCPServer) {
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("failed to insert task: %v", err)), nil
 		}
+		IncrementCachedTaskCount(ctx, userID)
 		writeAuditLog(ctx, AuditEvent{
 			UserID:       userID,
 			Action:       "task.create",
@@ -498,6 +499,7 @@ func registerTools(s *server.MCPServer) {
 			case "delete":
 				if queries.DeleteTask(ctx, db.DeleteTaskParams{ID: taskID, UserID: userID}) == nil {
 					successCount++
+					DecrementCachedTaskCount(ctx, userID)
 				}
 			case "pause":
 				if queries.UpdateTaskStatus(ctx, db.UpdateTaskStatusParams{Status: pgtype.Text{String: "paused", Valid: true}, ID: taskID, UserID: userID}) == nil {
@@ -563,6 +565,7 @@ func registerTools(s *server.MCPServer) {
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("db error: %v", err)), nil
 		}
+		DecrementCachedTaskCount(ctx, userID)
 		InvalidateCachedTask(ctx, id)
 		InvalidateCachedTasks(ctx, userID)
 		writeAuditLog(ctx, AuditEvent{

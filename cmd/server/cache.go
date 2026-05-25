@@ -202,6 +202,98 @@ func InvalidateCachedUserSecrets(ctx context.Context, userID string) {
 	}
 }
 
+// GetCachedTaskCount retrieves the user's task count, fetching from DB if absent
+func GetCachedTaskCount(ctx context.Context, userID string, fetchFn func() (int64, error)) (int64, error) {
+	if RedisClient == nil {
+		return fetchFn()
+	}
+
+	key := fmt.Sprintf("cache:task_count:%s", userID)
+	val, err := RedisClient.Get(ctx, key).Int64()
+	if err == nil {
+		return val, nil
+	}
+
+	// Cache miss
+	count, err := fetchFn()
+	if err != nil {
+		return 0, err
+	}
+
+	_ = RedisClient.Set(ctx, key, count, 1*time.Hour).Err()
+	return count, nil
+}
+
+// IncrementCachedTaskCount atomically increments the user's task count
+func IncrementCachedTaskCount(ctx context.Context, userID string) {
+	if RedisClient != nil {
+		key := fmt.Sprintf("cache:task_count:%s", userID)
+		// Only increment if it exists to avoid creating stale keys without a TTL
+		if RedisClient.Exists(ctx, key).Val() > 0 {
+			_ = RedisClient.Incr(ctx, key).Err()
+		}
+	}
+}
+
+// DecrementCachedTaskCount atomically decrements the user's task count
+func DecrementCachedTaskCount(ctx context.Context, userID string) {
+	if RedisClient != nil {
+		key := fmt.Sprintf("cache:task_count:%s", userID)
+		if RedisClient.Exists(ctx, key).Val() > 0 {
+			_ = RedisClient.Decr(ctx, key).Err()
+		}
+	}
+}
+
+// InvalidateCachedTaskCount clears the task count for a user
+func InvalidateCachedTaskCount(ctx context.Context, userID string) {
+	if RedisClient != nil {
+		key := fmt.Sprintf("cache:task_count:%s", userID)
+		_ = RedisClient.Del(ctx, key).Err()
+	}
+}
+
+// -------------------------------------------------------------------------
+// Workspace Caching ---
+
+// GetCachedWorkspaceEnvVars retrieves env vars for a workspace from cache or DB
+func GetCachedWorkspaceEnvVars(ctx context.Context, workspaceID string, fetchFn func() ([]db.WorkspaceEnvVar, error)) ([]db.WorkspaceEnvVar, error) {
+	if RedisClient == nil {
+		return fetchFn()
+	}
+
+	key := fmt.Sprintf("cache:workspace:env:%s", workspaceID)
+	val, err := RedisClient.Get(ctx, key).Result()
+	if err == nil {
+		var envVars []db.WorkspaceEnvVar
+		if json.Unmarshal([]byte(val), &envVars) == nil {
+			return envVars, nil
+		}
+	}
+
+	envVars, err := fetchFn()
+	if err != nil {
+		return nil, err
+	}
+
+	if bytes, err := json.Marshal(envVars); err == nil {
+		_ = RedisClient.Set(ctx, key, bytes, 5*time.Minute).Err()
+	}
+
+	return envVars, nil
+}
+
+// InvalidateCachedWorkspaceEnvVars clears the env vars cache for a workspace
+func InvalidateCachedWorkspaceEnvVars(ctx context.Context, workspaceID string) {
+	if RedisClient != nil {
+		key := fmt.Sprintf("cache:workspace:env:%s", workspaceID)
+		_ = RedisClient.Del(ctx, key).Err()
+	}
+}
+
+// -------------------------------------------------------------------------
+// Single Task Caching ---
+
 // --- Task Caching ---
 
 const (

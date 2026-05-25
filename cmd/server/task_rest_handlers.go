@@ -108,6 +108,8 @@ func apiCreateTaskHandler(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to create task"})
 	}
 
+	IncrementCachedTaskCount(c.Request().Context(), userID)
+
 	// Audit Log
 	taskIDStr := formatUUID(task.ID)
 	writeAuditLog(c.Request().Context(), AuditEvent{
@@ -246,6 +248,7 @@ func apiBulkTasksHandler(c echo.Context) error {
 		case "delete":
 			if queries.DeleteTask(ctx, db.DeleteTaskParams{ID: taskID, UserID: userID}) == nil {
 				successCount++
+				DecrementCachedTaskCount(ctx, userID)
 			}
 		case "pause":
 			if queries.UpdateTaskStatus(ctx, db.UpdateTaskStatusParams{Status: pgtype.Text{String: "paused", Valid: true}, ID: taskID, UserID: userID}) == nil {
@@ -375,6 +378,8 @@ func apiDeleteTaskHandler(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to delete task"})
 	}
+
+	DecrementCachedTaskCount(c.Request().Context(), userID)
 
 	// Audit Log
 	writeAuditLog(c.Request().Context(), AuditEvent{

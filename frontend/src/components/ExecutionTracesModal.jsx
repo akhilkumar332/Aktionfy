@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { X, Activity, Clock, AlertCircle, CheckCircle2, Database, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useSSE } from '../hooks/useSSE';
+import { useSSE } from '../context/SSEContext';
 
 const ExecutionTracesModal = ({ isOpen, onClose, taskId, taskName }) => {
   const [executions, setExecutions] = useState([]);
@@ -113,7 +113,14 @@ const ExecutionTracesModal = ({ isOpen, onClose, taskId, taskName }) => {
     }
   }, [taskId, selectedExecutionId, fetchExecutions]);
 
-  useSSE(onLiveEvent);
+  const { addListener, removeListener } = useSSE();
+
+  useEffect(() => {
+    addListener(onLiveEvent);
+    return () => {
+      removeListener(onLiveEvent);
+    };
+  }, [addListener, removeListener, onLiveEvent]);
 
   useEffect(() => {
     if (isOpen && taskId) {

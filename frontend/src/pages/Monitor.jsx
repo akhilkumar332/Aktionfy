@@ -54,46 +54,99 @@ const LogsView = ({ logs }) => (
         </thead>
         <tbody className="divide-y divide-zinc-800/50">
           {logs.length === 0 ? (
-            <tr>
-              <td colSpan="5" className="px-6 py-32 text-center">
-                 <div className="flex flex-col items-center gap-3 opacity-30">
-                    <ShieldAlert size={32} className="text-zinc-300" />
-                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Audit stream synchronized. No events detected.</span>
-                 </div>
-              </td>
-            </tr>
-          ) : logs.map((log) => (
-            <tr key={log.id} className="pro-table-row group">
-              <td className="px-6 py-4 text-zinc-400 whitespace-nowrap tabular-nums">
-                {new Date(log.created_at).toLocaleTimeString()}
-              </td>
-              <td className="px-6 py-4">
-                <span className="text-blue-400 font-semibold">{log.user_id ? log.user_id.substring(0, 13) : 'SYSTEM_ROOT'}</span>
-              </td>
-              <td className="px-6 py-4">
-                <span className="text-zinc-100 font-bold uppercase tracking-widest px-2 py-0.5 bg-zinc-800 rounded border border-zinc-700">{log.action}</span>
-              </td>
-              <td className="px-6 py-4">
-                <span className="text-zinc-400 uppercase font-bold text-[10px] tracking-widest">{log.resource_type}</span>
-              </td>
-              <td className="px-6 py-4 text-right">
-                <code className="text-zinc-300 group-hover:text-zinc-400 transition-colors truncate block max-w-[200px] ml-auto font-mono text-[10px]">
-                  {JSON.stringify(log.metadata)}
-                </code>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+const LogsView = ({ logs, logSearch, setLogSearch, fetchData, refreshing }) => {
+  const filteredLogs = logs.filter(log => 
+    (log.action || '').toLowerCase().includes(logSearch.toLowerCase()) ||
+    (log.user_id || '').toLowerCase().includes(logSearch.toLowerCase()) ||
+    (log.resource_type || '').toLowerCase().includes(logSearch.toLowerCase())
+  );
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+         <div className="flex items-center gap-3">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></div>
+            <h3 className="text-xl font-black text-white tracking-tight">Audit Stream</h3>
+         </div>
+         
+         <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 px-3 py-2 rounded-lg">
+              <Search size={14} className="text-zinc-500" />
+              <input 
+                type="text"
+                placeholder="Filter logs by action, user, resource..."
+                value={logSearch}
+                onChange={(e) => setLogSearch(e.target.value)}
+                className="bg-transparent border-none outline-none text-xs text-white placeholder:text-zinc-600 w-64"
+              />
+            </div>
+            <button 
+              onClick={() => fetchData(true)}
+              disabled={refreshing}
+              className="p-2 bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white rounded-lg transition-colors cursor-pointer"
+            >
+              <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
+            </button>
+         </div>
+      </div>
+
+      <div className="pro-card p-0 overflow-hidden">
+        <div className="overflow-x-auto custom-scrollbar">
+          <table className="w-full text-left border-collapse font-mono text-[11px]">
+            <thead>
+              <tr className="bg-zinc-950/50 border-b border-zinc-800/80">
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-500">Timestamp</th>
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-500">Identity</th>
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-500">Vector</th>
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-500">Resource</th>
+                <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest text-zinc-500">Telemetry</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-800/50">
+              {filteredLogs.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="px-6 py-32 text-center">
+                     <div className="flex flex-col items-center gap-3 opacity-30">
+                        <ShieldAlert size={32} className="text-zinc-300" />
+                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Audit stream synchronized. No events detected.</span>
+                     </div>
+                  </td>
+                </tr>
+              ) : filteredLogs.map((log) => (
+                <tr key={log.id} className="pro-table-row group">
+                  <td className="px-6 py-4 text-zinc-400 whitespace-nowrap tabular-nums">
+                    {new Date(log.created_at).toLocaleTimeString()}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="text-blue-400 font-semibold">{log.user_id ? log.user_id.substring(0, 13) : 'SYSTEM_ROOT'}</span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="text-zinc-100 font-bold uppercase tracking-widest px-2 py-0.5 bg-zinc-800 rounded border border-zinc-700">{log.action}</span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="text-zinc-400 uppercase font-bold text-[10px] tracking-widest">{log.resource_type}</span>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <code className="text-zinc-300 group-hover:text-zinc-400 transition-colors truncate block max-w-[200px] ml-auto font-mono text-[10px]">
+                      {JSON.stringify(log.metadata)}
+                    </code>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const Monitor = () => {
   const [activeTab, setActiveTab] = useState('stats');
   const { addListener, removeListener } = useSSE();
   const [usage, setUsage] = useState(null);
   const [auditLogs, setAuditLogs] = useState([]);
+  const [logSearch, setLogSearch] = useState('');
   const [systemStatus, setSystemStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

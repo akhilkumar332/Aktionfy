@@ -118,12 +118,7 @@ func apiLoginHandler(c echo.Context) error {
 		// Log failed login history if user exists
 		info, getErr := queries.GetAuthInfoByEmail(c.Request().Context(), pgtype.Text{String: input.Email, Valid: true})
 		if getErr == nil {
-			_ = queries.CreateLoginHistory(c.Request().Context(), db.CreateLoginHistoryParams{
-				UserID:    info.ID,
-				IpAddress: pgtype.Text{String: c.RealIP(), Valid: true},
-				UserAgent: pgtype.Text{String: c.Request().UserAgent(), Valid: true},
-				Status:    "failed",
-			})
+			writeLoginHistory(c.Request().Context(), info.ID, c.RealIP(), c.Request().UserAgent(), false)
 		}
 
 		if err.Error() == "account is locked" {
@@ -165,12 +160,7 @@ func apiLoginHandler(c echo.Context) error {
 	_ = queries.UpdateUserLastLogin(c.Request().Context(), u.ID)
 
 	// Log successful login history
-	_ = queries.CreateLoginHistory(c.Request().Context(), db.CreateLoginHistoryParams{
-		UserID:    u.ID,
-		IpAddress: pgtype.Text{String: c.RealIP(), Valid: true},
-		UserAgent: pgtype.Text{String: c.Request().UserAgent(), Valid: true},
-		Status:    "success",
-	})
+	writeLoginHistory(c.Request().Context(), u.ID, c.RealIP(), c.Request().UserAgent(), true)
 
 	// Record active session in Redis
 	RecordActiveSession(c.Request().Context(), u.ID, sessionID, c.RealIP(), c.Request().UserAgent())
@@ -246,7 +236,9 @@ func apiDashboardHandler(c echo.Context) error {
 		})
 	}
 
-	taskCount, err := queries.CountUserTasks(c.Request().Context(), user.ID)
+	taskCount, err := GetCachedTaskCount(c.Request().Context(), user.ID, func() (int64, error) {
+		return queries.CountUserTasks(c.Request().Context(), user.ID)
+	})
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch task count"})
 	}
@@ -1417,11 +1409,16 @@ func apiAdminUpdateSettingsHandler(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to update settings"})
 	}
 
-	// Sync local setting cache immediately
-	syncSettings(ctx)
 	if RedisClient != nil {
 		_ = RedisClient.Del(ctx, "cache:admin:settings").Err()
+		_ = RedisClient.Del(ctx, "sys:settings").Err()
 	}
+	// Sync local setting cache immediately from DB (since Redis was just cleared)
+	syncSettings(ctx)
+
+	// Notify all other nodes to sync their in-memory settings immediately
+	PublishEvent(ctx, "sys:events", "system", "settings_updated", map[string]interface{}{})
+
 
 	user := getUserFromEcho(c)
 	if user == nil {

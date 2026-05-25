@@ -18,7 +18,8 @@ const Dashboard = () => {
   const isMounted = useRef(true);
   
   const [isLoading, setIsLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState('7d');
+  const [timeRange, setTimeRange] = useState('24h');
+  const [activities, setActivities] = useState([]);
   
   const [taskCount, setTaskCount] = useState(0);
   const [copied, setCopied] = useState(false);
@@ -98,6 +99,14 @@ const Dashboard = () => {
         payload.status === 'success' ? 'SUCCESS' : 'ERROR', 
         `Task ${payload.task_name || payload.task_id.slice(0, 8)} executed: ${payload.status}`
       );
+      if (isMounted.current) {
+        setActivities(prev => [{
+          id: Math.random().toString(),
+          time: new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+          message: `Task ${payload.task_name || payload.task_id.slice(0, 8)} executed: ${payload.status}`,
+          type: payload.status === 'success' ? 'success' : 'error'
+        }, ...prev].slice(0, 5));
+      }
       fetchData();
       fetchSystemStatus();
     };
@@ -487,6 +496,46 @@ const Dashboard = () => {
               <ArrowUpRight size={16} className="text-zinc-800 group-hover:text-zinc-400 transition-colors" />
            </Link>
          ))}
+      </section>
+
+      {/* Live Activity Feed */}
+      <section className="pro-card p-8 border-zinc-800/50">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></div>
+             <h3 className="text-sm font-bold text-white uppercase tracking-widest">Live Activity Feed</h3>
+          </div>
+          <span className="text-[10px] text-zinc-500 font-mono">Last 5 events</span>
+        </div>
+        
+        {activities.length === 0 ? (
+          <div className="py-8 text-center border border-dashed border-zinc-800/50 rounded-xl bg-zinc-900/10">
+             <span className="text-xs font-semibold text-zinc-500 italic">No recent network activity observed.</span>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {activities.map(activity => (
+              <motion.div 
+                key={activity.id}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className={`p-4 rounded-xl border flex items-center justify-between ${
+                  activity.type === 'success' 
+                    ? 'bg-emerald-500/5 border-emerald-500/10' 
+                    : 'bg-red-500/5 border-red-500/10'
+                }`}
+              >
+                <div className="flex items-center gap-4">
+                  <div className={`p-2 rounded-lg ${activity.type === 'success' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+                    {activity.type === 'success' ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
+                  </div>
+                  <span className="text-xs font-semibold text-zinc-300">{activity.message}</span>
+                </div>
+                <span className="text-[10px] font-mono text-zinc-500">{activity.time}</span>
+              </motion.div>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );
