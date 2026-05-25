@@ -491,6 +491,7 @@ func main() {
 	api.POST("/tasks/:id/lock", apiLockTaskHandler)
 	api.POST("/tasks/:id/unlock", apiUnlockTaskHandler)
 	api.GET("/events", apiEventsHandler)
+	api.GET("/ws", HandleWebSocket)
 	api.GET("/secrets", apiListSecretsHandler)
 	api.POST("/secrets", apiUpsertSecretHandler)
 	api.DELETE("/secrets/:name", apiDeleteSecretHandler)
