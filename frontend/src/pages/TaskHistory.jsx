@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
 import axios from 'axios';
-import { History, ArrowLeft, RefreshCw, Clock, CheckCircle2, AlertCircle, Command, GitBranch, Terminal, X, Check, Play, Zap, Activity } from 'lucide-react';
+import { History, ArrowLeft, RefreshCw, Clock, CheckCircle2, AlertCircle, Command, GitBranch, Terminal, X, Check, Play, Zap, Activity, Download } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNotify } from '../context/NotificationContext';
@@ -27,6 +27,22 @@ const TaskHistory = () => {
   
   const [dateRange, setDateRange] = useState('24h');
   const [durationData] = useState([]);
+
+  const handleExportCSV = () => {
+    if (!history.length) return;
+    const headers = ['Version ID', 'Trigger Type', 'Created At'];
+    const rows = history.map(h => [
+      h.id, h.trigger_type, new Date(h.created_at).toISOString()
+    ]);
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `task_${id}_version_history.csv`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
 
   const handleTriggerTask = async () => {
     setTriggering(true);
@@ -56,6 +72,12 @@ const TaskHistory = () => {
   }, []);
 
   const [hourlyHeatmap, setHourlyHeatmap] = useState([]);
+  const [triggerFilter, setTriggerFilter] = useState('all');
+
+  const filteredHistory = history.filter(v => {
+    if (triggerFilter === 'all') return true;
+    return v.trigger_type === triggerFilter;
+  });
 
   const fetchHistory = useCallback(async () => {
     try {
@@ -139,6 +161,14 @@ const TaskHistory = () => {
         
         <div className="flex items-center gap-4">
           <button 
+            onClick={handleExportCSV}
+            className="pro-button-secondary !py-4 !px-6 flex items-center gap-3"
+          >
+            <Download size={16} />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Export Timeline</span>
+          </button>
+
+          <button 
             onClick={handleTriggerTask}
             disabled={triggering}
             className="pro-button-primary !py-4 !px-6 flex items-center gap-3 disabled:opacity-50"
@@ -160,7 +190,21 @@ const TaskHistory = () => {
       <div className="space-y-6">
         {!loading && history.length > 0 && (
           <>
-            <div className="flex justify-end mb-4">
+            <div className="flex justify-end gap-3 mb-4">
+              <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 p-1.5 rounded-lg">
+                <GitBranch size={14} className="text-zinc-500 ml-2" />
+                <select 
+                  value={triggerFilter}
+                  onChange={(e) => setTriggerFilter(e.target.value)}
+                  className="bg-transparent text-xs text-zinc-300 font-bold uppercase tracking-wider focus:outline-none border-none cursor-pointer pr-4"
+                >
+                  <option value="all">All Vectors</option>
+                  <option value="cron">Cron</option>
+                  <option value="webhook">Webhook</option>
+                  <option value="manual">Manual</option>
+                </select>
+              </div>
+
               <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 p-1.5 rounded-lg">
                 <Clock size={14} className="text-zinc-500 ml-2" />
                 <select 
@@ -280,7 +324,7 @@ const TaskHistory = () => {
             <div className="absolute left-[31px] top-0 bottom-0 w-px bg-gradient-to-b from-blue-500 via-white/10 to-transparent opacity-30"></div>
             
             <div className="space-y-12">
-              {history.map((version, index) => (
+              {filteredHistory.map((version, index) => (
                 <motion.div 
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
