@@ -258,9 +258,15 @@ func apiSystemStatusHandler(c echo.Context) error {
 		log.Printf("Error counting active sessions: %v", err)
 	}
 
-	workerCount, err := queries.GetActiveWorkerCount(c.Request().Context())
-	if err != nil {
-		log.Printf("Error counting active workers: %v", err)
+	workerCount := int64(0)
+	if RedisClient != nil {
+		keys, _, _ := RedisClient.Scan(c.Request().Context(), 0, "sys:worker:*", 100).Result()
+		workerCount = int64(len(keys))
+	} else {
+		workerCount, err = queries.GetActiveWorkerCount(c.Request().Context())
+		if err != nil {
+			log.Printf("Error counting active workers: %v", err)
+		}
 	}
 
 	p99, err := queries.GetP99ExecutionLatency(c.Request().Context())

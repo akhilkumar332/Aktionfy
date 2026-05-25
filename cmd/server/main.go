@@ -587,6 +587,7 @@ func main() {
 	go runScheduler(ctx)
 	go runReaper(ctx)
 	go runWorkerHeartbeat(ctx)
+	go runMetricsFlusher(ctx)
 	go StartStreamConsumer(ctx)
 	// Start Background Settings Poller
 	syncSettings(ctx)
@@ -676,4 +677,45 @@ func main() {
 	}
 
 	log.Println("Server exited properly")
+}
+
+func runMetricsFlusher(ctx context.Context) {
+	ticker := time.NewTicker(60 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			if RedisClient == nil {
+				continue
+			}
+			
+			// Scan all worker hashes
+			keys, _, err := RedisClient.Scan(ctx, 0, "sys:worker:*", 1000).Result()
+			if err != nil {
+				log.Printf("Metrics scan error: %v", err)
+				continue
+			}
+
+			totalLoad := int32(0)
+			workerCount := int32(len(keys))
+			
+			for _, key := range keys {
+				val, err := RedisClient.HGet(ctx, key, "task_count").Int()
+				if err == nil {
+					totalLoad += int32(val)
+				}
+			}
+
+			if workerCount > 0 {
+				query := `INSERT INTO system_metrics (total_workers, total_load, avg_memory_mb, p99_latency_ms) VALUES ($1, $2, $3, $4)`
+				_, err = dbPool.Exec(ctx, query, workerCount, totalLoad, 0.0, 0.0)
+				if err != nil {
+					log.Printf("Failed to persist system metrics: %v", err)
+				}
+			}
+		case <-ctx.Done():
+			return
+		}
+	}
 }

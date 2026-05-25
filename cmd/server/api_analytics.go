@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -174,11 +175,7 @@ func handleGetTrends(c echo.Context) error {
 
 func handleGetWorkers(c echo.Context) error {
 	ctx := c.Request().Context()
-	workers, err := queries.ListWorkerHeartbeats(ctx)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch workers"})
-	}
-
+	
 	type workerInfo struct {
 		WorkerID      string    `json:"worker_id"`
 		Hostname      string    `json:"hostname"`
@@ -186,25 +183,51 @@ func handleGetWorkers(c echo.Context) error {
 		Status        string    `json:"status"`
 		TaskCount     int32     `json:"task_count"`
 	}
-
 	var data []workerInfo
-	if workers == nil {
-		data = []workerInfo{}
-	}
-	now := time.Now().UTC()
-	for _, w := range workers {
-		status := "offline"
-		if w.LastHeartbeat.Valid && w.LastHeartbeat.Time.After(now.Add(-2*time.Minute)) {
-			status = "online"
-		}
 
-		data = append(data, workerInfo{
-			WorkerID:      w.WorkerID,
-			Hostname:      w.Hostname.String,
-			LastHeartbeat: w.LastHeartbeat.Time,
-			Status:        status,
-			TaskCount:     w.TaskCount.Int32,
-		})
+	// 1. Try fetching from Redis Hashes (Real-time)
+	if RedisClient != nil {
+		keys, _, _ := RedisClient.Scan(ctx, 0, "sys:worker:*", 100).Result()
+		for _, key := range keys {
+			fields, err := RedisClient.HGetAll(ctx, key).Result()
+			if err == nil && len(fields) > 0 {
+				lastHb, _ := time.Parse(time.RFC3339, fields["updated_at"])
+				taskCnt, _ := strconv.Atoi(fields["task_count"])
+				data = append(data, workerInfo{
+					WorkerID:      fields["id"],
+					Hostname:      fields["hostname"],
+					LastHeartbeat: lastHb,
+					Status:        fields["status"],
+					TaskCount:     int32(taskCnt),
+				})
+			}
+		}
+	}
+
+	// 2. Fallback to DB if Redis is empty or offline
+	if len(data) == 0 {
+		workers, err := queries.ListWorkerHeartbeats(ctx)
+		if err == nil {
+			now := time.Now().UTC()
+			for _, w := range workers {
+				status := "offline"
+				if w.LastHeartbeat.Valid && w.LastHeartbeat.Time.After(now.Add(-2*time.Minute)) {
+					status = "online"
+				}
+
+				data = append(data, workerInfo{
+					WorkerID:      w.WorkerID,
+					Hostname:      w.Hostname.String,
+					LastHeartbeat: w.LastHeartbeat.Time,
+					Status:        status,
+					TaskCount:     w.TaskCount.Int32,
+				})
+			}
+		}
+	}
+
+	if data == nil {
+		data = []workerInfo{}
 	}
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: data})

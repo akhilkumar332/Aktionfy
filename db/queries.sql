@@ -354,13 +354,18 @@ SELECT * FROM templates WHERE id = $1;
 
 -- name: CreateTemplateSubscription :exec
 INSERT INTO user_template_subscriptions (user_id, template_id) VALUES ($1, $2) ON CONFLICT DO NOTHING;
-
 -- name: UpsertWorkerHeartbeat :exec
 INSERT INTO worker_heartbeats (worker_id, hostname, last_heartbeat, task_count)
 VALUES ($1, $2, NOW(), $3)
 ON CONFLICT (worker_id) DO UPDATE SET
+    hostname = EXCLUDED.hostname,
     last_heartbeat = EXCLUDED.last_heartbeat,
     task_count = EXCLUDED.task_count;
+
+-- name: CreateSystemMetric :exec
+INSERT INTO system_metrics (total_workers, total_load, avg_memory_mb, p99_latency_ms)
+VALUES ($1, $2, $3, $4);
+
 
 -- name: GetActiveWorkerCount :one
 SELECT COUNT(*) FROM worker_heartbeats WHERE last_heartbeat > NOW() - INTERVAL '2 minutes';

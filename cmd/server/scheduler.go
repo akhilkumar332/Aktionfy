@@ -1487,7 +1487,7 @@ func runWorkerHeartbeat(ctx context.Context) {
 			log.Printf("Panic recovered in runWorkerHeartbeat: %v", r)
 		}
 	}()
-	ticker := time.NewTicker(30 * time.Second)
+	ticker := time.NewTicker(15 * time.Second) // Increased frequency for Redis
 	defer ticker.Stop()
 
 	hostname, _ := os.Hostname()
@@ -1495,13 +1495,30 @@ func runWorkerHeartbeat(ctx context.Context) {
 	for {
 		select {
 		case <-ticker.C:
+			activeTasks := atomic.LoadInt32(&activeWorkerTasks)
+			
+			// 1. Write high-frequency data to Redis (Primary)
+			if RedisClient != nil {
+				key := fmt.Sprintf("sys:worker:%s", workerID)
+				fields := map[string]interface{}{
+					"id":         workerID,
+					"hostname":   hostname,
+					"task_count": activeTasks,
+					"updated_at": time.Now().UTC().Format(time.RFC3339),
+					"status":     "active",
+				}
+				_ = RedisClient.HMSet(ctx, key, fields).Err()
+				_ = RedisClient.Expire(ctx, key, 45*time.Second).Err()
+			}
+
+			// 2. Fallback/Sync to Postgres (Secondary)
 			err := queries.UpsertWorkerHeartbeat(ctx, db.UpsertWorkerHeartbeatParams{
 				WorkerID:  workerID,
 				Hostname:  pgtype.Text{String: hostname, Valid: true},
-				TaskCount: pgtype.Int4{Int32: atomic.LoadInt32(&activeWorkerTasks), Valid: true},
+				TaskCount: pgtype.Int4{Int32: activeTasks, Valid: true},
 			})
 			if err != nil {
-				log.Printf("Heartbeat error: %v", err)
+				log.Printf("Postgres Heartbeat error: %v", err)
 			}
 		case <-ctx.Done():
 			return
