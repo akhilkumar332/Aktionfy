@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"aktionfy/db"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -29,6 +30,20 @@ type AuditLogEntry struct {
 }
 
 func writeAuditLog(ctx context.Context, event AuditEvent) {
+	// Broadcast to WebSocket hub for real-time streaming (restricted to admins/staff)
+	BroadcastToAdmins(map[string]interface{}{
+		"type": "audit_log",
+		"payload": map[string]interface{}{
+			"id":            uuid.New().String(),
+			"user_id":       event.UserID,
+			"action":        event.Action,
+			"resource_type": event.ResourceType,
+			"resource_id":   event.ResourceID,
+			"metadata":      event.Metadata,
+			"created_at":    time.Now().Format(time.RFC3339),
+		},
+	})
+
 	if RedisClient == nil {
 		if dbPool == nil {
 			return

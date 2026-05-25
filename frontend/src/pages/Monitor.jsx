@@ -8,6 +8,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNotify } from '../context/NotificationContext';
 import { useSSE } from '../context/SSEContext';
+import { useWebSocket } from '../context/WebSocketContext';
 
 const MetricsGrid = ({ usage }) => {
   if (!usage) return null;
@@ -40,11 +41,19 @@ const MetricsGrid = ({ usage }) => {
 };
 
 const LogsView = ({ logs, logSearch, setLogSearch, fetchData, refreshing }) => {
+  const scrollRef = useRef(null);
+  
   const filteredLogs = logs.filter(log => 
     (log.action || '').toLowerCase().includes(logSearch.toLowerCase()) ||
     (log.user_id || '').toLowerCase().includes(logSearch.toLowerCase()) ||
     (log.resource_type || '').toLowerCase().includes(logSearch.toLowerCase())
   );
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollIntoView({ behavior: 'auto' });
+    }
+  }, [logs]);
 
   return (
     <div className="space-y-6">
@@ -55,15 +64,19 @@ const LogsView = ({ logs, logSearch, setLogSearch, fetchData, refreshing }) => {
          </div>
          
          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 px-3 py-2 rounded-lg">
-              <Search size={14} className="text-zinc-500" />
+            <div className="relative group">
+              <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-indigo-400 transition-colors" />
               <input 
-                type="text"
-                placeholder="Filter logs by action, user, resource..."
+                type="text" 
+                placeholder="grep telemetry..." 
                 value={logSearch}
                 onChange={(e) => setLogSearch(e.target.value)}
-                className="bg-transparent border-none outline-none text-xs text-white placeholder:text-zinc-600 w-64"
+                className="bg-zinc-950 border border-zinc-800 text-[10px] text-zinc-300 px-9 py-2 rounded-xl focus:outline-none focus:border-indigo-500/50 w-48 transition-all font-mono"
               />
+            </div>
+            <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 px-3 py-1.5 rounded-lg">
+              <span className="text-[9px] font-black text-emerald-500/60 uppercase tracking-widest animate-pulse">TERMINAL_SESSION_ACTIVE</span>
+              <div className="w-1 h-3 bg-emerald-500/20 animate-pulse"></div>
             </div>
             <button 
               onClick={() => fetchData(true)}
@@ -75,51 +88,51 @@ const LogsView = ({ logs, logSearch, setLogSearch, fetchData, refreshing }) => {
          </div>
       </div>
 
-      <div className="pro-card p-0 overflow-hidden">
-        <div className="overflow-x-auto custom-scrollbar">
-          <table className="w-full text-left border-collapse font-mono text-[11px]">
-            <thead>
-              <tr className="bg-zinc-950/50 border-b border-zinc-800/80">
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-500">Timestamp</th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-500">Identity</th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-500">Vector</th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-500">Resource</th>
-                <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest text-zinc-500">Telemetry</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-800/50">
-              {filteredLogs.length === 0 ? (
-                <tr>
-                  <td colSpan="5" className="px-6 py-32 text-center">
-                     <div className="flex flex-col items-center gap-3 opacity-30">
-                        <ShieldAlert size={32} className="text-zinc-300" />
-                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Audit stream synchronized. No events detected.</span>
-                     </div>
-                  </td>
-                </tr>
-              ) : filteredLogs.map((log) => (
-                <tr key={log.id} className="pro-table-row group">
-                  <td className="px-6 py-4 text-zinc-400 whitespace-nowrap tabular-nums">
-                    {new Date(log.created_at).toLocaleTimeString()}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-blue-400 font-semibold">{log.user_id ? log.user_id.substring(0, 13) : 'SYSTEM_ROOT'}</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-zinc-100 font-bold uppercase tracking-widest px-2 py-0.5 bg-zinc-800 rounded border border-zinc-700">{log.action}</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-zinc-400 uppercase font-bold text-[10px] tracking-widest">{log.resource_type}</span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <code className="text-zinc-300 group-hover:text-zinc-400 transition-colors truncate block max-w-[200px] ml-auto font-mono text-[10px]">
-                      {JSON.stringify(log.metadata)}
-                    </code>
-                  </td>
-                </tr>
+      <div className="pro-card p-0 overflow-hidden bg-zinc-950 border-zinc-800/50 shadow-2xl flex flex-col h-[600px]">
+        {/* Terminal Header */}
+        <div className="flex items-center justify-between px-4 py-2 bg-zinc-900/50 border-b border-zinc-800/80">
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-red-500/20 border border-red-500/30"></div>
+            <div className="w-2.5 h-2.5 rounded-full bg-amber-500/20 border border-amber-500/30"></div>
+            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/20 border border-emerald-500/30"></div>
+            <span className="ml-2 text-[9px] font-bold text-zinc-500 uppercase tracking-widest">aktionfy-security-kernel — auditd</span>
+          </div>
+          <div className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest tabular-nums">
+             {logs.length} EVENTS LOADED
+          </div>
+        </div>
+
+        {/* Terminal Content */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 font-mono text-[11px] selection:bg-brand-primary/30">
+          {filteredLogs.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center gap-3 opacity-20">
+               <ShieldAlert size={32} className="text-zinc-300" />
+               <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Awaiting telemetry signal...</span>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              {filteredLogs.map((log) => (
+                <div key={log.id} className="flex gap-4 group hover:bg-zinc-900/50 -mx-2 px-2 py-0.5 rounded transition-colors">
+                  <span className="text-zinc-600 shrink-0 tabular-nums">
+                    [{new Date(log.created_at).toLocaleTimeString()}]
+                  </span>
+                  <span className="text-blue-500 font-bold shrink-0">
+                    {log.user_id ? log.user_id.substring(0, 8) : 'SYSTEM'}
+                  </span>
+                  <span className="text-zinc-400 font-bold uppercase tracking-tight shrink-0 px-1 bg-zinc-900 border border-zinc-800 rounded text-[9px]">
+                    {log.action}
+                  </span>
+                  <span className="text-zinc-500 shrink-0 italic">
+                    {log.resource_type}
+                  </span>
+                  <span className="text-zinc-200 truncate group-hover:whitespace-normal group-hover:overflow-visible group-hover:bg-zinc-900 group-hover:z-10 group-hover:relative">
+                    {JSON.stringify(log.metadata)}
+                  </span>
+                </div>
               ))}
-            </tbody>
-          </table>
+              <div ref={scrollRef} className="h-4" />
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -129,8 +142,10 @@ const LogsView = ({ logs, logSearch, setLogSearch, fetchData, refreshing }) => {
 const Monitor = () => {
   const [activeTab, setActiveTab] = useState('stats');
   const { addListener, removeListener } = useSSE();
+  const { wsRef } = useWebSocket();
   const [usage, setUsage] = useState(null);
   const [auditLogs, setAuditLogs] = useState([]);
+  const [logSearch, setLogSearch] = useState('');
   const [systemStatus, setSystemStatus] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -138,6 +153,28 @@ const Monitor = () => {
   const [uptime, setUptime] = useState(0);
   const isMounted = useRef(true);
   const { notify } = useNotify();
+
+  useEffect(() => {
+    const ws = wsRef.current;
+    if (!ws) return;
+
+    const handleMessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'audit_log') {
+          setAuditLogs(prev => {
+            const newLogs = [...prev, data.payload];
+            return newLogs.slice(-100);
+          });
+        }
+      } catch (err) {
+        // Silently handle non-JSON or unrelated messages
+      }
+    };
+
+    ws.addEventListener('message', handleMessage);
+    return () => ws.removeEventListener('message', handleMessage);
+  }, [wsRef]);
 
   const formatUptime = (sec) => {
     if (!sec) return '00d 00h 00m 00s';
@@ -185,7 +222,7 @@ const Monitor = () => {
       }
 
       if (auditRes.status === 'fulfilled' && auditRes.value.data.success) {
-        setAuditLogs(auditRes.value.data.data);
+        setAuditLogs(auditRes.value.data.data.reverse());
       } else if (auditRes.status === 'rejected' && isUserInitiated) {
         notify('ERROR', 'Failed to fetch audit logs', auditRes.reason.response?.data?.error || auditRes.reason.message);
       }
@@ -472,7 +509,13 @@ const Monitor = () => {
                  </div>
               </div>
             ) : (
-              <LogsView logs={auditLogs} />
+              <LogsView 
+                logs={auditLogs} 
+                logSearch={logSearch} 
+                setLogSearch={setLogSearch} 
+                fetchData={fetchData} 
+                refreshing={refreshing} 
+              />
             )}
           </motion.div>
         )}
