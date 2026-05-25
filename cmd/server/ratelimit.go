@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"strings"
 	"time"
 
 	"aktionfy/db"
+	"github.com/labstack/echo/v4"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -91,4 +93,29 @@ func (rl *rateLimiter) Allow(ctx context.Context, userID string) bool {
 		return true
 	}
 	return allowed == 1
+}
+
+// UserRateLimitMiddleware is a simple token bucket implementation
+func UserRateLimitMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		userID, ok := c.Get("user_id").(string)
+		if !ok || userID == "" {
+			return next(c)
+		}
+		if RedisClient != nil {
+			key := "rate:" + userID
+			count, err := RedisClient.Incr(c.Request().Context(), key).Result()
+			if err != nil {
+				log.Printf("WARNING: Rate limit Incr failed for user %s: %v", userID, err)
+			} else {
+				if count == 1 {
+					RedisClient.Expire(c.Request().Context(), key, time.Minute)
+				}
+				if count > 100 { // 100 req per min
+					return c.JSON(http.StatusTooManyRequests, APIResponse{Success: false, Error: "Rate limit exceeded"})
+				}
+			}
+		}
+		return next(c)
+	}
 }
