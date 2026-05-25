@@ -3,7 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, Command, Cpu, 
   Copy, Check, Activity,
-  Monitor, Code, Globe, Shield
+  Server, Play, Pause, Trash2, Globe, Lock, ShieldAlert,
+  Wifi, WifiOff, RefreshCw, ChevronLeft, ChevronRight,
+  Monitor, Code, Shield
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/AuthContext';

@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { 
   Terminal, CheckCircle2, Clock, Activity, Users, 
-  AlertTriangle, Database, Zap, RefreshCw, ShieldAlert
+  AlertTriangle, Database, Zap, RefreshCw, ShieldAlert, Search
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNotify } from '../context/NotificationContext';

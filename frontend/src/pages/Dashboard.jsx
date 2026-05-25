@@ -5,7 +5,7 @@ import axios from 'axios';
 import { 
   Crown, Key, RefreshCw, Copy, Check, 
   ShieldCheck, Zap, ShieldAlert, 
-  Terminal, Cpu, Globe, ArrowUpRight, Layers, X, Eye, EyeOff, Activity, Calendar
+  Terminal, Cpu, Globe, ArrowUpRight, Layers, X, Eye, EyeOff, Activity, Calendar, CheckCircle2, AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSSE } from '../context/SSEContext';
