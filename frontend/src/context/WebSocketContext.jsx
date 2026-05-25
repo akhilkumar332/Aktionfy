@@ -14,6 +14,19 @@ export const WebSocketProvider = ({ children }) => {
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
   const connectRef = useRef(null);
+  const listenersRef = useRef({});
+
+  const addListener = useCallback((type, callback) => {
+    if (!listenersRef.current[type]) {
+      listenersRef.current[type] = [];
+    }
+    listenersRef.current[type].push(callback);
+  }, []);
+
+  const removeListener = useCallback((type, callback) => {
+    if (!listenersRef.current[type]) return;
+    listenersRef.current[type] = listenersRef.current[type].filter(cb => cb !== callback);
+  }, []);
 
   const connect = useCallback(() => {
     // Only connect if we have a user and aren't already connected/connecting
@@ -32,6 +45,19 @@ export const WebSocketProvider = ({ children }) => {
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
         reconnectTimeoutRef.current = null;
+      }
+    };
+
+    socket.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type && listenersRef.current[msg.type]) {
+          listenersRef.current[msg.type].forEach(cb => {
+            try { cb(msg.payload); } catch (e) { console.error(e); }
+          });
+        }
+      } catch (err) {
+        console.error('WebSocket parse error:', err);
       }
     };
     
@@ -85,7 +111,7 @@ export const WebSocketProvider = ({ children }) => {
   }, []);
 
   return (
-    <WebSocketContext.Provider value={{ isConnected, sendMessage, wsRef }}>
+    <WebSocketContext.Provider value={{ isConnected, sendMessage, addListener, removeListener, wsRef }}>
       {children}
     </WebSocketContext.Provider>
   );

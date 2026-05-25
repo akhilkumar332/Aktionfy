@@ -7,6 +7,7 @@ import axios from 'axios';
 import { createPortal } from 'react-dom';
 import { parseJSONField, validateStep } from '../utils/wizardUtils';
 import { useNotify } from '../context/NotificationContext';
+import { useWebSocket } from '../context/WebSocketContext';
 
 // Modular Step Components
 import StepIdentity from './wizard/StepIdentity';
@@ -17,6 +18,7 @@ import StepDeploy from './wizard/StepDeploy';
 
 const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = false }) => {
   const { notify } = useNotify();
+  const { sendMessage } = useWebSocket();
   const [step, setStep] = useState(1);
   const [workspaces, setWorkspaces] = useState([]);
   const [userTasks, setUserTasks] = useState([]);
@@ -148,6 +150,22 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
 
   const handleNext = () => setStep(s => Math.min(s + 1, 5));
   const handleBack = () => setStep(s => Math.max(s - 1, 1));
+
+  // Debounced "editing_node" event trigger
+  useEffect(() => {
+    if (!isOpen || !initialData?.id || !sendMessage) return;
+
+    const timer = setTimeout(() => {
+      sendMessage({
+        type: 'editing_node',
+        payload: {
+          task_id: initialData.id
+        }
+      });
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [formData, initialData?.id, isOpen, sendMessage]);
 
   const updateFormData = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));

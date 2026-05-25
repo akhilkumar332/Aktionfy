@@ -17,6 +17,17 @@ type WSClient struct {
 	userRole string
 }
 
+type WSMessage struct {
+	Type    string      `json:"type"`
+	Payload interface{} `json:"payload"`
+}
+
+type EditingNodePayload struct {
+	UserID    string `json:"user_id"`
+	UserEmail string `json:"user_email"`
+	TaskID    string `json:"task_id"`
+}
+
 // ActiveWebSockets maintains a registry of connected clients to enable hub broadcasting functionality
 var ActiveWebSockets sync.Map
 
@@ -29,6 +40,23 @@ var upgrader = websocket.Upgrader{
 func BroadcastWebSocketMessage(msg interface{}) {
 	ActiveWebSockets.Range(func(key, value interface{}) bool {
 		client := key.(*WSClient)
+		client.mu.Lock()
+		err := client.conn.WriteJSON(msg)
+		client.mu.Unlock()
+		if err != nil {
+			_ = client.conn.Close()
+		}
+		return true
+	})
+}
+
+// BroadcastExcludeSender sends a JSON message to all connected clients EXCEPT the sender
+func BroadcastExcludeSender(msg interface{}, sender *WSClient) {
+	ActiveWebSockets.Range(func(key, value interface{}) bool {
+		client := key.(*WSClient)
+		if client == sender {
+			return true
+		}
 		client.mu.Lock()
 		err := client.conn.WriteJSON(msg)
 		client.mu.Unlock()
@@ -62,6 +90,11 @@ func HandleWebSocket(c echo.Context) error {
 
 	userID, _ := c.Get("user_id").(string)
 	userRole, _ := c.Get("user_role").(string)
+	userObj, _ := c.Get("user").(*User)
+	userEmail := ""
+	if userObj != nil {
+		userEmail = userObj.Email
+	}
 	
 	client := &WSClient{
 		conn:     ws,
@@ -79,9 +112,22 @@ func HandleWebSocket(c echo.Context) error {
 	}
 
 	for {
-		_, _, err := client.conn.ReadMessage()
+		var msg WSMessage
+		err := client.conn.ReadJSON(&msg)
 		if err != nil {
 			break
+		}
+
+		// Handle editing_node events
+		if msg.Type == "editing_node" {
+			payload, ok := msg.Payload.(map[string]interface{})
+			if ok {
+				// Inject user details from the session into the broadcasted message
+				payload["user_id"] = userID
+				payload["user_email"] = userEmail
+				msg.Payload = payload
+				BroadcastExcludeSender(msg, client)
+			}
 		}
 	}
 	return nil

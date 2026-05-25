@@ -23,6 +23,7 @@ import DecisionNode from '../components/DecisionNode';
 import ManualRouteModal from '../components/ManualRouteModal';
 import GlobalPlaybackBar from '../components/GlobalPlaybackBar';
 import { useSSE } from '../context/SSEContext';
+import { useWebSocket } from '../context/WebSocketContext';
 import { useNotify } from '../context/NotificationContext';
 import { decodeBase64, parseJSONField as safeParseJSON } from '../utils/wizardUtils';
 
@@ -32,6 +33,8 @@ const nodeTypes = {
 
 const WorkflowCanvas = () => {
   const { notify } = useNotify();
+  const { addListener: addWSListener, removeListener: removeWSListener } = useWebSocket();
+  const [editingNodes, setEditingNodes] = useState({}); // { taskId: { email, timestamp } }
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [loading, setLoading] = useState(true);
@@ -251,6 +254,7 @@ const WorkflowCanvas = () => {
 
       const isProcessing = task.status === 'processing';
       const isRouter = task.task_type === 'decision_router' || task.task_type === 'swarm_router';
+      const editor = editingNodes[task.id];
 
       return {
         id: task.id,
@@ -260,6 +264,19 @@ const WorkflowCanvas = () => {
           task,
           label: isRouter ? undefined : (
             <div className={`flex flex-col items-center gap-2 transition-all duration-500 ${isProcessing ? 'scale-110' : ''}`}>
+              <AnimatePresence>
+                {editor && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="absolute -top-12 left-1/2 -translate-x-1/2 bg-indigo-600/90 text-white text-[8px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border border-indigo-400 shadow-[0_0_20px_rgba(79,70,229,0.4)] backdrop-blur-sm z-50 flex items-center gap-2 whitespace-nowrap"
+                  >
+                    <div className="w-1 h-1 rounded-full bg-white animate-pulse"></div>
+                    {editor.email.split('@')[0]} CALIBRATING...
+                  </motion.div>
+                )}
+              </AnimatePresence>
               <div className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-400 opacity-60">{task.trigger_type}</div>
               <div className="font-black text-white text-xs tracking-tight uppercase">{task.name}</div>
               <div className={`flex items-center gap-2 text-[8px] font-black uppercase px-3 py-1 rounded-full border transition-all ${
@@ -591,12 +608,42 @@ const WorkflowCanvas = () => {
     addListener('task_updated', handleTaskUpdated);
     addListener('workspace_updated', handleTaskUpdated);
     
+    const handleEditingNode = (payload) => {
+      setEditingNodes(prev => ({
+        ...prev,
+        [payload.task_id]: {
+          email: payload.user_email,
+          timestamp: Date.now()
+        }
+      }));
+    };
+    addWSListener('editing_node', handleEditingNode);
+    
     return () => {
       removeListener('task_status_changed', handleTaskStatusChanged);
       removeListener('task_updated', handleTaskUpdated);
       removeListener('workspace_updated', handleTaskUpdated);
+      removeWSListener('editing_node', handleEditingNode);
     };
-  }, [addListener, removeListener, updateTaskStatusLocally, fetchTasks]);
+    }, [addListener, removeListener, updateTaskStatusLocally, fetchTasks, addWSListener, removeWSListener]);
+
+    useEffect(() => {
+    const pruneInterval = setInterval(() => {
+      const now = Date.now();
+      setEditingNodes(prev => {
+        const next = { ...prev };
+        let changed = false;
+        Object.keys(next).forEach(taskId => {
+          if (now - next[taskId].timestamp > 5000) {
+            delete next[taskId];
+            changed = true;
+          }
+        });
+        return changed ? next : prev;
+      });
+    }, 2000);
+    return () => clearInterval(pruneInterval);
+    }, []);
 
   useEffect(() => {
     const init = async () => {
