@@ -957,13 +957,22 @@ func apiListTaskExecutionsHandler(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, APIResponse{Success: false, Error: "Task not found"})
 	}
 
-	executions, err := queries.ListTaskExecutionIDs(c.Request().Context(), taskID)
+	redisKey := fmt.Sprintf("cache:task_executions:%s", taskIDStr)
+	var executions []db.ListTaskExecutionIDsRow
+	err = CachedQuery(c.Request().Context(), redisKey, 5*time.Second, &executions, func() (interface{}, error) {
+		res, fetchErr := queries.ListTaskExecutionIDs(c.Request().Context(), taskID)
+		if fetchErr != nil {
+			return nil, fetchErr
+		}
+		if res == nil {
+			res = []db.ListTaskExecutionIDsRow{}
+		}
+		return res, nil
+	})
+
 	if err != nil {
 		log.Printf("ListTaskExecutionIDs query failed for task %s: %v", taskIDStr, err)
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch task executions: " + err.Error()})
-	}
-	if executions == nil {
-		executions = []db.ListTaskExecutionIDsRow{}
 	}
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: executions})

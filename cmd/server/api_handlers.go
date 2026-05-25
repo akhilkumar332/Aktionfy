@@ -1056,10 +1056,22 @@ func apiWebhookDeliveriesHandler(c echo.Context) error {
 		return err
 	}
 
-	rows, err := queries.ListWebhookDeliveries(c.Request().Context(), db.ListWebhookDeliveriesParams{
-		WebhookID: id,
-		UserID:    user.ID,
+	redisKey := fmt.Sprintf("cache:webhook_deliveries:%s", idStr)
+	var rows []db.WebhookDelivery
+	err = CachedQuery(c.Request().Context(), redisKey, 5*time.Second, &rows, func() (interface{}, error) {
+		res, fetchErr := queries.ListWebhookDeliveries(c.Request().Context(), db.ListWebhookDeliveriesParams{
+			WebhookID: id,
+			UserID:    user.ID,
+		})
+		if fetchErr != nil {
+			return nil, fetchErr
+		}
+		if res == nil {
+			res = []db.WebhookDelivery{}
+		}
+		return res, nil
 	})
+
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch webhook deliveries"})
 	}
