@@ -46,9 +46,36 @@ const Dashboard = () => {
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await axios.get(`/api/v1/dashboard?range=${timeRange}`);
-      if (res.data.success && isMounted.current) {
-        setTaskCount(res.data.data.taskCount);
+      const [dashRes, activityRes] = await Promise.all([
+        axios.get(`/api/v1/dashboard?range=${timeRange}`),
+        axios.get('/api/v1/dashboard/activities')
+      ]);
+
+      if (isMounted.current) {
+        if (dashRes.data.success) {
+          setTaskCount(dashRes.data.data.taskCount);
+        }
+        if (activityRes.data.success) {
+          const historical = (activityRes.data.data || []).map(event => {
+            let message = event.event_type;
+            let type = 'success';
+            try {
+              const payload = JSON.parse(event.payload);
+              if (event.event_type === 'task_executed') {
+                message = `Task ${payload.task_name || payload.task_id.slice(0, 8)} executed: ${payload.status}`;
+                type = payload.status === 'success' ? 'success' : 'error';
+              }
+            } catch { /* ignore */ }
+            
+            return {
+              id: Math.random().toString(),
+              time: 'Recent', // Or parse from event if timestamp added
+              message,
+              type
+            };
+          });
+          setActivities(historical.slice(0, 5));
+        }
       }
     } catch (err) {
       notify('ERROR', 'Failed to fetch dashboard data', err.response?.data?.error || err.message);

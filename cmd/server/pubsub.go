@@ -48,6 +48,12 @@ func PublishEvent(ctx context.Context, event PubSubEvent) error {
 		return err
 	}
 	
+	// Buffer recent activities for the user (keep last 50, 24h TTL)
+	activityKey := fmt.Sprintf("user:activities:%s", event.UserID)
+	RedisClient.LPush(ctx, activityKey, data)
+	RedisClient.LTrim(ctx, activityKey, 0, 49)
+	RedisClient.Expire(ctx, activityKey, 24*time.Hour)
+	
 	// Publish to global channel for internal node sync (e.g., reaper)
 	RedisClient.Publish(ctx, "sys:events", data)
 	

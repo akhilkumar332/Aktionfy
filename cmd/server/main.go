@@ -466,6 +466,7 @@ func main() {
 	api.GET("/sessions", apiListSessionsHandler)
 	api.DELETE("/sessions/:id", apiRevokeSessionHandler)
 	api.GET("/dashboard", apiDashboardHandler)
+	api.GET("/dashboard/activities", handleGetRecentActivities)
 	api.GET("/system/status", apiSystemStatusHandler)
 	api.POST("/rotate-api-key", apiRotateAPIKeyHandler)
 	api.GET("/tasks", apiListTasksHandler)

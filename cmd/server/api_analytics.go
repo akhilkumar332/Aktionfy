@@ -300,3 +300,37 @@ func getHeatmapForZset(ctx context.Context, key string) ([]map[string]interface{
 	return heatmap, nil
 }
 
+// handleGetRecentActivities fetches the last 50 activity events for the user from Redis.
+func handleGetRecentActivities(c echo.Context) error {
+	ctx := c.Request().Context()
+	userID := getUserID(c)
+	if userID == "" {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
+
+	if RedisClient == nil {
+		return c.JSON(http.StatusOK, APIResponse{Success: true, Data: []PubSubEvent{}})
+	}
+
+	key := fmt.Sprintf("user:activities:%s", userID)
+	results, err := RedisClient.LRange(ctx, key, 0, 49).Result()
+	if err != nil {
+		log.Printf("Error fetching recent activities: %v", err)
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch activities"})
+	}
+
+	var events []PubSubEvent
+	for _, raw := range results {
+		var event PubSubEvent
+		if err := json.Unmarshal([]byte(raw), &event); err == nil {
+			events = append(events, event)
+		}
+	}
+
+	if events == nil {
+		events = []PubSubEvent{}
+	}
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: events})
+}
+
