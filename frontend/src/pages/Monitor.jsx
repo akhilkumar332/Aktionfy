@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNotify } from '../context/NotificationContext';
 import { useSSE } from '../context/SSEContext';
 import { useWebSocket } from '../context/WebSocketContext';
+import AdvancedSkeleton from '../components/shared/AdvancedSkeleton';
 
 const MetricsGrid = ({ usage }) => {
   if (!usage) return null;
@@ -323,10 +324,26 @@ const Monitor = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex flex-col items-center justify-center py-40 gap-4 opacity-50"
+            className="space-y-8"
           >
-            <RefreshCw className="animate-spin text-zinc-300" size={32} />
-            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest animate-pulse">Establishing Signal...</p>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              {[1, 2, 3, 4, 5, 6].map(i => (
+                <div key={i} className="pro-card p-5 space-y-3 relative overflow-hidden">
+                  <AdvancedSkeleton.Shimmer className="w-4 h-4 rounded" />
+                  <AdvancedSkeleton.Shimmer className="w-12 h-8 rounded" />
+                  <AdvancedSkeleton.Shimmer className="w-16 h-2 rounded" />
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="pro-card p-6 h-48 flex flex-col items-center justify-center space-y-4">
+                  <AdvancedSkeleton.Shimmer className="w-24 h-3 rounded" />
+                  <AdvancedSkeleton.Shimmer className="w-32 h-12 rounded-xl" />
+                  <AdvancedSkeleton.Shimmer className="w-20 h-2 rounded" />
+                </div>
+              ))}
+            </div>
           </motion.div>
         ) : (
           <motion.div

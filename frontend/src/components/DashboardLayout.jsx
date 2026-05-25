@@ -7,10 +7,11 @@ import {
   Settings, Menu, X, Zap, ChevronRight, Search, Command,
   ShieldAlert, Globe
 } from 'lucide-react';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import BridgeAssistant from './modals/BridgeAssistant';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 
 const SidebarItem = ({ icon: Icon, label, path, isActive, onClick, roles, userRole }) => {
   if (roles && !roles.includes(userRole)) return null;
@@ -267,6 +268,15 @@ const DashboardLayout = ({ children }) => {
   const isFullBleed = location.pathname === '/canvas';
 
   // Keyboard shortcuts
+  const shortcuts = useMemo(() => ({
+    'g d': '/dashboard',
+    'g c': '/canvas',
+    'g t': '/tasks',
+    'r': () => window.location.reload(),
+  }), []);
+
+  useKeyboardShortcuts(shortcuts);
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {

@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useNotify } from '../context/NotificationContext';
 import { useSSE } from '../context/SSEContext';
+import AdvancedSkeleton from '../components/shared/AdvancedSkeleton';
 
 const Insights = () => {
   const { notify } = useNotify();
@@ -153,13 +154,15 @@ const Insights = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="py-40 flex flex-col items-center justify-center gap-8"
+            className="space-y-12"
           >
-            <div className="relative">
-               <div className="w-16 h-16 border-2 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
-               <div className="absolute inset-0 bg-blue-500 blur-2xl opacity-10 animate-pulse"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {[1, 2, 3, 4].map(i => <AdvancedSkeleton.Metric key={i} />)}
             </div>
-            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.4em] animate-pulse">Synthesizing Data Streams...</p>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {[1, 2].map(i => <AdvancedSkeleton.Chart key={i} />)}
+            </div>
+            <AdvancedSkeleton.Chart />
           </motion.div>
         ) : (
           <motion.div 
