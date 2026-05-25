@@ -1,14 +1,28 @@
 import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const DecisionNode = ({ data, selected }) => {
-  const { task } = data;
+  const { task, editor } = data;
   const isProcessing = task.status === 'processing';
   const isHalted = task.status === 'halted';
   const isSwarm = task.task_type === 'swarm_router';
 
   return (
     <div className={`relative flex items-center justify-center transition-all duration-500 ${isProcessing ? 'scale-110' : ''}`}>
+      <AnimatePresence>
+        {editor && (
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="absolute -top-12 left-1/2 -translate-x-1/2 bg-indigo-600/90 text-white text-[8px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border border-indigo-400 shadow-[0_0_20px_rgba(79,70,229,0.4)] backdrop-blur-sm z-50 flex items-center gap-2 whitespace-nowrap"
+          >
+            <div className="w-1 h-1 rounded-full bg-white animate-pulse"></div>
+            {editor.email.split('@')[0]} CALIBRATING...
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Diamond Shape Container */}
       <div 
         className={`

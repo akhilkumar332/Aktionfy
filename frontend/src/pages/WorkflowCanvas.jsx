@@ -262,6 +262,7 @@ const WorkflowCanvas = () => {
         type: isRouter ? 'decision' : undefined,
         data: { 
           task,
+          editor,
           label: isRouter ? undefined : (
             <div className={`flex flex-col items-center gap-2 transition-all duration-500 ${isProcessing ? 'scale-110' : ''}`}>
               <AnimatePresence>
@@ -371,7 +372,13 @@ const WorkflowCanvas = () => {
 
     setNodes(newNodes);
     setEdges(newEdges);
-  }, [setNodes, setEdges]);
+  }, [setNodes, setEdges, editingNodes]);
+
+  useEffect(() => {
+    if (rawTasks.length > 0) {
+      mapTasksToFlow(rawTasks);
+    }
+  }, [editingNodes, rawTasks, mapTasksToFlow]);
 
 
   const fetchTasks = useCallback(async () => {
