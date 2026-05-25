@@ -4,7 +4,7 @@ import { NotificationProvider } from './context/NotificationContext';
 import { SSEProvider } from './context/SSEContext';
 import { WebSocketProvider } from './context/WebSocketContext';
 import ErrorBoundary from './components/ErrorBoundary';
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useState, useEffect } from 'react';
 
 const Landing = lazy(() => import('./pages/Landing'));
 const Login = lazy(() => import('./pages/Login'));
@@ -28,6 +28,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import DocumentationLayout from './components/DocumentationLayout';
 import NotificationHub from './components/NotificationHub';
+import CommandPalette from './components/shared/CommandPalette';
 import { AnimatePresence, motion } from 'framer-motion';
 
 import { 
@@ -161,6 +162,19 @@ const AppRoutes = () => {
 };
 
 function App() {
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsPaletteOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   return (
     <ErrorBoundary>
       <NotificationProvider>
@@ -178,6 +192,7 @@ function App() {
                 }>
                   <AppRoutes />
                 </Suspense>
+                <CommandPalette isOpen={isPaletteOpen} onClose={() => setIsPaletteOpen(false)} />
               </Router>
               <NotificationHub />
             </WebSocketProvider>
