@@ -1759,4 +1759,137 @@ func registerTools(s *server.MCPServer) {
 
 		return mcp.NewToolResultText(md.String()), nil
 	})
+
+	getQuotaTool := mcp.NewTool("get_system_usage_quota",
+		mcp.WithDescription("Retrieve current task limits, usage, and quota availability"),
+	)
+	s.AddTool(getQuotaTool, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		userID, ok := ctx.Value(userIDKey).(string)
+		if !ok {
+			return mcp.NewToolResultError("unauthorized"), nil
+		}
+		val := ctx.Value(userTierKey)
+		userTier, ok := val.(string)
+		if !ok {
+			userTier = TierFree
+		}
+
+		user, err := queries.GetUser(ctx, userID)
+		if err != nil {
+			return mcp.NewToolResultError("failed to get user details"), nil
+		}
+
+		limit := 3 // TierFree
+		if user.MaxTasksLimit.Valid {
+			limit = int(user.MaxTasksLimit.Int32)
+		} else {
+			switch userTier {
+			case TierPlus:
+				limit = 10
+			case TierPro:
+				limit = 50
+			}
+		}
+
+		var count int64
+		// Fetch count
+		count, err = queries.CountUserTasks(ctx, userID)
+		if err != nil {
+			return mcp.NewToolResultError("failed to get task count"), nil
+		}
+
+		resBytes, _ := json.Marshal(map[string]interface{}{
+			"tier": userTier,
+			"task_limit": limit,
+			"current_tasks": count,
+			"remaining_quota": limit - int(count),
+		})
+		return mcp.NewToolResultText(string(resBytes)), nil
+	})
+
+	listFailedTasksTool := mcp.NewTool("list_failed_tasks",
+		mcp.WithDescription("Quickly get a list of tasks that have failed or errored out"),
+	)
+	s.AddTool(listFailedTasksTool, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		userID, ok := ctx.Value(userIDKey).(string)
+		if !ok {
+			return mcp.NewToolResultError("unauthorized"), nil
+		}
+
+		var rows []db.ListUserTasksRow
+		cachedRows, cacheErr := GetCachedTasks(ctx, userID)
+		if cacheErr == nil && cachedRows != nil {
+			rows = cachedRows
+		} else {
+			var err error
+			rows, err = queries.ListUserTasks(ctx, userID)
+			if err == nil {
+				SetCachedTasks(ctx, userID, rows)
+			}
+		}
+
+		var filteredRows []map[string]interface{}
+		for _, t := range rows {
+			if t.Status.String == StatusError || t.FailureCount.Int32 > 0 {
+				filteredRows = append(filteredRows, map[string]interface{}{
+					"id":                   formatUUID(t.ID),
+					"name":                 t.Name,
+					"status":               t.Status.String,
+					"failure_count":        t.FailureCount.Int32,
+				})
+			}
+		}
+
+		resBytes, _ := json.Marshal(filteredRows)
+		if string(resBytes) == "null" {
+			resBytes = []byte("[]")
+		}
+		return mcp.NewToolResultText(string(resBytes)), nil
+	})
+
+	retryFailedTaskTool := mcp.NewTool("retry_failed_task",
+		mcp.WithDescription("Reset the failure count of a task and resume it immediately"),
+		mcp.WithString("id", mcp.Required(), mcp.Description("Task ID to retry")),
+	)
+	s.AddTool(retryFailedTaskTool, func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args, ok := req.Params.Arguments.(map[string]interface{})
+		if !ok {
+			return mcp.NewToolResultError("invalid arguments"), nil
+		}
+		userID, ok := ctx.Value(userIDKey).(string)
+		if !ok {
+			return mcp.NewToolResultError("unauthorized"), nil
+		}
+		id, ok := args["id"].(string)
+		if !ok {
+			return mcp.NewToolResultError("missing or invalid 'id'"), nil
+		}
+
+		var tid pgtype.UUID
+		if err := parseUUID(id, &tid); err != nil {
+			return mcp.NewToolResultError("invalid task ID format"), nil
+		}
+
+		err := queries.ResetTaskFailureCount(ctx, db.ResetTaskFailureCountParams{
+			Status: pgtype.Text{String: StatusActive, Valid: true},
+			ID:     tid,
+			UserID: userID,
+		})
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("db error: %v", err)), nil
+		}
+
+		InvalidateCachedTask(ctx, id)
+		InvalidateCachedTasks(ctx, userID)
+
+		evtPayload, _ := json.Marshal(map[string]string{"task_id": id, "status": StatusActive})
+		PublishEvent(ctx, PubSubEvent{
+			UserID:    userID,
+			EventType: "task_status_changed",
+			Payload:   string(evtPayload),
+		})
+
+		resBytes, _ := json.Marshal(map[string]string{"status": "retrying"})
+		return mcp.NewToolResultText(string(resBytes)), nil
+	})
 }

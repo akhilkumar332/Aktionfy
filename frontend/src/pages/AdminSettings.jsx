@@ -89,6 +89,14 @@ const AdminSettings = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
+    
+    // Validate inputs
+    if (settings.worker_prune_days <= 0 || settings.js_timeout_ms <= 0 || 
+        settings.reaper_stuck_threshold_minutes <= 0 || settings.scheduler_poll_interval_seconds <= 0) {
+      notify('ERROR', 'Validation Failed', 'All configuration values must be greater than zero.');
+      return;
+    }
+
     setSaving(true);
     try {
       await axios.post('/api/v1/admin/settings', settings);
