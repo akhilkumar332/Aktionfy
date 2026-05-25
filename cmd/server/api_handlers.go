@@ -238,6 +238,59 @@ func apiDashboardHandler(c echo.Context) error {
 		TaskCount: taskCount,
 	}
 
+	// 1. Fetch pending approvals (tasks requiring manual routing)
+	type PendingApproval struct {
+		TaskID   string `json:"task_id"`
+		TaskName string `json:"task_name"`
+	}
+	var pendingApprovals []PendingApproval
+	rows, err := dbPool.Query(c.Request().Context(), `
+		SELECT id, name FROM tasks 
+		WHERE user_id = $1 AND last_approval_status = 'needs_routing'
+		LIMIT 20
+	`, user.ID)
+	if err == nil {
+		defer rows.Close()
+		for rows.Next() {
+			var p PendingApproval
+			if err := rows.Scan(&p.TaskID, &p.TaskName); err == nil {
+				pendingApprovals = append(pendingApprovals, p)
+			}
+		}
+	}
+	if pendingApprovals == nil {
+		pendingApprovals = []PendingApproval{} // ensure non-null json
+	}
+	dashData.PendingApprovals = pendingApprovals
+
+	// 2. Fetch trailing latency history (from Redis zset "system_metrics:latency")
+	type LatencyPoint struct {
+		Time    string `json:"time"`
+		Latency int    `json:"latency"`
+	}
+	var latencyHistory []LatencyPoint
+	if RedisClient != nil {
+		// get last 8 items
+		results, _ := RedisClient.ZRevRange(c.Request().Context(), "system_metrics:latency", 0, 7).Result()
+		for i := len(results) - 1; i >= 0; i-- {
+			var point struct {
+				Timestamp int64 `json:"timestamp"`
+				Latency   int   `json:"latency"`
+			}
+			if err := json.Unmarshal([]byte(results[i]), &point); err == nil {
+				t := time.Unix(point.Timestamp, 0)
+				latencyHistory = append(latencyHistory, LatencyPoint{
+					Time:    t.Format("15:04:05"),
+					Latency: point.Latency,
+				})
+			}
+		}
+	}
+	if latencyHistory == nil {
+		latencyHistory = []LatencyPoint{}
+	}
+	dashData.LatencyHistory = latencyHistory
+
 	// Cache dashboard in Redis
 	SetCachedDashboard(c.Request().Context(), user.ID, dashData)
 

@@ -376,8 +376,10 @@ func InvalidateCachedTasks(ctx context.Context, userID string) {
 // --- Dashboard Caching ---
 
 type CachedDashboardData struct {
-	User      interface{} `json:"user"`
-	TaskCount int64       `json:"taskCount"`
+	User             interface{} `json:"user"`
+	TaskCount        int64       `json:"taskCount"`
+	PendingApprovals interface{} `json:"pendingApprovals"`
+	LatencyHistory   interface{} `json:"latencyHistory"`
 }
 
 // GetCachedDashboard retrieves user dashboard stats from Redis if present.

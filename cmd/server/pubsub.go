@@ -18,6 +18,7 @@ type PubSubEvent struct {
 	UserID       string            `json:"user_id"`
 	EventType    string            `json:"event_type"` // e.g., "task_status_changed"
 	Payload      string            `json:"payload"`
+	Timestamp    time.Time         `json:"timestamp"`
 	TraceContext map[string]string `json:"trace_context,omitempty"`
 }
 
@@ -25,6 +26,10 @@ func PublishEvent(ctx context.Context, event PubSubEvent) error {
 	if RedisClient == nil {
 		log.Printf("Aktionfy warning: RedisClient is uninitialized. Event '%s' skipped.", event.EventType)
 		return nil
+	}
+
+	if event.Timestamp.IsZero() {
+		event.Timestamp = time.Now().UTC()
 	}
 
 	// Auto-invalidate task/dashboard cache on task mutations/executions

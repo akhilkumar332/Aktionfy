@@ -28,15 +28,7 @@ const Dashboard = () => {
   const [pendingApprovals, setPendingApprovals] = useState([]);
   const [systemStatus, setSystemStatus] = useState(null);
   const [showKey, setShowKey] = useState(false);
-  const [latencyHistory, setLatencyHistory] = useState(() => {
-    const now = Date.now();
-    return Array.from({ length: 8 }, (_, i) => {
-      const timeStr = new Date(now - (8 - i) * 30000).toLocaleTimeString(undefined, {
-        hour: '2-digit', minute: '2-digit', second: '2-digit'
-      });
-      return { time: timeStr, latency: 0 };
-    });
-  });
+  const [latencyHistory, setLatencyHistory] = useState([]);
 
   useEffect(() => {
     return () => {
@@ -54,11 +46,30 @@ const Dashboard = () => {
       if (isMounted.current) {
         if (dashRes.data.success) {
           setTaskCount(dashRes.data.data.taskCount);
+          if (dashRes.data.data.pendingApprovals) {
+            setPendingApprovals(dashRes.data.data.pendingApprovals);
+          }
+          if (dashRes.data.data.latencyHistory && dashRes.data.data.latencyHistory.length > 0) {
+            setLatencyHistory(dashRes.data.data.latencyHistory);
+          } else if (latencyHistory.length === 0) {
+            // Fill with 0s initially if no history exists yet
+            const now = Date.now();
+            setLatencyHistory(Array.from({ length: 8 }, (_, i) => ({
+              time: new Date(now - (8 - i) * 60000).toLocaleTimeString(undefined, {
+                hour: '2-digit', minute: '2-digit', second: '2-digit'
+              }),
+              latency: 0
+            })));
+          }
         }
         if (activityRes.data.success) {
           const historical = (activityRes.data.data || []).map(event => {
             let message = event.event_type;
             let type = 'success';
+            let timeStr = 'Recent';
+            if (event.timestamp && event.timestamp !== '0001-01-01T00:00:00Z') {
+              timeStr = new Date(event.timestamp).toLocaleTimeString();
+            }
             try {
               const payload = JSON.parse(event.payload);
               if (event.event_type === 'task_executed') {
@@ -68,8 +79,8 @@ const Dashboard = () => {
             } catch { /* ignore */ }
             
             return {
-              id: Math.random().toString(),
-              time: 'Recent', // Or parse from event if timestamp added
+              id: `${event.timestamp || Math.random()}-${event.event_type}`,
+              time: timeStr,
               message,
               type
             };

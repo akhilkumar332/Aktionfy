@@ -708,13 +708,32 @@ func runMetricsFlusher(ctx context.Context) {
 				}
 			}
 
-			if workerCount > 0 {
+			p99, err := queries.GetP99ExecutionLatency(ctx)
+			if err != nil {
+				log.Printf("Error fetching P99 latency in flusher: %v", err)
+			}
+
+			if workerCount > 0 || p99 > 0 {
 				query := `INSERT INTO system_metrics (total_workers, total_load, avg_memory_mb, p99_latency_ms) VALUES ($1, $2, $3, $4)`
-				_, err = dbPool.Exec(ctx, query, workerCount, totalLoad, 0.0, 0.0)
+				_, err = dbPool.Exec(ctx, query, workerCount, totalLoad, 0.0, p99)
 				if err != nil {
 					log.Printf("Failed to persist system metrics: %v", err)
 				}
 			}
+
+			// Push to Redis for Dashboard live chart
+			now := time.Now().Unix()
+			point := map[string]interface{}{
+				"timestamp": now,
+				"latency":   int(p99),
+			}
+			pointBytes, _ := json.Marshal(point)
+			RedisClient.ZAdd(ctx, "system_metrics:latency", redis.Z{
+				Score:  float64(now),
+				Member: pointBytes,
+			})
+			// keep only last 5 minutes (5 elements if 1 min ticker, let's keep 20)
+			RedisClient.ZRemRangeByRank(ctx, "system_metrics:latency", 0, -21)
 		case <-ctx.Done():
 			return
 		}
