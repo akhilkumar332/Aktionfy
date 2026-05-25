@@ -39,21 +39,6 @@ const MetricsGrid = ({ usage }) => {
   );
 };
 
-const LogsView = ({ logs }) => (
-  <div className="pro-card overflow-hidden">
-    <div className="overflow-x-auto custom-scrollbar">
-      <table className="w-full text-left border-collapse font-mono text-[11px]">
-        <thead>
-          <tr className="pro-table-header">
-            <th className="px-6 py-4">Timestamp</th>
-            <th className="px-6 py-4">Subject</th>
-            <th className="px-6 py-4">Action</th>
-            <th className="px-6 py-4">Scope</th>
-            <th className="px-6 py-4 text-right">Telemetry</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-zinc-800/50">
-          {logs.length === 0 ? (
 const LogsView = ({ logs, logSearch, setLogSearch, fetchData, refreshing }) => {
   const filteredLogs = logs.filter(log => 
     (log.action || '').toLowerCase().includes(logSearch.toLowerCase()) ||

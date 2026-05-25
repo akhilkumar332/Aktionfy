@@ -14,7 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import { useNotify } from '../context/NotificationContext';
 import { useSSE } from '../context/SSEContext';
 import { SkeletonRow } from '../components/SkeletonLoader';
-import { Download, Pause, Play } from 'lucide-react';
+import { Download } from 'lucide-react';
 
 const Tasks = () => {
   const navigate = useNavigate();
