@@ -314,6 +314,9 @@ func handleGetTaskDurations(c echo.Context) error {
 			})
 		}
 	}
+	if err := rows.Err(); err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Error iterating task durations"})
+	}
 
 	// Reverse to get chronological order for Recharts
 	for i, j := 0, len(data)-1; i < j; i, j = i+1, j-1 {

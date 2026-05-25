@@ -225,7 +225,9 @@ const Templates = () => {
             } catch (err) {
                 notify('ERROR', 'Import failed', err.response?.data?.error || err.message);
             } finally {
-                setLoading(false);
+                if (isMounted.current) {
+                  setLoading(false);
+                }
                 if (fileInputRef.current) {
                     fileInputRef.current.value = '';
                 }

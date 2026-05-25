@@ -115,7 +115,9 @@ const Tasks = () => {
     } catch (err) {
       notify('ERROR', `Failed to ${action} node`, err.response?.data?.error || err.message);
     } finally {
-      if (action === 'delete') setConfirmDelete(null);
+      if (isMountedRef.current && action === 'delete') {
+        setConfirmDelete(null);
+      }
     }
   };
 
@@ -144,7 +146,7 @@ const Tasks = () => {
     } catch (err) {
       notify('ERROR', `Bulk ${action} failed`, err.response?.data?.error || err.message);
     } finally {
-      setRefreshing(false);
+      if (isMountedRef.current) setRefreshing(false);
     }
   };
 

@@ -30,9 +30,11 @@ const Webhooks = () => {
         setDeliveries(res.data.data || []);
       }
     } catch (err) {
-      notify('ERROR', 'Failed to fetch deliveries', err.response?.data?.error || err.message);
+      if (isMounted.current) {
+        notify('ERROR', 'Failed to fetch deliveries', err.response?.data?.error || err.message);
+      }
     } finally {
-      setLoadingDeliveries(false);
+      if (isMounted.current) setLoadingDeliveries(false);
     }
   }, [notify]);
 
@@ -52,9 +54,11 @@ const Webhooks = () => {
         }
       }
     } catch (err) {
-      notify('ERROR', 'Failed to trigger test payload', err.response?.data?.error || err.message);
+      if (isMounted.current) {
+        notify('ERROR', 'Failed to trigger test payload', err.response?.data?.error || err.message);
+      }
     } finally {
-      setTestingWebhookId(null);
+      if (isMounted.current) setTestingWebhookId(null);
     }
   };
 

@@ -54,7 +54,7 @@ const TaskHistory = () => {
     } catch (err) {
       notify('ERROR', 'Failed to trigger task execution', err.response?.data?.error || err.message);
     } finally {
-      setTriggering(false);
+      if (isMounted.current) setTriggering(false);
     }
   };
 

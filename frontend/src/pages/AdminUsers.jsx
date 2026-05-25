@@ -208,7 +208,7 @@ const AdminUsers = () => {
     } catch (err) {
       notify('ERROR', 'Failed to update user status', err.response?.data?.error || err.message);
     } finally {
-      setUpdating(null);
+      if (isMounted.current) setUpdating(null);
     }
   };
 
@@ -324,7 +324,7 @@ const AdminUsers = () => {
     } catch (err) {
       notify('ERROR', 'Failed to update custom overrides', err.response?.data?.error || err.message);
     } finally {
-      setSubmittingOverride(false);
+      if (isMounted.current) setSubmittingOverride(false);
     }
   };
 
