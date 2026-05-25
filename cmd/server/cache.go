@@ -341,20 +341,36 @@ func SetCachedTasks(ctx context.Context, userID string, tasks []db.ListUserTasks
 	}
 }
 
-// InvalidateCachedTasks clears cached tasks and dashboard for a user.
+// GetTaskCacheVersion retrieves the current version of the user's task cache.
+func GetTaskCacheVersion(ctx context.Context, userID string) string {
+	if RedisClient == nil {
+		return "1"
+	}
+	key := fmt.Sprintf("cache:tasks:version:%s", userID)
+	v, err := RedisClient.Get(ctx, key).Result()
+	if err != nil {
+		return "1"
+	}
+	return v
+}
+
+// InvalidateCachedTasks increments the cache version, effectively invalidating all user-scoped task lists.
 func InvalidateCachedTasks(ctx context.Context, userID string) {
 	if RedisClient == nil {
 		return
 	}
 
+	// Increment version to invalidate all search/pagination keys
+	versionKey := fmt.Sprintf("cache:tasks:version:%s", userID)
+	_ = RedisClient.Incr(ctx, versionKey).Err()
+	_ = RedisClient.Expire(ctx, versionKey, 24*time.Hour).Err()
+
+	// Clear dashboard and count
 	keys := []string{
-		fmt.Sprintf("cache:tasks:%s", userID),
 		fmt.Sprintf("cache:dashboard:%s", userID),
+		fmt.Sprintf("cache:task_count:%s", userID),
 	}
-	err := RedisClient.Del(ctx, keys...).Err()
-	if err != nil {
-		log.Printf("Warning: failed to invalidate tasks/dashboard cache in Redis for user %s: %v", userID, err)
-	}
+	_ = RedisClient.Del(ctx, keys...).Err()
 }
 
 // --- Dashboard Caching ---
@@ -801,4 +817,44 @@ func InvalidateCachedTask(ctx context.Context, taskID string) {
 	}
 	key := fmt.Sprintf("cache:task:%s", taskID)
 	_ = RedisClient.Del(ctx, key).Err()
+}
+
+// CachedQuery implements a generic cache-aside pattern.
+// out: pointer to the destination variable (e.g. &tasks)
+// key: Redis cache key
+// ttl: Cache duration
+// fetchFn: Data provider function if cache miss
+func CachedQuery(ctx context.Context, key string, ttl time.Duration, out interface{}, fetchFn func() (interface{}, error)) error {
+	if RedisClient != nil {
+		data, err := RedisClient.Get(ctx, key).Result()
+		if err == nil {
+			if err := json.Unmarshal([]byte(data), out); err == nil {
+				return nil
+			}
+		}
+	}
+
+	// Cache miss
+	res, err := fetchFn()
+	if err != nil {
+		return err
+	}
+
+	// Marshal to JSON to store in Redis and to safely cast to output type via Unmarshal
+	bytes, err := json.Marshal(res)
+	if err != nil {
+		return err
+	}
+
+	// Populate the output pointer
+	if err := json.Unmarshal(bytes, out); err != nil {
+		return err
+	}
+
+	// Cache in Redis
+	if RedisClient != nil {
+		_ = RedisClient.Set(ctx, key, string(bytes), ttl).Err()
+	}
+
+	return nil
 }

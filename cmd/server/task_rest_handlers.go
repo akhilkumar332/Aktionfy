@@ -109,6 +109,7 @@ func apiCreateTaskHandler(c echo.Context) error {
 	}
 
 	IncrementCachedTaskCount(c.Request().Context(), userID)
+	InvalidateCachedTasks(c.Request().Context(), userID)
 
 	// Audit Log
 	taskIDStr := formatUUID(task.ID)
@@ -157,22 +158,29 @@ func apiListTasksHandler(c echo.Context) error {
 		}
 	}
 
-	sfKey := fmt.Sprintf("ListTasks:%s:%s:%s:%d:%d", userID, search, status, limit, offset)
-	v, err, _ := CacheGroup.Do(sfKey, func() (interface{}, error) {
-		tasks, err := queries.SearchUserTasks(c.Request().Context(), db.SearchUserTasksParams{
-			UserID:    userID,
-			Search:    search,
-			Status:    status,
-			LimitVal:  limit,
-			OffsetVal: offset,
+	version := GetTaskCacheVersion(c.Request().Context(), userID)
+	redisKey := fmt.Sprintf("cache:tasks:list:%s:v%s:%s:%s:%d:%d", userID, version, search, status, limit, offset)
+	var tasks []db.SearchUserTasksRow
+
+	err := CachedQuery(c.Request().Context(), redisKey, TaskCacheTTL, &tasks, func() (interface{}, error) {
+		sfKey := fmt.Sprintf("ListTasks:%s:%s:%s:%d:%d", userID, search, status, limit, offset)
+		v, err, _ := CacheGroup.Do(sfKey, func() (interface{}, error) {
+			tasks, err := queries.SearchUserTasks(c.Request().Context(), db.SearchUserTasksParams{
+				UserID:    userID,
+				Search:    search,
+				Status:    status,
+				LimitVal:  limit,
+				OffsetVal: offset,
+			})
+			if err != nil {
+				return nil, err
+			}
+			if tasks == nil {
+				tasks = []db.SearchUserTasksRow{}
+			}
+			return tasks, nil
 		})
-		if err != nil {
-			return nil, err
-		}
-		if tasks == nil {
-			tasks = []db.SearchUserTasksRow{}
-		}
-		return tasks, nil
+		return v, err
 	})
 
 	if err != nil {
@@ -180,7 +188,6 @@ func apiListTasksHandler(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to list tasks"})
 	}
 
-	tasks := v.([]db.SearchUserTasksRow)
 	total := int64(0)
 	if len(tasks) > 0 {
 		total = tasks[0].TotalCount
@@ -188,8 +195,8 @@ func apiListTasksHandler(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"success": true,
-		"data": tasks,
-		"total": total,
+		"data":    tasks,
+		"total":   total,
 	})
 }
 
@@ -380,6 +387,7 @@ func apiDeleteTaskHandler(c echo.Context) error {
 	}
 
 	DecrementCachedTaskCount(c.Request().Context(), userID)
+	InvalidateCachedTasks(c.Request().Context(), userID)
 
 	// Audit Log
 	writeAuditLog(c.Request().Context(), AuditEvent{
@@ -684,6 +692,8 @@ func apiUpdateTaskHandler(c echo.Context) error {
 		ResourceType: "task",
 		ResourceID:   taskIDStr,
 	})
+
+	InvalidateCachedTasks(ctx, userID)
 
 	_ = PublishEvent(ctx, PubSubEvent{
 		UserID:    userID,
