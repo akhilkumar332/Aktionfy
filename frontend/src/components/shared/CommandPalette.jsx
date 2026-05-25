@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Command, Zap, Layers, Users, Sparkles, X, ChevronRight, Layout, History, Shield, Activity } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Search, Zap, Layers, Users, Sparkles, X, ChevronRight, Layout, Shield, Activity } from 'lucide-react';
 import axios from 'axios';
 import { createPortal } from 'react-dom';
 
@@ -46,8 +46,8 @@ const CommandPalette = ({ isOpen, onClose }) => {
 
   useEffect(() => {
     if (isOpen) {
-      setSelectedIndex(0);
-      setTimeout(() => inputRef.current?.focus(), 100);
+      const timer = setTimeout(() => inputRef.current?.focus(), 50);
+      return () => clearTimeout(timer);
     }
   }, [isOpen]);
 

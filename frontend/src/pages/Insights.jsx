@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useNotify } from '../context/NotificationContext';
 import { useSSE } from '../context/SSEContext';
-import AdvancedSkeleton from '../components/shared/AdvancedSkeleton';
+import { SkeletonMetric, SkeletonChart } from '../components/shared/AdvancedSkeleton';
 
 const Insights = () => {
   const { notify } = useNotify();
@@ -157,12 +157,12 @@ const Insights = () => {
             className="space-y-12"
           >
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {[1, 2, 3, 4].map(i => <AdvancedSkeleton.Metric key={i} />)}
+              {[1, 2, 3, 4].map(i => <SkeletonMetric key={i} />)}
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {[1, 2].map(i => <AdvancedSkeleton.Chart key={i} />)}
+              {[1, 2].map(i => <SkeletonChart key={i} />)}
             </div>
-            <AdvancedSkeleton.Chart />
+            <SkeletonChart />
           </motion.div>
         ) : (
           <motion.div 

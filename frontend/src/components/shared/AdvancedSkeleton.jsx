@@ -40,11 +40,3 @@ export const SkeletonChart = ({ height = "h-72" }) => (
     <Shimmer className={`w-full ${height} rounded-xl`} />
   </div>
 );
-
-export const AdvancedSkeleton = {
-  Metric: SkeletonMetric,
-  Chart: SkeletonChart,
-  Shimmer: Shimmer
-};
-
-export default AdvancedSkeleton;

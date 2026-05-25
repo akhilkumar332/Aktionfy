@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNotify } from '../context/NotificationContext';
 import { useSSE } from '../context/SSEContext';
 import { useWebSocket } from '../context/WebSocketContext';
-import AdvancedSkeleton from '../components/shared/AdvancedSkeleton';
+import { Shimmer } from '../components/shared/AdvancedSkeleton';
 
 const MetricsGrid = ({ usage }) => {
   if (!usage) return null;
@@ -168,7 +168,7 @@ const Monitor = () => {
             return newLogs.slice(-100);
           });
         }
-      } catch (err) {
+      } catch {
         // Silently handle non-JSON or unrelated messages
       }
     };
@@ -238,11 +238,10 @@ const Monitor = () => {
         setOnlineUsers(presenceRes.value.data.data || []);
       }
 
-    } catch (err) {
+    } catch {
       if (isUserInitiated) {
-        notify('ERROR', 'Unexpected error during monitor refresh', err.message);
+        notify('ERROR', 'Unexpected error during monitor refresh', 'Network or cluster communication error');
       }
-      console.error('Monitor fetch error:', err);
     } finally {
       if (isMounted.current) {
         setLoading(false);
@@ -329,18 +328,18 @@ const Monitor = () => {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               {[1, 2, 3, 4, 5, 6].map(i => (
                 <div key={i} className="pro-card p-5 space-y-3 relative overflow-hidden">
-                  <AdvancedSkeleton.Shimmer className="w-4 h-4 rounded" />
-                  <AdvancedSkeleton.Shimmer className="w-12 h-8 rounded" />
-                  <AdvancedSkeleton.Shimmer className="w-16 h-2 rounded" />
+                  <Shimmer className="w-4 h-4 rounded" />
+                  <Shimmer className="w-12 h-8 rounded" />
+                  <Shimmer className="w-16 h-2 rounded" />
                 </div>
               ))}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[1, 2, 3].map(i => (
                 <div key={i} className="pro-card p-6 h-48 flex flex-col items-center justify-center space-y-4">
-                  <AdvancedSkeleton.Shimmer className="w-24 h-3 rounded" />
-                  <AdvancedSkeleton.Shimmer className="w-32 h-12 rounded-xl" />
-                  <AdvancedSkeleton.Shimmer className="w-20 h-2 rounded" />
+                  <Shimmer className="w-24 h-3 rounded" />
+                  <Shimmer className="w-32 h-12 rounded-xl" />
+                  <Shimmer className="w-20 h-2 rounded" />
                 </div>
               ))}
             </div>

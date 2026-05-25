@@ -192,7 +192,7 @@ function App() {
                 }>
                   <AppRoutes />
                 </Suspense>
-                <CommandPalette isOpen={isPaletteOpen} onClose={() => setIsPaletteOpen(false)} />
+                <CommandPalette key={isPaletteOpen} isOpen={isPaletteOpen} onClose={() => setIsPaletteOpen(false)} />
               </Router>
               <NotificationHub />
             </WebSocketProvider>
