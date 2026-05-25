@@ -8,15 +8,17 @@ import {
   MiniMap, 
   useNodesState, 
   useEdgesState,
-  MarkerType
+  MarkerType,
+  useReactFlow
 } from '@xyflow/react';
 import dagre from 'dagre';
+import { toPng } from 'html-to-image';
 import '@xyflow/react/dist/style.css';
 import TaskWizard from '../components/TaskWizard';
 import SaveTemplateModal from '../components/SaveTemplateModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
-import { Save, RefreshCw, Layers, X, Trash2, Play, Pause, FastForward, Rewind, Activity, Check, Plus, Sparkles, Undo2, Redo2, CheckCircle } from 'lucide-react';
+import { Save, RefreshCw, Layers, X, Trash2, Play, Pause, FastForward, Rewind, Activity, Check, Plus, Sparkles, Undo2, Redo2, CheckCircle, Download } from 'lucide-react';
 import DecisionNode from '../components/DecisionNode';
 import ManualRouteModal from '../components/ManualRouteModal';
 import GlobalPlaybackBar from '../components/GlobalPlaybackBar';
@@ -50,6 +52,41 @@ const WorkflowCanvas = () => {
   const [globalTime, setGlobalTime] = useState(0);
   const [totalDuration, setTotalDuration] = useState(0);
   const playbackTimerRef = useRef(null);
+
+  const { fitView } = useReactFlow();
+
+  const onExport = useCallback(() => {
+    const element = document.querySelector('.react-flow__renderer');
+    if (!element) return;
+
+    // Temporarily fit view to include all nodes for high-quality export
+    fitView();
+    
+    setTimeout(() => {
+      toPng(element, {
+        backgroundColor: '#09090b',
+        width: element.offsetWidth * 2,
+        height: element.offsetHeight * 2,
+        style: {
+          width: element.offsetWidth,
+          height: element.offsetHeight,
+          transform: 'scale(2)',
+          transformOrigin: 'top left',
+        },
+      })
+      .then((dataUrl) => {
+        const link = document.createElement('a');
+        link.download = `workflow-architecture-${new Date().getTime()}.png`;
+        link.href = dataUrl;
+        link.click();
+        notify('SUCCESS', 'Canvas architecture exported as high-res PNG');
+      })
+      .catch((err) => {
+        console.error('Export failed:', err);
+        notify('ERROR', 'Export Failed', 'Unable to render canvas image');
+      });
+    }, 200);
+  }, [fitView, notify]);
 
   // Derive currentTraceIndex from globalTime and traces
   const currentTraceIndex = useMemo(() => {
@@ -772,9 +809,18 @@ const WorkflowCanvas = () => {
           <button 
             onClick={onLayout}
             className="bg-zinc-900 text-zinc-300 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] border border-zinc-800/50 hover:bg-zinc-100/10 hover:text-white transition-all flex items-center gap-3"
+            title="Magic Wand: hierarchical auto-layout"
           >
-            <Activity size={14} className="text-brand-secondary" />
-            Auto-Sync
+            <Sparkles size={14} className="text-amber-400" />
+            Magic Wand
+          </button>
+          <button 
+            onClick={onExport}
+            className="bg-zinc-900 text-zinc-300 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] border border-zinc-800/50 hover:bg-zinc-100/10 hover:text-white transition-all flex items-center gap-3"
+            title="Export Architecture"
+          >
+            <Download size={14} className="text-indigo-400" />
+            Export Image
           </button>
           <button 
             onClick={saveLayout}
