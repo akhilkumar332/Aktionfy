@@ -720,12 +720,21 @@ func apiListTaskVersionsHandler(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, APIResponse{Success: false, Error: "Task not found"})
 	}
 
-	versions, err := queries.ListTaskVersions(c.Request().Context(), taskID)
+	redisKey := fmt.Sprintf("cache:task_versions:%s", taskIDStr)
+	var versions []db.TaskVersion
+	err = CachedQuery(c.Request().Context(), redisKey, 5*time.Second, &versions, func() (interface{}, error) {
+		res, fetchErr := queries.ListTaskVersions(c.Request().Context(), taskID)
+		if fetchErr != nil {
+			return nil, fetchErr
+		}
+		if res == nil {
+			return []db.TaskVersion{}, nil
+		}
+		return res, nil
+	})
+
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to list versions"})
-	}
-	if versions == nil {
-		versions = []db.TaskVersion{}
 	}
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: versions})

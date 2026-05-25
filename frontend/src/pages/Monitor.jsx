@@ -41,7 +41,7 @@ const MetricsGrid = ({ usage }) => {
   );
 };
 
-const LogsView = ({ logs, logSearch, setLogSearch, fetchData, refreshing }) => {
+const LogsView = ({ logs, logSearch, setLogSearch, fetchData, refreshing, logLimit, setLogLimit }) => {
   const scrollRef = useRef(null);
   
   const filteredLogs = logs.filter(log => 
@@ -75,12 +75,27 @@ const LogsView = ({ logs, logSearch, setLogSearch, fetchData, refreshing }) => {
                 className="bg-zinc-950 border border-zinc-800 text-[10px] text-zinc-300 px-9 py-2 rounded-xl focus:outline-none focus:border-indigo-500/50 w-48 transition-all font-mono"
               />
             </div>
+            
+            <select
+              value={logLimit}
+              onChange={(e) => {
+                setLogLimit(Number(e.target.value));
+                fetchData(true, Number(e.target.value));
+              }}
+              className="bg-zinc-950 border border-zinc-800 text-[10px] text-zinc-400 px-3 py-2 rounded-xl focus:outline-none focus:border-brand-primary/50 transition-all font-mono appearance-none"
+            >
+              <option value={50}>Limit: 50</option>
+              <option value={100}>Limit: 100</option>
+              <option value={250}>Limit: 250</option>
+              <option value={500}>Limit: 500</option>
+            </select>
+
             <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 px-3 py-1.5 rounded-lg">
               <span className="text-[9px] font-black text-emerald-500/60 uppercase tracking-widest animate-pulse">TERMINAL_SESSION_ACTIVE</span>
               <div className="w-1 h-3 bg-emerald-500/20 animate-pulse"></div>
             </div>
             <button 
-              onClick={() => fetchData(true)}
+              onClick={() => fetchData(true, logLimit)}
               disabled={refreshing}
               className="p-2 bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white rounded-lg transition-colors cursor-pointer"
             >
@@ -147,6 +162,7 @@ const Monitor = () => {
   const [usage, setUsage] = useState(null);
   const [auditLogs, setAuditLogs] = useState([]);
   const [logSearch, setLogSearch] = useState('');
+  const [logLimit, setLogLimit] = useState(100);
   const [systemStatus, setSystemStatus] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -165,7 +181,7 @@ const Monitor = () => {
         if (data.type === 'audit_log') {
           setAuditLogs(prev => {
             const newLogs = [...prev, data.payload];
-            return newLogs.slice(-100);
+            return newLogs.slice(-logLimit);
           });
         }
       } catch {
@@ -175,7 +191,7 @@ const Monitor = () => {
 
     ws.addEventListener('message', handleMessage);
     return () => ws.removeEventListener('message', handleMessage);
-  }, [wsRef]);
+  }, [wsRef, logLimit]);
 
   const formatUptime = (sec) => {
     if (!sec) return '00d 00h 00m 00s';
@@ -201,13 +217,13 @@ const Monitor = () => {
     return () => clearInterval(t);
   }, []);
 
-  const fetchData = useCallback(async (isUserInitiated = false) => {
+  const fetchData = useCallback(async (isUserInitiated = false, overrideLimit = logLimit) => {
     if (isUserInitiated) setRefreshing(true);
     
     try {
       const results = await Promise.allSettled([
         axios.get('/api/v1/admin/usage'),
-        axios.get('/api/v1/admin/audit-logs?limit=100'),
+        axios.get(`/api/v1/admin/audit-logs?limit=${overrideLimit}`),
         axios.get('/api/v1/system/status'),
         axios.get('/api/v1/admin/presence')
       ]);
@@ -252,7 +268,7 @@ const Monitor = () => {
 
   useEffect(() => {
     const handleUpdate = () => {
-      fetchData(false);
+      fetchData(false, logLimit);
     };
     addListener('*', handleUpdate);
     return () => removeListener('*', handleUpdate);
@@ -261,10 +277,10 @@ const Monitor = () => {
   useEffect(() => {
     isMounted.current = true;
     const init = async () => {
-      await fetchData();
+      await fetchData(false, logLimit);
     };
     init();
-    const interval = setInterval(() => fetchData(false), 60000);
+    const interval = setInterval(() => fetchData(false, logLimit), 60000);
     return () => {
       isMounted.current = false;
       clearInterval(interval);
@@ -385,7 +401,7 @@ const Monitor = () => {
                            className="stroke-brand-primary fill-none transition-all duration-1000" 
                            strokeWidth="6" 
                            strokeDasharray="282" 
-                           strokeDashoffset={282 - (282 * Math.min((systemStatus?.p99_latency_ms || 0) / 1000, 1)) || 282} 
+                           strokeDashoffset={282 - (282 * Math.min((systemStatus?.p99_latency_ms || 0) / Math.max(1000, (systemStatus?.p99_latency_ms || 0) * 1.2), 1)) || 282} 
                          />
                        </svg>
                        <div className="absolute flex flex-col items-center justify-center">
@@ -411,7 +427,7 @@ const Monitor = () => {
                            className="stroke-blue-400 fill-none transition-all duration-1000" 
                            strokeWidth="6" 
                            strokeDasharray="282" 
-                           strokeDashoffset={282 - (282 * Math.min((systemStatus?.active_sessions || 0) / 10, 1)) || 282} 
+                           strokeDashoffset={282 - (282 * Math.min((systemStatus?.active_sessions || 0) / Math.max(10, (systemStatus?.active_sessions || 0) * 1.5), 1)) || 282} 
                          />
                        </svg>
                        <div className="absolute flex flex-col items-center justify-center">
@@ -458,7 +474,7 @@ const Monitor = () => {
                            className="stroke-purple-400 fill-none transition-all duration-1000" 
                            strokeWidth="6" 
                            strokeDasharray="282" 
-                           strokeDashoffset={282 - (282 * Math.min((systemStatus?.worker_count || 0) / 5, 1)) || 282} 
+                           strokeDashoffset={282 - (282 * Math.min((systemStatus?.worker_count || 0) / Math.max(5, (systemStatus?.worker_count || 0) * 1.5), 1)) || 282} 
                          />
                        </svg>
                        <div className="absolute flex flex-col items-center justify-center">
@@ -530,7 +546,9 @@ const Monitor = () => {
                 logSearch={logSearch} 
                 setLogSearch={setLogSearch} 
                 fetchData={fetchData} 
-                refreshing={refreshing} 
+                refreshing={refreshing}
+                logLimit={logLimit}
+                setLogLimit={setLogLimit}
               />
             )}
           </motion.div>

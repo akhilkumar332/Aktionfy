@@ -60,9 +60,11 @@ const Workers = () => {
     };
   }, [fetchWorkers]);
 
+  const maxTasks = Math.max(10, ...workers.map(w => w.task_count || 0));
+
   return (
     <>
-      <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <header className="mb-12 flex flex-col md:flex-row md:items-center justify-between gap-8">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Reaper Registry</h1>
           <p className="text-zinc-400 text-xs font-medium mt-1">Operational status of distributed execution nodes.</p>
@@ -162,8 +164,8 @@ const Workers = () => {
                        <div className="h-1.5 w-24 bg-zinc-800 rounded-full overflow-hidden border border-zinc-700/50">
                           <motion.div 
                             initial={{ width: 0 }}
-                            animate={{ width: `${Math.min(100, (worker.task_count / 10) * 100)}%` }}
-                            className={`h-full transition-all duration-1000 ${worker.task_count > 8 ? 'bg-red-500' : 'bg-brand-primary'}`}
+                            animate={{ width: `${Math.min(100, (worker.task_count / maxTasks) * 100)}%` }}
+                            className={`h-full transition-all duration-1000 ${(worker.task_count / maxTasks) > 0.8 ? 'bg-red-500' : 'bg-brand-primary'}`}
                           />
                        </div>
                     </div>

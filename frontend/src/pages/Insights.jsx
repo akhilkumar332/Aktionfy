@@ -76,8 +76,8 @@ const Insights = () => {
   }, [addListener, removeListener, fetchInsights]);
 
   const chartColors = {
-    primary: '#d97706', 
-    secondary: '#3b82f6', 
+    primary: '#6366f1', 
+    secondary: '#8b5cf6', 
     success: '#10b981', 
     grid: 'rgba(255, 255, 255, 0.05)',
     text: '#475569' 
