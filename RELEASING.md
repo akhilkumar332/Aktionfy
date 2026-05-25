@@ -8,7 +8,8 @@ Before every release, you **must** run the production readiness scan:
 1.  **Concurrency Check**: Run `go test -race ./...` to detect potential deadlocks or race conditions.
 2.  **Security Audit**: Verify that all new Admin endpoints have `EchoRequireRole("admin")` and CSRF protection.
 3.  **Migration Integrity**: Ensure all new migrations in `/migrations` have been tested against a clean database.
-4.  **Frontend Polish**: Run `npm run lint` and `npm run build` to ensure no console logs or debug code leaks into production.
+4.  **MCP Tool Validation**: Validate that all new MCP Tools are accurately mapped in the `tools.go` registry and registered in `Docs.jsx`.
+5.  **Frontend Polish**: Run `npm run lint` and `npm run build` to ensure no console logs or debug code leaks into production.
 
 ## 1. Build Multi-Platform Binaries
 

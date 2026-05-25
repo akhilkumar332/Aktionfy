@@ -1,4 +1,4 @@
-# Contributor Covenant Code of Conduct
+# Aktionfy Community Code of Conduct
 
 ## Our Pledge
 

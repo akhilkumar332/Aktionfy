@@ -63,6 +63,10 @@ Supported Hosts: **Claude Desktop**, **Cursor**, **Antigravity**, **Codex Deskto
 *   `update_task`: Modify prompts, loops, or logic on-the-fly.
 *   `execute_task`: Manually trigger a workflow immediately.
 *   `get_current_time`: Synchronize local agents with server time.
+*   `search_tasks`: Full-text search for tasks by name or prompt.
+*   `get_system_usage_quota`: Retrieve current task limits and active quota usage.
+*   `list_failed_tasks`: Identify tasks stuck in an error state.
+*   `retry_failed_task`: Instantly clear error records and re-queue a task.
 
 ---
 

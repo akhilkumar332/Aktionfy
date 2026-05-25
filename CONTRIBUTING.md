@@ -35,9 +35,9 @@ We welcome contributions from the community! To maintain a high bar for engineer
 
 *   **Observability**: New background logic must include OpenTelemetry spans. Use the `otel` package to wrap critical steps.
 *   **Security**: Always perform ownership checks on database resources. Never trust user-provided IDs without verification.
-*   **Testing**: ALWAYS run the backend tests before submitting a PR:
+*   **Testing**: ALWAYS run the backend tests with the race detector before submitting a PR:
     ```bash
-    go test ./...
+    go test -race ./...
     ```
 *   **Linting**: Ensure the frontend is lint-free using ESLint:
     ```bash

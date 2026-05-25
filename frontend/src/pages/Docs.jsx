@@ -298,7 +298,45 @@ const ApiReference = () => (
               <p className="text-sm text-zinc-300">Modifies prompts, loop conditions, or dependencies for an existing task.</p>
             </div>
           </div>
+          <div className="border border-zinc-800/50 rounded-2xl overflow-hidden shadow-sm bg-zinc-900">
+            <div className="px-6 py-4 bg-zinc-900 border-b border-zinc-800/50 flex items-center justify-between">
+              <span className="font-mono font-bold text-zinc-100">search_tasks</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest bg-purple-100 text-purple-700 px-2 py-0.5 rounded">Query</span>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-zinc-300">Perform full-text search across all tasks by name or agent prompt.</p>
+            </div>
+          </div>
 
+          <div className="border border-zinc-800/50 rounded-2xl overflow-hidden shadow-sm bg-zinc-900">
+            <div className="px-6 py-4 bg-zinc-900 border-b border-zinc-800/50 flex items-center justify-between">
+              <span className="font-mono font-bold text-zinc-100">get_system_usage_quota</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest bg-amber-100 text-amber-700 px-2 py-0.5 rounded">System</span>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-zinc-300">Inspect the current user tier, task limit, and active task quota utilization.</p>
+            </div>
+          </div>
+
+          <div className="border border-zinc-800/50 rounded-2xl overflow-hidden shadow-sm bg-zinc-900">
+            <div className="px-6 py-4 bg-zinc-900 border-b border-zinc-800/50 flex items-center justify-between">
+              <span className="font-mono font-bold text-zinc-100">list_failed_tasks</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest bg-red-100 text-red-700 px-2 py-0.5 rounded">Operations</span>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-zinc-300">Instantly query all tasks trapped in an error state or containing failure records.</p>
+            </div>
+          </div>
+
+          <div className="border border-zinc-800/50 rounded-2xl overflow-hidden shadow-sm bg-zinc-900">
+            <div className="px-6 py-4 bg-zinc-900 border-b border-zinc-800/50 flex items-center justify-between">
+              <span className="font-mono font-bold text-zinc-100">retry_failed_task</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">Action</span>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-zinc-300">Clear failure metrics and instantly resume a suspended or broken task.</p>
+            </div>
+          </div>
           <div className="border border-zinc-800/50 rounded-2xl overflow-hidden shadow-sm bg-zinc-900">
             <div className="px-6 py-4 bg-zinc-900 border-b border-zinc-800/50 flex items-center justify-between">
               <span className="font-mono font-bold text-zinc-100">execute_task</span>

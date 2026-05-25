@@ -19,7 +19,7 @@ Aktionfy implements a **Multi-Layer Defense** strategy:
 *   **In-Memory Resolution**: Decryption and prompt resolution occur strictly in-memory during the sub-millisecond dispatch window.
 
 ### 2. Authentication & Access Control
-*   **Database-Backed Sessions**: Allows for immediate global session revocation.
+*   **Database-Backed Sessions with Redis**: Fast, scalable validation using Redis short-lived caches backed by PostgreSQL, allowing for immediate global session revocation.
 *   **Granular RBAC**: Strict Role-Based Access Control (Admin/Staff/User) enforced at the middleware layer.
 *   **Self-Demotion Block**: Admins are restricted from removing their own privileges to prevent system lockouts.
 
