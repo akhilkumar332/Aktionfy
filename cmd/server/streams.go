@@ -135,8 +135,10 @@ func handleStreamMessage(ctx context.Context, message redis.XMessage) {
 	})
 	if err != nil {
 		log.Printf("Error fetching task %s for stream execution: %v", taskIDStr, err)
-		// We don't ACK here if it's a DB error, let it retry? 
-		// Actually, if it's Not Found, we should ACK.
+		// If task is not found, ACK to clear it from stream
+		if strings.Contains(err.Error(), "no rows") {
+			RedisClient.XAck(ctx, TaskTriggerStream, TaskTriggerGroup, message.ID)
+		}
 		return
 	}
 
