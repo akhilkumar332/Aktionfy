@@ -251,7 +251,12 @@ CREATE TABLE execution_traces (
     output_data TEXT,
     is_error BOOLEAN DEFAULT false,
     error_message TEXT,
-    metadata JSONB
+    metadata JSONB,
+    input_tokens INT DEFAULT 0,
+    output_tokens INT DEFAULT 0,
+    cache_read_tokens INT DEFAULT 0,
+    cache_write_tokens INT DEFAULT 0,
+    cost_usd NUMERIC(10, 6) DEFAULT 0.0
 );
 
 -- Inbound Webhooks
@@ -358,7 +363,18 @@ CREATE TABLE IF NOT EXISTS user_invitations (
 );
 
 CREATE INDEX IF NOT EXISTS idx_user_invitations_token ON user_invitations (invite_token);
-CREATE INDEX IF NOT EXISTS idx_user_invitations_email ON user_invitations (email);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_invitations_email ON user_invitations(email);
+
+CREATE TABLE IF NOT EXISTS system_metrics (
+    id SERIAL PRIMARY KEY,
+    timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    total_workers INT NOT NULL,
+    total_load INT NOT NULL,
+    avg_memory_mb FLOAT NOT NULL,
+    p99_latency_ms FLOAT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_system_metrics_timestamp ON system_metrics (timestamp);
 
 -- User Login History
 CREATE TABLE IF NOT EXISTS user_login_history (

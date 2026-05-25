@@ -26,19 +26,24 @@ type DlqTask struct {
 }
 
 type ExecutionTrace struct {
-	ID           pgtype.UUID        `json:"id"`
-	TaskID       pgtype.UUID        `json:"task_id"`
-	ExecutionID  string             `json:"execution_id"`
-	WorkerID     string             `json:"worker_id"`
-	StepName     string             `json:"step_name"`
-	StartTime    pgtype.Timestamptz `json:"start_time"`
-	EndTime      pgtype.Timestamptz `json:"end_time"`
-	DurationMs   pgtype.Int4        `json:"duration_ms"`
-	InputData    pgtype.Text        `json:"input_data"`
-	OutputData   pgtype.Text        `json:"output_data"`
-	IsError      pgtype.Bool        `json:"is_error"`
-	ErrorMessage pgtype.Text        `json:"error_message"`
-	Metadata     []byte             `json:"metadata"`
+	ID               pgtype.UUID        `json:"id"`
+	TaskID           pgtype.UUID        `json:"task_id"`
+	ExecutionID      string             `json:"execution_id"`
+	WorkerID         string             `json:"worker_id"`
+	StepName         string             `json:"step_name"`
+	StartTime        pgtype.Timestamptz `json:"start_time"`
+	EndTime          pgtype.Timestamptz `json:"end_time"`
+	DurationMs       pgtype.Int4        `json:"duration_ms"`
+	InputData        pgtype.Text        `json:"input_data"`
+	OutputData       pgtype.Text        `json:"output_data"`
+	IsError          pgtype.Bool        `json:"is_error"`
+	ErrorMessage     pgtype.Text        `json:"error_message"`
+	Metadata         []byte             `json:"metadata"`
+	InputTokens      pgtype.Int4        `json:"input_tokens"`
+	OutputTokens     pgtype.Int4        `json:"output_tokens"`
+	CacheReadTokens  pgtype.Int4        `json:"cache_read_tokens"`
+	CacheWriteTokens pgtype.Int4        `json:"cache_write_tokens"`
+	CostUsd          pgtype.Numeric     `json:"cost_usd"`
 }
 
 type OutboundWebhook struct {
@@ -58,6 +63,15 @@ type SeoSetting struct {
 	Keywords    string             `json:"keywords"`
 	OgImage     pgtype.Text        `json:"og_image"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+type SystemMetric struct {
+	ID           int32              `json:"id"`
+	Timestamp    pgtype.Timestamptz `json:"timestamp"`
+	TotalWorkers int32              `json:"total_workers"`
+	TotalLoad    int32              `json:"total_load"`
+	AvgMemoryMb  float64            `json:"avg_memory_mb"`
+	P99LatencyMs float64            `json:"p99_latency_ms"`
 }
 
 type SystemSetting struct {

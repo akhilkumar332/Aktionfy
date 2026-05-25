@@ -227,7 +227,7 @@ func (q *Queries) CreateAuditLog(ctx context.Context, arg CreateAuditLogParams) 
 const createExecutionTrace = `-- name: CreateExecutionTrace :one
 INSERT INTO execution_traces (task_id, execution_id, worker_id, step_name, input_data, output_data, is_error, error_message, metadata)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-RETURNING id, task_id, execution_id, worker_id, step_name, start_time, end_time, duration_ms, input_data, output_data, is_error, error_message, metadata
+RETURNING id, task_id, execution_id, worker_id, step_name, start_time, end_time, duration_ms, input_data, output_data, is_error, error_message, metadata, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, cost_usd
 `
 
 type CreateExecutionTraceParams struct {
@@ -269,6 +269,11 @@ func (q *Queries) CreateExecutionTrace(ctx context.Context, arg CreateExecutionT
 		&i.IsError,
 		&i.ErrorMessage,
 		&i.Metadata,
+		&i.InputTokens,
+		&i.OutputTokens,
+		&i.CacheReadTokens,
+		&i.CacheWriteTokens,
+		&i.CostUsd,
 	)
 	return i, err
 }
@@ -323,6 +328,28 @@ func (q *Queries) CreateOutboundWebhook(ctx context.Context, arg CreateOutboundW
 	var i CreateOutboundWebhookRow
 	err := row.Scan(&i.ID, &i.CreatedAt)
 	return i, err
+}
+
+const createSystemMetric = `-- name: CreateSystemMetric :exec
+INSERT INTO system_metrics (total_workers, total_load, avg_memory_mb, p99_latency_ms)
+VALUES ($1, $2, $3, $4)
+`
+
+type CreateSystemMetricParams struct {
+	TotalWorkers int32   `json:"total_workers"`
+	TotalLoad    int32   `json:"total_load"`
+	AvgMemoryMb  float64 `json:"avg_memory_mb"`
+	P99LatencyMs float64 `json:"p99_latency_ms"`
+}
+
+func (q *Queries) CreateSystemMetric(ctx context.Context, arg CreateSystemMetricParams) error {
+	_, err := q.db.Exec(ctx, createSystemMetric,
+		arg.TotalWorkers,
+		arg.TotalLoad,
+		arg.AvgMemoryMb,
+		arg.P99LatencyMs,
+	)
+	return err
 }
 
 const createTask = `-- name: CreateTask :one
@@ -1564,6 +1591,18 @@ func (q *Queries) GetTemplateWithSubscription(ctx context.Context, arg GetTempla
 	return i, err
 }
 
+const getTotalSystemCost = `-- name: GetTotalSystemCost :one
+SELECT COALESCE(SUM(cost_usd), 0.0)::NUMERIC(10, 6) as total_cost 
+FROM execution_traces
+`
+
+func (q *Queries) GetTotalSystemCost(ctx context.Context) (pgtype.Numeric, error) {
+	row := q.db.QueryRow(ctx, getTotalSystemCost)
+	var total_cost pgtype.Numeric
+	err := row.Scan(&total_cost)
+	return total_cost, err
+}
+
 const getUser = `-- name: GetUser :one
 SELECT id, email, api_key, role, tier, is_locked, max_tasks_limit, rate_limit_override, created_at FROM users WHERE id = $1
 `
@@ -1881,7 +1920,7 @@ func (q *Queries) ListAuditLogs(ctx context.Context, limit int32) ([]AuditLog, e
 }
 
 const listExecutionTracesByExecutionID = `-- name: ListExecutionTracesByExecutionID :many
-SELECT id, task_id, execution_id, worker_id, step_name, start_time, end_time, duration_ms, input_data, output_data, is_error, error_message, metadata FROM execution_traces 
+SELECT id, task_id, execution_id, worker_id, step_name, start_time, end_time, duration_ms, input_data, output_data, is_error, error_message, metadata, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, cost_usd FROM execution_traces 
 WHERE task_id = $1 AND execution_id = $2 
 ORDER BY start_time ASC
 `
@@ -1914,6 +1953,11 @@ func (q *Queries) ListExecutionTracesByExecutionID(ctx context.Context, arg List
 			&i.IsError,
 			&i.ErrorMessage,
 			&i.Metadata,
+			&i.InputTokens,
+			&i.OutputTokens,
+			&i.CacheReadTokens,
+			&i.CacheWriteTokens,
+			&i.CostUsd,
 		); err != nil {
 			return nil, err
 		}
@@ -3137,6 +3181,7 @@ const upsertWorkerHeartbeat = `-- name: UpsertWorkerHeartbeat :exec
 INSERT INTO worker_heartbeats (worker_id, hostname, last_heartbeat, task_count)
 VALUES ($1, $2, NOW(), $3)
 ON CONFLICT (worker_id) DO UPDATE SET
+    hostname = EXCLUDED.hostname,
     last_heartbeat = EXCLUDED.last_heartbeat,
     task_count = EXCLUDED.task_count
 `

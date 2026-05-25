@@ -77,7 +77,15 @@ func handleGetSystemInsights(c echo.Context) error {
 	for _, t := range trends {
 		totalTrendsVolume += int64(t.Count)
 	}
-	aiTokenCost := float64(totalTrendsVolume) * 0.0015
+	
+	totalCostNumeric, err := queries.GetTotalSystemCost(c.Request().Context())
+	var aiTokenCost float64
+	if err == nil && totalCostNumeric.Valid {
+		f, err := totalCostNumeric.Float64Value()
+		if err == nil {
+			aiTokenCost = f.Float64
+		}
+	}
 	neuralThroughput := 0
 	if len(trends) > 0 {
 		neuralThroughput = int(totalTrendsVolume) / (24 * len(trends))

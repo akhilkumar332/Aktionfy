@@ -537,3 +537,7 @@ DELETE FROM user_invitations WHERE id = $1;
 -- name: RegenerateUserAPIKey :exec
 UPDATE users SET api_key = $1 WHERE id = $2;
 
+
+-- name: GetTotalSystemCost :one
+SELECT COALESCE(SUM(cost_usd), 0.0)::NUMERIC(10, 6) as total_cost 
+FROM execution_traces;
