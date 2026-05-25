@@ -584,6 +584,7 @@ func main() {
 	go runScheduler(ctx)
 	go runReaper(ctx)
 	go runWorkerHeartbeat(ctx)
+	go StartStreamConsumer(ctx)
 	// Start Background Settings Poller
 	syncSettings(ctx)
 	// Start background flushers

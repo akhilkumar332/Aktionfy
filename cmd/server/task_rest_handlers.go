@@ -430,14 +430,19 @@ func apiTriggerTaskHandler(c echo.Context) error {
 		return c.JSON(http.StatusConflict, APIResponse{Success: false, Error: "Task is already being processed"})
 	}
 
-	err = queries.UpdateTaskNextRun(c.Request().Context(), db.UpdateTaskNextRunParams{
-		Status:  pgtype.Text{String: "active", Valid: true},
-		NextRun: pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},
-		ID:      taskID,
-		UserID:  userID,
-	})
+	// Trigger via Redis Stream for high-throughput ingestion
+	err = ProduceTaskTrigger(c.Request().Context(), userID, taskIDStr, nil)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to trigger task"})
+		log.Printf("Failed to produce task trigger for %s: %v. Falling back to DB update.", taskIDStr, err)
+		err = queries.UpdateTaskNextRun(c.Request().Context(), db.UpdateTaskNextRunParams{
+			Status:  pgtype.Text{String: "active", Valid: true},
+			NextRun: pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},
+			ID:      taskID,
+			UserID:  userID,
+		})
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to trigger task"})
+		}
 	}
 
 	// Audit Log
