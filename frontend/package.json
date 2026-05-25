@@ -14,6 +14,7 @@
     "@react-three/fiber": "^9.6.1",
     "@tailwindcss/typography": "^0.5.19",
     "@tailwindcss/vite": "^4.3.0",
+    "@xyflow/react": "^12.10.2",
     "axios": "^1.16.0",
     "dagre": "^0.8.5",
     "framer-motion": "^12.38.0",
@@ -21,7 +22,6 @@
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-router-dom": "^7.15.0",
-    "reactflow": "^11.11.4",
     "recharts": "^3.8.1",
     "tailwindcss": "^4.3.0",
     "three": "^0.184.0"

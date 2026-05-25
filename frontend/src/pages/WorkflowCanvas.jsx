@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import ReactFlow, { 
+import { 
+  ReactFlow,
   addEdge, 
   Background, 
   Controls, 
@@ -8,9 +9,9 @@ import ReactFlow, {
   useNodesState, 
   useEdgesState,
   MarkerType
-} from 'reactflow';
+} from '@xyflow/react';
 import dagre from 'dagre';
-import 'reactflow/dist/style.css';
+import '@xyflow/react/dist/style.css';
 import TaskWizard from '../components/TaskWizard';
 import SaveTemplateModal from '../components/SaveTemplateModal';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -832,17 +833,13 @@ const WorkflowCanvas = () => {
             colorMode="dark"
             fitView
           >
-            <Controls className="!bg-zinc-950 !border-zinc-800 !rounded-xl !shadow-lg" />
+            <Background color="#555" gap={16} />
+            <Controls className="bg-zinc-900 border-zinc-800 fill-white" />
             <MiniMap 
-              style={{
-                backgroundColor: 'rgba(5, 5, 5, 0.9)',
-                borderRadius: '2rem',
-                border: '1px solid rgba(255, 255, 255, 0.05)',
-              }}
-              maskColor="rgba(0, 0, 0, 0.3)"
-              nodeColor="rgba(217, 119, 6, 0.3)"
+              className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden" 
+              nodeColor="#4f46e5" 
+              maskColor="#09090b" 
             />
-            <Background variant="dots" gap={20} size={1} color="rgba(255, 255, 255, 0.05)" />
           </ReactFlow>
         )}
 
