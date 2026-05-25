@@ -55,7 +55,6 @@ const AdminUsers = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [drawerUser, setDrawerUser] = useState(null);
   const [showApiKey, setShowApiKey] = useState(false);
-  const [overrideTaskLimit, setOverrideTaskLimit] = useState('');
   const [copiedKey, setCopiedKey] = useState(false);
   
   const [confirmState, setConfirmState] = useState({ isOpen: false, title: '', message: '', type: 'warning', action: null });

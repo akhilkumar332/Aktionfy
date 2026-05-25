@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { UserCircle, UserCheck, KeyRound, TrendingUp, UserCog, ChevronDown, Ban, Unlock, Lock, ShieldAlert, RefreshCw, Layers } from 'lucide-react';
 
 const UserTable = ({ 

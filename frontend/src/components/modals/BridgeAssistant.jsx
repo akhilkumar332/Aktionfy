@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, Command, Cpu, 
-  Copy, Check, Activity,
-  Server, Play, Pause, Trash2, Globe, Lock, ShieldAlert,
+  Activity,
+  Globe,
   Wifi, WifiOff, RefreshCw, ChevronLeft, ChevronRight,
   Monitor, Code, Shield
 } from 'lucide-react';

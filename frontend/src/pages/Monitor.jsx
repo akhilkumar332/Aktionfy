@@ -131,7 +131,6 @@ const Monitor = () => {
   const { addListener, removeListener } = useSSE();
   const [usage, setUsage] = useState(null);
   const [auditLogs, setAuditLogs] = useState([]);
-  const [logSearch, setLogSearch] = useState('');
   const [systemStatus, setSystemStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
