@@ -489,6 +489,7 @@ func main() {
 	api.POST("/tasks/:id/deny", apiDenyTaskHandler)
 	api.POST("/tasks/:id/route", apiManualRouteHandler)
 	api.GET("/tasks/:id/analytics/hourly-heatmap", handleGetTaskHourlyHeatmap)
+	api.GET("/tasks/:id/analytics/durations", handleGetTaskDurations)
 	api.GET("/tasks/:id/lock", apiLockTaskHandler)
 	api.POST("/tasks/:id/unlock", apiUnlockTaskHandler)
 	api.GET("/search", apiSearchHandler)

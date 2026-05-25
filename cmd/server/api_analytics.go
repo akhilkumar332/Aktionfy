@@ -264,6 +264,69 @@ func handleGetTaskHourlyHeatmap(c echo.Context) error {
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: heatmap})
 }
 
+// handleGetTaskDurations fetches the recent duration data for a task to plot on a line chart.
+func handleGetTaskDurations(c echo.Context) error {
+	ctx := c.Request().Context()
+	taskIDStr := c.Param("id")
+
+	userID := getUserID(c)
+	if userID == "" {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
+
+	taskID, err := mustParseUUID(c, taskIDStr)
+	if err != nil {
+		return err
+	}
+
+	// Check ownership
+	exists, _ := queries.CheckTaskOwnership(ctx, db.CheckTaskOwnershipParams{ID: taskID, UserID: userID})
+	if !exists {
+		return c.JSON(http.StatusNotFound, APIResponse{Success: false, Error: "Task not found"})
+	}
+
+	query := `
+		SELECT start_time, duration_ms 
+		FROM execution_traces 
+		WHERE task_id = $1 AND duration_ms IS NOT NULL
+		ORDER BY start_time DESC 
+		LIMIT 50
+	`
+	rows, err := dbPool.Query(ctx, query, taskID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch task durations"})
+	}
+	defer rows.Close()
+
+	type durationPoint struct {
+		Time     string `json:"time"`
+		Duration int    `json:"duration"`
+	}
+
+	var data []durationPoint
+	for rows.Next() {
+		var startTime time.Time
+		var durationMs int
+		if err := rows.Scan(&startTime, &durationMs); err == nil {
+			data = append(data, durationPoint{
+				Time:     startTime.Format("15:04"),
+				Duration: durationMs,
+			})
+		}
+	}
+
+	// Reverse to get chronological order for Recharts
+	for i, j := 0, len(data)-1; i < j; i, j = i+1, j-1 {
+		data[i], data[j] = data[j], data[i]
+	}
+
+	if data == nil {
+		data = []durationPoint{}
+	}
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: data})
+}
+
 // getHeatmapForZset is a helper that parses and aggregates ZSET logs into hourly buckets for the last 24 hours.
 func getHeatmapForZset(ctx context.Context, key string) ([]map[string]interface{}, error) {
 	if RedisClient == nil {

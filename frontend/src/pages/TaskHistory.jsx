@@ -26,7 +26,7 @@ const TaskHistory = () => {
   const [diffLabel, setDiffLabel] = useState('');
   
   const [dateRange, setDateRange] = useState('24h');
-  const [durationData] = useState([]);
+  const [durationData, setDurationData] = useState([]);
 
   const handleExportCSV = () => {
     if (!history.length) return;
@@ -81,15 +81,19 @@ const TaskHistory = () => {
 
   const fetchHistory = useCallback(async () => {
     try {
-      const [res, heatmapRes] = await Promise.all([
+      const [res, heatmapRes, durationRes] = await Promise.all([
         axios.get(`/api/v1/tasks/${id}/versions`),
-        axios.get(`/api/v1/tasks/${id}/analytics/hourly-heatmap`)
+        axios.get(`/api/v1/tasks/${id}/analytics/hourly-heatmap`),
+        axios.get(`/api/v1/tasks/${id}/analytics/durations`)
       ]);
       if (res.data.success && isMounted.current) {
         setHistory(res.data.data || []);
       }
       if (heatmapRes.data.success && isMounted.current) {
         setHourlyHeatmap(heatmapRes.data.data || []);
+      }
+      if (durationRes.data.success && isMounted.current) {
+        setDurationData(durationRes.data.data || []);
       }
     } catch (err) {
       notify('ERROR', 'Failed to fetch task history', err.response?.data?.error || err.message);

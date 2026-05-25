@@ -10,12 +10,7 @@ const AdminSettings = () => {
   const { notify } = useNotify();
   const { addListener, removeListener } = useSSE();
   const isMounted = useRef(true);
-  const [settings, setSettings] = useState({ 
-    worker_prune_days: 7,
-    js_timeout_ms: 5000,
-    reaper_stuck_threshold_minutes: 5,
-    scheduler_poll_interval_seconds: 30
-  });
+  const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [pruning, setPruning] = useState(false);
@@ -46,13 +41,8 @@ const AdminSettings = () => {
   const fetchSettings = useCallback(async () => {
     try {
       const res = await axios.get('/api/v1/admin/settings');
-      if (res.data.success && isMounted.current) {
-        setSettings(res.data.data || { 
-          worker_prune_days: 7,
-          js_timeout_ms: 5000,
-          reaper_stuck_threshold_minutes: 5,
-          scheduler_poll_interval_seconds: 30
-        });
+      if (res.data.success && isMounted.current && res.data.data) {
+        setSettings(res.data.data);
       }
       await fetchMaintenanceStatus();
     } catch (err) {
@@ -164,19 +154,29 @@ const AdminSettings = () => {
           </motion.h1>
           <p className="text-zinc-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-2 ml-1">System-Wide Protocol & Node Governance</p>
         </div>
+        <div className="flex items-center gap-2">
+           <button 
+             onClick={fetchSettings}
+             disabled={loading || maintenanceLoading}
+             className="p-2 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-400 hover:text-white transition-all disabled:opacity-50"
+             aria-label="Refresh settings"
+           >
+             <RefreshCw size={16} className={(loading || maintenanceLoading) ? 'animate-spin' : ''} />
+           </button>
+        </div>
       </header>
 
       <div className="max-w-4xl">
         <AnimatePresence mode="wait">
-          {loading ? (
+          {(loading || maintenanceLoading || !settings) ? (
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="py-40 flex flex-col items-center justify-center gap-6"
+              className="flex flex-col items-center justify-center py-40"
             >
-              <RefreshCw className="animate-spin text-brand-primary" size={48} />
-              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-400 animate-pulse">Syncing Control Plane...</p>
+              <RefreshCw size={32} className="animate-spin text-brand-primary" />
+              <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mt-6 animate-pulse">Syncing Kernel Configurations...</p>
             </motion.div>
           ) : (
             <motion.div 
