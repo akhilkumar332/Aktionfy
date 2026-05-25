@@ -132,6 +132,7 @@ const Monitor = () => {
   const [usage, setUsage] = useState(null);
   const [auditLogs, setAuditLogs] = useState([]);
   const [systemStatus, setSystemStatus] = useState(null);
+  const [onlineUsers, setOnlineUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [uptime, setUptime] = useState(0);
@@ -169,12 +170,13 @@ const Monitor = () => {
       const results = await Promise.allSettled([
         axios.get('/api/v1/admin/usage'),
         axios.get('/api/v1/admin/audit-logs?limit=100'),
-        axios.get('/api/v1/system/status')
+        axios.get('/api/v1/system/status'),
+        axios.get('/api/v1/admin/presence')
       ]);
 
       if (!isMounted.current) return;
 
-      const [usageRes, auditRes, statusRes] = results;
+      const [usageRes, auditRes, statusRes, presenceRes] = results;
 
       if (usageRes.status === 'fulfilled' && usageRes.value.data.success) {
         setUsage(usageRes.value.data.data);
@@ -192,6 +194,10 @@ const Monitor = () => {
         setSystemStatus(statusRes.value.data.data);
       } else if (statusRes.status === 'rejected' && isUserInitiated) {
         notify('ERROR', 'Failed to fetch system status', statusRes.reason.response?.data?.error || statusRes.reason.message);
+      }
+
+      if (presenceRes.status === 'fulfilled' && presenceRes.value.data.success) {
+        setOnlineUsers(presenceRes.value.data.data || []);
       }
 
     } catch (err) {
@@ -363,6 +369,26 @@ const Monitor = () => {
                      <div className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest mt-4 flex items-center gap-1.5 justify-center">
                        <span className={`w-1.5 h-1.5 rounded-full ${systemStatus?.bridge_active ? 'bg-emerald-500 animate-pulse' : 'bg-zinc-600'}`} />
                        {systemStatus?.bridge_active ? 'BRIDGE ONLINE' : 'BRIDGE DORMANT'}
+                     </div>
+                   </div>
+
+                   {/* Active Neural Actors (WebSocket Presence) */}
+                   <div className="pro-card p-6 flex flex-col items-center justify-center relative overflow-hidden group shadow-lg">
+                     <div className="absolute top-0 right-0 p-4 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity">
+                       <Users size={100} />
+                     </div>
+                     <span className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-4">Active Neural Actors</span>
+                     <div className="text-4xl font-black text-white font-mono tracking-tighter tabular-nums bg-zinc-900 border border-zinc-800 px-6 py-4 rounded-2xl shadow-inner relative overflow-hidden">
+                       {onlineUsers.length}
+                       <div className="absolute bottom-0 left-0 right-0 h-1 bg-emerald-500 opacity-30 animate-pulse"></div>
+                     </div>
+                     <div className="flex flex-wrap gap-1 mt-4 justify-center max-w-full">
+                        {onlineUsers.slice(0, 3).map(uid => (
+                          <span key={uid} className="text-[8px] font-mono text-emerald-500/60 bg-emerald-500/5 border border-emerald-500/10 px-1.5 py-0.5 rounded">
+                            {uid.substring(0, 8)}
+                          </span>
+                        ))}
+                        {onlineUsers.length > 3 && <span className="text-[8px] font-bold text-zinc-500">+{onlineUsers.length - 3} MORE</span>}
                      </div>
                    </div>
 

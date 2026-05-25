@@ -5,6 +5,7 @@ const UserTable = ({
   users, 
   loading, 
   updating, 
+  onlineUserIds = [],
   handleImpersonate, 
   openDrawer, 
   openOverrideModal, 
@@ -100,8 +101,11 @@ const UserTable = ({
                 </td>
                 <td className="px-4 py-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-zinc-950 border border-zinc-800 flex items-center justify-center text-zinc-400 group-hover:border-brand-primary/50 transition-all">
+                    <div className="w-8 h-8 rounded-lg bg-zinc-950 border border-zinc-800 flex items-center justify-center text-zinc-400 group-hover:border-brand-primary/50 transition-all relative">
                        <UserCircle size={18} />
+                       {onlineUserIds.includes(u.id) && (
+                         <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-zinc-950 shadow-[0_0_8px_rgba(16,185,129,0.4)] animate-pulse"></div>
+                       )}
                     </div>
                     <div className="flex flex-col min-w-0">
                       <span className="text-sm font-bold text-zinc-100 truncate">{u.email?.String || u.email || 'Anonymous'}</span>

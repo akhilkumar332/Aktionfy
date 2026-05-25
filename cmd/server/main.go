@@ -538,6 +538,7 @@ func main() {
 	admin.GET("/login-history", apiAdminLoginHistoryHandler)
 	admin.GET("/audit-logs", apiAdminAuditLogsHandler)
 	admin.GET("/usage", apiAdminUsageHandler)
+	admin.GET("/presence", handleGetOnlineUsers)
 	admin.GET("/insights", handleGetSystemInsights)
 	admin.GET("/analytics/trends", handleGetTrends)
 	admin.GET("/analytics/hourly-heatmap", handleGetHourlyHeatmap)

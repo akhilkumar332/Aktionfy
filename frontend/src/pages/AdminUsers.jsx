@@ -24,6 +24,7 @@ const AdminUsers = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [updating, setUpdating] = useState(null);
+  const [onlineUserIds, setOnlineUserIds] = useState([]);
 
   // Login History state
   const [loginHistory, setLoginHistory] = useState([]);
@@ -65,13 +66,22 @@ const AdminUsers = () => {
 
   const fetchUsers = useCallback(async (query = '') => {
     try {
-      const res = await axios.get(`/api/v1/admin/users?search=${encodeURIComponent(query)}`);
-      if (res.data.success && isMounted.current) {
-        setUsers(res.data.data || []);
-        // Refresh the drawer user if it's open
-        if (drawerUser) {
-          const updated = (res.data.data || []).find(u => u.id === drawerUser.id);
-          if (updated) setDrawerUser(updated);
+      const [userRes, presenceRes] = await Promise.all([
+        axios.get(`/api/v1/admin/users?search=${encodeURIComponent(query)}`),
+        axios.get('/api/v1/admin/presence')
+      ]);
+
+      if (isMounted.current) {
+        if (userRes.data.success) {
+          setUsers(userRes.data.data || []);
+          // Refresh the drawer user if it's open
+          if (drawerUser) {
+            const updated = (userRes.data.data || []).find(u => u.id === drawerUser.id);
+            if (updated) setDrawerUser(updated);
+          }
+        }
+        if (presenceRes.data.success) {
+          setOnlineUserIds(presenceRes.data.data || []);
         }
       }
     } catch (err) {
@@ -493,6 +503,7 @@ const AdminUsers = () => {
               users={users}
               loading={loading}
               updating={updating}
+              onlineUserIds={onlineUserIds}
               handleImpersonate={handleImpersonate}
               openDrawer={openDrawer}
               openOverrideModal={openOverrideModal}

@@ -334,3 +334,24 @@ func handleGetRecentActivities(c echo.Context) error {
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: events})
 }
 
+// handleGetOnlineUsers returns a list of user IDs currently connected via WebSockets.
+func handleGetOnlineUsers(c echo.Context) error {
+	ctx := c.Request().Context()
+	if RedisClient == nil {
+		return c.JSON(http.StatusOK, APIResponse{Success: true, Data: []string{}})
+	}
+
+	results, err := RedisClient.SMembers(ctx, "presence:online").Result()
+	if err != nil {
+		log.Printf("Error fetching online presence: %v", err)
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch online presence"})
+	}
+
+	if results == nil {
+		results = []string{}
+	}
+
+	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: results})
+}
+
+
