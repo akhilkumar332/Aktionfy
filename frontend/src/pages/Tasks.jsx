@@ -125,11 +125,18 @@ const Tasks = () => {
 
     setRefreshing(true);
     try {
+      const batchSize = 5;
+      for (let i = 0; i < ids.length; i += batchSize) {
+        const batch = ids.slice(i, i + batchSize);
+        if (action === 'delete') {
+          await Promise.all(batch.map(id => axios.delete(`/api/v1/tasks/${id}`)));
+        } else {
+          await Promise.all(batch.map(id => axios.post(`/api/v1/tasks/${id}/${action}`)));
+        }
+      }
       if (action === 'delete') {
-        await Promise.all(ids.map(id => axios.delete(`/api/v1/tasks/${id}`)));
         notify('SUCCESS', `Terminated ${ids.length} neural nodes`);
       } else {
-        await Promise.all(ids.map(id => axios.post(`/api/v1/tasks/${id}/${action}`)));
         notify('SUCCESS', `Successfully ${action}d ${ids.length} nodes`);
       }
       setSelectedTasks(new Set());

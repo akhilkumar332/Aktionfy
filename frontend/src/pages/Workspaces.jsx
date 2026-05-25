@@ -207,12 +207,37 @@ const WorkspaceDetails = ({ workspaceId }) => {
         </div>
       )}
       {activeTab === 'settings' && (
-        <div className="py-10 bg-zinc-950 border border-zinc-800/50 border-dashed rounded-xl flex flex-col items-center justify-center">
+        <div className="py-10 bg-zinc-950 border border-zinc-800/50 border-dashed rounded-xl flex flex-col items-center justify-center relative">
           <div className="w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4">
             <Settings size={20} className="text-zinc-500" />
           </div>
           <p className="text-[10px] text-zinc-300 font-bold uppercase tracking-widest">Cluster Configuration</p>
           <p className="text-[9px] text-zinc-500 font-medium uppercase tracking-widest mt-2 max-w-xs mx-auto leading-relaxed text-center mb-6">Modify cluster metadata, transfer root ownership, or initiate archival protocol.</p>
+          
+          <div className="w-full max-w-sm flex gap-2 mb-8">
+            <input
+              id={`rename-input-${workspaceId}`}
+              type="text"
+              placeholder="New cluster name..."
+              className="pro-input flex-1 !py-2 !text-[11px]"
+            />
+            <button 
+              onClick={async () => {
+                const input = document.getElementById(`rename-input-${workspaceId}`);
+                if (!input.value) return;
+                try {
+                  await axios.patch(`/api/v1/workspaces/${workspaceId}`, { name: input.value });
+                  window.dispatchEvent(new CustomEvent('workspace-renamed'));
+                } catch (e) {
+                  console.error(e);
+                }
+              }}
+              className="pro-button-primary !py-2 !px-4 !text-[10px] uppercase tracking-widest"
+            >
+              Rename
+            </button>
+          </div>
+
           <button className="pro-button-secondary !py-2 !px-5 !text-[9px] uppercase tracking-widest border-red-500/20 text-red-500 hover:bg-red-500/10 transition-colors flex items-center gap-2">
             <Trash2 size={12} /> Archive Cluster
           </button>
