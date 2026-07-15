@@ -244,10 +244,14 @@ const WorkflowCanvas = () => {
       
       if (task.ui_coordinates) {
         try {
+          let parsed;
           if (typeof task.ui_coordinates === 'string') {
-            position = JSON.parse(decodeBase64(task.ui_coordinates));
+            parsed = JSON.parse(decodeBase64(task.ui_coordinates));
           } else {
-            position = task.ui_coordinates;
+            parsed = task.ui_coordinates;
+          }
+          if (parsed && typeof parsed.x === 'number' && typeof parsed.y === 'number') {
+            position = parsed;
           }
         } catch {
           // Fail silently for visual layout errors
