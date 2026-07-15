@@ -1,11 +1,11 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Box, Globe, MessageSquare, Database, Github } from 'lucide-react';
+import { X, Box, Globe, MessageSquare, Database, GitBranch } from 'lucide-react';
 import axios from 'axios';
 import { useNotify } from '../context/NotificationContext';
 
 const INTEGRATIONS = [
-  { id: 'github_create_issue', name: 'GitHub Action', desc: 'Create issues, trigger workflows', icon: Github, color: 'text-white' },
+  { id: 'github_create_issue', name: 'GitHub Action', desc: 'Create issues, trigger workflows', icon: GitBranch, color: 'text-white' },
   { id: 'slack_post_message', name: 'Slack Notify', desc: 'Post messages to channels', icon: MessageSquare, color: 'text-[#E01E5A]' },
   { id: 'http_request', name: 'HTTP Request', desc: 'Make external API calls', icon: Globe, color: 'text-emerald-400' },
   { id: 'native_sql', name: 'Database Query', desc: 'Execute native SQL', icon: Database, color: 'text-blue-400' },
