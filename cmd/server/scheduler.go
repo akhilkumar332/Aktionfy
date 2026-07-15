@@ -587,6 +587,11 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 		return
 	}
 
+	if t.TaskType.String == "swarm_router" {
+		handleSwarmRouterAction(workerCtx, t, triggerPayload)
+		return
+	}
+
 	if trace, err := queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{Metadata: nil, 
 		TaskID:      t.ID,
 		ExecutionID: executionID,

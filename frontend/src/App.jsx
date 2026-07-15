@@ -23,6 +23,7 @@ const AdminSEO = lazy(() => import('./pages/AdminSEO'));
 const AdminSettings = lazy(() => import('./pages/AdminSettings'));
 const Insights = lazy(() => import('./pages/Insights'));
 const Workers = lazy(() => import('./pages/Workers'));
+const MiniApp = lazy(() => import('./pages/MiniApp'));
 import DashboardLayout from './components/DashboardLayout';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -129,6 +130,9 @@ const AppRoutes = () => {
           <Route path="protocol-spec" element={<ProtocolSpecDoc />} />
           <Route path="security" element={<SecurityDocs />} />
         </Route>
+
+        {/* Public App Interface */}
+        <Route path="/app/:taskId" element={<MiniApp />} />
       </Route>
 
       {/* 2. User Protected Routes Group */}

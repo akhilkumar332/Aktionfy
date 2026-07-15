@@ -7,7 +7,7 @@ import {
   Play, Pause, Trash2,
   Cpu, Link as LinkIcon, History, Plus, 
   Activity, Command, RefreshCw, X, Check, Settings, Terminal,
-  Copy, ChevronLeft, ChevronRight, Search, SlidersHorizontal, Sparkles
+  Copy, ChevronLeft, ChevronRight, Search, SlidersHorizontal, Sparkles, Globe
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -549,6 +549,13 @@ const Tasks = () => {
                              <Sparkles size={14} />
                           </button>
                           <button 
+                             onClick={() => window.open(`/app/${task.id}`, '_blank')}
+                             className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-indigo-400 hover:border-indigo-500/50 transition-all shadow-sm"
+                             title="Launch Mini-App"
+                          >
+                             <Globe size={14} />
+                          </button>
+                          <button 
                              onClick={() => handleEdit(task)}
                              className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-white transition-all shadow-sm"
                              title="Calibrate Node"
@@ -661,6 +668,7 @@ const Tasks = () => {
                       )}
                     </div>
                     <div className="flex gap-1">
+                      <button onClick={() => window.open(`/app/${task.id}`, '_blank')} className="p-1.5 text-zinc-400 hover:text-indigo-400 transition-colors" title="Launch Mini-App"><Globe size={14} /></button>
                       <button onClick={() => setTraceTask(task)} className="p-1.5 text-zinc-400 hover:text-indigo-400 transition-colors" title="Traces"><Terminal size={14} /></button>
                       <button onClick={() => handleEdit(task)} className="p-1.5 text-zinc-400 hover:text-white transition-colors" title="Settings"><Settings size={14} /></button>
                       {task.status === 'active' ? (
