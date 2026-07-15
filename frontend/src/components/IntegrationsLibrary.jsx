@@ -1,4 +1,3 @@
-import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Box, Globe, MessageSquare, Database, GitBranch } from 'lucide-react';
 import axios from 'axios';

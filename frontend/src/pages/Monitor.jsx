@@ -264,7 +264,7 @@ const Monitor = () => {
         setRefreshing(false);
       }
     }
-  }, [notify]);
+  }, [notify, logLimit]);
 
   useEffect(() => {
     const handleUpdate = () => {
@@ -272,7 +272,7 @@ const Monitor = () => {
     };
     addListener('*', handleUpdate);
     return () => removeListener('*', handleUpdate);
-  }, [addListener, removeListener, fetchData]);
+  }, [addListener, removeListener, fetchData, logLimit]);
 
   useEffect(() => {
     isMounted.current = true;
@@ -285,7 +285,7 @@ const Monitor = () => {
       isMounted.current = false;
       clearInterval(interval);
     };
-  }, [fetchData]);
+  }, [fetchData, logLimit]);
 
   return (
     <>

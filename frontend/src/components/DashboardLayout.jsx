@@ -202,7 +202,6 @@ const DashboardLayout = ({ children }) => {
     const handleKeyDown = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
-        setIsSearchOpen(prev => !prev);
       }
     };
     window.addEventListener('keydown', handleKeyDown);

@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Play, Loader2, CheckCircle, ArrowRight, Zap, LayoutGrid } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Play, Loader2, CheckCircle, Zap, LayoutGrid } from 'lucide-react';
 import axios from 'axios';
 import { useNotify } from '../context/NotificationContext';
 
@@ -42,7 +42,7 @@ export default function MiniApp() {
       if (inputs) {
         try {
           payload = JSON.parse(inputs);
-        } catch (e) {
+        } catch {
           payload = { raw_input: inputs };
         }
       }

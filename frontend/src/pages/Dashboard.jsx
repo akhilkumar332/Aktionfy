@@ -91,7 +91,7 @@ const Dashboard = () => {
     } catch (err) {
       notify('ERROR', 'Failed to fetch dashboard data', err.response?.data?.error || err.message);
     }
-  }, [notify, timeRange]);
+  }, [notify, timeRange, latencyHistory.length]);
 
   const fetchSystemStatus = useCallback(async () => {
     if (document.hidden) return;
