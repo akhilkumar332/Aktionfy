@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"aktionfy/db"
+
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -95,7 +96,7 @@ func initTracer(ctx context.Context) func(context.Context) error {
 
 func syncSettings(ctx context.Context) {
 	var js, reaper, poll int
-	
+
 	// 1. Try to fetch from Redis first
 	if RedisClient != nil {
 		data, err := RedisClient.Get(ctx, "sys:settings").Result()
@@ -111,7 +112,7 @@ func syncSettings(ctx context.Context) {
 	// 2. Fallback to DB
 	timeoutCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-	
+
 	// We also fetch worker_prune_days to cache it, though CurrentSystemSettings doesn't use it
 	var pruneDays int
 	err := dbPool.QueryRow(timeoutCtx, "SELECT js_timeout_ms, reaper_stuck_threshold_minutes, scheduler_poll_interval_seconds, worker_prune_days FROM system_settings WHERE id = 1").Scan(&js, &reaper, &poll, &pruneDays)
@@ -119,17 +120,17 @@ func syncSettings(ctx context.Context) {
 		log.Printf("Error syncing system settings: %v", err)
 		return
 	}
-	
+
 	// 3. Update memory
 	CurrentSystemSettings.Update(js, reaper, poll)
-	
+
 	// 4. Update Redis cache
 	if RedisClient != nil {
 		res := map[string]int{
-			"js_timeout_ms":                  js,
-			"reaper_stuck_threshold_minutes": reaper,
+			"js_timeout_ms":                   js,
+			"reaper_stuck_threshold_minutes":  reaper,
 			"scheduler_poll_interval_seconds": poll,
-			"worker_prune_days":              pruneDays,
+			"worker_prune_days":               pruneDays,
 		}
 		if bytes, err := json.Marshal(res); err == nil {
 			// Cache indefinitely, it gets cleared on update
@@ -690,7 +691,7 @@ func runMetricsFlusher(ctx context.Context) {
 			if RedisClient == nil {
 				continue
 			}
-			
+
 			// Scan all worker hashes
 			keys, _, err := RedisClient.Scan(ctx, 0, "sys:worker:*", 1000).Result()
 			if err != nil {
@@ -700,7 +701,7 @@ func runMetricsFlusher(ctx context.Context) {
 
 			totalLoad := int32(0)
 			workerCount := int32(len(keys))
-			
+
 			for _, key := range keys {
 				val, err := RedisClient.HGet(ctx, key, "task_count").Int()
 				if err == nil {

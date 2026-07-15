@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"aktionfy/db"
+
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -41,7 +42,7 @@ func handleSwarmRouterAction(workerCtx context.Context, t db.Task, triggerPayloa
 		failSwarm(workerCtx, t, taskID, executionID, fmt.Errorf("missing OPENAI_API_KEY in vault for swarm execution"))
 		return
 	}
-	
+
 	decKey, err := Decrypt(encKey)
 	if err != nil {
 		failSwarm(workerCtx, t, taskID, executionID, fmt.Errorf("failed to decrypt API key"))
@@ -55,8 +56,8 @@ func handleSwarmRouterAction(workerCtx context.Context, t db.Task, triggerPayloa
 		"config":  config,
 	}
 	inputJSON, _ := json.Marshal(inputMap)
-	
-	if _, err := queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{Metadata: nil, 
+
+	if _, err := queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{Metadata: nil,
 		TaskID:      t.ID,
 		ExecutionID: executionID,
 		WorkerID:    workerID,
@@ -69,7 +70,7 @@ func handleSwarmRouterAction(workerCtx context.Context, t db.Task, triggerPayloa
 	// Begin the Swarm Debate
 	var conversationHistory []string
 	conversationHistory = append(conversationHistory, fmt.Sprintf("SYSTEM: The user prompt is: %s", t.AgentPrompt))
-	
+
 	maxTurns := 5 // Hardcode or extract from config if we add it later
 
 	consensusReached := false
@@ -80,11 +81,11 @@ func handleSwarmRouterAction(workerCtx context.Context, t db.Task, triggerPayloa
 			if consensusReached {
 				break
 			}
-			
+
 			stepName := fmt.Sprintf("Agent Turn: %s", agent.Name)
-			
+
 			// Build LLM context
-			llmPrompt := fmt.Sprintf("%s\n\nConversation so far:\n%s\n\nProvide your response. If consensus is reached and the task is fully complete, include the exact string [CONSENSUS_REACHED] in your response.", 
+			llmPrompt := fmt.Sprintf("%s\n\nConversation so far:\n%s\n\nProvide your response. If consensus is reached and the task is fully complete, include the exact string [CONSENSUS_REACHED] in your response.",
 				agent.Prompt, strings.Join(conversationHistory, "\n"))
 
 			// Native LLM Call
@@ -95,8 +96,8 @@ func handleSwarmRouterAction(workerCtx context.Context, t db.Task, triggerPayloa
 			}
 
 			conversationHistory = append(conversationHistory, fmt.Sprintf("%s: %s", agent.Name, response))
-			
-			queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{Metadata: nil, 
+
+			queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{Metadata: nil,
 				TaskID:      t.ID,
 				ExecutionID: executionID,
 				WorkerID:    workerID,
@@ -109,7 +110,7 @@ func handleSwarmRouterAction(workerCtx context.Context, t db.Task, triggerPayloa
 				finalResult = response
 				break
 			}
-			
+
 			// Optional: slight delay to prevent rate limits
 			time.Sleep(500 * time.Millisecond)
 		}
@@ -127,7 +128,7 @@ func handleSwarmRouterAction(workerCtx context.Context, t db.Task, triggerPayloa
 
 func callOpenAI(apiKey string, prompt string) (string, error) {
 	url := "https://api.openai.com/v1/chat/completions"
-	
+
 	payload := map[string]interface{}{
 		"model": "gpt-4o-mini", // Using mini for speed in swarms
 		"messages": []map[string]string{
@@ -135,26 +136,26 @@ func callOpenAI(apiKey string, prompt string) (string, error) {
 		},
 		"temperature": 0.7,
 	}
-	
+
 	body, _ := json.Marshal(payload)
-	
+
 	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(body))
-	req.Header.Set("Authorization", "Bearer " + apiKey)
+	req.Header.Set("Authorization", "Bearer "+apiKey)
 	req.Header.Set("Content-Type", "application/json")
-	
+
 	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", err
 	}
 	defer resp.Body.Close()
-	
+
 	respBody, _ := io.ReadAll(resp.Body)
-	
+
 	if resp.StatusCode != 200 {
 		return "", fmt.Errorf("OpenAI API error: %s", string(respBody))
 	}
-	
+
 	var result struct {
 		Choices []struct {
 			Message struct {
@@ -162,23 +163,23 @@ func callOpenAI(apiKey string, prompt string) (string, error) {
 			} `json:"message"`
 		} `json:"choices"`
 	}
-	
+
 	if err := json.Unmarshal(respBody, &result); err != nil {
 		return "", err
 	}
-	
+
 	if len(result.Choices) > 0 {
 		return result.Choices[0].Message.Content, nil
 	}
-	
+
 	return "", fmt.Errorf("no response choices from OpenAI")
 }
 
 func failSwarm(workerCtx context.Context, t db.Task, taskID string, executionID string, err error) {
 	log.Printf("Swarm execution failed for task %s: %v", taskID, err)
 	observeTaskOutcome("execution_failure")
-	
-	if _, traceErr := queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{Metadata: nil, 
+
+	if _, traceErr := queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{Metadata: nil,
 		TaskID:       t.ID,
 		ExecutionID:  executionID,
 		WorkerID:     workerID,
@@ -196,7 +197,7 @@ func failSwarm(workerCtx context.Context, t db.Task, taskID string, executionID 
 		Status:       "failure",
 		ErrorMessage: pgtype.Text{String: err.Error(), Valid: true},
 	})
-	
+
 	if logErr == nil {
 		RecordTaskExecutionTelemetry(workerCtx, t.UserID, taskID, "failure")
 	}
@@ -210,7 +211,7 @@ func failSwarm(workerCtx context.Context, t db.Task, taskID string, executionID 
 		"error_message":  err.Error(),
 		"execution_id":   executionID,
 	})
-	
+
 	PublishEvent(workerCtx, PubSubEvent{
 		UserID:    t.UserID,
 		EventType: "task_executed",
@@ -260,14 +261,14 @@ func failSwarm(workerCtx context.Context, t db.Task, taskID string, executionID 
 
 func succeedSwarm(workerCtx context.Context, t db.Task, taskID string, executionID string, result string) {
 	observeTaskOutcome("success")
-	
+
 	logID, logErr := queries.CreateTaskLog(workerCtx, db.CreateTaskLogParams{
 		TaskID:      t.ID,
 		UserID:      t.UserID,
 		Status:      "success",
 		LlmResponse: pgtype.Text{String: result, Valid: true},
 	})
-	
+
 	if logErr == nil {
 		RecordTaskExecutionTelemetry(workerCtx, t.UserID, taskID, "success")
 	}
@@ -281,14 +282,14 @@ func succeedSwarm(workerCtx context.Context, t db.Task, taskID string, execution
 		"llm_response":   result,
 		"execution_id":   executionID,
 	})
-	
+
 	PublishEvent(workerCtx, PubSubEvent{
 		UserID:    t.UserID,
 		EventType: "task_executed",
 		Payload:   string(evtPayload),
 	})
 
-	queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{Metadata: nil, 
+	queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{Metadata: nil,
 		TaskID:      t.ID,
 		ExecutionID: executionID,
 		WorkerID:    workerID,

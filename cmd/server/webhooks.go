@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"aktionfy/db"
+
 	"github.com/jackc/pgx/v5/pgtype"
 	"go.opentelemetry.io/otel/trace"
 )

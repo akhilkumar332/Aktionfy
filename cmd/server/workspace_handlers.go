@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"aktionfy/db"
+
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/labstack/echo/v4"
 )
@@ -407,7 +408,7 @@ func handleAddWorkspaceMember(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid workspace ID"})
 	}
 
-	// Must be owner to add members. Simplified check (CheckWorkspaceAccess does both but we want owner-only theoretically). 
+	// Must be owner to add members. Simplified check (CheckWorkspaceAccess does both but we want owner-only theoretically).
 	// For now we rely on CheckWorkspaceAccess.
 
 	var req struct {

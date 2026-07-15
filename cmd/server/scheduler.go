@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"aktionfy/db"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/mark3labs/mcp-go/mcp"
@@ -86,7 +87,7 @@ func processTaskQueue(ctx context.Context, dbURL string) error {
 			}
 			return fmt.Errorf("wait for notification failed: %w", err)
 		}
-		
+
 		// A task is instantly ready. Attempt a claim immediately.
 		claimCtx, claimCancel := context.WithTimeout(ctx, 5*time.Second)
 		tasks, err := queries.ClaimDueTasks(claimCtx, db.ClaimDueTasksParams{
@@ -388,7 +389,7 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 		if err != nil {
 			log.Printf("Error marshaling native input for %s: %v", taskID, err)
 		}
-		if _, err := queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{Metadata: nil, 
+		if _, err := queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{Metadata: nil,
 			TaskID:      t.ID,
 			ExecutionID: executionID,
 			WorkerID:    workerID,
@@ -437,7 +438,7 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 				}
 			}
 
-			if _, err := queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{Metadata: nil, 
+			if _, err := queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{Metadata: nil,
 				TaskID:       t.ID,
 				ExecutionID:  executionID,
 				WorkerID:     workerID,
@@ -530,7 +531,7 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 				}
 			}
 
-			if _, err := queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{Metadata: nil, 
+			if _, err := queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{Metadata: nil,
 				TaskID:      t.ID,
 				ExecutionID: executionID,
 				WorkerID:    workerID,
@@ -550,7 +551,7 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 				if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 					log.Printf("Error fetching workflow state for native loop eval %s: %v", taskID, err)
 				}
-				
+
 				var stateMap map[string]interface{}
 				if len(sBytes) > 0 {
 					if err := json.Unmarshal(sBytes, &stateMap); err != nil {
@@ -592,7 +593,7 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 		return
 	}
 
-	if trace, err := queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{Metadata: nil, 
+	if trace, err := queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{Metadata: nil,
 		TaskID:      t.ID,
 		ExecutionID: executionID,
 		WorkerID:    workerID,
@@ -605,7 +606,7 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 	}
 
 	resolvedPrompt := resolvePromptVariables(workerCtx, t.UserID, t.AgentPrompt, triggerPayload, state)
-	if trace, err := queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{Metadata: nil, 
+	if trace, err := queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{Metadata: nil,
 		TaskID:      t.ID,
 		ExecutionID: executionID,
 		WorkerID:    workerID,
@@ -649,7 +650,7 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 		}
 		log.Printf("Failed to deliver task %s for user %s: %v", taskID, t.UserID, err)
 
-		if _, err := queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{Metadata: nil, 
+		if _, err := queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{Metadata: nil,
 			TaskID:       t.ID,
 			ExecutionID:  executionID,
 			WorkerID:     workerID,
@@ -790,7 +791,7 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 		}
 	}
 
-	if trace, err := queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{Metadata: nil, 
+	if trace, err := queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{Metadata: nil,
 		TaskID:      t.ID,
 		ExecutionID: executionID,
 		WorkerID:    workerID,
@@ -895,10 +896,10 @@ func compareValues(actual interface{}, target interface{}, operator string) bool
 	if operator == "greater_than" || operator == ">" || operator == "less_than" || operator == "<" {
 		sActual := fmt.Sprintf("%v", actual)
 		sTarget := fmt.Sprintf("%v", target)
-		
+
 		fActual, errA := strconv.ParseFloat(sActual, 64)
 		fTarget, errT := strconv.ParseFloat(sTarget, 64)
-		
+
 		if errA == nil && errT == nil {
 			if operator == "greater_than" || operator == ">" {
 				return fActual > fTarget
@@ -1016,7 +1017,7 @@ func executeDecisionRouter(ctx context.Context, mcpServer *server.MCPServer, t d
 	taskID := formatUUID(t.ID)
 	executionID := fmt.Sprintf("%s-%d", taskID, time.Now().UTC().UnixNano())
 
-	if _, err := queries.CreateExecutionTrace(ctx, db.CreateExecutionTraceParams{Metadata: nil, 
+	if _, err := queries.CreateExecutionTrace(ctx, db.CreateExecutionTraceParams{Metadata: nil,
 		TaskID:      t.ID,
 		ExecutionID: executionID,
 		WorkerID:    workerID,
@@ -1118,7 +1119,7 @@ Synthesize the views and pick the final branch. Respond ONLY with JSON: {"choice
 			ID:                 t.ID,
 			UserID:             t.UserID,
 		})
-		if _, tErr := queries.CreateExecutionTrace(ctx, db.CreateExecutionTraceParams{Metadata: nil, 
+		if _, tErr := queries.CreateExecutionTrace(ctx, db.CreateExecutionTraceParams{Metadata: nil,
 			TaskID:       t.ID,
 			ExecutionID:  executionID,
 			WorkerID:     workerID,
@@ -1143,7 +1144,7 @@ Synthesize the views and pick the final branch. Respond ONLY with JSON: {"choice
 			ID:                 t.ID,
 			UserID:             t.UserID,
 		})
-		if _, err := queries.CreateExecutionTrace(ctx, db.CreateExecutionTraceParams{Metadata: nil, 
+		if _, err := queries.CreateExecutionTrace(ctx, db.CreateExecutionTraceParams{Metadata: nil,
 			TaskID:       t.ID,
 			ExecutionID:  executionID,
 			WorkerID:     workerID,
@@ -1518,7 +1519,7 @@ func runWorkerHeartbeat(ctx context.Context) {
 		select {
 		case <-ticker.C:
 			activeTasks := atomic.LoadInt32(&activeWorkerTasks)
-			
+
 			// 1. Write high-frequency data to Redis (Primary)
 			if RedisClient != nil {
 				key := fmt.Sprintf("sys:worker:%s", workerID)
@@ -1563,7 +1564,7 @@ func executeSwarmRouter(ctx context.Context, mcpServer *server.MCPServer, t db.T
 	taskID := formatUUID(t.ID)
 	executionID := fmt.Sprintf("%s-%d", taskID, time.Now().UTC().UnixNano())
 
-	if _, err := queries.CreateExecutionTrace(ctx, db.CreateExecutionTraceParams{Metadata: nil, 
+	if _, err := queries.CreateExecutionTrace(ctx, db.CreateExecutionTraceParams{Metadata: nil,
 		TaskID:      t.ID,
 		ExecutionID: executionID,
 		WorkerID:    workerID,
@@ -1677,7 +1678,7 @@ func executeSwarmRouter(ctx context.Context, mcpServer *server.MCPServer, t db.T
 				mu.Unlock()
 			}
 
-			queries.CreateExecutionTrace(ctx, db.CreateExecutionTraceParams{Metadata: nil, 
+			queries.CreateExecutionTrace(ctx, db.CreateExecutionTraceParams{Metadata: nil,
 				TaskID:      t.ID,
 				ExecutionID: executionID,
 				WorkerID:    workerID,
@@ -1692,7 +1693,7 @@ func executeSwarmRouter(ctx context.Context, mcpServer *server.MCPServer, t db.T
 	// Consensus Resolution
 	finalChoice := ""
 	consensusDetails := ""
-	
+
 	if swarmCfg.ConsensusMode == "voting" {
 		counts := make(map[string]int)
 		maxCount := 0
@@ -1703,7 +1704,7 @@ func executeSwarmRouter(ctx context.Context, mcpServer *server.MCPServer, t db.T
 				finalChoice = c
 			}
 		}
-		
+
 		tallyStr := "Vote Tally: "
 		first := true
 		for opt, count := range counts {

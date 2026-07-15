@@ -11,7 +11,7 @@ import (
 
 func TestHandleWebSocket(t *testing.T) {
 	e := echo.New()
-	
+
 	e.GET("/api/v1/ws", func(c echo.Context) error {
 		c.Set("user_id", "test-user-id")
 		return HandleWebSocket(c)

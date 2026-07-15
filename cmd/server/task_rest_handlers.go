@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"time"
 	"strconv"
+	"time"
 
 	"aktionfy/db"
+
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/labstack/echo/v4"
 )
@@ -140,17 +141,17 @@ func apiListTasksHandler(c echo.Context) error {
 
 	search := c.QueryParam("search")
 	status := c.QueryParam("status")
-	
+
 	limitStr := c.QueryParam("limit")
 	offsetStr := c.QueryParam("offset")
-	
+
 	limit := int32(50)
 	if limitStr != "" {
 		if parsed, err := strconv.Atoi(limitStr); err == nil && parsed > 0 && parsed <= 100 {
 			limit = int32(parsed)
 		}
 	}
-	
+
 	offset := int32(0)
 	if offsetStr != "" {
 		if parsed, err := strconv.ParseInt(offsetStr, 10, 32); err == nil && parsed >= 0 {
@@ -249,7 +250,7 @@ func apiBulkTasksHandler(c echo.Context) error {
 		if err != nil {
 			continue
 		}
-		
+
 		ctx := c.Request().Context()
 		switch req.Action {
 		case "delete":
@@ -471,23 +472,23 @@ func apiTriggerTaskHandler(c echo.Context) error {
 }
 
 type UpdateTaskRequest struct {
-	Name                *string          `json:"name"`
-	WorkspaceID         *string          `json:"workspace_id"`
-	TaskType            *string          `json:"task_type"`
-	AgentPrompt         *string          `json:"agent_prompt"`
-	NativeCode          *string          `json:"native_code"`
-	TriggerType         *string          `json:"trigger_type"`
-	TriggerConfig       json.RawMessage  `json:"trigger_config"`
-	RequiresApproval    *bool            `json:"requires_approval"`
-	MissedTaskPolicy    *string          `json:"missed_task_policy"`
-	UICoordinates       json.RawMessage  `json:"ui_coordinates"`
-	DependsOnTaskID     *string          `json:"depends_on_task_id"`
-	TriggerOnCompletion *bool            `json:"trigger_on_completion"`
-	BranchCondition     json.RawMessage  `json:"branch_condition"`
-	LoopCondition       json.RawMessage  `json:"loop_condition"`
-	SwarmConfig         json.RawMessage  `json:"swarm_config"`
-	MaxRetries          *int             `json:"max_retries"`
-	BackoffStrategy     *string          `json:"backoff_strategy"`
+	Name                *string         `json:"name"`
+	WorkspaceID         *string         `json:"workspace_id"`
+	TaskType            *string         `json:"task_type"`
+	AgentPrompt         *string         `json:"agent_prompt"`
+	NativeCode          *string         `json:"native_code"`
+	TriggerType         *string         `json:"trigger_type"`
+	TriggerConfig       json.RawMessage `json:"trigger_config"`
+	RequiresApproval    *bool           `json:"requires_approval"`
+	MissedTaskPolicy    *string         `json:"missed_task_policy"`
+	UICoordinates       json.RawMessage `json:"ui_coordinates"`
+	DependsOnTaskID     *string         `json:"depends_on_task_id"`
+	TriggerOnCompletion *bool           `json:"trigger_on_completion"`
+	BranchCondition     json.RawMessage `json:"branch_condition"`
+	LoopCondition       json.RawMessage `json:"loop_condition"`
+	SwarmConfig         json.RawMessage `json:"swarm_config"`
+	MaxRetries          *int            `json:"max_retries"`
+	BackoffStrategy     *string         `json:"backoff_strategy"`
 }
 
 func apiUpdateTaskHandler(c echo.Context) error {
@@ -1144,4 +1145,3 @@ func apiUnlockTaskHandler(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true})
 }
-

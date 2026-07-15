@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"aktionfy/db"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/crypto/bcrypt"
@@ -68,17 +69,7 @@ func LoginUser(ctx context.Context, email, password string) (string, error) {
 		return "", fmt.Errorf("failed to fetch user info: %w", err)
 	}
 
-	row := db.GetUserBySessionIDRow{
-		ID:                u.ID,
-		Email:             u.Email,
-		ApiKey:            u.ApiKey,
-		Role:              u.Role,
-		Tier:              u.Tier,
-		IsLocked:          u.IsLocked,
-		MaxTasksLimit:     u.MaxTasksLimit,
-		RateLimitOverride: u.RateLimitOverride,
-		CreatedAt:         u.CreatedAt,
-	}
+	row := db.GetUserBySessionIDRow(u)
 
 	SetCachedUserBySession(ctx, sessUUID, row)
 

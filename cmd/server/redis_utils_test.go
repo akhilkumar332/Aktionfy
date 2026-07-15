@@ -24,7 +24,7 @@ func TestAcquireRedisLock_Error(t *testing.T) {
 	RedisClient = redis.NewClient(&redis.Options{
 		Addr: "127.0.0.1:12345",
 	})
-	
+
 	// Fast timeout so it doesn't hang
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 	defer cancel()

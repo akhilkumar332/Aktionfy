@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"aktionfy/db"
+
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/labstack/echo/v4"
 	"github.com/mark3labs/mcp-go/mcp"
@@ -406,4 +407,3 @@ func EchoMaintenanceModeMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		return next(c)
 	}
 }
-

@@ -14,9 +14,11 @@ import (
 	"time"
 
 	"aktionfy/db"
+
 	"github.com/gorilla/csrf"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/labstack/echo/v4"
+	"github.com/redis/go-redis/v9"
 )
 
 type AuthInput struct {
@@ -272,7 +274,12 @@ func apiDashboardHandler(c echo.Context) error {
 	var latencyHistory []LatencyPoint
 	if RedisClient != nil {
 		// get last 8 items
-		results, _ := RedisClient.ZRevRange(c.Request().Context(), "system_metrics:latency", 0, 7).Result()
+		results, _ := RedisClient.ZRangeArgs(c.Request().Context(), redis.ZRangeArgs{
+			Key:   "system_metrics:latency",
+			Rev:   true,
+			Start: 0,
+			Stop:  7,
+		}).Result()
 		for i := len(results) - 1; i >= 0; i-- {
 			var point struct {
 				Timestamp int64 `json:"timestamp"`
@@ -471,8 +478,6 @@ func apiMonitorHandler(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: logs})
 }
-
-
 
 func apiAdminUsersHandler(c echo.Context) error {
 	search := c.QueryParam("search")
@@ -926,7 +931,6 @@ func apiListSecretsHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: respData})
 }
 
-
 func apiDeleteSecretHandler(c echo.Context) error {
 	user := getUserFromEcho(c)
 	if user == nil {
@@ -1219,7 +1223,6 @@ func apiTestWebhookHandler(c echo.Context) error {
 	})
 }
 
-
 func apiUpsertSecretHandler(c echo.Context) error {
 	user := getUserFromEcho(c)
 	if user == nil {
@@ -1448,9 +1451,9 @@ func apiAdminGetSettingsHandler(c echo.Context) error {
 	}
 
 	res := map[string]int32{
-		"worker_prune_days":              pruneDays,
-		"js_timeout_ms":                  jsTimeout,
-		"reaper_stuck_threshold_minutes": reaperThreshold,
+		"worker_prune_days":               pruneDays,
+		"js_timeout_ms":                   jsTimeout,
+		"reaper_stuck_threshold_minutes":  reaperThreshold,
 		"scheduler_poll_interval_seconds": pollInterval,
 	}
 
@@ -1525,9 +1528,9 @@ func apiAdminUpdateSettingsHandler(c echo.Context) error {
 		Action:       "admin.update_settings",
 		ResourceType: "system_settings",
 		Metadata: map[string]interface{}{
-			"worker_prune_days":                input.WorkerPruneDays,
-			"js_timeout_ms":                    input.JsTimeoutMs,
-			"reaper_stuck_threshold_minutes":   input.ReaperStuckThresholdMinutes,
+			"worker_prune_days":               input.WorkerPruneDays,
+			"js_timeout_ms":                   input.JsTimeoutMs,
+			"reaper_stuck_threshold_minutes":  input.ReaperStuckThresholdMinutes,
 			"scheduler_poll_interval_seconds": input.SchedulerPollIntervalSeconds,
 		},
 	})
@@ -1969,5 +1972,3 @@ func apiAdminRevokeSessionHandler(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Message: "Session revoked successfully"})
 }
-
-

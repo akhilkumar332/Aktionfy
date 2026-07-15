@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"aktionfy/db"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -742,16 +743,16 @@ func registerTools(s *server.MCPServer) {
 		}
 
 		_, err = queries.UpdateTaskAgentPromptAndPolicy(ctx, db.UpdateTaskAgentPromptAndPolicyParams{
-			ID:                 tid,
-			UserID:             userID,
-			AgentPrompt:        agentPrompt,
-			MissedTaskPolicy:   missedPolicy,
-			DependsOnTaskID:    dependsOn,
-			BranchCondition:    branchCondition,
-			LoopCondition:      loopCondition,
-			SwarmConfig:        swarmConfig,
+			ID:                  tid,
+			UserID:              userID,
+			AgentPrompt:         agentPrompt,
+			MissedTaskPolicy:    missedPolicy,
+			DependsOnTaskID:     dependsOn,
+			BranchCondition:     branchCondition,
+			LoopCondition:       loopCondition,
+			SwarmConfig:         swarmConfig,
 			TriggerOnCompletion: t.TriggerOnCompletion,
-			UiCoordinates:      t.UiCoordinates,
+			UiCoordinates:       t.UiCoordinates,
 		})
 
 		if err != nil {
@@ -1646,7 +1647,7 @@ func registerTools(s *server.MCPServer) {
 			if !w.IsActive {
 				activeStr = "False"
 			}
-			
+
 			var eventTypes []string
 			_ = json.Unmarshal(w.EventTypes, &eventTypes)
 			eventTypesStr := strings.Join(eventTypes, ", ")
@@ -1799,9 +1800,9 @@ func registerTools(s *server.MCPServer) {
 		}
 
 		resBytes, _ := json.Marshal(map[string]interface{}{
-			"tier": userTier,
-			"task_limit": limit,
-			"current_tasks": count,
+			"tier":            userTier,
+			"task_limit":      limit,
+			"current_tasks":   count,
 			"remaining_quota": limit - int(count),
 		})
 		return mcp.NewToolResultText(string(resBytes)), nil
@@ -1832,10 +1833,10 @@ func registerTools(s *server.MCPServer) {
 		for _, t := range rows {
 			if t.Status.String == StatusError || t.FailureCount.Int32 > 0 {
 				filteredRows = append(filteredRows, map[string]interface{}{
-					"id":                   formatUUID(t.ID),
-					"name":                 t.Name,
-					"status":               t.Status.String,
-					"failure_count":        t.FailureCount.Int32,
+					"id":            formatUUID(t.ID),
+					"name":          t.Name,
+					"status":        t.Status.String,
+					"failure_count": t.FailureCount.Int32,
 				})
 			}
 		}

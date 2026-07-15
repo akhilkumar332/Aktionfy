@@ -297,13 +297,18 @@ func handleIncrementTemplateUses(c echo.Context) error {
 // handleGetTrendingTemplates returns the top 5 most deployed blueprints from the Redis leaderboard.
 func handleGetTrendingTemplates(c echo.Context) error {
 	ctx := c.Request().Context()
-	
+
 	if RedisClient == nil {
 		return c.JSON(http.StatusOK, APIResponse{Success: true, Data: []db.Template{}})
 	}
 
 	leaderboardKey := "templates:popularity:leaderboard"
-	results, err := RedisClient.ZRevRange(ctx, leaderboardKey, 0, 4).Result()
+	results, err := RedisClient.ZRangeArgs(ctx, redis.ZRangeArgs{
+		Key:   leaderboardKey,
+		Rev:   true,
+		Start: 0,
+		Stop:  4,
+	}).Result()
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to fetch trending blueprints"})
 	}
@@ -374,7 +379,7 @@ func handleUpdateTemplate(c echo.Context) error {
 	} else {
 		descOpt = existingTemplate.Description
 	}
-	
+
 	var configOpt []byte
 	if len(req.Config) > 0 {
 		configOpt = req.Config

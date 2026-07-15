@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"aktionfy/db"
+
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -47,8 +48,8 @@ func handleIntegrationAction(workerCtx context.Context, t db.Task, triggerPayloa
 		"config":  config,
 	}
 	inputJSON, _ := json.Marshal(inputMap)
-	
-	if _, err := queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{Metadata: nil, 
+
+	if _, err := queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{Metadata: nil,
 		TaskID:      t.ID,
 		ExecutionID: executionID,
 		WorkerID:    workerID,
@@ -82,7 +83,7 @@ func handleIntegrationAction(workerCtx context.Context, t db.Task, triggerPayloa
 
 	// Execute
 	result, err := handler(workerCtx, config, triggerPayload, secrets)
-	
+
 	if err != nil {
 		failIntegration(workerCtx, t, taskID, executionID, err)
 		return
@@ -94,8 +95,8 @@ func handleIntegrationAction(workerCtx context.Context, t db.Task, triggerPayloa
 func failIntegration(workerCtx context.Context, t db.Task, taskID string, executionID string, err error) {
 	log.Printf("Integration execution failed for task %s: %v", taskID, err)
 	observeTaskOutcome("execution_failure")
-	
-	if _, traceErr := queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{Metadata: nil, 
+
+	if _, traceErr := queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{Metadata: nil,
 		TaskID:       t.ID,
 		ExecutionID:  executionID,
 		WorkerID:     workerID,
@@ -113,7 +114,7 @@ func failIntegration(workerCtx context.Context, t db.Task, taskID string, execut
 		Status:       "failure",
 		ErrorMessage: pgtype.Text{String: err.Error(), Valid: true},
 	})
-	
+
 	if logErr == nil {
 		RecordTaskExecutionTelemetry(workerCtx, t.UserID, taskID, "failure")
 	}
@@ -127,7 +128,7 @@ func failIntegration(workerCtx context.Context, t db.Task, taskID string, execut
 		"error_message":  err.Error(),
 		"execution_id":   executionID,
 	})
-	
+
 	PublishEvent(workerCtx, PubSubEvent{
 		UserID:    t.UserID,
 		EventType: "task_executed",
@@ -177,14 +178,14 @@ func failIntegration(workerCtx context.Context, t db.Task, taskID string, execut
 
 func succeedIntegration(workerCtx context.Context, t db.Task, taskID string, executionID string, result string) {
 	observeTaskOutcome("success")
-	
+
 	logID, logErr := queries.CreateTaskLog(workerCtx, db.CreateTaskLogParams{
 		TaskID:      t.ID,
 		UserID:      t.UserID,
 		Status:      "success",
 		LlmResponse: pgtype.Text{String: result, Valid: true},
 	})
-	
+
 	if logErr == nil {
 		RecordTaskExecutionTelemetry(workerCtx, t.UserID, taskID, "success")
 	}
@@ -198,14 +199,14 @@ func succeedIntegration(workerCtx context.Context, t db.Task, taskID string, exe
 		"llm_response":   result,
 		"execution_id":   executionID,
 	})
-	
+
 	PublishEvent(workerCtx, PubSubEvent{
 		UserID:    t.UserID,
 		EventType: "task_executed",
 		Payload:   string(evtPayload),
 	})
 
-	queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{Metadata: nil, 
+	queries.CreateExecutionTrace(workerCtx, db.CreateExecutionTraceParams{Metadata: nil,
 		TaskID:      t.ID,
 		ExecutionID: executionID,
 		WorkerID:    workerID,

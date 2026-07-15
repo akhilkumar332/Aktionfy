@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"aktionfy/db"
+
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/labstack/echo/v4"
 	"github.com/redis/go-redis/v9"
@@ -77,7 +78,7 @@ func handleGetSystemInsights(c echo.Context) error {
 	for _, t := range trends {
 		totalTrendsVolume += int64(t.Count)
 	}
-	
+
 	totalCostNumeric, err := queries.GetTotalSystemCost(c.Request().Context())
 	var aiTokenCost float64
 	if err == nil && totalCostNumeric.Valid {
@@ -199,7 +200,7 @@ func handleGetTrends(c echo.Context) error {
 
 func handleGetWorkers(c echo.Context) error {
 	ctx := c.Request().Context()
-	
+
 	type workerInfo struct {
 		WorkerID      string    `json:"worker_id"`
 		Hostname      string    `json:"hostname"`
@@ -260,7 +261,7 @@ func handleGetWorkers(c echo.Context) error {
 // handleGetHourlyHeatmap fetches the global hourly task execution counts from Redis ZSET.
 func handleGetHourlyHeatmap(c echo.Context) error {
 	ctx := c.Request().Context()
-	
+
 	heatmap, err := getHeatmapForZset(ctx, "analytics:runs:global")
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to generate hourly heatmap"})
@@ -273,7 +274,7 @@ func handleGetHourlyHeatmap(c echo.Context) error {
 func handleGetTaskHourlyHeatmap(c echo.Context) error {
 	ctx := c.Request().Context()
 	taskIDStr := c.Param("id")
-	
+
 	userID := getUserID(c)
 	if userID == "" {
 		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
@@ -365,9 +366,11 @@ func getHeatmapForZset(ctx context.Context, key string) ([]map[string]interface{
 	start := now.Add(-24 * time.Hour).Unix()
 	end := now.Unix()
 
-	results, err := RedisClient.ZRangeByScore(ctx, key, &redis.ZRangeBy{
-		Min: fmt.Sprintf("%d", start),
-		Max: fmt.Sprintf("%d", end),
+	results, err := RedisClient.ZRangeArgs(ctx, redis.ZRangeArgs{
+		Key:     key,
+		ByScore: true,
+		Start:   fmt.Sprintf("%d", start),
+		Stop:    fmt.Sprintf("%d", end),
 	}).Result()
 	if err != nil {
 		return nil, err
@@ -466,5 +469,3 @@ func handleGetOnlineUsers(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: results})
 }
-
-

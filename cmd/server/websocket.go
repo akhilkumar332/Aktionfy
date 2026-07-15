@@ -95,7 +95,7 @@ func HandleWebSocket(c echo.Context) error {
 	if userObj != nil {
 		userEmail = userObj.Email
 	}
-	
+
 	client := &WSClient{
 		conn:     ws,
 		userID:   userID,

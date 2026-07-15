@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"aktionfy/db"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -179,7 +180,7 @@ func writeLoginHistory(ctx context.Context, userID, ipAddress, userAgent string,
 	if success {
 		status = "success"
 	}
-	
+
 	if RedisClient == nil {
 		if dbPool == nil {
 			return

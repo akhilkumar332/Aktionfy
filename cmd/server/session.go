@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 
 	"aktionfy/db"
+
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
@@ -403,10 +404,16 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 
 						if !ok1 || !ok2 || !ok3 || taskID == "" || prompt == "" || executionID == "" {
 							missing := []string{}
-							if !ok1 || taskID == "" { missing = append(missing, "task_id") }
-							if !ok2 || prompt == "" { missing = append(missing, "prompt") }
-							if !ok3 || executionID == "" { missing = append(missing, "execution_id") }
-							
+							if !ok1 || taskID == "" {
+								missing = append(missing, "task_id")
+							}
+							if !ok2 || prompt == "" {
+								missing = append(missing, "prompt")
+							}
+							if !ok3 || executionID == "" {
+								missing = append(missing, "execution_id")
+							}
+
 							errMsg := fmt.Sprintf("Missing critical fields in Pub/Sub payload: %v", missing)
 							log.Printf("%s for user %s", errMsg, userID)
 							span.RecordError(errors.New(errMsg))
@@ -485,7 +492,7 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 						}
 
 						// 2. Resolve Prompt (Secrets + Chaining + Webhook Body)
-						if _, err := queries.CreateExecutionTrace(dbCtx, db.CreateExecutionTraceParams{Metadata: nil, 
+						if _, err := queries.CreateExecutionTrace(dbCtx, db.CreateExecutionTraceParams{Metadata: nil,
 							TaskID:      tid,
 							ExecutionID: executionID,
 							WorkerID:    workerID,
@@ -497,7 +504,7 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 						finalPrompt, secretCount, chained, err := resolvePrompt(dbCtx, userID, tid, executionID, prompt, t.DependsOnTaskID, triggerPayload)
 						if err != nil {
 							log.Printf("Prompt resolution failed for task %s: %v", taskID, err)
-							if _, tErr := queries.CreateExecutionTrace(dbCtx, db.CreateExecutionTraceParams{Metadata: nil, 
+							if _, tErr := queries.CreateExecutionTrace(dbCtx, db.CreateExecutionTraceParams{Metadata: nil,
 								TaskID:       tid,
 								ExecutionID:  executionID,
 								WorkerID:     workerID,
@@ -523,7 +530,7 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 							})
 							return
 						} else {
-							if _, err := queries.CreateExecutionTrace(dbCtx, db.CreateExecutionTraceParams{Metadata: nil, 
+							if _, err := queries.CreateExecutionTrace(dbCtx, db.CreateExecutionTraceParams{Metadata: nil,
 								TaskID:      tid,
 								ExecutionID: executionID,
 								WorkerID:    workerID,
@@ -541,18 +548,18 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 						// This ensures only the node with the active SSE connection processes the task
 						mcpSession := GlobalSessionManager.GetMCPSession(userID)
 						if mcpSession == nil {
-						        return
+							return
 						}
 						sampleCtx = mcpServer.WithContext(sampleCtx, mcpSession)
 
 						// Phase 10.2: Prevent Double Execution if user is connected from multiple terminals
 						locked, err := sm.redisClient.SetNX(sampleCtx, fmt.Sprintf("lock:exec:%s", executionID), "locked", 5*time.Minute).Result()
 						if err != nil || !locked {
-						        log.Printf("Task %s already executed by another connection for user %s", taskID, userID)
-						        return
+							log.Printf("Task %s already executed by another connection for user %s", taskID, userID)
+							return
 						}
 
-						if trace, err := queries.CreateExecutionTrace(dbCtx, db.CreateExecutionTraceParams{Metadata: nil, 
+						if trace, err := queries.CreateExecutionTrace(dbCtx, db.CreateExecutionTraceParams{Metadata: nil,
 							TaskID:      tid,
 							ExecutionID: executionID,
 							WorkerID:    workerID,
@@ -563,12 +570,12 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 						} else {
 							log.Printf("Trace error for task %s: %v", taskID, err)
 						}
-						req := mcp.CreateMessageRequest{							CreateMessageParams: mcp.CreateMessageParams{
-								Messages: []mcp.SamplingMessage{
-									{Role: "user", Content: mcp.TextContent{Type: "text", Text: finalPrompt}},
-								},
-								MaxTokens: 1000,
+						req := mcp.CreateMessageRequest{CreateMessageParams: mcp.CreateMessageParams{
+							Messages: []mcp.SamplingMessage{
+								{Role: "user", Content: mcp.TextContent{Type: "text", Text: finalPrompt}},
 							},
+							MaxTokens: 1000,
+						},
 						}
 
 						// Phase 7.2: Real LLM Response Handling
@@ -579,7 +586,7 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 							observeTaskExecutionDuration(executionStart, "failure")
 							log.Printf("Pub/Sub Sampling failed for user %s: %v", userID, err)
 
-							if trace, tErr := queries.CreateExecutionTrace(dbCtx, db.CreateExecutionTraceParams{Metadata: nil, 
+							if trace, tErr := queries.CreateExecutionTrace(dbCtx, db.CreateExecutionTraceParams{Metadata: nil,
 								TaskID:       tid,
 								ExecutionID:  executionID,
 								WorkerID:     workerID,
@@ -714,7 +721,7 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 						observeTaskOutcome("execution_success")
 						observeTaskExecutionDuration(executionStart, "success")
 
-						if trace, err := queries.CreateExecutionTrace(dbCtx, db.CreateExecutionTraceParams{Metadata: nil, 
+						if trace, err := queries.CreateExecutionTrace(dbCtx, db.CreateExecutionTraceParams{Metadata: nil,
 							TaskID:      tid,
 							ExecutionID: executionID,
 							WorkerID:    workerID,
@@ -773,7 +780,7 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 							if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 								log.Printf("Error fetching workflow state for loop eval %s: %v", taskID, err)
 							}
-							
+
 							var stateMap map[string]interface{}
 							if len(sBytes) > 0 {
 								if err := json.Unmarshal(sBytes, &stateMap); err != nil {

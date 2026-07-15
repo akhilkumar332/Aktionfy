@@ -4,10 +4,11 @@ import (
 	"aktionfy/db"
 	"context"
 	"encoding/json"
+	"testing"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
-	"testing"
 )
 
 type flexibleMockRow struct {

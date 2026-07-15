@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"aktionfy/db"
+
 	"github.com/redis/go-redis/v9"
 )
 
@@ -771,7 +772,7 @@ func RevokeActiveSession(ctx context.Context, userID string, sessionID string) e
 		_ = RedisClient.Del(ctx, metaKey).Err()
 		idsKey := fmt.Sprintf("cache:user:session-ids:%s", userID)
 		_ = RedisClient.SRem(ctx, idsKey, sessionID).Err()
-		
+
 		// Invalidate cached user session too
 		sessCacheKey := fmt.Sprintf("cache:user:session:%s", sessionID)
 		_ = RedisClient.Del(ctx, sessCacheKey).Err()
