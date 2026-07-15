@@ -541,12 +541,12 @@ func apiAdminLoginHistoryHandler(c echo.Context) error {
 	offset := int32(0)
 
 	if limitStr != "" {
-		if l, err := strconv.Atoi(limitStr); err == nil {
+		if l, err := strconv.ParseInt(limitStr, 10, 32); err == nil {
 			limit = int32(l)
 		}
 	}
 	if offsetStr != "" {
-		if o, err := strconv.Atoi(offsetStr); err == nil {
+		if o, err := strconv.ParseInt(offsetStr, 10, 32); err == nil {
 			offset = int32(o)
 		}
 	}

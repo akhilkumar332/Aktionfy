@@ -216,7 +216,7 @@ func handleGetWorkers(c echo.Context) error {
 			fields, err := RedisClient.HGetAll(ctx, key).Result()
 			if err == nil && len(fields) > 0 {
 				lastHb, _ := time.Parse(time.RFC3339, fields["updated_at"])
-				taskCnt, _ := strconv.Atoi(fields["task_count"])
+				taskCnt, _ := strconv.ParseInt(fields["task_count"], 10, 32)
 				data = append(data, workerInfo{
 					WorkerID:      fields["id"],
 					Hostname:      fields["hostname"],

@@ -198,7 +198,7 @@ async function callGeminiDirectly(params, apiKey) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
   const maxOutputTokens = Math.max(params.maxTokens || 1000, 8192);
 
-  console.warn("Aktionfy Bridge Call: URL =", url);
+  console.warn("Aktionfy Bridge Call: URL =", url.split('?key=')[0] + '?key=***');
   console.warn("Aktionfy Bridge Call: requestBody =", JSON.stringify({
     contents,
     systemInstruction,

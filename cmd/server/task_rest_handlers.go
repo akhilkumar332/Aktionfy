@@ -153,7 +153,7 @@ func apiListTasksHandler(c echo.Context) error {
 	
 	offset := int32(0)
 	if offsetStr != "" {
-		if parsed, err := strconv.Atoi(offsetStr); err == nil && parsed >= 0 {
+		if parsed, err := strconv.ParseInt(offsetStr, 10, 32); err == nil && parsed >= 0 {
 			offset = int32(parsed)
 		}
 	}
