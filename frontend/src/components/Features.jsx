@@ -93,7 +93,7 @@ const Features = () => {
           transition={{ duration: 0.8 }}
           className="max-w-5xl mx-auto text-center mb-32"
         >
-          <div className="inline-flex items-center gap-3 py-2 px-6 mb-8 text-[10px] font-black tracking-[0.4em] text-brand-primary uppercase bg-zinc-900 border border-zinc-800 rounded-full backdrop-blur-xl">
+          <div className="pro-badge inline-flex items-center gap-3 mb-8 px-6 py-2.5">
              Autonomous Capabilities
           </div>
           <h2 className="text-5xl md:text-8xl font-black text-white mb-10 tracking-tighter leading-[0.9]">
@@ -113,7 +113,7 @@ const Features = () => {
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.05, duration: 0.5 }}
-              className={`group relative p-12 rounded-3xl border bg-zinc-900/30 backdrop-blur-xl ${f.border} hover:bg-zinc-800/50 hover:border-zinc-700 transition-all duration-700 overflow-hidden shadow-lg`}
+              className={`group relative p-12 rounded-3xl pro-glass hover:bg-zinc-800/60 transition-all duration-700 overflow-hidden shadow-2xl`}
             >
               {/* Card Glow */}
               <div className="absolute top-0 right-0 w-32 h-32 bg-zinc-900 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>

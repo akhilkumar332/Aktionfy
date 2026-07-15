@@ -74,15 +74,15 @@ const Hero = () => {
           >
             <Link 
               to="/signup" 
-              className=" group relative px-14 py-6 text-white font-black uppercase tracking-[0.2em] text-xs bg-indigo-600 rounded-xl hover:brightness-110 transition-all shadow-[0_20px_60px_rgba(217,119,6,0.4)] flex items-center gap-4 active:scale-95 overflow-hidden"
+              className="group relative px-14 py-6 text-white font-black uppercase tracking-[0.2em] text-xs bg-brand-primary rounded-xl hover:bg-violet-500 transition-all duration-500 shadow-[0_0_40px_rgba(139,92,246,0.3)] hover:shadow-[0_0_60px_rgba(139,92,246,0.6)] flex items-center gap-4 active:scale-95 overflow-hidden"
             >
-              Initialize Node <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+              Initialize Node <ArrowRight size={18} className="group-hover:translate-x-2 transition-transform duration-300" />
             </Link>
             <a 
               href="#installation" 
-              className="px-14 py-6 text-zinc-400 font-black uppercase tracking-[0.2em] text-xs bg-zinc-900 border border-zinc-800 rounded-xl hover:bg-zinc-100/10 hover:text-white transition-all flex items-center gap-4 backdrop-blur-xl active:scale-95 shadow-lg"
+              className="pro-glass px-14 py-6 text-zinc-300 font-black uppercase tracking-[0.2em] text-xs rounded-xl hover:bg-white/5 hover:text-white transition-all flex items-center gap-4 active:scale-95"
             >
-              <Terminal size={18} className="text-brand-primary" /> Integration Guide
+              <Terminal size={18} className="text-brand-secondary" /> Integration Guide
             </a>
           </motion.div>
         </div>

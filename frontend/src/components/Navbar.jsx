@@ -24,9 +24,9 @@ const Navbar = () => {
   ];
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 border-b ${
+    <nav className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 border-b ${
       isScrolled 
-        ? 'py-3 bg-zinc-950/80 backdrop-blur-md border-zinc-800' 
+        ? 'py-3 pro-glass border-white/5' 
         : 'py-5 bg-transparent border-transparent'
     }`}>
       <div className="container mx-auto px-6">

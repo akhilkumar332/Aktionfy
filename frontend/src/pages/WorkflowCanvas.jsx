@@ -18,10 +18,11 @@ import TaskWizard from '../components/TaskWizard';
 import SaveTemplateModal from '../components/SaveTemplateModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
-import { Save, RefreshCw, Layers, X, Trash2, Play, Pause, FastForward, Rewind, Activity, Check, Plus, Sparkles, Undo2, Redo2, CheckCircle, Download } from 'lucide-react';
+import { Save, RefreshCw, Layers, X, Trash2, Play, Pause, FastForward, Rewind, Activity, Check, Plus, Sparkles, Undo2, Redo2, CheckCircle, Download, Box } from 'lucide-react';
 import DecisionNode from '../components/DecisionNode';
 import ManualRouteModal from '../components/ManualRouteModal';
 import GlobalPlaybackBar from '../components/GlobalPlaybackBar';
+import IntegrationsLibrary from '../components/IntegrationsLibrary';
 import { useSSE } from '../context/SSEContext';
 import { useWebSocket } from '../context/WebSocketContext';
 import { useNotify } from '../context/NotificationContext';
@@ -45,6 +46,7 @@ const WorkflowCanvas = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [rawTasks, setRawTasks] = useState([]);
   const [saveTemplateTask, setSaveTemplateTask] = useState(null);
+  const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   
   // Playback states
   const [playbackMode, setPlaybackMode] = useState(false);
@@ -840,6 +842,13 @@ const WorkflowCanvas = () => {
         </div>
         <div className="flex gap-3">
           <button 
+            onClick={() => setIsLibraryOpen(true)}
+            className="pro-glass-panel border-white/10 !py-4 !px-6 flex items-center gap-3 hover:border-brand-primary/50 transition-all rounded-2xl text-white"
+          >
+            <Box size={18} className="text-brand-primary" />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Integrations</span>
+          </button>
+          <button 
             onClick={handleCreateNew}
             className="pro-button-primary !py-4 !px-6 flex items-center gap-3"
           >
@@ -1209,6 +1218,12 @@ const WorkflowCanvas = () => {
           isOpen={!!saveTemplateTask} 
           onClose={() => setSaveTemplateTask(null)} 
           task={saveTemplateTask} 
+        />
+
+        <IntegrationsLibrary 
+          isOpen={isLibraryOpen}
+          onClose={() => setIsLibraryOpen(false)}
+          onNodeAdded={() => fetchTasks()}
         />
       </div>
     </div>

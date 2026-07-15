@@ -111,6 +111,8 @@ type Task struct {
 	IsBundleRoot        pgtype.Bool        `json:"is_bundle_root"`
 	LoopCondition       []byte             `json:"loop_condition"`
 	SwarmConfig         []byte             `json:"swarm_config"`
+	IntegrationID       pgtype.Text        `json:"integration_id"`
+	IntegrationConfig   []byte             `json:"integration_config"`
 }
 
 type TaskLog struct {
@@ -141,6 +143,8 @@ type TaskVersion struct {
 	IsBundleRoot        pgtype.Bool        `json:"is_bundle_root"`
 	CreatedAt           pgtype.Timestamptz `json:"created_at"`
 	SwarmConfig         []byte             `json:"swarm_config"`
+	IntegrationID       pgtype.Text        `json:"integration_id"`
+	IntegrationConfig   []byte             `json:"integration_config"`
 }
 
 type Template struct {

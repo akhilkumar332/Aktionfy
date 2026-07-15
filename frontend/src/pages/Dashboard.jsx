@@ -255,8 +255,8 @@ const Dashboard = () => {
     <div className="space-y-10">
       <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">Command Hub</h1>
-          <p className="text-zinc-400 text-sm font-medium mt-1">Global orchestration overview and system health.</p>
+          <h1 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-zinc-500 tracking-tight">Command Hub</h1>
+          <p className="text-zinc-400 text-sm font-medium mt-1 uppercase tracking-widest">Global orchestration overview & system health</p>
         </div>
         
         <div className="flex flex-col sm:flex-row items-center gap-4">
@@ -383,8 +383,8 @@ const Dashboard = () => {
         </div>
 
         {/* Execution Timeline Chart */}
-        <div className="pro-card p-8 flex flex-col justify-between border-zinc-800/50 relative overflow-hidden group">
-           <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-500/5 blur-[80px] -translate-y-1/2 translate-x-1/2"></div>
+        <div className="pro-glass-panel p-8 rounded-xl flex flex-col justify-between border-zinc-800/50 relative overflow-hidden group md:col-span-2 lg:col-span-1">
+           <div className="absolute top-0 right-0 w-48 h-48 bg-brand-primary/10 blur-[80px] -translate-y-1/2 translate-x-1/2 animate-pulse-glow"></div>
            
            <div className="flex items-center justify-between mb-4 relative z-10">
               <div className="flex items-center gap-4">
@@ -537,7 +537,7 @@ const Dashboard = () => {
       </section>
 
       {/* Live Activity Feed */}
-      <section className="pro-card p-8 border-zinc-800/50">
+      <section className="pro-glass-panel p-8 rounded-xl border-white/5">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></div>

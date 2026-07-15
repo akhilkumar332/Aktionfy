@@ -102,10 +102,10 @@ const Vault = () => {
 
   return (
     <>
-      <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <header className="mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Secret Vault</h1>
-          <p className="text-zinc-400 text-xs font-medium mt-1">Encrypted credential and private key persistence buffer.</p>
+          <h1 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-zinc-500 tracking-tight">Neural Secret Vault</h1>
+          <p className="text-zinc-400 text-sm font-medium mt-1 uppercase tracking-widest">Encrypted credential & private key persistence buffer</p>
         </div>
         <div className="flex items-center gap-3">
            <button 
@@ -147,14 +147,14 @@ const Vault = () => {
               initial={{ opacity: 0, scale: 0.98, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.98, y: 10 }}
-              className="bg-zinc-950 border border-zinc-800 p-8 rounded-lg shadow-lg w-full max-w-md relative z-10 overflow-hidden"
+              className="pro-glass-panel p-8 rounded-2xl shadow-[0_0_100px_rgba(0,0,0,0.8)] border-white/5 w-full max-w-md relative z-10 overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/[0.02] before:to-transparent before:pointer-events-none"
             >
               <div className="flex items-center justify-between mb-8">
                 <div>
-                  <h2 className="text-lg font-bold text-white uppercase tracking-tight">
-                    {editMode ? "Modify Secret Payload" : "Deposit Identity"}
+                  <h2 className="text-xl font-black text-white uppercase tracking-tight">
+                    {editMode ? "Modify Payload" : "Deposit Identity"}
                   </h2>
-                  <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-0.5">
+                  <p className="text-[10px] text-brand-primary font-black uppercase tracking-widest mt-1">
                     {editMode ? "PROTOCOL: SECURE_VAULT_UPDATE" : "PROTOCOL: SECURE_VAULT_DEPOSIT"}
                   </p>
                 </div>
@@ -178,7 +178,7 @@ const Vault = () => {
                     value={newSecret.name}
                     onChange={(e) => setNewSecret({...newSecret, name: e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, '')})}
                     placeholder="INFRA_API_TOKEN"
-                    className="pro-input w-full font-mono !text-xs disabled:opacity-50"
+                    className="pro-input w-full font-mono !text-sm disabled:opacity-50"
                     required
                     autoFocus={!editMode}
                     disabled={editMode}
@@ -187,12 +187,12 @@ const Vault = () => {
                 <div className="space-y-2">
                   <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-1">Sensitive Payload</label>
                   <div className="relative">
-                    <input 
+                      <input 
                       type={showSecretValue ? "text" : "password"}
                       value={newSecret.value}
                       onChange={(e) => setNewSecret({...newSecret, value: e.target.value})}
-                      placeholder="Enter raw value for 256-bit encryption..."
-                      className="pro-input w-full font-mono !text-xs pr-10"
+                      placeholder="Raw 256-bit payload..."
+                      className="pro-input w-full font-mono !text-sm pr-10"
                       required
                     />
                     <button 
@@ -206,12 +206,12 @@ const Vault = () => {
                   </div>
                  <div className="space-y-2">
                    <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-1">Temporary Lease (Seconds)</label>
-                   <input 
+                     <input 
                      type="number"
                      value={newSecret.ttl || ''}
                      onChange={(e) => setNewSecret({...newSecret, ttl: e.target.value})}
-                     placeholder="Enter lease lifetime e.g. 3600 (optional)"
-                     className="pro-input w-full font-mono !text-xs"
+                     placeholder="e.g. 3600"
+                     className="pro-input w-full font-mono !text-sm"
                      min="0"
                    />
                  </div>
@@ -229,8 +229,9 @@ const Vault = () => {
         )}
       </AnimatePresence>
 
-      <div className="pro-card overflow-hidden">
-        <div className="overflow-x-auto custom-scrollbar">
+      <div className="pro-glass-panel rounded-xl overflow-hidden border-white/5 relative group">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-brand-primary/10 blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none group-hover:bg-brand-primary/20 transition-all duration-1000"></div>
+        <div className="overflow-x-auto custom-scrollbar relative z-10">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="pro-table-header">

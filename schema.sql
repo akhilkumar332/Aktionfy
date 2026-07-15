@@ -44,7 +44,7 @@ CREATE TABLE tasks (
     encrypted_secrets BYTEA,
     last_approval_status VARCHAR(20), -- 'pending', 'approved', 'denied'
     trigger_on_completion BOOLEAN DEFAULT FALSE,
-    task_type TEXT DEFAULT 'mcp_sampling' CHECK (task_type IN ('mcp_sampling', 'native_action', 'decision_router', 'swarm_router')),
+    task_type TEXT DEFAULT 'mcp_sampling' CHECK (task_type IN ('mcp_sampling', 'native_action', 'decision_router', 'swarm_router', 'integration_action')),
     native_code TEXT,
     workspace_id UUID, -- Managed via Workspaces Table
     max_retries INT DEFAULT 0,
@@ -54,7 +54,9 @@ CREATE TABLE tasks (
     branch_condition JSONB,
     is_bundle_root BOOLEAN DEFAULT FALSE,
     loop_condition JSONB,
-    swarm_config JSONB
+    swarm_config JSONB,
+    integration_id TEXT,
+    integration_config JSONB
 );
 
 -- Index for high-speed polling
@@ -299,7 +301,9 @@ CREATE TABLE task_versions (
     loop_condition JSONB,
     is_bundle_root BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    swarm_config JSONB
+    swarm_config JSONB,
+    integration_id TEXT,
+    integration_config JSONB
 );
 
 CREATE INDEX idx_task_versions_task_id ON task_versions (task_id);
