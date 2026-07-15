@@ -7,7 +7,7 @@ const Hero = () => {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-zinc-950">
       {/* Neural Network Background Decor - Moved outside container */}
-      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none"></div>
+      <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-[0.03] pointer-events-none"></div>
       <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-brand-primary/5 via-transparent to-zinc-950"></div>
       
       {/* Side Glows - Moved outside container */}

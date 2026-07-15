@@ -917,7 +917,7 @@ const WorkflowCanvas = () => {
         </div>
       </header>
 
-      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-repeat opacity-[0.03] pointer-events-none z-10"></div>
+      <div className="absolute inset-0 bg-[url('/noise.svg')] bg-repeat opacity-[0.03] pointer-events-none z-10"></div>
 
       <div className="flex-1 relative">
         {loading && nodes.length === 0 ? (

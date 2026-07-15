@@ -16,7 +16,7 @@ import (
 
 const (
 	// DefaultRateLimitSec is the default allowed requests per second
-	DefaultRateLimitSec = 5.0
+	DefaultRateLimitSec = 50.0
 	// WindowSizeMs is the sliding window size in milliseconds (10 seconds)
 	WindowSizeMs = 10000.0
 )
