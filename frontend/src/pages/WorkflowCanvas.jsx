@@ -806,120 +806,146 @@ const WorkflowCanvas = () => {
 
   return (
     <div className="h-screen w-full flex flex-col relative bg-zinc-950 text-white overflow-hidden selection:bg-indigo-600">
-      <header className="absolute top-8 left-8 right-8 z-40 bg-zinc-950/80 backdrop-blur-md border border-zinc-800/50 px-8 py-6 rounded-3xl flex items-center justify-between shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-        <div className="flex items-center gap-6">
+      {/* Top Header */}
+      <header className="absolute top-8 left-8 right-8 z-40 flex items-center justify-between pointer-events-none">
+        <div className="flex items-center gap-6 bg-zinc-950/80 backdrop-blur-xl border border-zinc-800/60 px-6 py-4 rounded-2xl shadow-2xl pointer-events-auto">
           <div>
             <motion.h1 
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="text-3xl font-black text-white tracking-tighter flex items-center gap-4"
+              className="text-xl font-black text-white tracking-tighter flex items-center gap-3"
             >
-              <div className="p-2 bg-indigo-600/10 rounded-xl border border-indigo-500/20">
-                 <Layers className="text-indigo-400" size={24} />
+              <div className="p-1.5 bg-indigo-600/10 rounded-lg border border-indigo-500/20">
+                 <Layers className="text-indigo-400" size={20} />
               </div>
               Workflow Canvas
             </motion.h1>
-            <div className="flex items-center gap-3 mt-1 ml-14">
+            <div className="flex items-center gap-2 mt-1 ml-11">
                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-               <p className="text-zinc-400 font-black uppercase text-[9px] tracking-[0.2em]">Neural Interconnect Active</p>
+               <p className="text-zinc-400 font-bold uppercase text-[9px] tracking-[0.2em]">Neural Interconnect</p>
             </div>
           </div>
 
           {presenceUsers.length > 0 && (
-            <div className="flex items-center gap-2.5 bg-zinc-900/40 border border-zinc-800/80 px-3.5 py-2 rounded-2xl backdrop-blur-sm ml-4">
-              <div className="flex -space-x-2 overflow-hidden">
-                {presenceUsers.map(user => (
-                  <div 
-                    key={user.user_id} 
-                    className="inline-block h-6 w-6 rounded-full ring-2 ring-zinc-950 bg-indigo-950 border border-indigo-500/30 flex items-center justify-center text-[8px] font-black text-indigo-300 cursor-help"
-                    title={`${user.email || 'Admin'} ${user.active_task_id ? '(Calibrating Node)' : '(Viewing Canvas)'}`}
-                  >
-                    {(user.email || '??').substring(0, 2).toUpperCase()}
-                  </div>
-                ))}
+            <>
+              <div className="w-px h-8 bg-zinc-800/50 mx-2"></div>
+              <div className="flex items-center gap-2.5">
+                <div className="flex -space-x-2 overflow-hidden">
+                  {presenceUsers.map(user => (
+                    <div 
+                      key={user.user_id} 
+                      className="inline-flex h-8 w-8 rounded-full ring-2 ring-zinc-950 bg-indigo-950 border border-indigo-500/30 items-center justify-center text-[10px] font-black text-indigo-300 cursor-help shadow-lg"
+                      title={`${user.email || 'Admin'} ${user.active_task_id ? '(Calibrating Node)' : '(Viewing Canvas)'}`}
+                    >
+                      {(user.email || '??').substring(0, 2).toUpperCase()}
+                    </div>
+                  ))}
+                </div>
+                <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500/70 animate-pulse ml-1">
+                  {presenceUsers.length} Online
+                </span>
               </div>
-              <span className="text-[8px] font-black uppercase tracking-widest text-zinc-500 animate-pulse">
-                {presenceUsers.length} Online
-              </span>
-            </div>
+            </>
           )}
         </div>
-        <div className="flex gap-3">
+
+        <div className="flex gap-3 pointer-events-auto items-center">
           <button 
             onClick={() => setIsLibraryOpen(true)}
-            className="pro-glass-panel border-white/10 !py-4 !px-6 flex items-center gap-3 hover:border-brand-primary/50 transition-all rounded-2xl text-white"
+            className="bg-zinc-950/80 backdrop-blur-xl border border-zinc-800/60 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-zinc-300 hover:text-white hover:border-brand-primary/50 hover:bg-zinc-900/80 transition-all flex items-center gap-3 shadow-2xl"
           >
-            <Box size={18} className="text-brand-primary" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Integrations</span>
+            <Box size={16} className="text-brand-primary" />
+            Integrations
           </button>
-          <button 
-            onClick={handleCreateNew}
-            className="pro-button-primary !py-4 !px-6 flex items-center gap-3"
-          >
-            <Plus size={18} />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Add Node</span>
-          </button>
-          <button 
-            onClick={fetchTasks}
-            disabled={loading}
-            className="p-4 bg-zinc-900 text-zinc-400 rounded-2xl border border-zinc-800/50 hover:bg-zinc-100/10 hover:text-white transition-all disabled:opacity-50"
-            title="Sync Core"
-          >
-            <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
-          </button>
-          <button 
-            onClick={() => notify('SUCCESS', 'Neural Validation Passed: All orchestration paths reachable.')}
-            className="p-4 bg-zinc-900 text-zinc-400 rounded-2xl border border-zinc-800/50 hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-500/30 transition-all"
-            title="Validate Flow"
-          >
-            <CheckCircle size={18} />
-          </button>
-          <button 
-            onClick={() => notify('INFO', 'Canvas state reverted')}
-            className="p-4 bg-zinc-900 text-zinc-400 rounded-2xl border border-zinc-800/50 hover:bg-zinc-100/10 hover:text-white transition-all"
-            title="Undo State"
-          >
-            <Undo2 size={18} />
-          </button>
-          <button 
-            onClick={() => notify('INFO', 'Canvas state restored')}
-            className="p-4 bg-zinc-900 text-zinc-400 rounded-2xl border border-zinc-800/50 hover:bg-zinc-100/10 hover:text-white transition-all"
-            title="Redo State"
-          >
-            <Redo2 size={18} />
-          </button>
-          <button 
-            onClick={onLayout}
-            className="bg-zinc-900 text-zinc-300 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] border border-zinc-800/50 hover:bg-zinc-100/10 hover:text-white transition-all flex items-center gap-3"
-            title="Magic Wand: hierarchical auto-layout"
-          >
-            <Sparkles size={14} className="text-amber-400" />
-            Magic Wand
-          </button>
-          <button 
-            onClick={onExport}
-            className="bg-zinc-900 text-zinc-300 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] border border-zinc-800/50 hover:bg-zinc-100/10 hover:text-white transition-all flex items-center gap-3"
-            title="Export Architecture"
-          >
-            <Download size={14} className="text-indigo-400" />
-            Export Image
-          </button>
+          
           <button 
             onClick={saveLayout}
             disabled={saving || loading || nodes.length === 0}
-            className=" bg-indigo-600 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-[0_20px_50px_rgba(217,119,6,0.3)] hover:brightness-110 active:scale-95 transition-all flex items-center gap-3 disabled:opacity-50"
+            className="bg-indigo-600/90 backdrop-blur-xl text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-[0_10px_30px_rgba(79,70,229,0.3)] hover:brightness-110 active:scale-95 transition-all flex items-center gap-3 disabled:opacity-50 pointer-events-auto border border-indigo-500/30"
           >
             {saving ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
             Commit Layout
           </button>
+          
           <Link 
             to="/dashboard"
-            className="p-4 bg-zinc-900 text-zinc-400 rounded-2xl border border-zinc-800/50 hover:bg-zinc-100/10 hover:text-white transition-all"
+            className="bg-zinc-950/80 backdrop-blur-xl p-4 text-zinc-400 rounded-2xl border border-zinc-800/60 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30 transition-all shadow-2xl pointer-events-auto group"
+            title="Close Canvas"
           >
-            <X size={18} />
+            <X size={18} className="group-hover:scale-110 transition-transform" />
           </Link>
         </div>
       </header>
+
+      {/* Floating Canvas Toolbar */}
+      <motion.div 
+        initial={{ y: 50, opacity: 0, x: '-50%' }}
+        animate={{ y: 0, opacity: 1, x: '-50%' }}
+        transition={{ delay: 0.2 }}
+        className="absolute bottom-10 left-1/2 z-40 flex items-center gap-1.5 bg-zinc-950/80 backdrop-blur-2xl border border-zinc-800/60 p-2 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] pointer-events-auto"
+      >
+        <button 
+          onClick={handleCreateNew}
+          className="px-5 py-3 bg-brand-primary/10 text-brand-primary rounded-xl hover:bg-brand-primary/20 transition-all flex items-center gap-2 group border border-brand-primary/20"
+          title="Add Node"
+        >
+          <Plus size={16} className="group-hover:scale-110 transition-transform" />
+          <span className="text-[10px] font-black uppercase tracking-[0.1em]">Add Node</span>
+        </button>
+        
+        <div className="w-px h-6 bg-zinc-800/60 mx-2"></div>
+
+        <button 
+          onClick={fetchTasks}
+          disabled={loading}
+          className="p-3 text-zinc-400 rounded-xl hover:bg-zinc-800/80 hover:text-white transition-all disabled:opacity-50"
+          title="Sync Core"
+        >
+          <RefreshCw size={16} className={loading ? 'animate-spin text-indigo-400' : ''} />
+        </button>
+        
+        <button 
+          onClick={() => notify('SUCCESS', 'Neural Validation Passed: All orchestration paths reachable.')}
+          className="p-3 text-zinc-400 rounded-xl hover:bg-emerald-500/10 hover:text-emerald-400 transition-all group"
+          title="Validate Flow"
+        >
+          <CheckCircle size={16} className="group-hover:scale-110 transition-transform" />
+        </button>
+        
+        <button 
+          onClick={() => notify('INFO', 'Canvas state reverted')}
+          className="p-3 text-zinc-400 rounded-xl hover:bg-zinc-800/80 hover:text-white transition-all group"
+          title="Undo State"
+        >
+          <Undo2 size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+        </button>
+        
+        <button 
+          onClick={() => notify('INFO', 'Canvas state restored')}
+          className="p-3 text-zinc-400 rounded-xl hover:bg-zinc-800/80 hover:text-white transition-all group"
+          title="Redo State"
+        >
+          <Redo2 size={16} className="group-hover:translate-x-0.5 transition-transform" />
+        </button>
+
+        <div className="w-px h-6 bg-zinc-800/60 mx-2"></div>
+
+        <button 
+          onClick={onLayout}
+          className="p-3 text-zinc-400 rounded-xl hover:bg-amber-500/10 hover:text-amber-400 transition-all group"
+          title="Magic Wand: hierarchical auto-layout"
+        >
+          <Sparkles size={16} className="group-hover:scale-110 transition-transform" />
+        </button>
+        
+        <button 
+          onClick={onExport}
+          className="p-3 text-zinc-400 rounded-xl hover:bg-indigo-500/10 hover:text-indigo-400 transition-all group"
+          title="Export Architecture"
+        >
+          <Download size={16} className="group-hover:scale-110 transition-transform" />
+        </button>
+      </motion.div>
 
       <div className="absolute inset-0 bg-[url('/noise.svg')] bg-repeat opacity-[0.03] pointer-events-none z-10"></div>
 
@@ -988,16 +1014,16 @@ const WorkflowCanvas = () => {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={closeSidebarAndUnlock}
-                className="absolute inset-0 bg-black/80 backdrop-blur-md z-40"
+                className="absolute inset-0 bg-zinc-950/30 backdrop-blur-sm z-40"
               />
               <motion.div 
-                initial={{ x: '100%' }}
-                animate={{ x: 0 }}
-                exit={{ x: '100%' }}
+                initial={{ x: 100, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: 100, opacity: 0 }}
                 transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className="absolute right-0 top-0 h-full w-full max-w-2xl bg-zinc-950 border-l border-zinc-800/50 z-50 shadow-[0_0_100px_rgba(0,0,0,0.8)] flex flex-col"
+                className="absolute right-6 top-32 bottom-28 w-full max-w-[480px] bg-zinc-950/95 backdrop-blur-3xl border border-zinc-800/80 z-50 shadow-[0_30px_100px_rgba(0,0,0,0.8)] rounded-3xl flex flex-col overflow-hidden ring-1 ring-white/5"
               >
-                <div className="p-8 border-b border-zinc-800/50 flex items-center justify-between bg-zinc-900/30 shrink-0">
+                <div className="p-6 border-b border-zinc-800/50 flex items-center justify-between bg-zinc-900/30 shrink-0">
                   <div>
                     <h3 className="text-xl font-bold text-white tracking-tight uppercase">Neural Inspector</h3>
                     <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-1">Core Logic & Telemetry</p>
