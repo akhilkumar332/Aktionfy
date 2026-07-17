@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"time"
 
 	"aktionfy/db"
@@ -227,13 +230,62 @@ func succeedIntegration(workerCtx context.Context, t db.Task, taskID string, exe
 	})
 }
 
-// Dummy Handlers for Phase 2 implementation
+// Implementations for Phase 2 integrations
 func executeGithubCreateIssue(ctx context.Context, config map[string]interface{}, input map[string]interface{}, secrets map[string]string) (string, error) {
 	token := secrets["GITHUB_TOKEN"]
 	if token == "" {
 		return "", fmt.Errorf("missing GITHUB_TOKEN in vault")
 	}
-	return "Mock GitHub issue created with vault credentials", nil
+
+	getString := func(key string) string {
+		if v, ok := config[key].(string); ok && v != "" {
+			return v
+		}
+		if payload, ok := input["payload"].(map[string]interface{}); ok {
+			if v, ok := payload[key].(string); ok && v != "" {
+				return v
+			}
+		}
+		return ""
+	}
+
+	owner := getString("owner")
+	repo := getString("repo")
+	title := getString("title")
+	body := getString("body")
+
+	if owner == "" || repo == "" || title == "" {
+		return "", fmt.Errorf("missing required fields for github issue (owner, repo, title)")
+	}
+
+	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/issues", owner, repo)
+	
+	reqBody, _ := json.Marshal(map[string]interface{}{
+		"title": title,
+		"body":  body,
+	})
+
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(reqBody))
+	if err != nil {
+		return "", err
+	}
+	
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Accept", "application/vnd.github.v3+json")
+	
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	
+	respData, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return "", fmt.Errorf("github api error (%d): %s", resp.StatusCode, string(respData))
+	}
+	
+	return string(respData), nil
 }
 
 func executeSlackPostMessage(ctx context.Context, config map[string]interface{}, input map[string]interface{}, secrets map[string]string) (string, error) {
@@ -241,9 +293,119 @@ func executeSlackPostMessage(ctx context.Context, config map[string]interface{},
 	if token == "" {
 		return "", fmt.Errorf("missing SLACK_TOKEN in vault")
 	}
-	return "Mock Slack message sent with vault credentials", nil
+
+	getString := func(key string) string {
+		if v, ok := config[key].(string); ok && v != "" {
+			return v
+		}
+		if payload, ok := input["payload"].(map[string]interface{}); ok {
+			if v, ok := payload[key].(string); ok && v != "" {
+				return v
+			}
+		}
+		return ""
+	}
+
+	channel := getString("channel")
+	text := getString("text")
+
+	if channel == "" || text == "" {
+		return "", fmt.Errorf("missing required fields for slack (channel, text)")
+	}
+
+	reqBody, _ := json.Marshal(map[string]interface{}{
+		"channel": channel,
+		"text":    text,
+	})
+
+	req, err := http.NewRequestWithContext(ctx, "POST", "https://slack.com/api/chat.postMessage", bytes.NewBuffer(reqBody))
+	if err != nil {
+		return "", err
+	}
+	
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json; charset=utf-8")
+	
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	
+	respData, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return "", fmt.Errorf("slack api error (%d): %s", resp.StatusCode, string(respData))
+	}
+	
+	return string(respData), nil
 }
 
 func executeHTTPRequest(ctx context.Context, config map[string]interface{}, input map[string]interface{}, secrets map[string]string) (string, error) {
-	return "Mock HTTP request completed", nil
+	getString := func(key string) string {
+		if v, ok := config[key].(string); ok && v != "" {
+			return v
+		}
+		if payload, ok := input["payload"].(map[string]interface{}); ok {
+			if v, ok := payload[key].(string); ok && v != "" {
+				return v
+			}
+		}
+		return ""
+	}
+
+	method := getString("method")
+	if method == "" {
+		method = "GET"
+	}
+	
+	url := getString("url")
+	if url == "" {
+		return "", fmt.Errorf("missing required field: url")
+	}
+
+	var reqBody io.Reader
+	if bodyStr := getString("body"); bodyStr != "" {
+		reqBody = bytes.NewBufferString(bodyStr)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, url, reqBody)
+	if err != nil {
+		return "", err
+	}
+	
+	if headers, ok := config["headers"].(map[string]interface{}); ok {
+		for k, v := range headers {
+			if strVal, ok := v.(string); ok {
+				req.Header.Set(k, strVal)
+			}
+		}
+	} else if payload, ok := input["payload"].(map[string]interface{}); ok {
+		if headers, ok := payload["headers"].(map[string]interface{}); ok {
+			for k, v := range headers {
+				if strVal, ok := v.(string); ok {
+					req.Header.Set(k, strVal)
+				}
+			}
+		}
+	}
+
+	// Auto-inject token if present in vault and Auth header is not manually set
+	if token := secrets["API_TOKEN"]; token != "" && req.Header.Get("Authorization") == "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	
+	respData, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return "", fmt.Errorf("http request error (%d): %s", resp.StatusCode, string(respData))
+	}
+	
+	return string(respData), nil
 }
