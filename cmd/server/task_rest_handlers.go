@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -1144,4 +1145,58 @@ func apiUnlockTaskHandler(c echo.Context) error {
 	_, _ = RedisClient.Eval(ctx, releaseScript, []string{key}, email).Result()
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true})
+}
+
+func apiExecuteTaskHandler(c echo.Context) error {
+	userID := getUserID(c)
+	if userID == "" {
+		return c.JSON(http.StatusUnauthorized, APIResponse{Success: false, Error: "Unauthorized"})
+	}
+
+	taskID, err := mustParseUUID(c, c.Param("id"))
+	if err != nil {
+		return err
+	}
+
+	// Verify ownership
+	exists, err := queries.CheckTaskOwnership(c.Request().Context(), db.CheckTaskOwnershipParams{
+		ID:     taskID,
+		UserID: userID,
+	})
+	if err != nil || !exists {
+		return c.JSON(http.StatusForbidden, APIResponse{Success: false, Error: "Unauthorized to execute this task"})
+	}
+
+	var payload map[string]interface{}
+	if err := c.Bind(&payload); err != nil {
+		// Proceed with empty payload if parsing fails
+		payload = make(map[string]interface{})
+	}
+
+	task, err := queries.GetTaskByID(c.Request().Context(), db.GetTaskByIDParams{
+		ID:     taskID,
+		UserID: userID,
+	})
+	if err != nil {
+		return c.JSON(http.StatusNotFound, APIResponse{Success: false, Error: "Task not found"})
+	}
+
+	// Dispatch task immediately in background
+	go func(p map[string]interface{}) {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("Panic in apiExecuteTaskHandler dispatcher: %v", r)
+			}
+		}()
+		ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+		defer cancel()
+		handleDispatchTask(ctx, task, p)
+	}(payload)
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"success": true, 
+		"message": "Execution dispatched successfully",
+		"status": "queued",
+		"task_id": formatUUID(task.ID),
+	})
 }

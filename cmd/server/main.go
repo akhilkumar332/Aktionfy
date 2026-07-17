@@ -478,6 +478,7 @@ func main() {
 	api.GET("/tasks/:id", apiGetTaskHandler)
 	api.POST("/tasks/:id/link", apiLinkTaskHandler)
 	api.POST("/tasks/:id/trigger", apiTriggerTaskHandler)
+	api.POST("/tasks/:id/execute", apiExecuteTaskHandler)
 	api.POST("/tasks/:id/pause", apiPauseTaskHandler)
 	api.POST("/tasks/:id/resume", apiResumeTaskHandler)
 	api.DELETE("/tasks/:id", apiDeleteTaskHandler)
