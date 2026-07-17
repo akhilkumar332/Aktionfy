@@ -101,19 +101,37 @@ const Vault = () => {
   };
 
   return (
-    <>
-      <header className="mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-8 pb-12">
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-zinc-500 tracking-tight">Neural Secret Vault</h1>
-          <p className="text-zinc-400 text-sm font-medium mt-1 uppercase tracking-widest">Encrypted credential & private key persistence buffer</p>
+          <motion.h1 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-zinc-500 tracking-tight"
+          >
+            Neural Secret Vault
+          </motion.h1>
+          <motion.p 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-zinc-400 text-xs font-bold mt-2 uppercase tracking-[0.2em]"
+          >
+            Encrypted credential & private key persistence buffer
+          </motion.p>
         </div>
-        <div className="flex items-center gap-3">
+        
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-4 bg-zinc-900/50 p-2 rounded-2xl border border-zinc-800/60 shadow-inner"
+        >
            <button 
              onClick={fetchData}
-             className="p-2 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-400 hover:text-white transition-all"
+             className="p-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-all shadow-md active:scale-95 border border-zinc-700"
              aria-label="Refresh secrets"
            >
-             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+             <RefreshCw size={16} className={loading ? 'animate-spin text-indigo-400' : ''} />
            </button>
            <button 
             onClick={() => {
@@ -121,11 +139,11 @@ const Vault = () => {
               setNewSecret({ name: '', value: '', ttl: '' });
               setShowAddForm(true);
             }}
-            className="pro-button-primary !py-2 !px-5 flex items-center gap-2"
+            className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-[11px] font-black uppercase tracking-[0.2em] transition-all shadow-[0_0_20px_rgba(79,70,229,0.3)] active:scale-95 whitespace-nowrap"
           >
-            <Plus size={16} /> <span className="text-[11px] uppercase tracking-widest">Store Secret</span>
+            <Plus size={16} /> <span className="hidden sm:inline">Store Secret</span>
           </button>
-        </div>
+        </motion.div>
       </header>
 
       {/* Add Secret Form Modal */}
@@ -141,20 +159,22 @@ const Vault = () => {
                 setNewSecret({ name: '', value: '', ttl: '' });
                 setEditMode(false);
               }}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              className="absolute inset-0 bg-black/80 backdrop-blur-md"
             />
             <motion.div 
-              initial={{ opacity: 0, scale: 0.98, y: 10 }}
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.98, y: 10 }}
-              className="pro-glass-panel p-8 rounded-2xl shadow-[0_0_100px_rgba(0,0,0,0.8)] border-white/5 w-full max-w-md relative z-10 overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/[0.02] before:to-transparent before:pointer-events-none"
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-zinc-950/90 backdrop-blur-3xl border border-indigo-500/30 p-8 rounded-[2rem] shadow-[0_0_50px_rgba(0,0,0,0.8)] w-full max-w-md relative z-10 overflow-hidden ring-1 ring-white/5"
             >
-              <div className="flex items-center justify-between mb-8">
+              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-indigo-500/0 via-indigo-500/50 to-indigo-500/0"></div>
+              
+              <div className="flex items-start justify-between mb-8">
                 <div>
                   <h2 className="text-xl font-black text-white uppercase tracking-tight">
                     {editMode ? "Modify Payload" : "Deposit Identity"}
                   </h2>
-                  <p className="text-[10px] text-brand-primary font-black uppercase tracking-widest mt-1">
+                  <p className="text-[10px] text-indigo-400 font-black uppercase tracking-[0.2em] mt-1">
                     {editMode ? "PROTOCOL: SECURE_VAULT_UPDATE" : "PROTOCOL: SECURE_VAULT_DEPOSIT"}
                   </p>
                 </div>
@@ -164,63 +184,64 @@ const Vault = () => {
                     setNewSecret({ name: '', value: '', ttl: '' });
                     setEditMode(false);
                   }} 
-                  className="text-zinc-400 hover:text-white p-2"
+                  className="text-zinc-500 hover:text-white bg-zinc-900/50 hover:bg-zinc-800 p-2 rounded-xl transition-all"
                 >
                   <X size={20} />
                 </button>
               </div>
 
               <form onSubmit={handleUpsert} className="space-y-6">
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-1">Secret Identity (Key)</label>
+                <div className="space-y-3 relative group">
+                  <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ml-2">Secret Identity (Key)</label>
                   <input 
                     type="text"
                     value={newSecret.name}
                     onChange={(e) => setNewSecret({...newSecret, name: e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, '')})}
                     placeholder="INFRA_API_TOKEN"
-                    className="pro-input w-full font-mono !text-sm disabled:opacity-50"
+                    className="w-full bg-zinc-900/80 border border-zinc-800 text-white px-5 py-4 rounded-2xl text-sm font-mono font-bold uppercase tracking-widest placeholder:text-zinc-700 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition-all shadow-inner disabled:opacity-50 disabled:bg-zinc-950"
                     required
                     autoFocus={!editMode}
                     disabled={editMode}
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-1">Sensitive Payload</label>
+                <div className="space-y-3 relative group">
+                  <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ml-2">Sensitive Payload</label>
                   <div className="relative">
                       <input 
                       type={showSecretValue ? "text" : "password"}
                       value={newSecret.value}
                       onChange={(e) => setNewSecret({...newSecret, value: e.target.value})}
                       placeholder="Raw 256-bit payload..."
-                      className="pro-input w-full font-mono !text-sm pr-10"
+                      className="w-full bg-zinc-900/80 border border-zinc-800 text-white px-5 py-4 pr-12 rounded-2xl text-sm font-mono placeholder:text-zinc-700 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition-all shadow-inner"
                       required
                     />
                     <button 
                       type="button"
                       onClick={() => setShowSecretValue(!showSecretValue)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors bg-zinc-800/50 p-1.5 rounded-lg"
                       title={showSecretValue ? "Hide Value" : "Show Value"}
                     >
                       {showSecretValue ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
-                 <div className="space-y-2">
-                   <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-1">Temporary Lease (Seconds)</label>
-                     <input 
-                     type="number"
-                     value={newSecret.ttl || ''}
-                     onChange={(e) => setNewSecret({...newSecret, ttl: e.target.value})}
-                     placeholder="e.g. 3600"
-                     className="pro-input w-full font-mono !text-sm"
-                     min="0"
-                   />
-                 </div>
                 </div>
+                <div className="space-y-3 relative group">
+                  <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ml-2">Temporary Lease (Seconds)</label>
+                    <input 
+                    type="number"
+                    value={newSecret.ttl || ''}
+                    onChange={(e) => setNewSecret({...newSecret, ttl: e.target.value})}
+                    placeholder="e.g. 3600 (optional)"
+                    className="w-full bg-zinc-900/80 border border-zinc-800 text-white px-5 py-4 rounded-2xl text-sm font-mono placeholder:text-zinc-700 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition-all shadow-inner"
+                    min="0"
+                  />
+                </div>
+                
                 <button 
                   disabled={submitting}
-                  className="pro-button-primary w-full !py-3 !text-[11px] uppercase tracking-[0.2em] disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full flex items-center justify-center gap-3 bg-indigo-600 hover:bg-indigo-500 disabled:bg-zinc-800 disabled:text-zinc-500 text-white py-4 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] transition-all shadow-lg disabled:shadow-none mt-4"
                 >
-                  {submitting ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
+                  {submitting ? <Loader2 size={18} className="animate-spin" /> : <ShieldCheck size={18} />}
                   Authorize Encryption
                 </button>
               </form>
@@ -229,111 +250,111 @@ const Vault = () => {
         )}
       </AnimatePresence>
 
-      <div className="pro-glass-panel rounded-xl overflow-hidden border-white/5 relative group">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-brand-primary/10 blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none group-hover:bg-brand-primary/20 transition-all duration-1000"></div>
+      <div className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 rounded-[2rem] overflow-hidden shadow-2xl relative group">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/3 pointer-events-none group-hover:bg-indigo-500/10 transition-all duration-1000"></div>
         <div className="overflow-x-auto custom-scrollbar relative z-10">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="pro-table-header">
-                <th className="px-6 py-4">Secret Identity</th>
-                <th className="px-6 py-4 text-center">Encryption</th>
-                <th className="px-6 py-4 text-center">Initialized</th>
-                <th className="px-6 py-4 text-right">Overrides</th>
+              <tr className="bg-zinc-950/50 border-b border-zinc-800/60">
+                <th className="px-8 py-5 text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Secret Identity</th>
+                <th className="px-8 py-5 text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] text-center">Encryption</th>
+                <th className="px-8 py-5 text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] text-center">Initialized</th>
+                <th className="px-8 py-5 text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] text-right">Overrides</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800/50">
+            <tbody className="divide-y divide-zinc-800/40">
               {loading && secrets.length === 0 ? (
                 <tr>
-                  <td colSpan="4" className="px-6 py-32">
-                     <div className="flex flex-col items-center gap-3">
-                        <RefreshCw className="w-6 h-6 text-zinc-700 animate-spin" />
-                        <span className="text-[11px] font-semibold text-zinc-300 uppercase tracking-widest">Synchronizing Vault...</span>
+                  <td colSpan="4" className="px-8 py-32">
+                     <div className="flex flex-col items-center gap-4">
+                        <RefreshCw className="w-8 h-8 text-indigo-500 animate-spin" />
+                        <span className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em] animate-pulse">Synchronizing Vault...</span>
                      </div>
                   </td>
                 </tr>
               ) : secrets.length === 0 ? (
                 <tr>
-                  <td colSpan="4" className="px-6 py-32 text-center">
-                     <div className="flex flex-col items-center gap-4 opacity-30">
-                        <Key size={32} className="text-zinc-300" />
-                        <span className="text-xs font-medium text-zinc-400 italic">Vault registry void. No encrypted identities identified.</span>
+                  <td colSpan="4" className="px-8 py-32 text-center bg-zinc-950/20">
+                     <div className="flex flex-col items-center gap-5 opacity-40">
+                        <Key size={48} className="text-zinc-500" />
+                        <span className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em] text-center">Vault registry void.<br/>No encrypted identities identified.</span>
                      </div>
                   </td>
                 </tr>
               ) : (
                 secrets.map((secret) => (
                   <React.Fragment key={secret.name}>
-                    <tr className="pro-table-row group">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-4">
-                          <div className="w-8 h-8 rounded-md bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-400 group-hover:border-brand-primary/50 transition-all">
-                             <Key size={16} />
+                    <tr className="group hover:bg-zinc-800/30 transition-colors">
+                      <td className="px-8 py-5">
+                        <div className="flex items-center gap-5">
+                          <div className="w-12 h-12 rounded-2xl bg-zinc-950 border border-zinc-800/80 flex items-center justify-center text-zinc-400 group-hover:border-indigo-500/50 group-hover:text-indigo-400 group-hover:shadow-[0_0_15px_rgba(79,70,229,0.2)] transition-all shadow-inner">
+                             <Key size={20} />
                           </div>
                           <div className="flex flex-col min-w-0">
-                             <span className="text-sm font-semibold text-zinc-100 truncate font-mono uppercase tracking-widest">{secret.name}</span>
-                             <span className="text-[10px] text-zinc-300 font-bold uppercase tracking-tighter opacity-60">AES_256_GCM_BUFFER</span>
+                             <span className="text-sm font-black text-white truncate font-mono uppercase tracking-widest">{secret.name}</span>
+                             <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-[0.2em] mt-1">AES_256_GCM_BUFFER</span>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-8 py-5 text-center">
                          {secret.is_leased ? (
-                           <span className="pro-badge bg-indigo-950/45 border-indigo-500/20 text-indigo-300 w-fit mx-auto flex items-center gap-1.5 ring-1 ring-indigo-500/10">
-                              <Clock size={10} className="text-indigo-400 animate-pulse" /> Lease: {secret.ttl}s
+                           <span className="inline-flex items-center gap-2 bg-indigo-950/40 border border-indigo-900/50 text-indigo-400 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-[0.1em] shadow-inner">
+                              <Clock size={12} className="text-indigo-400 animate-pulse" /> Lease: {secret.ttl}s
                            </span>
                          ) : (
-                           <span className="pro-badge bg-zinc-950 border-zinc-800 text-zinc-400 w-fit mx-auto flex items-center gap-1.5 ring-1 ring-zinc-800/50">
-                              <Shield size={10} className="text-emerald-500/50" /> Locked
+                           <span className="inline-flex items-center gap-2 bg-zinc-950 border border-zinc-800/80 text-zinc-400 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-[0.1em] shadow-inner">
+                              <Shield size={12} className="text-emerald-500/70" /> Locked
                            </span>
                          )}
                       </td>
-                      <td className="px-6 py-4 text-center">
-                        <span className="text-[11px] text-zinc-400 font-semibold tabular-nums uppercase">{new Date(secret.created_at).toLocaleDateString()}</span>
+                      <td className="px-8 py-5 text-center">
+                        <span className="text-[11px] text-zinc-400 font-bold tabular-nums uppercase tracking-[0.1em]">{new Date(secret.created_at).toLocaleDateString()}</span>
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex justify-end gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
+                      <td className="px-8 py-5 text-right">
+                        <div className="flex justify-end gap-3 opacity-40 group-hover:opacity-100 transition-opacity">
                           {confirmDelete === secret.name ? (
-                            <div className="flex items-center gap-1 bg-red-500/10 border border-red-500/20 rounded-md p-0.5">
+                            <div className="flex items-center gap-2 bg-red-950/40 border border-red-900/50 rounded-xl p-1 shadow-inner">
                               <button 
                                 onClick={() => handleDelete(secret.name)}
-                                className="p-1 text-red-500 hover:bg-red-500 hover:text-white rounded transition-all"
+                                className="p-2 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-all"
                                 title="Confirm Terminate"
                               >
-                                <Check size={14} />
+                                <Check size={16} />
                               </button>
                               <button 
                                 onClick={() => setConfirmDelete(null)}
-                                className="p-1 text-zinc-400 hover:bg-zinc-700 hover:text-white rounded transition-all"
+                                className="p-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-lg transition-all border border-zinc-800"
                                 title="Cancel"
                               >
-                                <X size={14} />
+                                <X size={16} />
                               </button>
                             </div>
                           ) : (
                             <>
                               <button 
                                 onClick={() => setExpandedSecret(expandedSecret === secret.name ? null : secret.name)}
-                                className={`p-1.5 border rounded-md transition-all ${
+                                className={`p-2.5 rounded-xl transition-all shadow-md ${
                                   expandedSecret === secret.name 
-                                    ? 'bg-brand-primary/10 border-brand-primary/30 text-brand-primary' 
-                                    : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white'
+                                    ? 'bg-indigo-500/10 border border-indigo-500/30 text-indigo-400' 
+                                    : 'bg-zinc-900/80 border border-zinc-800/80 text-zinc-400 hover:text-white hover:border-zinc-700'
                                 }`}
                                 title="View Versions"
                               >
-                                <RefreshCw size={14} />
+                                <RefreshCw size={16} />
                               </button>
                               <button 
                                 onClick={() => handleEditClick(secret)}
-                                className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-amber-400 hover:border-amber-500/30 transition-all"
+                                className="p-2.5 bg-zinc-900/80 border border-zinc-800/80 rounded-xl text-zinc-400 hover:text-amber-400 hover:border-amber-500/30 transition-all shadow-md"
                                 title="Modify Payload"
                               >
-                                <Edit2 size={14} />
+                                <Edit2 size={16} />
                               </button>
                               <button 
                                 onClick={() => setConfirmDelete(secret.name)}
-                                className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-red-500 hover:border-red-500/30 transition-all"
+                                className="p-2.5 bg-zinc-900/80 border border-zinc-800/80 rounded-xl text-zinc-400 hover:text-red-400 hover:border-red-500/30 transition-all shadow-md hover:bg-red-500/10"
                                 title="Terminate Linkage"
                               >
-                                <Trash2 size={14} />
+                                <Trash2 size={16} />
                               </button>
                             </>
                           )}
@@ -342,28 +363,28 @@ const Vault = () => {
                     </tr>
                     <AnimatePresence>
                       {expandedSecret === secret.name && (
-                        <tr className="bg-zinc-900/50 border-b border-zinc-800/50">
-                          <td colSpan="4" className="px-6 py-4">
+                        <tr className="bg-black/20 border-b border-zinc-800/50 shadow-inner">
+                          <td colSpan="4" className="px-8 py-0">
                             <motion.div 
                               initial={{ height: 0, opacity: 0 }}
                               animate={{ height: 'auto', opacity: 1 }}
                               exit={{ height: 0, opacity: 0 }}
                               className="overflow-hidden"
                             >
-                              <div className="py-4">
-                                <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-4">Version History</h4>
-                                <div className="space-y-2 max-w-2xl">
+                              <div className="py-6 border-t border-zinc-800/30">
+                                <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-4">Version History</h4>
+                                <div className="space-y-3 max-w-2xl">
                                   {[1, 2].map((v) => (
-                                    <div key={v} className="flex items-center justify-between p-3 bg-zinc-950 border border-zinc-800/50 rounded-lg">
-                                      <div className="flex items-center gap-3">
-                                        <span className="text-[10px] font-mono text-zinc-500 bg-zinc-900 px-2 py-0.5 rounded">v{3 - v}</span>
-                                        <span className="text-[10px] text-zinc-400 font-medium">Updated by system actor</span>
-                                      </div>
+                                    <div key={v} className="flex items-center justify-between p-4 bg-zinc-950/60 border border-zinc-800/60 rounded-2xl hover:border-zinc-700 transition-colors">
                                       <div className="flex items-center gap-4">
-                                        <span className="text-[10px] text-zinc-500 tabular-nums">
+                                        <span className="text-[11px] font-black font-mono text-zinc-400 bg-zinc-900 px-3 py-1.5 rounded-xl border border-zinc-800/80 shadow-inner">v{3 - v}</span>
+                                        <span className="text-[11px] text-zinc-500 font-bold uppercase tracking-[0.1em]">Updated by system actor</span>
+                                      </div>
+                                      <div className="flex items-center gap-6">
+                                        <span className="text-[11px] text-zinc-500 font-bold tabular-nums tracking-wider">
                                           {new Date(Date.now() - v * 86400000).toLocaleDateString()}
                                         </span>
-                                        <button className="text-[10px] font-bold text-amber-500 hover:text-amber-400 uppercase tracking-widest">
+                                        <button className="text-[10px] font-black text-indigo-500 hover:text-indigo-400 uppercase tracking-[0.2em] transition-colors">
                                           Restore
                                         </button>
                                       </div>
@@ -383,7 +404,7 @@ const Vault = () => {
           </table>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 
