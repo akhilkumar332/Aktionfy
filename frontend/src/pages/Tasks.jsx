@@ -240,112 +240,133 @@ const Tasks = () => {
   const [viewMode, setViewMode] = useState('list');
 
   return (
-    <>
-      <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-8 pb-12">
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Neural Streams</h1>
-          <p className="text-zinc-400 text-xs font-medium mt-1">Distributed task scheduling and autonomous dependency hub.</p>
+          <motion.h1 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-zinc-500 tracking-tight"
+          >
+            Neural Streams
+          </motion.h1>
+          <motion.p 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-zinc-400 text-xs font-bold mt-2 uppercase tracking-[0.2em]"
+          >
+            Distributed task scheduling and autonomous dependency hub
+          </motion.p>
         </div>
         
-        <div className="flex items-center gap-3">
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-4"
+        >
           <button 
             onClick={fetchTasks}
-            className="p-2 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-400 hover:text-white transition-all"
-            aria-label="Refresh streams"
+            className="p-3 bg-zinc-900/80 backdrop-blur-xl border border-zinc-800/80 rounded-xl text-zinc-400 hover:text-white transition-all shadow-lg hover:bg-zinc-800 active:scale-95"
+            title="Refresh streams"
           >
-            <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
+            <RefreshCw size={16} className={refreshing ? 'animate-spin text-indigo-400' : ''} />
           </button>
-          <div className="flex items-center gap-3">
+          
+          <div className="flex items-center gap-3 bg-zinc-900/80 backdrop-blur-xl border border-zinc-800/80 p-1.5 rounded-xl shadow-lg">
             <button 
               onClick={exportCSV}
-              className="pro-button-secondary !py-2.5"
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-950 hover:bg-zinc-800 text-zinc-300 rounded-lg text-[10px] font-black uppercase tracking-[0.1em] transition-all border border-zinc-800/50 shadow-inner"
             >
-              <Download size={16} /> Export CSV
+              <Download size={14} className="text-zinc-500" /> Export CSV
             </button>
             <button 
               onClick={() => {
                 setSelectedTask(null);
                 setIsWizardOpen(true);
               }}
-              className="pro-button-primary !py-2.5"
+              className="flex items-center gap-2 px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-[10px] font-black uppercase tracking-[0.1em] transition-all shadow-[0_0_20px_rgba(79,70,229,0.3)]"
             >
-              <Plus size={16} /> Initialize Node
+              <Plus size={14} /> Initialize Node
             </button>
           </div>
-        </div>
+        </motion.div>
       </header>
 
       {/* Filter and Search Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 bg-zinc-900/30 border border-zinc-800/40 p-4 rounded-xl">
-        <div className="flex-1 flex items-center gap-3 bg-zinc-950 border border-zinc-800/80 px-3.5 py-2 rounded-lg group">
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 p-4 rounded-3xl shadow-xl">
+        <div className="flex-1 flex items-center gap-3 bg-zinc-950 border border-zinc-800/80 px-5 py-3 rounded-2xl group shadow-inner transition-all hover:border-zinc-700 focus-within:border-indigo-500/50 focus-within:ring-1 focus-within:ring-indigo-500/20">
           <Search size={16} className="text-zinc-500 group-focus-within:text-indigo-400 transition-colors" />
           <input
                 id="task-search-input"
                 type="text"
-                placeholder="Search index or UID..."
+                placeholder="Search designation or UID..."
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="bg-transparent border-none text-white text-sm focus:outline-none w-full placeholder:text-zinc-600"
+                className="bg-transparent border-none text-white text-sm font-medium focus:outline-none w-full placeholder:text-zinc-600 placeholder:font-normal"
               />
-              <span className="hidden sm:flex text-[10px] text-zinc-500 font-mono border border-zinc-800 px-1.5 py-0.5 rounded bg-zinc-900">/</span>
+              <div className="hidden sm:flex items-center gap-1.5 text-[10px] text-zinc-500 font-mono border border-zinc-800/80 px-2 py-1 rounded-md bg-zinc-900 shadow-sm">
+                 <kbd>/</kbd>
+              </div>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Status:</span>
-            <select
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="bg-zinc-950 border border-zinc-800 text-zinc-300 text-xs px-3 py-1.5 rounded-lg outline-none cursor-pointer focus:border-indigo-500"
-            >
-              <option value="all">ALL SECTORS</option>
-              <option value="active">ACTIVE</option>
-              <option value="paused">PAUSED</option>
-              <option value="error">ERROR</option>
-            </select>
+          <div className="flex items-center gap-2 bg-zinc-950/50 border border-zinc-800/50 px-2 py-1 rounded-2xl">
+             <div className="flex items-center gap-2 pl-3">
+               <span className="text-[9px] text-zinc-500 font-black uppercase tracking-widest">Status:</span>
+               <select
+                 value={statusFilter}
+                 onChange={(e) => {
+                   setStatusFilter(e.target.value);
+                   setCurrentPage(1);
+                 }}
+                 className="bg-transparent text-zinc-300 font-bold text-[11px] uppercase tracking-wider py-2 pr-6 rounded-lg outline-none cursor-pointer appearance-none"
+               >
+                 <option value="all" className="bg-zinc-950">ALL SECTORS</option>
+                 <option value="active" className="bg-zinc-950">ACTIVE</option>
+                 <option value="paused" className="bg-zinc-950">PAUSED</option>
+                 <option value="error" className="bg-zinc-950">ERROR</option>
+               </select>
+             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Sort:</span>
+          <div className="flex items-center gap-1 bg-zinc-950/50 border border-zinc-800/50 pl-4 p-1 rounded-2xl">
+            <span className="text-[9px] text-zinc-500 font-black uppercase tracking-widest mr-2">Sort:</span>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="bg-zinc-950 border border-zinc-800 text-zinc-300 text-xs px-3 py-1.5 rounded-lg outline-none cursor-pointer focus:border-indigo-500"
+              className="bg-transparent text-zinc-300 font-bold text-[11px] uppercase tracking-wider py-2 pr-6 outline-none cursor-pointer appearance-none"
             >
-              <option value="created_at">INDEX TIME</option>
-              <option value="name">DESIGNATION</option>
-              <option value="next_run">NEXT EMISSION</option>
-              <option value="version_count">ARCHIVES</option>
+              <option value="created_at" className="bg-zinc-950">INDEX TIME</option>
+              <option value="name" className="bg-zinc-950">DESIGNATION</option>
+              <option value="next_run" className="bg-zinc-950">NEXT EMISSION</option>
+              <option value="version_count" className="bg-zinc-950">ARCHIVES</option>
             </select>
-
             <button
               onClick={() => setSortOrder(o => o === 'asc' ? 'desc' : 'asc')}
-              className="p-2 bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-white rounded-lg text-xs transition-colors"
+              className="p-2 bg-zinc-900 border border-zinc-800/80 text-zinc-400 hover:text-white rounded-xl transition-colors shadow-inner"
             >
               <SlidersHorizontal size={14} className={sortOrder === 'asc' ? 'rotate-180 transition-transform' : 'transition-transform'} />
             </button>
           </div>
 
-          <div className="h-6 w-px bg-zinc-800 mx-1"></div>
+          <div className="h-8 w-px bg-zinc-800 mx-1"></div>
 
-          <div className="flex items-center bg-zinc-950 border border-zinc-800 rounded-lg p-0.5">
+          <div className="flex items-center bg-zinc-950 border border-zinc-800/80 rounded-2xl p-1 shadow-inner">
              <button 
                onClick={() => setViewMode('list')}
-               className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+               className={`p-2.5 rounded-xl transition-all ${viewMode === 'list' ? 'bg-zinc-800 text-white shadow-md' : 'text-zinc-500 hover:text-zinc-300'}`}
              >
-               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
              </button>
              <button 
                onClick={() => setViewMode('grid')}
-               className={`p-1.5 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+               className={`p-2.5 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-zinc-800 text-white shadow-md' : 'text-zinc-500 hover:text-zinc-300'}`}
              >
-               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
              </button>
           </div>
         </div>
@@ -372,65 +393,66 @@ const Tasks = () => {
             initial={{ opacity: 0, y: 50, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.95 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-zinc-900/90 border border-indigo-500/30 backdrop-blur-xl px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-6"
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-zinc-950/95 border border-indigo-500/40 backdrop-blur-3xl px-8 py-5 rounded-[2rem] shadow-[0_30px_100px_rgba(0,0,0,0.8)] flex items-center gap-8 ring-1 ring-white/5 pointer-events-auto"
           >
-            <span className="text-xs font-black uppercase text-indigo-400 tracking-wider">
+            <span className="text-[11px] font-black uppercase text-indigo-400 tracking-[0.2em] whitespace-nowrap">
               {selectedTasks.size} Nodes Linked
             </span>
-            <div className="h-6 w-px bg-zinc-800"></div>
+            <div className="h-8 w-px bg-zinc-800/80"></div>
             <div className="flex items-center gap-3">
               <button 
                 onClick={() => handleBulkAction('resume')}
-                className="px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-white rounded-xl text-[10px] uppercase font-bold tracking-widest transition-all"
+                className="px-6 py-2.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-white hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] rounded-xl text-[10px] uppercase font-black tracking-widest transition-all whitespace-nowrap"
               >
                 Thaw Nodes
               </button>
               <button 
                 onClick={() => handleBulkAction('pause')}
-                className="px-4 py-2 bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500 hover:text-white rounded-xl text-[10px] uppercase font-bold tracking-widest transition-all"
+                className="px-6 py-2.5 bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500 hover:text-white hover:shadow-[0_0_20px_rgba(245,158,11,0.3)] rounded-xl text-[10px] uppercase font-black tracking-widest transition-all whitespace-nowrap"
               >
                 Freeze Nodes
               </button>
               <button 
                 onClick={() => handleBulkAction('delete')}
-                className="px-4 py-2 bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-xl text-[10px] uppercase font-bold tracking-widest transition-all"
+                className="px-6 py-2.5 bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-600 hover:text-white hover:shadow-[0_0_20px_rgba(220,38,38,0.4)] rounded-xl text-[10px] uppercase font-black tracking-widest transition-all whitespace-nowrap"
               >
                 Terminate
               </button>
+              <div className="w-px h-6 bg-zinc-800/80 mx-2"></div>
               <button 
                 onClick={() => setSelectedTasks(new Set())}
-                className="p-2 text-zinc-500 hover:text-white transition-colors"
+                className="p-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all shadow-inner"
                 title="Deselect all"
               >
-                <X size={14} />
+                <X size={16} />
               </button>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div className="pro-card overflow-hidden">
+      <div className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 rounded-3xl overflow-hidden shadow-xl">
         {viewMode === 'list' ? (
           <div className="overflow-x-auto custom-scrollbar">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="pro-table-header">
-                  <th className="px-6 py-4 w-12">
+                <tr className="bg-zinc-950/80 border-b border-zinc-800/60 text-[10px] font-black uppercase text-zinc-500 tracking-[0.2em]">
+                  <th className="px-8 py-5 w-12">
                     <input
                       type="checkbox"
                       checked={paginatedTasks.length > 0 && selectedTasks.size === paginatedTasks.length}
                       onChange={toggleSelectAll}
-                      className="accent-indigo-600 rounded bg-zinc-950 border-zinc-800 cursor-pointer"
+                      className="accent-indigo-600 rounded bg-zinc-900 border-zinc-700 cursor-pointer w-4 h-4 shadow-inner"
                     />
                   </th>
-                  <th className="px-6 py-4">Designation</th>
-                  <th className="px-6 py-4">Vector</th>
-                  <th className="px-6 py-4 text-center">Status</th>
-                  <th className="px-6 py-4 text-center">Next Run</th>
-                  <th className="px-6 py-4 text-right">Overrides</th>
+                  <th className="px-6 py-5">Designation</th>
+                  <th className="px-6 py-5">Vector</th>
+                  <th className="px-6 py-5 text-center">Status</th>
+                  <th className="px-6 py-5 text-center">Next Emission</th>
+                  <th className="px-8 py-5 text-right">Overrides</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-800/50">
+              <tbody className="divide-y divide-zinc-800/30 bg-zinc-950/20">
                 {loading ? (
                   <>
                     <SkeletonRow columns={6} />
@@ -440,160 +462,161 @@ const Tasks = () => {
                 ) : tasks.length === 0 ? (
                   <tr>
                     <td colSpan="6" className="px-6 py-32 text-center">
-                       <div className="flex flex-col items-center gap-4 opacity-30">
-                          <Activity size={32} className="text-zinc-300" />
-                          <span className="text-xs font-medium text-zinc-400 italic">No active orchestration streams identified. Initialize your first node to begin.</span>
+                       <div className="flex flex-col items-center gap-5 opacity-40">
+                          <Activity size={40} className="text-zinc-400 animate-pulse" />
+                          <span className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500">No active orchestration streams identified.<br/>Initialize your first node to begin.</span>
                        </div>
                     </td>
                   </tr>
                 ) : paginatedTasks.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="px-6 py-16 text-center">
-                      <span className="text-xs text-zinc-500 italic">No streams matches search filters.</span>
+                    <td colSpan="6" className="px-6 py-24 text-center">
+                      <span className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-600">No streams matches search filters.</span>
                     </td>
                   </tr>
                 ) : (
                   paginatedTasks.map((task) => (
-                    <tr key={task.id} className={`pro-table-row group ${selectedTasks.has(task.id) ? 'bg-indigo-500/[0.02]' : ''}`}>
-                      <td className="px-6 py-4">
+                    <tr key={task.id} className={`group transition-colors duration-300 hover:bg-zinc-800/40 ${selectedTasks.has(task.id) ? 'bg-indigo-500/[0.05]' : ''}`}>
+                      <td className="px-8 py-5">
                         <input
                           type="checkbox"
                           checked={selectedTasks.has(task.id)}
                           onChange={() => toggleSelectTask(task.id)}
-                          className="accent-indigo-600 rounded bg-zinc-950 border-zinc-800 cursor-pointer"
+                          className="accent-indigo-600 rounded bg-zinc-900 border-zinc-700 cursor-pointer w-4 h-4"
                         />
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-4">
-                          <div className="w-8 h-8 rounded-md bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-400 group-hover:border-indigo-500/50 transition-all">
-                             <Cpu size={16} />
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-5">
+                          <div className={`w-10 h-10 rounded-xl bg-zinc-950 border flex items-center justify-center transition-all shadow-inner ${selectedTasks.has(task.id) ? 'border-indigo-500/50 text-indigo-400' : 'border-zinc-800/80 text-zinc-400 group-hover:border-indigo-500/30'}`}>
+                             <Cpu size={18} />
                           </div>
                           <div className="flex flex-col min-w-0">
-                             <div className="flex items-center gap-2">
-                                <span className="text-sm font-semibold text-zinc-100 truncate">{task.name}</span>
+                             <div className="flex items-center gap-3">
+                                <span className="text-sm font-bold text-white tracking-wide truncate">{task.name}</span>
                                 {task.version_count > 1 && (
-                                  <span className="text-[9px] font-bold text-zinc-400 bg-zinc-900 border border-zinc-800 px-1.5 py-0.5 rounded-md">v{task.version_count}</span>
+                                  <span className="text-[9px] font-black text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-md uppercase tracking-widest">v{task.version_count}</span>
                                 )}
                              </div>
-                             <div className="flex items-center gap-2 text-[10px] text-zinc-500 font-mono tracking-tighter opacity-60">
-                                <Command size={10} /> {task.id?.substring(0, 13)}
-                                {task.depends_on_task_id && <LinkIcon size={10} className="ml-1 text-indigo-400/50" />}
+                             <div className="flex items-center gap-2 text-[10px] text-zinc-500 font-mono tracking-widest mt-1">
+                                <Command size={10} className="opacity-70" /> {task.id?.substring(0, 13)}
+                                {task.depends_on_task_id && <LinkIcon size={10} className="ml-2 text-indigo-400/50" />}
                              </div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                         <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">{task.trigger_type}</span>
+                      <td className="px-6 py-5">
+                         <span className="text-[10px] font-black text-zinc-400 bg-zinc-900/50 border border-zinc-800 px-3 py-1.5 rounded-lg uppercase tracking-[0.2em]">{task.trigger_type}</span>
                       </td>
-                      <td className="px-6 py-4 text-center">
-                        <div className="flex flex-col items-center gap-1">
+                      <td className="px-6 py-5 text-center">
+                        <div className="flex flex-col items-center gap-1.5">
                           {task.status === 'active' ? (
-                            <button onClick={() => handleAction(task.id, 'pause')} className="pro-badge bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 cursor-pointer flex items-center gap-1" title="Click to Pause">
-                              <Pause size={10} /> active
+                            <button onClick={() => handleAction(task.id, 'pause')} className="px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5" title="Click to Pause">
+                              <Pause size={10} /> ACTIVE
                             </button>
                           ) : task.status === 'paused' ? (
-                            <button onClick={() => handleAction(task.id, 'resume')} className="pro-badge bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20 cursor-pointer flex items-center gap-1" title="Click to Resume">
-                              <Play size={10} /> paused
+                            <button onClick={() => handleAction(task.id, 'resume')} className="px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500 hover:text-white transition-all text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5" title="Click to Resume">
+                              <Play size={10} /> PAUSED
                             </button>
                           ) : (
-                            <span className="pro-badge bg-red-500/10 border-red-500/20 text-red-400">{task.status}</span>
+                            <span className="px-3 py-1 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-[9px] font-black uppercase tracking-widest">{task.status}</span>
                           )}
                           {task.status === 'error' && task.last_error && (
-                            <div className="text-[10px] text-red-400 truncate group/tooltip relative">
-                              {task.last_error.substring(0, 30)}...
-                              <div className="absolute left-0 bottom-full mb-2 hidden group-hover/tooltip:block bg-zinc-900 border border-zinc-700 text-zinc-300 p-2 rounded shadow-xl z-50 whitespace-normal max-w-xs break-words">
+                            <div className="text-[9px] font-bold text-red-400 truncate max-w-[120px] group/tooltip relative">
+                              {task.last_error.substring(0, 25)}...
+                              <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block bg-zinc-950 border border-red-900/50 text-zinc-300 p-3 rounded-xl shadow-2xl z-50 whitespace-normal w-64 break-words">
                                 {task.last_error}
                               </div>
                             </div>
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-6 py-5 text-center">
                          <div className="flex flex-col items-center">
-                            <span className="text-xs font-semibold text-zinc-300 tabular-nums">
+                            <span className="text-xs font-black text-zinc-200 tabular-nums">
                               {task.next_run ? new Date(task.next_run).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}
                             </span>
-                            <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-tighter">
+                            <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-[0.2em] mt-0.5">
                               {task.next_run ? new Date(task.next_run).toLocaleDateString() : ''}
                             </span>
                          </div>
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <td className="px-8 py-5 text-right">
+                        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                           <button 
                              onClick={() => handleAction(task.id, 'trigger')}
-                             className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-emerald-400 transition-all shadow-sm"
+                             className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-emerald-400 hover:border-emerald-500/50 transition-all shadow-lg"
                              title="Execute Immediately"
                           >
-                             <Activity size={14} />
+                             <Activity size={16} />
                           </button>
                           <button 
                              onClick={() => setTraceTask(task)}
-                             className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-indigo-400 transition-all shadow-sm"
+                             className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-indigo-400 hover:border-indigo-500/50 transition-all shadow-lg"
                              title="Execution Traces"
                           >
-                             <Terminal size={14} />
+                             <Terminal size={16} />
                           </button>
                           <button 
                              onClick={() => handleClone(task)}
-                             className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-white transition-all shadow-sm"
+                             className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white transition-all shadow-lg"
                              title="Clone Node"
                           >
-                             <Copy size={14} />
+                             <Copy size={16} />
                           </button>
                           <button 
                              onClick={() => setSaveTemplateTask(task)}
-                             className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-indigo-400 transition-all shadow-sm"
+                             className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-indigo-400 transition-all shadow-lg"
                              title="Save as Blueprint"
                           >
-                             <Sparkles size={14} />
+                             <Sparkles size={16} />
                           </button>
                           <button 
                              onClick={() => window.open(`/app/${task.id}`, '_blank')}
-                             className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-indigo-400 hover:border-indigo-500/50 transition-all shadow-sm"
+                             className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-indigo-400 hover:border-indigo-500/50 transition-all shadow-lg"
                              title="Launch Mini-App"
                           >
-                             <Globe size={14} />
+                             <Globe size={16} />
                           </button>
                           <button 
                              onClick={() => handleEdit(task)}
-                             className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-white transition-all shadow-sm"
+                             className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white transition-all shadow-lg"
                              title="Calibrate Node"
                           >
-                             <Settings size={14} />
+                             <Settings size={16} />
                           </button>
                           <button 
                              onClick={() => navigate(`/tasks/${task.id}/history`)} 
-                             className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-white transition-all shadow-sm" 
+                             className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white transition-all shadow-lg" 
                              title="Neural Archive"
                           >
-                             <History size={14} />
+                             <History size={16} />
                           </button>
+                          <div className="w-px h-8 bg-zinc-800/80 mx-1"></div>
                           {task.status === 'active' ? (
-                            <button onClick={() => handleAction(task.id, 'pause')} className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-amber-500 transition-all shadow-sm" title="Freeze Node"><Pause size={14} /></button>
+                            <button onClick={() => handleAction(task.id, 'pause')} className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-amber-500 hover:border-amber-500/50 transition-all shadow-lg" title="Freeze Node"><Pause size={16} /></button>
                           ) : (
-                            <button onClick={() => handleAction(task.id, 'resume')} className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-emerald-500 transition-all shadow-sm" title="Thaw Node"><Play size={14} /></button>
+                            <button onClick={() => handleAction(task.id, 'resume')} className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-emerald-500 hover:border-emerald-500/50 transition-all shadow-lg" title="Thaw Node"><Play size={16} /></button>
                           )}
                           
                           {confirmDelete === task.id ? (
-                            <div className="flex items-center gap-1 bg-red-500/10 border border-red-500/20 rounded-md p-0.5">
+                            <div className="flex items-center gap-1.5 bg-red-950/40 border border-red-900/50 rounded-xl p-1 shadow-lg">
                               <button 
                                 onClick={() => handleAction(task.id, 'delete')}
-                                className="p-1 text-red-500 hover:bg-red-500 hover:text-white rounded transition-all"
+                                className="p-1.5 bg-red-600 text-white hover:bg-red-500 rounded-lg transition-all"
                                 title="Confirm Terminate"
                               >
                                 <Check size={14} />
                               </button>
                               <button 
                                 onClick={() => setConfirmDelete(null)}
-                                className="p-1 text-zinc-400 hover:bg-zinc-700 hover:text-white rounded transition-all"
+                                className="p-1.5 bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-white rounded-lg transition-all border border-zinc-800"
                                 title="Cancel"
                               >
                                 <X size={14} />
                               </button>
                             </div>
                           ) : (
-                            <button onClick={() => setConfirmDelete(task.id)} className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-400 hover:text-red-500 transition-all shadow-sm" title="Purge Node"><Trash2 size={14} /></button>
+                            <button onClick={() => setConfirmDelete(task.id)} className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-red-500 hover:border-red-500/50 transition-all shadow-lg" title="Purge Node"><Trash2 size={16} /></button>
                           )}
                         </div>
                       </td>
@@ -604,52 +627,52 @@ const Tasks = () => {
             </table>
           </div>
         ) : (
-          <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 bg-zinc-950/50">
+          <div className="p-8 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 bg-zinc-950/20">
             {loading && tasks.length === 0 ? (
-              <div className="col-span-full py-32 flex flex-col items-center gap-3">
-                 <RefreshCw className="w-6 h-6 text-zinc-700 animate-spin" />
-                 <span className="text-[11px] font-semibold text-zinc-300 uppercase tracking-widest">Querying Registry...</span>
+              <div className="col-span-full py-32 flex flex-col items-center gap-4">
+                 <RefreshCw className="w-8 h-8 text-indigo-500 animate-spin" />
+                 <span className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em]">Querying Registry...</span>
               </div>
             ) : tasks.length === 0 ? (
-              <div className="col-span-full py-32 flex flex-col items-center gap-4 opacity-30">
-                 <Activity size={32} className="text-zinc-300" />
-                 <span className="text-xs font-medium text-zinc-400 italic">No active orchestration streams identified. Initialize your first node to begin.</span>
+              <div className="col-span-full py-32 flex flex-col items-center gap-5 opacity-40">
+                 <Activity size={40} className="text-zinc-400 animate-pulse" />
+                 <span className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500 text-center">No active orchestration streams identified.<br/>Initialize your first node to begin.</span>
               </div>
             ) : paginatedTasks.length === 0 ? (
-              <div className="col-span-full py-16 text-center">
-                <span className="text-xs text-zinc-500 italic">No streams matches search filters.</span>
+              <div className="col-span-full py-24 text-center">
+                <span className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-600">No streams matches search filters.</span>
               </div>
             ) : (
               paginatedTasks.map((task) => (
-                <div key={task.id} className={`pro-card p-6 flex flex-col gap-4 relative group transition-all hover:bg-zinc-800/20 border ${selectedTasks.has(task.id) ? 'border-indigo-500/50 bg-indigo-500/5' : 'border-zinc-800/50'}`}>
-                  <div className="absolute top-4 right-4 z-10">
+                <div key={task.id} className={`bg-zinc-950/80 backdrop-blur-xl border p-6 flex flex-col gap-5 rounded-3xl relative group hover:-translate-y-1 transition-all shadow-xl ${selectedTasks.has(task.id) ? 'border-indigo-500/50 shadow-[0_0_30px_rgba(79,70,229,0.1)]' : 'border-zinc-800/80 hover:border-zinc-700 hover:shadow-2xl'}`}>
+                  <div className="absolute top-6 right-6 z-10">
                     <input
                       type="checkbox"
                       checked={selectedTasks.has(task.id)}
                       onChange={() => toggleSelectTask(task.id)}
-                      className="accent-indigo-600 rounded bg-zinc-950 border-zinc-800 cursor-pointer"
+                      className="accent-indigo-600 rounded bg-zinc-900 border-zinc-700 cursor-pointer w-4 h-4 shadow-inner"
                     />
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 group-hover:text-indigo-400 group-hover:border-indigo-500/50 transition-all shadow-inner">
-                       <Cpu size={20} />
+                  <div className="flex items-start gap-4 pr-8">
+                    <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 group-hover:text-indigo-400 group-hover:border-indigo-500/30 transition-all shadow-inner shrink-0">
+                       <Cpu size={24} />
                     </div>
-                    <div className="pr-6">
-                       <h3 className="text-white font-bold text-sm truncate max-w-[140px]">{task.name}</h3>
-                       <div className="flex items-center gap-2 text-zinc-500 text-[10px] font-mono mt-1">
-                         <Command size={10} /> <span>{task.id?.substring(0, 13)}</span>
+                    <div className="flex flex-col min-w-0 pt-1">
+                       <h3 className="text-white font-black text-lg tracking-tight truncate leading-tight">{task.name}</h3>
+                       <div className="flex items-center gap-2 text-zinc-500 text-[10px] font-mono mt-2 tracking-widest">
+                         <Command size={10} className="opacity-70" /> <span>{task.id?.substring(0, 13)}</span>
                        </div>
                     </div>
                   </div>
                   
-                  <div className="flex flex-col gap-2 mt-2">
-                    <div className="flex items-center justify-between bg-zinc-950/50 p-3 rounded-lg border border-zinc-800/30">
-                      <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Vector</span>
-                      <span className="text-[11px] font-bold text-zinc-300 uppercase">{task.trigger_type}</span>
+                  <div className="flex flex-col gap-3 mt-2">
+                    <div className="flex items-center justify-between bg-zinc-900/50 px-4 py-3 rounded-xl border border-zinc-800/50 shadow-inner">
+                      <span className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em]">Vector</span>
+                      <span className="text-[10px] font-black text-zinc-300 uppercase tracking-widest">{task.trigger_type}</span>
                     </div>
-                    <div className="flex items-center justify-between bg-zinc-950/50 p-3 rounded-lg border border-zinc-800/30">
-                      <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Next Run</span>
-                      <span className="text-xs font-semibold text-zinc-300 tabular-nums">
+                    <div className="flex items-center justify-between bg-zinc-900/50 px-4 py-3 rounded-xl border border-zinc-800/50 shadow-inner">
+                      <span className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em]">Next Run</span>
+                      <span className="text-xs font-bold text-zinc-200 tabular-nums">
                         {task.next_run ? new Date(task.next_run).toLocaleString(undefined, {
                           month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
                         }) : 'Not Scheduled'}
@@ -657,24 +680,24 @@ const Tasks = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between mt-2 pt-4 border-t border-zinc-800/50">
+                  <div className="flex items-center justify-between mt-3 pt-5 border-t border-zinc-800/60">
                     <div className="flex items-center gap-2">
                       {task.status === 'active' ? (
-                        <span className="pro-badge bg-emerald-500/10 border-emerald-500/20 text-emerald-400">active</span>
+                        <span className="px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-black uppercase tracking-widest">ACTIVE</span>
                       ) : task.status === 'paused' ? (
-                        <span className="pro-badge bg-amber-500/10 border-amber-500/20 text-amber-400">paused</span>
+                        <span className="px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[9px] font-black uppercase tracking-widest">PAUSED</span>
                       ) : (
-                        <span className="pro-badge bg-red-500/10 border-red-500/20 text-red-400">{task.status}</span>
+                        <span className="px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-[9px] font-black uppercase tracking-widest">{task.status}</span>
                       )}
                     </div>
-                    <div className="flex gap-1">
-                      <button onClick={() => window.open(`/app/${task.id}`, '_blank')} className="p-1.5 text-zinc-400 hover:text-indigo-400 transition-colors" title="Launch Mini-App"><Globe size={14} /></button>
-                      <button onClick={() => setTraceTask(task)} className="p-1.5 text-zinc-400 hover:text-indigo-400 transition-colors" title="Traces"><Terminal size={14} /></button>
-                      <button onClick={() => handleEdit(task)} className="p-1.5 text-zinc-400 hover:text-white transition-colors" title="Settings"><Settings size={14} /></button>
+                    <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <button onClick={() => window.open(`/app/${task.id}`, '_blank')} className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-indigo-400 hover:border-indigo-500/30 transition-all shadow-md" title="Launch Mini-App"><Globe size={14} /></button>
+                      <button onClick={() => setTraceTask(task)} className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-indigo-400 hover:border-indigo-500/30 transition-all shadow-md" title="Traces"><Terminal size={14} /></button>
+                      <button onClick={() => handleEdit(task)} className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white transition-all shadow-md" title="Settings"><Settings size={14} /></button>
                       {task.status === 'active' ? (
-                        <button onClick={() => handleAction(task.id, 'pause')} className="p-1.5 text-zinc-400 hover:text-amber-500 transition-colors" title="Freeze"><Pause size={14} /></button>
+                        <button onClick={() => handleAction(task.id, 'pause')} className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-amber-500 hover:border-amber-500/30 transition-all shadow-md" title="Freeze"><Pause size={14} /></button>
                       ) : (
-                        <button onClick={() => handleAction(task.id, 'resume')} className="p-1.5 text-zinc-400 hover:text-emerald-500 transition-colors" title="Thaw"><Play size={14} /></button>
+                        <button onClick={() => handleAction(task.id, 'resume')} className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-emerald-500 hover:border-emerald-500/30 transition-all shadow-md" title="Thaw"><Play size={14} /></button>
                       )}
                     </div>
                   </div>
@@ -686,20 +709,20 @@ const Tasks = () => {
 
         {/* Pagination Footer Controls */}
         {totalPages > 1 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t border-zinc-800/40 bg-zinc-900/10">
-            <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-8 py-5 border-t border-zinc-800/60 bg-zinc-950/40">
+            <span className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.1em]">
               Showing {Math.min(filteredTasks.length, (currentPage - 1) * pageSize + 1)} - {Math.min(filteredTasks.length, currentPage * pageSize)} of {filteredTasks.length} nodes
             </span>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Page Size:</span>
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-3">
+                <span className="text-[9px] text-zinc-500 font-black uppercase tracking-[0.2em]">Page Size:</span>
                 <select
                   value={pageSize}
                   onChange={(e) => {
                     setPageSize(Number(e.target.value));
                     setCurrentPage(1);
                   }}
-                  className="bg-zinc-950 border border-zinc-800 text-zinc-300 text-xs px-2 py-1.5 rounded-lg outline-none cursor-pointer focus:border-indigo-500"
+                  className="bg-zinc-900 border border-zinc-800 text-zinc-300 text-xs font-bold px-3 py-1.5 rounded-xl outline-none cursor-pointer focus:border-indigo-500 shadow-inner"
                 >
                   <option value={5}>5</option>
                   <option value={10}>10</option>
@@ -708,29 +731,30 @@ const Tasks = () => {
                 </select>
               </div>
 
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 p-1 rounded-xl shadow-inner">
                 <button
                   disabled={currentPage === 1}
                   onClick={() => setCurrentPage(c => Math.max(c - 1, 1))}
-                  className="p-2 bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-white rounded-lg disabled:opacity-30 disabled:hover:text-zinc-400 transition-all"
+                  className="p-2 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-lg disabled:opacity-30 disabled:hover:bg-transparent transition-all"
                 >
-                  <ChevronLeft size={14} />
+                  <ChevronLeft size={16} />
                 </button>
-                <span className="text-xs font-semibold text-zinc-300 tabular-nums px-2">
-                  {currentPage} / {totalPages}
+                <span className="text-[11px] font-black text-zinc-300 tabular-nums px-3">
+                  {currentPage} <span className="text-zinc-600 px-1">/</span> {totalPages}
                 </span>
                 <button
                   disabled={currentPage === totalPages}
                   onClick={() => setCurrentPage(c => Math.min(c + 1, totalPages))}
-                  className="p-2 bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-white rounded-lg disabled:opacity-30 disabled:hover:text-zinc-400 transition-all"
+                  className="p-2 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-lg disabled:opacity-30 disabled:hover:bg-transparent transition-all"
                 >
-                  <ChevronRight size={14} />
+                  <ChevronRight size={16} />
                 </button>
               </div>
             </div>
           </div>
         )}
       </div>
+
       
       <ExecutionTracesModal 
         isOpen={!!traceTask} 
@@ -744,7 +768,7 @@ const Tasks = () => {
         onClose={() => setSaveTemplateTask(null)} 
         task={saveTemplateTask} 
       />
-    </>
+    </div>
   );
 };
 
