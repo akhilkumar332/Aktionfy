@@ -252,20 +252,39 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="space-y-10">
-      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-8 pb-12">
+      {/* Header */}
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-zinc-500 tracking-tight">Command Hub</h1>
-          <p className="text-zinc-400 text-sm font-medium mt-1 uppercase tracking-widest">Global orchestration overview & system health</p>
+          <motion.h1 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-zinc-500 tracking-tight"
+          >
+            Command Hub
+          </motion.h1>
+          <motion.p 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-zinc-400 text-xs font-bold mt-2 uppercase tracking-[0.2em]"
+          >
+            Global orchestration overview & system health
+          </motion.p>
         </div>
         
-        <div className="flex flex-col sm:flex-row items-center gap-4">
-          <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 p-1.5 rounded-lg">
-            <Calendar size={14} className="text-zinc-500 ml-2" />
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col sm:flex-row items-center gap-4"
+        >
+          {/* Time Range Selector */}
+          <div className="flex items-center gap-3 bg-zinc-900/80 backdrop-blur-xl border border-zinc-800/80 px-4 py-2 rounded-2xl shadow-lg">
+            <Calendar size={14} className="text-zinc-400" />
             <select 
               value={timeRange}
               onChange={(e) => setTimeRange(e.target.value)}
-              className="bg-transparent text-xs text-zinc-300 font-bold uppercase tracking-wider focus:outline-none border-none cursor-pointer pr-4"
+              className="bg-transparent text-[11px] text-zinc-200 font-black uppercase tracking-widest focus:outline-none border-none cursor-pointer appearance-none"
             >
               <option value="24h">Last 24 Hours</option>
               <option value="7d">Last 7 Days</option>
@@ -273,169 +292,150 @@ const Dashboard = () => {
             </select>
           </div>
 
-          <div className="flex items-center gap-4 bg-zinc-900 border border-zinc-800 px-4 py-2.5 rounded-lg shadow-sm">
-             <div className="flex flex-col">
-                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-none">Cluster Status</span>
-                <span className={`text-xs font-bold flex items-center gap-1.5 mt-1 ${systemStatus?.bridge_active ? 'text-emerald-500' : 'text-red-500'}`}>
-                   <div className={`w-1 h-1 rounded-full animate-pulse ${systemStatus?.bridge_active ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
-                   {systemStatus?.bridge_active ? 'Nominal' : 'Signal Lost'}
-                </span>
+          {/* System Status Pill */}
+          <div className="flex items-center gap-4 bg-zinc-900/80 backdrop-blur-xl border border-zinc-800/80 px-5 py-2.5 rounded-2xl shadow-lg">
+             <div className="flex items-center gap-3">
+                <div className={`flex items-center justify-center w-6 h-6 rounded-full bg-zinc-950 border ${systemStatus?.bridge_active ? 'border-emerald-500/30 text-emerald-500' : 'border-red-500/30 text-red-500'}`}>
+                   <Activity size={12} className={systemStatus?.bridge_active ? 'animate-pulse' : ''} />
+                </div>
+                <div className="flex flex-col">
+                   <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest leading-none">Cluster Status</span>
+                   <span className={`text-[11px] font-black uppercase tracking-wider mt-1 ${systemStatus?.bridge_active ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {systemStatus?.bridge_active ? 'Nominal' : 'Signal Lost'}
+                   </span>
+                </div>
              </div>
-             <div className="h-6 w-px bg-zinc-800 mx-2"></div>
-             <div className="flex flex-col">
-                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-none">Latency</span>
-                <span className="text-xs font-bold text-zinc-200 mt-1 tabular-nums font-mono">
-                  {isLoading ? <div className="h-4 w-8 bg-zinc-800 animate-pulse rounded" /> : `${systemStatus?.p99_latency_ms || 0}ms`}
-                </span>
+             <div className="h-8 w-px bg-zinc-800/80 mx-2"></div>
+             <div className="flex items-center gap-3">
+                <div className="flex flex-col items-end">
+                   <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest leading-none">Latency p99</span>
+                   <span className="text-[11px] font-black text-zinc-200 uppercase tracking-wider mt-1 font-mono">
+                     {isLoading ? <div className="h-3 w-8 bg-zinc-800 animate-pulse rounded" /> : `${systemStatus?.p99_latency_ms || 0}MS`}
+                   </span>
+                </div>
              </div>
           </div>
-        </div>
+        </motion.div>
       </header>
 
-      {/* Manual Interventions */}
+      {/* Manual Interventions (Only shows if active) */}
       <AnimatePresence>
         {pendingApprovals.length > 0 && (
           <motion.section 
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="space-y-4"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
           >
-            <div className="flex items-center gap-2 text-red-500 ml-2">
-               <ShieldAlert size={14} className="animate-pulse" />
-               <span className="text-[10px] font-black uppercase tracking-[0.2em]">Manual Resolution Required</span>
-            </div>
-            <div className="grid grid-cols-1 gap-3">
-              {pendingApprovals.map((approval) => (
-                <div key={approval.task_id} className="pro-card p-6 flex flex-col sm:flex-row items-center justify-between gap-6 border-red-500/20 bg-red-500/[0.02]">
-                   <div className="flex items-center gap-5">
-                      <div className="w-10 h-10 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500">
-                         <Terminal size={18} />
-                      </div>
-                      <div>
-                        <h4 className="text-white font-bold text-base">{approval.task_name}</h4>
-                        <p className="text-[10px] font-mono text-zinc-300 uppercase tracking-widest mt-0.5">AUTH_REQ // {approval.execution_id?.slice(0, 13)}</p>
-                      </div>
-                   </div>
-                   <div className="flex items-center gap-3 w-full sm:w-auto">
-                     <button onClick={() => handleDeny(approval.task_id)} className="pro-button-secondary !py-2 !px-6 flex-1 sm:flex-none !border-zinc-800 text-[11px] uppercase tracking-widest">Abort</button>
-                     <button onClick={() => handleApprove(approval.task_id)} className="pro-button-primary !py-2 !px-8 flex-1 sm:flex-none !bg-red-600 hover:!bg-red-500 text-[11px] uppercase tracking-widest">Authorize</button>
-                   </div>
-                </div>
-              ))}
+            <div className="bg-red-950/20 border border-red-900/30 rounded-3xl p-6 backdrop-blur-xl">
+              <div className="flex items-center gap-3 text-red-500 mb-6 pl-2">
+                 <ShieldAlert size={16} className="animate-pulse" />
+                 <span className="text-[11px] font-black uppercase tracking-[0.2em]">Manual Resolution Required</span>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {pendingApprovals.map((approval) => (
+                  <div key={approval.task_id} className="bg-zinc-950/50 border border-red-900/20 p-5 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-6 shadow-inner">
+                     <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.1)]">
+                           <Terminal size={20} />
+                        </div>
+                        <div>
+                          <h4 className="text-white font-black tracking-tight">{approval.task_name}</h4>
+                          <p className="text-[9px] font-mono font-bold text-red-400/80 uppercase tracking-widest mt-1">AUTH_REQ // {approval.execution_id?.slice(0, 13)}</p>
+                        </div>
+                     </div>
+                     <div className="flex items-center gap-3 w-full sm:w-auto">
+                       <button onClick={() => handleDeny(approval.task_id)} className="flex-1 sm:flex-none px-6 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-xl text-[10px] font-black uppercase tracking-[0.1em] transition-all border border-zinc-800">Abort</button>
+                       <button onClick={() => handleApprove(approval.task_id)} className="flex-1 sm:flex-none px-6 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.1em] transition-all shadow-[0_0_20px_rgba(220,38,38,0.3)]">Authorize</button>
+                     </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </motion.section>
         )}
       </AnimatePresence>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Stream Metrics */}
-        <Link to="/tasks" className="pro-card p-8 group hover:bg-zinc-800/40 transition-all border-zinc-800/50">
+      {/* Bento Box Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        {/* Stream Metrics (Small Box) */}
+        <Link to="/tasks" className="lg:col-span-4 bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 p-8 rounded-3xl group hover:bg-zinc-900/60 transition-all shadow-xl flex flex-col justify-between">
            <div className="flex items-center justify-between mb-8">
-              <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-400 group-hover:text-indigo-400 transition-colors shadow-inner">
-                 <Layers size={20} />
+              <div className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl text-indigo-400 group-hover:scale-110 transition-transform">
+                 <Layers size={24} />
               </div>
-              <ArrowUpRight size={18} className="text-zinc-700 group-hover:text-zinc-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+              <ArrowUpRight size={20} className="text-zinc-600 group-hover:text-zinc-300 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" />
            </div>
-           <div className="space-y-1">
-              <div className="h-10 flex items-center">
+           <div>
+              <div className="h-12 flex items-center mb-2">
                 {isLoading ? (
-                  <div className="h-8 w-16 bg-zinc-800/50 rounded animate-pulse" />
+                  <div className="h-10 w-24 bg-zinc-800 animate-pulse rounded-lg" />
                 ) : (
-                  <p className="text-4xl font-bold text-white tabular-nums tracking-tighter">{taskCount}</p>
+                  <p className="text-5xl font-black text-white tabular-nums tracking-tighter">{taskCount}</p>
                 )}
               </div>
-              <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-2">Active Neural Streams</p>
+              <p className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em]">Active Neural Streams</p>
+              <p className="text-xs font-medium text-zinc-500 mt-4 leading-relaxed">Persistent orchestration threads executing across the cluster.</p>
            </div>
-           <p className="text-xs text-zinc-400 mt-6 leading-relaxed opacity-80">Persistent orchestration threads executing across the cluster.</p>
         </Link>
 
-        {/* Tier Status */}
-        <div className="pro-card p-8 relative overflow-hidden group">
-           <div className="absolute top-0 right-0 p-8 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity pointer-events-none">
-              <Crown size={100} />
-           </div>
-           <div className="flex items-center justify-between mb-8 relative z-10">
-              <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-400 shadow-inner">
-                 <Crown size={20} className="text-amber-500/50" />
-              </div>
-              {isLoading ? (
-                <div className="h-6 w-16 bg-zinc-800/50 rounded-full animate-pulse" />
-              ) : (
-                <span className={`pro-badge ${user?.tier === 'pro' ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' : 'bg-zinc-800 border-zinc-700 text-zinc-400'}`}>
-                   {user?.tier}
-                </span>
-              )}
-           </div>
-           <div className="space-y-1 relative z-10">
-              <div className="h-9 flex items-center">
-                {isLoading ? (
-                  <div className="h-7 w-24 bg-zinc-800/50 rounded animate-pulse" />
-                ) : (
-                  <p className="text-3xl font-bold text-white uppercase tracking-tight">{user?.tier} Node</p>
-                )}
-              </div>
-              <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mt-2">Access Privilege Level</p>
-           </div>
-           {!isLoading && user?.tier === 'free' && (
-             <button onClick={handleUpgrade} className="pro-button-primary w-full mt-8 !bg-zinc-100 !text-black hover:!bg-zinc-100 text-[11px] uppercase tracking-[0.2em] font-black">Elevate Tier</button>
-           )}
-        </div>
-
-        {/* Execution Timeline Chart */}
-        <div className="pro-glass-panel p-8 rounded-xl flex flex-col justify-between border-zinc-800/50 relative overflow-hidden group md:col-span-2 lg:col-span-1">
-           <div className="absolute top-0 right-0 w-48 h-48 bg-brand-primary/10 blur-[80px] -translate-y-1/2 translate-x-1/2 animate-pulse-glow"></div>
+        {/* Execution Timeline Chart (Large Box) */}
+        <div className="lg:col-span-8 bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 p-8 rounded-3xl relative overflow-hidden group shadow-xl flex flex-col justify-between min-h-[300px]">
+           <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 blur-[100px] rounded-full pointer-events-none"></div>
            
-           <div className="flex items-center justify-between mb-4 relative z-10">
+           <div className="flex items-start justify-between mb-8 relative z-10">
               <div className="flex items-center gap-4">
-                 <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-400">
-                    <Activity size={20} className="text-indigo-400" />
+                 <div className="p-4 bg-zinc-950 border border-zinc-800/80 rounded-2xl text-zinc-400">
+                    <Activity size={24} className="text-indigo-400" />
                  </div>
                  <div>
-                    <h3 className="text-lg font-bold text-white tracking-tight leading-none">Execution Timeline</h3>
-                    <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest mt-1">Real-time latency index</p>
+                    <h3 className="text-xl font-black text-white tracking-tight">Execution Timeline</h3>
+                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mt-1">Real-time latency index</p>
                  </div>
               </div>
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-zinc-950 border border-zinc-800 rounded-md">
-                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></div>
-                 <span className="text-[8px] font-black text-zinc-400 uppercase tracking-widest">Live telemetry</span>
+              <div className="flex items-center gap-2 px-4 py-2 bg-zinc-950/80 border border-zinc-800/80 rounded-xl">
+                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                 <span className="text-[9px] font-black text-zinc-400 uppercase tracking-[0.1em]">Live Telemetry</span>
               </div>
            </div>
 
-           <div className="h-32 w-full relative z-10 mt-2">
+           <div className="flex-1 w-full relative z-10 mt-4 min-h-[160px]">
               <ResponsiveContainer width="100%" height="100%">
-                 <AreaChart data={latencyHistory} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+                 <AreaChart data={latencyHistory} margin={{ top: 5, right: 0, left: -30, bottom: 0 }}>
                     <defs>
                       <linearGradient id="colorLatency" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.25}/>
-                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                        <stop offset="0%" stopColor="#6366f1" stopOpacity={0.4}/>
+                        <stop offset="100%" stopColor="#6366f1" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.05)" vertical={false} />
                     <XAxis 
                       dataKey="time" 
-                      stroke="#475569" 
-                      fontSize={8} 
+                      stroke="#52525b" 
+                      fontSize={9}
+                      fontWeight={700}
                       tickLine={false} 
                       axisLine={false} 
                     />
                     <YAxis 
-                      stroke="#475569" 
-                      fontSize={8} 
+                      stroke="#52525b" 
+                      fontSize={9}
+                      fontWeight={700}
                       tickLine={false} 
                       axisLine={false}
                       unit="ms"
                     />
                     <Tooltip 
-                      contentStyle={{ backgroundColor: '#050505', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '0.75rem', padding: '0.75rem' }}
-                      itemStyle={{ color: '#818cf8', fontWeight: 900, fontSize: '10px' }}
-                      labelStyle={{ color: '#64748b', fontSize: '8px', fontWeight: 700 }}
+                      contentStyle={{ backgroundColor: '#09090b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '1rem', padding: '1rem', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}
+                      itemStyle={{ color: '#818cf8', fontWeight: 900, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em' }}
+                      labelStyle={{ color: '#a1a1aa', fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem' }}
                     />
                     <Area 
                       type="monotone" 
                       dataKey="latency" 
-                      stroke="#6366f1" 
-                      strokeWidth={2}
+                      stroke="#818cf8" 
+                      strokeWidth={3}
                       fillOpacity={1} 
                       fill="url(#colorLatency)" 
                     />
@@ -444,32 +444,32 @@ const Dashboard = () => {
            </div>
         </div>
 
-        {/* API Authentication Interface */}
-        <div className="pro-card p-8 md:col-span-2 lg:col-span-3 space-y-8 relative overflow-hidden">
-           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        {/* API Authentication Interface (Wide Box) */}
+        <div className="lg:col-span-8 bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 p-8 rounded-3xl relative overflow-hidden shadow-xl">
+           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6 mb-8">
               <div className="flex items-center gap-4">
-                 <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-400 shadow-inner">
-                    <Key size={20} />
+                 <div className="p-4 bg-zinc-950 border border-zinc-800/80 rounded-2xl text-zinc-400">
+                    <Key size={24} className="text-amber-400" />
                  </div>
                  <div>
-                    <h3 className="text-lg font-bold text-white tracking-tight">Neural Access Key</h3>
-                    <p className="text-[10px] font-bold text-zinc-300 uppercase tracking-widest mt-0.5">Private Protocol Token</p>
+                    <h3 className="text-xl font-black text-white tracking-tight">Neural Access Key</h3>
+                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mt-1">Private Protocol Token</p>
                  </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div>
                 {confirmRotate ? (
-                  <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl p-2 shadow-sm">
-                    <span className="text-[10px] font-black text-red-400 uppercase tracking-widest px-2">Authorize Rotation?</span>
+                  <div className="flex items-center gap-2 bg-red-950/30 border border-red-900/50 rounded-xl p-2 shadow-lg backdrop-blur-md">
+                    <span className="text-[10px] font-black text-red-400 uppercase tracking-widest px-3">Authorize?</span>
                     <button 
                       onClick={handleRotate}
                       disabled={rotating}
-                      className="p-2 bg-red-500 text-white rounded-md hover:brightness-110 transition-all shadow-md"
+                      className="p-2.5 bg-red-600 text-white rounded-lg hover:bg-red-500 transition-all shadow-md"
                     >
                       <Check size={14} />
                     </button>
                     <button 
                       onClick={() => setConfirmRotate(false)}
-                      className="p-2 bg-zinc-800 text-zinc-400 rounded-md hover:text-white transition-all border border-zinc-700 shadow-sm"
+                      className="p-2.5 bg-zinc-900 text-zinc-400 rounded-lg hover:text-white transition-all border border-zinc-800"
                     >
                       <X size={14} />
                     </button>
@@ -478,98 +478,148 @@ const Dashboard = () => {
                   <button 
                     onClick={() => setConfirmRotate(true)} 
                     disabled={rotating}
-                    className="pro-button-secondary !py-2 !px-6 !border-zinc-800 text-[11px] uppercase tracking-widest flex items-center gap-2"
+                    className="px-6 py-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-xl text-[10px] font-black text-zinc-300 uppercase tracking-[0.1em] transition-all flex items-center gap-2"
                   >
-                    <RefreshCw size={14} className={rotating ? 'animate-spin' : ''} /> Rotate Signature
+                    <RefreshCw size={14} className={rotating ? 'animate-spin text-amber-400' : 'text-zinc-500'} /> 
+                    Rotate Signature
                   </button>
                 )}
               </div>
            </div>
 
-           <div className="flex flex-col sm:flex-row gap-3">
-              <div className="flex-1 bg-zinc-950 border border-zinc-800 rounded-lg p-5 flex items-center justify-between shadow-inner group/key">
-                 <code className="text-sm font-mono text-emerald-500 tracking-[0.1em] opacity-80 truncate select-all">
-                   {showKey ? user?.api_key : '•'.repeat(24)}
-                 </code>
-                 <div className="flex items-center gap-2">
-                    <button 
-                      onClick={() => setShowKey(!showKey)}
-                      className="p-2.5 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-400 hover:text-white transition-all shadow-xl"
-                      title={showKey ? "Hide Signature" : "Show Signature"}
-                    >
-                      {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                    <button onClick={handleCopy} className="p-2.5 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-400 hover:text-white transition-all shadow-xl">
-                      {copied ? <Check size={16} className="text-emerald-500" /> : <Copy size={16} />}
-                    </button>
-                 </div>
+           <div className="bg-zinc-950 border border-zinc-800/80 rounded-2xl p-5 flex items-center justify-between shadow-inner">
+              <code className="text-sm md:text-base font-mono font-bold text-emerald-400 tracking-[0.15em] opacity-90 truncate select-all px-2">
+                {showKey ? user?.api_key : '•'.repeat(32)}
+              </code>
+              <div className="flex items-center gap-2 shrink-0">
+                 <button 
+                   onClick={() => setShowKey(!showKey)}
+                   className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white transition-all hover:scale-105 active:scale-95"
+                   title={showKey ? "Hide Signature" : "Show Signature"}
+                 >
+                   {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                 </button>
+                 <button 
+                   onClick={handleCopy} 
+                   className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white transition-all hover:scale-105 active:scale-95"
+                 >
+                   {copied ? <Check size={16} className="text-emerald-500" /> : <Copy size={16} />}
+                 </button>
               </div>
            </div>
 
-           <div className="flex items-center gap-3 bg-red-500/[0.02] border border-red-500/10 px-5 py-3 rounded-lg w-fit">
-              <ShieldCheck size={14} className="text-red-900" />
-              <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-widest italic">Security Notice: Key rotation will invalidate all active client integrations.</span>
+           <div className="mt-6 flex items-center gap-3 bg-amber-500/10 border border-amber-500/20 px-5 py-3 rounded-xl w-fit">
+              <ShieldCheck size={16} className="text-amber-500" />
+              <span className="text-[10px] font-black text-amber-500/80 uppercase tracking-widest">Security Notice: Key rotation invalidates all active integrations.</span>
            </div>
+        </div>
+
+        {/* Tier Status (Small Box) */}
+        <div className="lg:col-span-4 bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 p-8 rounded-3xl relative overflow-hidden group shadow-xl flex flex-col justify-between">
+           <div className="absolute -bottom-10 -right-10 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none duration-700">
+              <Crown size={180} />
+           </div>
+           <div>
+             <div className="flex items-center justify-between mb-8 relative z-10">
+                <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-amber-500 shadow-inner">
+                   <Crown size={24} />
+                </div>
+                {isLoading ? (
+                  <div className="h-8 w-20 bg-zinc-800 rounded-full animate-pulse" />
+                ) : (
+                  <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${user?.tier === 'pro' ? 'bg-amber-500/20 border-amber-500/30 text-amber-400' : 'bg-zinc-800 border-zinc-700 text-zinc-400'}`}>
+                     {user?.tier}
+                  </span>
+                )}
+             </div>
+             <div className="relative z-10">
+                <div className="h-10 flex items-center mb-2">
+                  {isLoading ? (
+                    <div className="h-8 w-32 bg-zinc-800 animate-pulse rounded-lg" />
+                  ) : (
+                    <p className="text-3xl font-black text-white uppercase tracking-tight">{user?.tier} Node</p>
+                  )}
+                </div>
+                <p className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em]">Access Privilege Level</p>
+             </div>
+           </div>
+           
+           {!isLoading && user?.tier === 'free' && (
+             <button onClick={handleUpgrade} className="w-full mt-8 px-6 py-4 bg-white hover:bg-zinc-200 text-black rounded-2xl text-[11px] uppercase tracking-[0.2em] font-black transition-all shadow-[0_10px_30px_rgba(255,255,255,0.1)] relative z-10">
+               Elevate Tier
+             </button>
+           )}
         </div>
       </div>
 
       {/* Quick Access Terminal */}
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-6">
          {[
            { label: 'Blueprints', sub: 'Templates', icon: Cpu, path: '/templates' },
            { label: 'Sectors', sub: 'Workspaces', icon: Globe, path: '/workspaces' },
            { label: 'Protocols', sub: 'Integrations', icon: Zap, path: '/webhooks' },
            { label: 'Security', sub: 'Vault', icon: Key, path: '/vault' },
          ].map((nav) => (
-           <Link key={nav.sub} to={nav.path} className="pro-card p-5 group hover:bg-zinc-900/80 transition-all flex items-center justify-between border-zinc-800/30">
-              <div className="flex items-center gap-4">
-                 <div className="w-10 h-10 rounded-lg bg-zinc-950 border border-zinc-800 flex items-center justify-center text-zinc-300 group-hover:text-indigo-400 transition-colors">
-                    <nav.icon size={18} />
+           <Link key={nav.sub} to={nav.path} className="bg-zinc-900/40 backdrop-blur-md border border-zinc-800/60 p-6 rounded-3xl group hover:bg-zinc-800/60 transition-all flex items-center justify-between shadow-lg">
+              <div className="flex items-center gap-5">
+                 <div className="w-12 h-12 rounded-2xl bg-zinc-950 border border-zinc-800/80 flex items-center justify-center text-zinc-400 group-hover:text-indigo-400 transition-colors shadow-inner">
+                    <nav.icon size={20} />
                  </div>
                  <div className="hidden sm:block">
-                    <span className="block text-[8px] font-bold text-zinc-300 uppercase tracking-widest mb-0.5">{nav.label}</span>
-                    <span className="block text-sm font-bold text-zinc-200 tracking-tight">{nav.sub}</span>
+                    <span className="block text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">{nav.label}</span>
+                    <span className="block text-sm font-black text-zinc-200 tracking-wide">{nav.sub}</span>
                  </div>
               </div>
-              <ArrowUpRight size={16} className="text-zinc-800 group-hover:text-zinc-400 transition-colors" />
+              <div className="w-8 h-8 rounded-full bg-zinc-950/50 flex items-center justify-center border border-zinc-800/50 group-hover:bg-indigo-500/10 group-hover:border-indigo-500/30 transition-all">
+                <ArrowUpRight size={14} className="text-zinc-600 group-hover:text-indigo-400" />
+              </div>
            </Link>
          ))}
       </section>
 
       {/* Live Activity Feed */}
-      <section className="pro-glass-panel p-8 rounded-xl border-white/5">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></div>
-             <h3 className="text-sm font-bold text-white uppercase tracking-widest">Live Activity Feed</h3>
+      <section className="bg-zinc-900/40 backdrop-blur-xl p-8 rounded-3xl border border-zinc-800/60 shadow-xl">
+        <div className="flex items-center justify-between mb-8 pb-6 border-b border-zinc-800/50">
+          <div className="flex items-center gap-4">
+             <div className="w-10 h-10 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-center shadow-inner">
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></div>
+             </div>
+             <div>
+                <h3 className="text-lg font-black text-white uppercase tracking-widest">Live Activity Feed</h3>
+                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em] mt-1">Real-time telemetry stream</p>
+             </div>
           </div>
-          <span className="text-[10px] text-zinc-500 font-mono">Last 5 events</span>
+          <span className="px-4 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-[9px] font-black text-zinc-400 uppercase tracking-widest">Last 5 Events</span>
         </div>
         
         {activities.length === 0 ? (
-          <div className="py-8 text-center border border-dashed border-zinc-800/50 rounded-xl bg-zinc-900/10">
-             <span className="text-xs font-semibold text-zinc-500 italic">No recent network activity observed.</span>
+          <div className="py-12 flex flex-col items-center justify-center text-center border border-dashed border-zinc-800/50 rounded-2xl bg-zinc-950/50">
+             <Activity size={32} className="text-zinc-700 mb-4 opacity-50" />
+             <span className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500">No recent network activity observed</span>
           </div>
         ) : (
-          <div className="space-y-3">
-            {activities.map(activity => (
+          <div className="grid grid-cols-1 gap-3">
+            {activities.map((activity, idx) => (
               <motion.div 
                 key={activity.id}
-                initial={{ opacity: 0, x: -10 }}
+                initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                className={`p-4 rounded-xl border flex items-center justify-between ${
-                  activity.type === 'success' 
-                    ? 'bg-emerald-500/5 border-emerald-500/10' 
-                    : 'bg-red-500/5 border-red-500/10'
-                }`}
+                transition={{ delay: idx * 0.05 }}
+                className="p-5 rounded-2xl bg-zinc-950/50 border border-zinc-800/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4 group hover:border-zinc-700 transition-colors"
               >
-                <div className="flex items-center gap-4">
-                  <div className={`p-2 rounded-lg ${activity.type === 'success' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
-                    {activity.type === 'success' ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
+                <div className="flex items-center gap-5">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
+                    activity.type === 'success' 
+                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
+                      : 'bg-red-500/10 border-red-500/20 text-red-400'
+                  }`}>
+                    {activity.type === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
                   </div>
-                  <span className="text-xs font-semibold text-zinc-300">{activity.message}</span>
+                  <span className="text-sm font-bold text-zinc-300 group-hover:text-white transition-colors">{activity.message}</span>
                 </div>
-                <span className="text-[10px] font-mono text-zinc-500">{activity.time}</span>
+                <div className="flex items-center gap-3 shrink-0 bg-zinc-900/80 px-4 py-2 rounded-xl border border-zinc-800/80">
+                  <span className="text-[10px] font-black font-mono text-zinc-500 uppercase tracking-widest">{activity.time}</span>
+                </div>
               </motion.div>
             ))}
           </div>
