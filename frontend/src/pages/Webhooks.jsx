@@ -133,27 +133,44 @@ const Webhooks = () => {
 
   return (
     <>
-      <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Outbound Hooks</h1>
-          <p className="text-zinc-400 text-xs font-medium mt-1">Industrial event-driven synchronization with external neural clients.</p>
-        </div>
-        <div className="flex items-center gap-3">
-           <button 
-             onClick={fetchData}
-             className="p-2 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-400 hover:text-white transition-all"
-             aria-label="Refresh hooks"
-           >
-             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-           </button>
-           <button 
-            onClick={() => setShowAddForm(true)}
-            className="pro-button-primary !py-2 !px-5 flex items-center gap-2"
-          >
-            <Plus size={16} /> <span className="text-[11px] uppercase tracking-widest">Enlist Hook</span>
-          </button>
-        </div>
-      </header>
+      <div className="space-y-8 pb-12">
+        <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-8">
+          <div>
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="flex items-center gap-3 mb-4"
+            >
+               <div className="w-8 h-8 bg-indigo-500/10 border border-indigo-500/20 rounded-lg flex items-center justify-center text-indigo-400 shadow-inner">
+                  <Webhook size={16} />
+               </div>
+               <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em]">Integrations</span>
+            </motion.div>
+            <motion.h1 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-zinc-500 tracking-tighter uppercase"
+            >
+              Outbound Hooks
+            </motion.h1>
+            <p className="text-zinc-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-3 ml-1">Industrial event-driven synchronization with external neural clients.</p>
+          </div>
+          <div className="flex items-center gap-4 bg-zinc-900/50 p-2 rounded-2xl border border-zinc-800/60 shadow-inner">
+             <button 
+               onClick={fetchData}
+               className="p-3.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-all shadow-md active:scale-95 border border-zinc-700 cursor-pointer"
+               aria-label="Refresh hooks"
+             >
+               <RefreshCw size={18} className={loading ? 'animate-spin text-indigo-400' : ''} />
+             </button>
+             <button 
+              onClick={() => setShowAddForm(true)}
+              className="px-6 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition-all shadow-[0_0_20px_rgba(99,102,241,0.3)] hover:shadow-[0_0_30px_rgba(99,102,241,0.5)] active:scale-95 flex items-center gap-3 cursor-pointer"
+            >
+              <Plus size={16} /> <span className="text-[10px] font-black uppercase tracking-[0.2em]">Enlist Hook</span>
+            </button>
+          </div>
+        </header>
 
       {/* Add Webhook Form Modal */}
       <AnimatePresence>
@@ -244,8 +261,9 @@ const Webhooks = () => {
         )}
       </AnimatePresence>
 
-      <div className="pro-card overflow-hidden">
-        <div className="overflow-x-auto custom-scrollbar">
+      <div className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 rounded-[2rem] shadow-2xl relative overflow-hidden group p-2">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500/5 blur-[100px] pointer-events-none group-hover:bg-purple-500/10 transition-colors duration-1000 -translate-y-1/2 translate-x-1/2"></div>
+        <div className="overflow-x-auto custom-scrollbar relative z-10 rounded-[1.5rem] bg-zinc-950/50 border border-zinc-800/50 shadow-inner">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="pro-table-header">
@@ -379,7 +397,7 @@ const Webhooks = () => {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-zinc-950 border border-emerald-500/30 p-10 rounded-2xl shadow-2xl w-full max-w-lg relative z-10 overflow-hidden"
+              className="bg-zinc-900/40 backdrop-blur-xl border border-emerald-500/50 p-10 rounded-[2rem] shadow-2xl w-full max-w-lg relative z-10 overflow-hidden"
             >
               <div className="absolute top-0 right-0 p-10 opacity-5 pointer-events-none">
                  <ShieldCheck size={120} className="text-emerald-500" />
@@ -441,7 +459,7 @@ const Webhooks = () => {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="bg-zinc-950 border-l border-zinc-800 w-full max-w-2xl h-full relative z-10 flex flex-col shadow-2xl"
+              className="bg-zinc-950/95 backdrop-blur-xl border-l border-zinc-800/80 w-full max-w-2xl h-full relative z-10 flex flex-col shadow-2xl"
             >
               {/* Drawer Header */}
               <div className="p-8 border-b border-zinc-800 flex items-center justify-between">
@@ -552,6 +570,7 @@ const Webhooks = () => {
           </div>
         )}
       </AnimatePresence>
+    </div>
     </>
   );
 };

@@ -133,38 +133,39 @@ const AdminSettings = () => {
 
   return (
     <>
-      <header className="mb-12 flex flex-col md:flex-row md:items-center justify-between gap-8">
-        <div>
-          <motion.div 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-3 mb-4"
-          >
-             <div className="w-8 h-8 bg-brand-primary/10 border border-brand-primary/20 rounded-lg flex items-center justify-center text-brand-primary">
-                <Shield size={16} />
-             </div>
-             <span className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.3em]">Operational Plane</span>
-          </motion.div>
-          <motion.h1 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-4xl font-black text-white tracking-tighter"
-          >
-            Control Center.
-          </motion.h1>
-          <p className="text-zinc-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-2 ml-1">System-Wide Protocol & Node Governance</p>
-        </div>
-        <div className="flex items-center gap-2">
-           <button 
-             onClick={fetchSettings}
-             disabled={loading || maintenanceLoading}
-             className="p-2 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-400 hover:text-white transition-all disabled:opacity-50"
-             aria-label="Refresh settings"
-           >
-             <RefreshCw size={16} className={(loading || maintenanceLoading) ? 'animate-spin' : ''} />
-           </button>
-        </div>
-      </header>
+      <div className="space-y-8 pb-12">
+        <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-8">
+          <div>
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="flex items-center gap-3 mb-4"
+            >
+               <div className="w-8 h-8 bg-indigo-500/10 border border-indigo-500/20 rounded-lg flex items-center justify-center text-indigo-400 shadow-inner">
+                  <Shield size={16} />
+               </div>
+               <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em]">Operational Plane</span>
+            </motion.div>
+            <motion.h1 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-zinc-500 tracking-tighter"
+            >
+              Control Center
+            </motion.h1>
+            <p className="text-zinc-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-3 ml-1">System-Wide Protocol & Node Governance</p>
+          </div>
+          <div className="flex items-center gap-4 bg-zinc-900/50 p-2 rounded-2xl border border-zinc-800/60 shadow-inner">
+             <button 
+               onClick={fetchSettings}
+               disabled={loading || maintenanceLoading}
+               className="p-3.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-all shadow-md active:scale-95 border border-zinc-700 cursor-pointer disabled:opacity-50"
+               aria-label="Refresh settings"
+             >
+               <RefreshCw size={18} className={(loading || maintenanceLoading) ? 'animate-spin text-indigo-400' : ''} />
+             </button>
+          </div>
+        </header>
 
       <div className="max-w-4xl">
         <AnimatePresence mode="wait">
@@ -184,16 +185,16 @@ const AdminSettings = () => {
               animate={{ opacity: 1, y: 0 }}
               className="space-y-10"
             >
-              <form onSubmit={handleSave} className="bg-zinc-950 border border-zinc-800/50 rounded-3xl p-12 shadow-lg relative overflow-hidden backdrop-blur-xl">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-brand-primary/5 blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+              <form onSubmit={handleSave} className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 rounded-[2rem] p-12 shadow-2xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none group-hover:bg-indigo-500/20 transition-colors duration-1000"></div>
                 
-                <div className="flex items-center gap-4 mb-12">
-                   <div className="p-3 bg-zinc-100/5 rounded-xl border border-zinc-800/50 text-zinc-400">
-                      <Settings size={20} />
+                <div className="flex items-center gap-4 mb-12 relative z-10">
+                   <div className="p-3.5 bg-zinc-950 rounded-2xl border border-zinc-800/80 text-indigo-400 shadow-inner group-hover:scale-110 transition-transform">
+                      <Settings size={24} />
                    </div>
                    <div>
-                      <h2 className="text-xl font-black text-white uppercase tracking-tighter">Infrastructure Tuning</h2>
-                      <p className="text-[9px] text-zinc-300 font-bold uppercase tracking-widest mt-0.5">Core Performance Parameters</p>
+                      <h2 className="text-2xl font-black text-white uppercase tracking-tighter drop-shadow-md">Infrastructure Tuning</h2>
+                      <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] mt-1">Core Performance Parameters</p>
                    </div>
                 </div>
 
@@ -265,7 +266,7 @@ const AdminSettings = () => {
                   <button 
                     type="submit"
                     disabled={saving}
-                    className=" bg-brand-primary text-white px-12 py-5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-[0_20px_50px_rgba(217,119,6,0.3)] hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                    className=" bg-indigo-600 hover:bg-indigo-500 text-white px-12 py-5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-[0_0_20px_rgba(99,102,241,0.3)] hover:shadow-[0_0_30px_rgba(99,102,241,0.5)] active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50 cursor-pointer w-fit"
                   >
                     {saving ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
                     Sync Configuration
@@ -273,17 +274,18 @@ const AdminSettings = () => {
                 </div>
               </form>
 
-              <div className="bg-zinc-950 border border-zinc-800/50 rounded-3xl p-12 shadow-lg relative overflow-hidden backdrop-blur-xl group hover:border-zinc-800 transition-all">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-10">
+              <div className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 rounded-[2rem] p-12 shadow-2xl relative overflow-hidden group hover:bg-zinc-900/60 transition-all">
+                <div className="absolute top-0 left-0 w-96 h-96 bg-purple-500/10 blur-[100px] -translate-y-1/2 -translate-x-1/2 pointer-events-none group-hover:bg-purple-500/20 transition-colors duration-1000"></div>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-10 relative z-10">
                   <div className="flex items-center gap-6">
-                    <div className={`p-5 rounded-xl border transition-colors ${
-                      maintenanceEnabled ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : 'bg-zinc-800/50 text-zinc-400 border-zinc-800'
+                    <div className={`p-5 rounded-[1.5rem] border shadow-inner transition-colors ${
+                      maintenanceEnabled ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : 'bg-zinc-950 text-zinc-500 border-zinc-800/80 group-hover:text-purple-400 group-hover:scale-110'
                     }`}>
-                      <Settings size={28} />
+                      <Settings size={32} />
                     </div>
                     <div>
-                      <h2 className="text-xl font-black text-white uppercase tracking-tighter mb-1">Global Maintenance Mode</h2>
-                      <p className="text-[10px] font-bold text-zinc-300 uppercase tracking-widest">
+                      <h2 className="text-2xl font-black text-white uppercase tracking-tighter drop-shadow-md mb-2">Global Maintenance Mode</h2>
+                      <p className="text-[11px] font-black text-zinc-500 uppercase tracking-[0.2em]">
                         {maintenanceEnabled ? 'Restricting traffic: only administrators can access APIs' : 'Deactivated: all clients can connect normally'}
                       </p>
                     </div>
@@ -306,15 +308,16 @@ const AdminSettings = () => {
                 </div>
               </div>
 
-              <div className="bg-red-500/5 border border-red-500/10 rounded-3xl p-12 shadow-lg relative overflow-hidden backdrop-blur-xl group hover:border-red-500/20 transition-all">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-10">
+              <div className="bg-zinc-900/40 backdrop-blur-xl border border-red-500/30 rounded-[2rem] p-12 shadow-2xl relative overflow-hidden group hover:border-red-500/50 transition-all">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-red-500/10 blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none group-hover:bg-red-500/20 transition-colors duration-1000"></div>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-10 relative z-10">
                   <div className="flex items-center gap-6">
-                    <div className="bg-red-500/10 p-5 rounded-xl text-red-500 border border-red-500/20 group-hover:scale-110 transition-transform">
-                      <Trash2 size={28} />
+                    <div className="bg-red-500/10 p-5 rounded-[1.5rem] text-red-500 border border-red-500/20 shadow-inner group-hover:scale-110 transition-transform">
+                      <Trash2 size={32} />
                     </div>
                     <div>
-                      <h2 className="text-xl font-black text-white uppercase tracking-tighter mb-1 text-red-500/80">Manual Node Reaper</h2>
-                      <p className="text-[10px] font-bold text-zinc-300 uppercase tracking-widest">Execute instantaneous cluster cleanup</p>
+                      <h2 className="text-2xl font-black text-white uppercase tracking-tighter mb-2 text-red-500/90 drop-shadow-md">Manual Node Reaper</h2>
+                      <p className="text-[11px] font-black text-zinc-500 uppercase tracking-[0.2em]">Execute instantaneous cluster cleanup</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -351,6 +354,7 @@ const AdminSettings = () => {
             </motion.div>
           )}
         </AnimatePresence>
+      </div>
       </div>
     </>
   );

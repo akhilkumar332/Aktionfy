@@ -235,6 +235,18 @@ const CoreConcepts = () => (
         </div>
 
         <div className="flex gap-8 group">
+          <div className="flex-shrink-0 w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-pink-600 group-hover:text-white transition-colors duration-500">
+            <Globe size={24} />
+          </div>
+          <div>
+            <h3 className="text-2xl font-bold text-zinc-100 mb-2">Zero-Shot Decision Routing</h3>
+            <p className="text-zinc-300 leading-relaxed">
+              Dynamically route execution flow using our built-in <strong>Decision Router</strong>. This zero-shot LLM classifier intelligently evaluates parent task outputs and diverts workflow execution down specific paths based on semantic intent, eliminating the need for rigid if/else statements.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex gap-8 group">
           <div className="flex-shrink-0 w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-500">
             <Shield size={24} />
           </div>
@@ -391,6 +403,16 @@ const ApiReference = () => (
             <span className="text-emerald-400 font-bold w-12">POST</span>
             <span className="text-zinc-300">/api/auth/login</span>
             <span className="text-zinc-300 ml-auto">Initiate browser session</span>
+          </div>
+          <div className="flex gap-4 border-t border-zinc-800/50 pt-4">
+            <span className="text-emerald-400 font-bold w-12">POST</span>
+            <span className="text-zinc-300">/api/v1/tasks/:id/execute</span>
+            <span className="text-zinc-300 ml-auto">Instantly dispatch a node to the execution queue</span>
+          </div>
+          <div className="flex gap-4 border-t border-zinc-800/50 pt-4">
+            <span className="text-emerald-400 font-bold w-12">POST</span>
+            <span className="text-zinc-300">/api/v1/integrations/*</span>
+            <span className="text-zinc-300 ml-auto">Secure webhook ingestion endpoints</span>
           </div>
         </div>
       </section>

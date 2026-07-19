@@ -77,28 +77,29 @@ const AdminSEO = () => {
 
   return (
     <>
-      <header className="mb-12 flex flex-col md:flex-row md:items-center justify-between gap-8">
-        <div>
-          <motion.div 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-3 mb-4"
-          >
-             <div className="w-8 h-8 bg-brand-primary/10 border border-brand-primary/20 rounded-lg flex items-center justify-center text-brand-primary">
-                <Globe size={16} />
-             </div>
-             <span className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.3em]">Identity Broadcast</span>
-          </motion.div>
-          <motion.h1 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-4xl font-black text-white tracking-tighter"
-          >
-            Neural SEO.
-          </motion.h1>
-          <p className="text-zinc-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-2 ml-1">Meta-Data Configuration & Global Search Presence</p>
-        </div>
-      </header>
+      <div className="space-y-8 pb-12">
+        <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-8">
+          <div>
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="flex items-center gap-3 mb-4"
+            >
+               <div className="w-8 h-8 bg-indigo-500/10 border border-indigo-500/20 rounded-lg flex items-center justify-center text-indigo-400 shadow-inner">
+                  <Globe size={16} />
+               </div>
+               <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em]">Identity Broadcast</span>
+            </motion.div>
+            <motion.h1 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-zinc-500 tracking-tighter"
+            >
+              Neural SEO
+            </motion.h1>
+            <p className="text-zinc-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-3 ml-1">Meta-Data Configuration & Global Search Presence</p>
+          </div>
+        </header>
 
       <div className="max-w-4xl">
         <AnimatePresence mode="wait">
@@ -131,16 +132,16 @@ const AdminSEO = () => {
                 </motion.div>
               )}
 
-              <form onSubmit={handleSave} className="bg-zinc-950 border border-zinc-800/50 rounded-3xl p-12 shadow-lg relative overflow-hidden backdrop-blur-xl">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-brand-primary/5 blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+              <form onSubmit={handleSave} className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 rounded-[2rem] p-12 shadow-2xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none group-hover:bg-indigo-500/20 transition-colors duration-1000"></div>
                 
                 <div className="flex items-center gap-4 mb-12 relative z-10">
-                   <div className="p-3 bg-zinc-100/5 rounded-xl border border-zinc-800/50 text-zinc-400">
-                      <Layout size={20} />
+                   <div className="p-3.5 bg-zinc-950 rounded-2xl border border-zinc-800/80 text-indigo-400 shadow-inner group-hover:scale-110 transition-transform">
+                      <Layout size={24} />
                    </div>
                    <div>
-                      <h2 className="text-xl font-black text-white uppercase tracking-tighter">Manifest Logic</h2>
-                      <p className="text-[9px] text-zinc-300 font-bold uppercase tracking-widest mt-0.5">Neural Metadata Calibration</p>
+                      <h2 className="text-2xl font-black text-white uppercase tracking-tighter drop-shadow-md">Manifest Logic</h2>
+                      <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] mt-1">Neural Metadata Calibration</p>
                    </div>
                 </div>
 
@@ -181,7 +182,7 @@ const AdminSEO = () => {
                   <button 
                     type="submit"
                     disabled={saving}
-                    className=" bg-brand-primary text-white px-12 py-5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-[0_20px_50px_rgba(217,119,6,0.3)] hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                    className=" bg-indigo-600 hover:bg-indigo-500 text-white px-12 py-5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-[0_0_20px_rgba(99,102,241,0.3)] hover:shadow-[0_0_30px_rgba(99,102,241,0.5)] active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50 cursor-pointer w-fit"
                   >
                     {saving ? <RefreshCw size={16} className="animate-spin" /> : <Zap size={16} />}
                     Broadcast Manifest
@@ -189,14 +190,16 @@ const AdminSEO = () => {
                 </div>
               </form>
 
-              <div className="bg-zinc-950 border border-zinc-800/50 rounded-3xl p-12 shadow-lg relative overflow-hidden backdrop-blur-xl space-y-8">
-                <div className="flex items-center gap-4">
-                   <div className="p-3 bg-zinc-100/5 rounded-xl border border-zinc-800/50 text-zinc-400">
-                      <Search size={20} />
+              <div className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 rounded-[2rem] p-12 shadow-2xl relative overflow-hidden group space-y-8">
+                <div className="absolute top-0 left-0 w-96 h-96 bg-purple-500/10 blur-[100px] -translate-y-1/2 -translate-x-1/2 pointer-events-none group-hover:bg-purple-500/20 transition-colors duration-1000"></div>
+                
+                <div className="flex items-center gap-4 relative z-10">
+                   <div className="p-3.5 bg-zinc-950 rounded-2xl border border-zinc-800/80 text-purple-400 shadow-inner group-hover:scale-110 transition-transform">
+                      <Search size={24} />
                    </div>
                    <div>
-                      <h3 className="text-lg font-black text-white uppercase tracking-tighter">Global Index Preview</h3>
-                      <p className="text-[9px] text-zinc-300 font-bold uppercase tracking-widest mt-0.5">Real-time Search Engine Simulator</p>
+                      <h3 className="text-2xl font-black text-white uppercase tracking-tighter drop-shadow-md">Global Index Preview</h3>
+                      <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] mt-1">Real-time Search Engine Simulator</p>
                    </div>
                 </div>
 
@@ -256,6 +259,7 @@ const AdminSEO = () => {
             </motion.div>
           )}
         </AnimatePresence>
+      </div>
       </div>
     </>
   );

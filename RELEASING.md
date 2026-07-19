@@ -5,11 +5,14 @@ This document describes the process of building, verifying, and releasing the Ak
 ## 🚀 Pre-Release Checklist
 
 Before every release, you **must** run the production readiness scan:
-1.  **Concurrency Check**: Run `go test -race ./...` to detect potential deadlocks or race conditions.
-2.  **Security Audit**: Verify that all new Admin endpoints have `EchoRequireRole("admin")` and CSRF protection.
+1.  **Concurrency Check**: Run `go test -race ./...` to detect potential deadlocks or race conditions in the distributed orchestrator.
+2.  **Security Audit**: Verify that all new Admin endpoints have `EchoRequireRole("admin")` and CSRF protection, and that native integrations enforce signature validation.
 3.  **Migration Integrity**: Ensure all new migrations in `/migrations` have been tested against a clean database.
-4.  **MCP Tool Validation**: Validate that all new MCP Tools are accurately mapped in the `tools.go` registry and registered in `Docs.jsx`.
-5.  **Frontend Polish**: Run `npm run lint` and `npm run build` to ensure no console logs or debug code leaks into production.
+4.  **MCP Tool & Router Validation**: Validate that all new MCP Tools are accurately mapped in the `tools.go` registry and that the zero-shot LLM `decision_router` paths are documented in `Docs.jsx`.
+5.  **Frontend Polish (Bento Box Glassmorphism)**: 
+    - Run `npm run lint` and `npm run build` in the `frontend` directory.
+    - Ensure there are no JSX structure errors (e.g., deeply nested `AnimatePresence` tags).
+    - Ensure no console logs or debug code leak into production.
 
 ## 1. Build Multi-Platform Binaries
 
@@ -36,8 +39,8 @@ GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o dist/bin/aktionfy-windows
 
 1.  **Tagging**:
     ```bash
-    git tag -a v1.2.0 -m "Release v1.2.0: Zero-Key Architecture and Workflow Looping"
-    git push origin v1.2.0
+    git tag -a v1.3.0 -m "Release v1.3.0: Premium Glassmorphism UI and Zero-Shot Routing"
+    git push origin v1.3.0
     ```
 2.  **Upload Artifacts**: Attach the binaries from `dist/bin/` to the GitHub release. The global installers depend on these exact filenames.
 
@@ -57,4 +60,5 @@ The NPM package facilitates the installation of the pre-built Go binaries.
 After the Docker image is deployed, verify the system health:
 - Check `/metrics` for Prometheus data.
 - Verify worker registration in the **Node Registry**.
-- Run a test task to confirm the **SSE Bridge** is alive.
+- Run a test task via the manual `execute_task` UI endpoint to confirm the **SSE Bridge** is alive.
+- Inspect the visual time-travel debugger in `TaskHistory` for telemetry consistency.

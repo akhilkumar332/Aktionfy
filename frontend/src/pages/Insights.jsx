@@ -98,35 +98,35 @@ const Insights = () => {
   const p99Latency = data?.p99_latency === 0 ? '---' : `${data?.p99_latency || 0}ms`;
 
   return (
-    <>
-      <header className="mb-12 flex flex-col md:flex-row md:items-center justify-between gap-8">
+    <div className="space-y-8 pb-12">
+      <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-8">
         <div>
           <motion.div 
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             className="flex items-center gap-3 mb-4"
           >
-             <div className="w-8 h-8 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-center justify-center text-blue-400">
+             <div className="w-8 h-8 bg-indigo-500/10 border border-indigo-500/20 rounded-lg flex items-center justify-center text-indigo-400 shadow-inner">
                 <BarChart3 size={16} />
              </div>
-             <span className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.3em]">Analytics Sector</span>
+             <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em]">Analytics Sector</span>
           </motion.div>
           <motion.h1 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-4xl font-black text-white tracking-tighter"
+            className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-zinc-500 tracking-tighter"
           >
-            System Insights.
+            System Insights
           </motion.h1>
-          <p className="text-zinc-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-2 ml-1">Global Performance Telemetry & Trends</p>
+          <p className="text-zinc-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-3 ml-1">Global Performance Telemetry & Trends</p>
         </div>
         
-        <div className="flex items-center gap-4">
-           <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 p-1.5 rounded-lg">
+        <div className="flex items-center gap-4 bg-zinc-900/50 p-2 rounded-2xl border border-zinc-800/60 shadow-inner">
+           <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800/80 px-4 py-3 rounded-xl shadow-inner">
              <select 
                value={dateRange}
                onChange={(e) => setDateRange(e.target.value)}
-               className="bg-transparent text-[10px] font-bold text-zinc-300 uppercase tracking-widest focus:outline-none border-none cursor-pointer px-2"
+               className="bg-transparent text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em] focus:outline-none border-none cursor-pointer px-2 appearance-none"
              >
                <option value="7d">Last 7 Days</option>
                <option value="30d">Last 30 Days</option>
@@ -135,16 +135,16 @@ const Insights = () => {
            </div>
            <button 
              onClick={fetchInsights}
-             className="bg-zinc-100/5 border border-zinc-800 p-4 rounded-xl text-zinc-400 hover:text-white transition-all active:scale-95"
+             className="p-3.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-all shadow-md active:scale-95 border border-zinc-700"
            >
-             <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+             <RefreshCw size={18} className={loading ? 'animate-spin text-indigo-400' : ''} />
            </button>
            {trends?.tasks_growth && trends.tasks_growth !== '0%' && (
-             <div className="flex items-center gap-6 bg-zinc-100/[0.02] border border-zinc-800/50 px-8 py-5 rounded-xl backdrop-blur-xl relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
-                <div className="flex flex-col">
-                   <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Growth Index</span>
-                   <span className="text-xs font-black text-blue-400 flex items-center gap-2">
+             <div className="flex items-center gap-6 bg-zinc-950 border border-zinc-800/80 px-6 py-3 rounded-xl shadow-inner relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/10 blur-2xl rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none group-hover:bg-indigo-500/20 transition-colors"></div>
+                <div className="flex flex-col relative z-10">
+                   <span className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em]">Growth Index</span>
+                   <span className={`text-xs font-black flex items-center gap-2 mt-0.5 ${trends.tasks_growth.startsWith('+') ? 'text-emerald-400' : 'text-amber-400'}`}>
                       <Activity size={10} className="animate-pulse" />
                       {trends.tasks_growth.startsWith('+') ? 'ACCELERATING' : 'REDUCING'}
                    </span>
@@ -217,18 +217,18 @@ const Insights = () => {
               <motion.div 
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="bg-zinc-950 border border-zinc-800/50 rounded-3xl p-10 shadow-lg backdrop-blur-xl relative overflow-hidden"
+                className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 p-10 rounded-[2rem] shadow-xl relative overflow-hidden group hover:bg-zinc-900/60 transition-colors"
               >
-                <div className="absolute top-0 right-0 w-48 h-48 bg-brand-primary/5 blur-[80px] -translate-y-1/2 translate-x-1/2"></div>
+                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 blur-[60px] rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-110 transition-transform duration-700"></div>
                 
                 <div className="flex items-center justify-between mb-12 relative z-10">
                   <div className="flex items-center gap-4">
-                    <div className="p-3 bg-zinc-100/5 rounded-xl border border-zinc-800/50 text-zinc-400">
-                      <BarChart3 size={20} />
+                    <div className="p-3.5 bg-zinc-950 rounded-2xl border border-zinc-800/80 text-indigo-400 shadow-inner group-hover:scale-110 transition-transform">
+                      <BarChart3 size={24} />
                     </div>
                     <div>
-                      <h2 className="text-xl font-black text-white uppercase tracking-tighter">Neural Throughput</h2>
-                      <p className="text-[9px] text-zinc-300 font-bold uppercase tracking-widest mt-0.5">24-Hour Execution Frequency</p>
+                      <h2 className="text-2xl font-black text-white uppercase tracking-tighter drop-shadow-md">Neural Throughput</h2>
+                      <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] mt-1">24-Hour Execution Frequency</p>
                     </div>
                   </div>
                 </div>
@@ -280,18 +280,18 @@ const Insights = () => {
               <motion.div 
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="bg-zinc-950 border border-zinc-800/50 rounded-3xl p-10 shadow-lg backdrop-blur-xl relative overflow-hidden"
+                className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 p-10 rounded-[2rem] shadow-xl relative overflow-hidden group hover:bg-zinc-900/60 transition-colors"
               >
-                <div className="absolute bottom-0 left-0 w-48 h-48 bg-emerald-500/5 blur-[80px] translate-y-1/2 -translate-x-1/2"></div>
+                <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/10 blur-[60px] rounded-full translate-y-1/2 -translate-x-1/2 group-hover:scale-110 transition-transform duration-700"></div>
                 
                 <div className="flex items-center justify-between mb-12 relative z-10">
                   <div className="flex items-center gap-4">
-                    <div className="p-3 bg-zinc-100/5 rounded-xl border border-zinc-800/50 text-zinc-400">
-                      <ShieldCheck size={20} />
+                    <div className="p-3.5 bg-zinc-950 rounded-2xl border border-zinc-800/80 text-emerald-400 shadow-inner group-hover:scale-110 transition-transform">
+                      <ShieldCheck size={24} />
                     </div>
                     <div>
-                      <h2 className="text-xl font-black text-white uppercase tracking-tighter">Protocol Integrity</h2>
-                      <p className="text-[9px] text-zinc-300 font-bold uppercase tracking-widest mt-0.5">Execution Result Distribution</p>
+                      <h2 className="text-2xl font-black text-white uppercase tracking-tighter drop-shadow-md">Protocol Integrity</h2>
+                      <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] mt-1">Execution Result Distribution</p>
                     </div>
                   </div>
                 </div>
@@ -322,18 +322,18 @@ const Insights = () => {
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-zinc-950 border border-zinc-800/50 rounded-3xl p-10 shadow-lg backdrop-blur-xl relative overflow-hidden"
+              className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 p-10 rounded-[2rem] shadow-xl relative overflow-hidden group hover:bg-zinc-900/60 transition-colors"
             >
-              <div className="absolute top-0 left-0 w-48 h-48 bg-indigo-500/5 blur-[80px] -translate-y-1/2 -translate-x-1/2"></div>
+              <div className="absolute top-0 left-0 w-64 h-64 bg-purple-500/10 blur-[60px] rounded-full -translate-y-1/2 -translate-x-1/2 group-hover:scale-110 transition-transform duration-700"></div>
               
               <div className="flex items-center justify-between mb-12 relative z-10">
                 <div className="flex items-center gap-4">
-                  <div className="p-3 bg-zinc-100/5 rounded-xl border border-zinc-800/50 text-zinc-400">
-                    <Zap size={20} />
+                  <div className="p-3.5 bg-zinc-950 rounded-2xl border border-zinc-800/80 text-purple-400 shadow-inner group-hover:scale-110 transition-transform">
+                    <Zap size={24} />
                   </div>
                   <div>
-                    <h2 className="text-xl font-black text-white uppercase tracking-tighter">Hourly Chrono-Flux</h2>
-                    <p className="text-[9px] text-zinc-300 font-bold uppercase tracking-widest mt-0.5">Execution load per hour over the last 24 hours</p>
+                    <h2 className="text-2xl font-black text-white uppercase tracking-tighter drop-shadow-md">Hourly Chrono-Flux</h2>
+                    <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] mt-1">Execution load per hour over the last 24 hours</p>
                   </div>
                 </div>
               </div>
@@ -363,61 +363,63 @@ const Insights = () => {
               <motion.div 
                 whileHover={{ y: -5 }}
                 onClick={() => navigate('/admin/workers')}
-                className="bg-zinc-100/[0.02] border border-zinc-800/50 rounded-3xl p-10 backdrop-blur-xl cursor-pointer hover:bg-zinc-100/[0.04] transition-all flex items-center justify-between group shadow-lg"
+                className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 p-10 rounded-[2rem] shadow-xl relative overflow-hidden group cursor-pointer hover:bg-zinc-900/60 transition-all flex items-center justify-between"
               >
-                <div className="flex items-center gap-8">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 blur-[80px] rounded-full -translate-y-1/2 translate-x-1/4 group-hover:bg-blue-500/20 transition-colors"></div>
+                <div className="flex items-center gap-8 relative z-10">
                   <div className="relative">
-                     <div className="absolute inset-0 bg-blue-500/10 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                     <div className="bg-zinc-950 p-6 rounded-xl text-blue-400 border border-zinc-800/50 group-hover:border-blue-400/30 transition-all relative z-10">
-                       <Server size={32} />
+                     <div className="bg-zinc-950 p-6 rounded-[2rem] text-blue-400 border border-zinc-800/80 group-hover:border-blue-400/50 transition-all shadow-inner group-hover:scale-110">
+                       <Server size={40} />
                      </div>
                   </div>
                   <div>
-                    <h2 className="text-3xl font-black text-white uppercase tracking-tighter mb-1">Infrastructure Health</h2>
-                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                       <Globe size={12} className="text-brand-primary" /> Active Multi-Region Cluster Monitoring
+                    <h2 className="text-3xl font-black text-white uppercase tracking-tighter mb-2 drop-shadow-md">Infrastructure Health</h2>
+                    <p className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                       <Globe size={14} className="text-blue-400" /> Active Multi-Region Cluster Monitoring
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-4 text-blue-400 font-black uppercase tracking-widest text-[10px] bg-blue-500/10 px-6 py-3 rounded-2xl border border-blue-500/20 group-hover:bg-blue-500 group-hover:text-white transition-all">
-                  Registry Terminal <ArrowRight size={16} className="group-hover:translate-x-2 transition-transform" />
+                <div className="flex items-center gap-4 text-blue-400 font-black uppercase tracking-[0.2em] text-[11px] bg-zinc-950 px-8 py-4 rounded-2xl border border-zinc-800/80 group-hover:border-blue-500/50 group-hover:bg-blue-500/10 transition-all shadow-inner relative z-10">
+                  Registry Terminal <ArrowRight size={18} className="group-hover:translate-x-2 transition-transform" />
                 </div>
               </motion.div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-    </>
+    </div>
   );
 };
 
 const MetricCard = ({ icon: Icon, label, value, trend, color, bg }) => {
   const isPositive = trend?.startsWith('+') || trend === 'NEW';
   const isNegative = trend?.startsWith('-');
-  const trendTextColor = isPositive ? 'text-emerald-400' : isNegative ? 'text-red-400' : 'text-zinc-400';
-  const trendIconColor = isPositive ? 'text-emerald-500' : isNegative ? 'text-red-500' : 'text-zinc-500';
-  const trendBg = isPositive ? 'bg-emerald-500/10 border-emerald-500/20' : isNegative ? 'bg-red-500/10 border-red-500/20' : 'bg-zinc-100/5 border-zinc-800/50';
+  const trendTextColor = isPositive ? 'text-emerald-400' : isNegative ? 'text-red-400' : 'text-zinc-500';
+  const trendIconColor = isPositive ? 'text-emerald-500' : isNegative ? 'text-red-500' : 'text-zinc-600';
+  const trendBg = isPositive ? 'bg-emerald-500/10 border-emerald-500/20' : isNegative ? 'bg-red-500/10 border-red-500/20' : 'bg-zinc-950 border-zinc-800/80';
+  const glowColor = bg.includes('brand') ? 'bg-indigo-500/20' : bg.includes('emerald') ? 'bg-emerald-500/20' : bg.includes('blue') ? 'bg-blue-500/20' : 'bg-purple-500/20';
 
   return (
     <motion.div 
       whileHover={{ y: -8 }}
-      className="bg-zinc-950 border border-zinc-800/50 rounded-2xl p-10 backdrop-blur-xl relative overflow-hidden group shadow-lg"
+      className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 rounded-[2rem] p-8 relative overflow-hidden group shadow-xl hover:bg-zinc-900/60 hover:border-zinc-700 transition-all"
     >
-      <div className="absolute top-0 right-0 p-10 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-700 pointer-events-none">
+      <div className={`absolute top-0 right-0 w-32 h-32 ${glowColor} blur-[50px] rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none group-hover:scale-150 transition-transform duration-1000`}></div>
+      <div className="absolute top-0 right-0 p-8 opacity-[0.02] group-hover:opacity-[0.06] transition-opacity duration-700 pointer-events-none group-hover:scale-110">
         <Icon size={120} />
       </div>
       <div className="flex items-start justify-between mb-8 relative z-10">
-        <div className={`p-4 rounded-2xl ${bg} border border-zinc-800/50 group-hover:scale-110 transition-transform`}>
+        <div className={`p-4 rounded-2xl bg-zinc-950 border border-zinc-800/80 shadow-inner group-hover:scale-110 transition-transform`}>
           <Icon size={24} className={color} />
         </div>
-        <div className={`flex items-center gap-2 px-3 py-1 rounded-full border ${trendBg}`}>
-           <span className={`text-[8px] font-black uppercase tracking-widest ${trendTextColor}`}>{trend}</span>
-           <Activity size={10} className={`${trendIconColor} ${isPositive || isNegative ? 'animate-pulse' : ''}`} />
+        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border shadow-inner ${trendBg}`}>
+           <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${trendTextColor}`}>{trend}</span>
+           <Activity size={12} className={`${trendIconColor} ${isPositive || isNegative ? 'animate-pulse' : ''}`} />
         </div>
       </div>
       <div className="relative z-10">
-        <p className="text-zinc-400 font-black uppercase text-[10px] tracking-[0.3em] mb-2 ml-1">{label}</p>
-        <p className="text-4xl font-black text-white tracking-tighter tabular-nums">{value}</p>
+        <p className="text-zinc-500 font-black uppercase text-[10px] tracking-[0.3em] mb-2 ml-1">{label}</p>
+        <p className="text-4xl font-black text-white tracking-tighter tabular-nums drop-shadow-md">{value}</p>
       </div>
     </motion.div>
   );

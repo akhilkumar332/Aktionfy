@@ -25,11 +25,13 @@ Aktionfy implements a **Multi-Layer Defense** strategy:
 
 ### 3. Network & API Security
 *   **Hardened CSRF**: Strict origin validation and double-submit token enforcement on all mutation endpoints.
+*   **Webhook Signature Validation**: Native integration endpoints cryptographically verify inbound webhooks (e.g., Stripe, GitHub) to prevent spoofing.
 *   **Quota Enforcement**: Centralized quota logic ensures API users cannot bypass tier-based task limits.
 *   **SSE Isolation**: Every persistent bridge connection is cryptographically linked to a user session.
 
-### 4. Secure Execution
+### 4. Secure Execution & Routing
 *   **Native Sandboxing**: Custom JS actions run in an isolated environment (Goja) with strict CPU timeouts and memory caps.
+*   **Deterministic Zero-Shot Routing**: The `decision_router` explicitly prevents prompt injection by isolating the routing context from raw user inputs.
 
 ## Reporting a Vulnerability
 

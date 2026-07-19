@@ -138,58 +138,62 @@ const TaskHistory = () => {
 
   return (
     <>
-      <header className="mb-12 flex flex-col md:flex-row md:items-center justify-between gap-8">
-        <div>
-          <button 
-            onClick={() => navigate('/tasks')}
-            className="flex items-center gap-2 text-zinc-400 hover:text-white transition-all text-[10px] font-black uppercase tracking-[0.3em] mb-6 group"
-          >
-            <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> Back to Schedules
-          </button>
-          <div className="flex items-center gap-4 mb-4">
-             <div className="w-10 h-10 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center justify-center text-blue-400">
-                <History size={20} />
-             </div>
-             <div>
-                <motion.h1 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="text-4xl font-black text-white tracking-tighter"
-                >
-                  Neural Timeline.
-                </motion.h1>
-                <p className="text-zinc-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-1 ml-1">Version State Archive</p>
-             </div>
+      <div className="space-y-8 pb-12">
+        <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-8">
+          <div>
+            <button 
+              onClick={() => navigate('/tasks')}
+              className="flex items-center gap-2 text-zinc-400 hover:text-white transition-all text-[10px] font-black uppercase tracking-[0.3em] mb-6 group cursor-pointer"
+            >
+              <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> Back to Schedules
+            </button>
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="flex items-center gap-3 mb-4"
+            >
+               <div className="w-8 h-8 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-center justify-center text-blue-400 shadow-inner">
+                  <History size={16} />
+               </div>
+               <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em]">Version State Archive</span>
+            </motion.div>
+            <motion.h1 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-zinc-500 tracking-tighter"
+            >
+              Neural Timeline
+            </motion.h1>
+            <p className="text-zinc-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-3 ml-1">Temporal execution record</p>
           </div>
-        </div>
-        
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={handleExportCSV}
-            className="pro-button-secondary !py-4 !px-6 flex items-center gap-3"
-          >
-            <Download size={16} />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Export Timeline</span>
-          </button>
-
-          <button 
-            onClick={handleTriggerTask}
-            disabled={triggering}
-            className="pro-button-primary !py-4 !px-6 flex items-center gap-3 disabled:opacity-50"
-          >
-            {triggering ? <RefreshCw className="animate-spin" size={16} /> : <Play size={16} />}
-            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Execute Node Now</span>
-          </button>
           
-          <div className="flex items-center gap-6 bg-zinc-100/[0.02] border border-zinc-800/50 px-8 py-5 rounded-xl backdrop-blur-xl relative overflow-hidden group">
-             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none group-hover:scale-150 transition-transform duration-700"></div>
-             <div className="flex flex-col">
-                <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Node ID</span>
-                <span className="text-xs font-black text-white font-mono uppercase tracking-widest opacity-80">{id?.substring(0, 13)}</span>
-             </div>
+          <div className="flex items-center gap-4 bg-zinc-900/50 p-2 rounded-2xl border border-zinc-800/60 shadow-inner">
+            <button 
+              onClick={handleExportCSV}
+              className="px-6 py-3.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-all shadow-md active:scale-95 border border-zinc-700 flex items-center gap-3 cursor-pointer"
+            >
+              <Download size={16} className="text-zinc-400" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em]">Export Timeline</span>
+            </button>
+
+            <button 
+              onClick={handleTriggerTask}
+              disabled={triggering}
+              className="px-6 py-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-all shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_30px_rgba(59,130,246,0.5)] active:scale-95 flex items-center gap-3 disabled:opacity-50 cursor-pointer"
+            >
+              {triggering ? <RefreshCw className="animate-spin" size={16} /> : <Play size={16} />}
+              <span className="text-[10px] font-black uppercase tracking-[0.2em]">Execute Node Now</span>
+            </button>
+            
+            <div className="flex items-center gap-6 bg-zinc-950 px-6 py-3.5 rounded-xl border border-zinc-800/80 shadow-inner relative overflow-hidden group">
+               <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none group-hover:bg-blue-500/20 transition-colors duration-700"></div>
+               <div className="flex flex-col relative z-10">
+                  <span className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em]">Node ID</span>
+                  <span className="text-xs font-black text-white font-mono uppercase tracking-widest drop-shadow-sm">{id?.substring(0, 13)}</span>
+               </div>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
 
       <div className="space-y-6">
         {!loading && history.length > 0 && (
@@ -227,18 +231,18 @@ const TaskHistory = () => {
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-zinc-950 border border-zinc-800/50 rounded-3xl p-10 shadow-lg backdrop-blur-xl relative overflow-hidden"
+                className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 rounded-[2rem] p-10 shadow-2xl relative overflow-hidden group"
               >
-                <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-500/5 blur-[80px] -translate-y-1/2 translate-x-1/2"></div>
+                <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-500/10 blur-[80px] -translate-y-1/2 translate-x-1/2 group-hover:bg-indigo-500/20 transition-colors duration-1000"></div>
                 
                 <div className="flex items-center justify-between mb-8 relative z-10">
                   <div className="flex items-center gap-4">
-                    <div className="p-3 bg-zinc-100/5 rounded-xl border border-zinc-800/50 text-zinc-400">
+                    <div className="p-3 bg-zinc-950 rounded-2xl border border-zinc-800/80 shadow-inner group-hover:scale-110 transition-transform">
                       <Zap size={20} className="text-indigo-400" />
                     </div>
                     <div>
-                      <h2 className="text-xl font-black text-white uppercase tracking-tighter">Hourly Chrono-Flux</h2>
-                      <p className="text-[9px] text-zinc-300 font-bold uppercase tracking-widest mt-0.5">Execution load over time</p>
+                      <h2 className="text-xl font-black text-white uppercase tracking-tighter drop-shadow-md">Hourly Chrono-Flux</h2>
+                      <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] mt-0.5">Execution load over time</p>
                     </div>
                   </div>
                 </div>
@@ -268,18 +272,18 @@ const TaskHistory = () => {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="bg-zinc-950 border border-zinc-800/50 rounded-3xl p-10 shadow-lg backdrop-blur-xl relative overflow-hidden"
+                className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 rounded-[2rem] p-10 shadow-2xl relative overflow-hidden group"
               >
-                <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/5 blur-[80px] -translate-y-1/2 translate-x-1/2"></div>
+                <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/10 blur-[80px] -translate-y-1/2 translate-x-1/2 group-hover:bg-emerald-500/20 transition-colors duration-1000"></div>
                 
                 <div className="flex items-center justify-between mb-8 relative z-10">
                   <div className="flex items-center gap-4">
-                    <div className="p-3 bg-zinc-100/5 rounded-xl border border-zinc-800/50 text-zinc-400">
+                    <div className="p-3 bg-zinc-950 rounded-2xl border border-zinc-800/80 shadow-inner group-hover:scale-110 transition-transform">
                       <Activity size={20} className="text-emerald-400" />
                     </div>
                     <div>
-                      <h2 className="text-xl font-black text-white uppercase tracking-tighter">Execution Duration</h2>
-                      <p className="text-[9px] text-zinc-300 font-bold uppercase tracking-widest mt-0.5">Latency trend (ms)</p>
+                      <h2 className="text-xl font-black text-white uppercase tracking-tighter drop-shadow-md">Execution Duration</h2>
+                      <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] mt-0.5">Latency trend (ms)</p>
                     </div>
                   </div>
                 </div>
@@ -336,14 +340,14 @@ const TaskHistory = () => {
                   key={version.id}
                   className="relative pl-20"
                 >
-                  <div className={`absolute left-0 w-16 h-16 flex items-center justify-center rounded-xl border backdrop-blur-xl z-10 transition-all duration-500 ${
-                    index === 0 ? 'bg-blue-500 border-blue-400 text-white shadow-[0_0_30px_rgba(59,130,246,0.4)]' : 'bg-zinc-950 border-zinc-800 text-zinc-300'
+                  <div className={`absolute left-0 w-16 h-16 flex items-center justify-center rounded-2xl border backdrop-blur-xl z-10 transition-all duration-500 shadow-xl ${
+                    index === 0 ? 'bg-blue-600 border-blue-500 text-white shadow-[0_0_30px_rgba(37,99,235,0.4)]' : 'bg-zinc-900 border-zinc-800 text-zinc-500'
                   }`}>
-                    {index === 0 ? <CheckCircle2 size={24} /> : <Clock size={24} />}
+                    {index === 0 ? <CheckCircle2 size={28} /> : <Clock size={28} />}
                   </div>
 
-                  <div className={`bg-zinc-950 border rounded-2xl p-10 hover:bg-zinc-100/[0.02] transition-all duration-500 group relative overflow-hidden shadow-lg ${index === 0 ? 'border-blue-500/30 ring-1 ring-blue-500/10' : 'border-zinc-800/50'}`}>
-                    {index === 0 && <div className="absolute top-0 right-0 w-48 h-48 bg-blue-500/5 blur-[80px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>}
+                  <div className={`bg-zinc-900/40 backdrop-blur-xl border rounded-[2rem] p-10 hover:bg-zinc-900/60 transition-all duration-500 group relative overflow-hidden shadow-xl ${index === 0 ? 'border-blue-500/50 ring-1 ring-blue-500/20' : 'border-zinc-800/60'}`}>
+                    {index === 0 && <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none group-hover:bg-blue-500/20 transition-colors duration-1000"></div>}
 
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-12 relative z-10">
                       <div className="flex-1 space-y-8">
@@ -361,43 +365,43 @@ const TaskHistory = () => {
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                           <div className="space-y-4">
-                            <div className="flex items-center gap-2 text-[9px] font-black text-zinc-400 uppercase tracking-widest ml-2">
-                               <Terminal size={10} /> Logic Snapshot
+                            <div className="flex items-center gap-2 text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-2">
+                               <Terminal size={12} className="text-zinc-400" /> Logic Snapshot
                             </div>
-                            <div className="bg-black/40 p-6 rounded-xl border border-zinc-800/50 font-mono text-xs text-zinc-400 leading-relaxed max-h-48 overflow-y-auto custom-scrollbar shadow-inner group-hover:text-zinc-200 transition-colors">
+                            <div className="bg-zinc-950/50 p-6 rounded-2xl border border-zinc-800/80 font-mono text-xs text-zinc-400 leading-relaxed max-h-48 overflow-y-auto custom-scrollbar shadow-inner group-hover:border-zinc-700 transition-colors">
                               {version.agent_prompt || version.native_code || "// Baseline configuration identified."}
                             </div>
                           </div>
                           
-                          <div className="flex flex-col justify-center gap-8">
-                             <div className="flex items-center gap-8">
+                          <div className="flex flex-col justify-center gap-8 bg-zinc-950/30 p-8 rounded-2xl border border-zinc-800/50 shadow-inner">
+                             <div className="flex items-center justify-between gap-8">
                                 <div>
-                                  <p className="text-[9px] font-black text-zinc-300 uppercase tracking-widest mb-1">Synchronization</p>
-                                  <p className="text-xs font-bold text-zinc-300 tabular-nums uppercase">{new Date(version.created_at).toLocaleString()}</p>
+                                  <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-1.5">Synchronization</p>
+                                  <p className="text-sm font-black text-white tabular-nums uppercase drop-shadow-sm">{new Date(version.created_at).toLocaleString()}</p>
                                 </div>
-                                <div>
-                                  <p className="text-[9px] font-black text-zinc-300 uppercase tracking-widest mb-1">Vector Type</p>
-                                  <div className="flex items-center gap-2 px-3 py-1 bg-zinc-100/5 rounded-lg border border-zinc-800/50 text-[9px] font-black text-zinc-400 uppercase tracking-widest">
-                                     <GitBranch size={10} /> {version.trigger_type}
+                                <div className="text-right">
+                                  <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-1.5">Vector Type</p>
+                                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-zinc-900 border border-zinc-800 rounded-xl text-[10px] font-black text-zinc-300 uppercase tracking-[0.2em] shadow-inner">
+                                     <GitBranch size={12} className="text-indigo-400" /> {version.trigger_type}
                                   </div>
                                 </div>
                              </div>
 
                              {index !== 0 && (
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-4 pt-4 border-t border-zinc-800/50">
                                   {confirmRollback === version.id ? (
-                                    <div className="flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 rounded-xl p-2">
-                                      <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest px-2">Authorize?</span>
+                                    <div className="flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 rounded-xl p-2 w-full">
+                                      <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest px-4 flex-1">Authorize Rollback?</span>
                                       <button 
                                         onClick={() => handleRestore(version.id)}
                                         disabled={restoring === version.id}
-                                        className="p-3 bg-blue-500 text-white rounded-lg hover:brightness-110 transition-all"
+                                        className="p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-all shadow-md cursor-pointer"
                                       >
                                         <Check size={18} />
                                       </button>
                                       <button 
                                         onClick={() => setConfirmRollback(null)}
-                                        className="p-3 bg-zinc-800 text-zinc-400 rounded-lg hover:text-white transition-all"
+                                        className="p-3 bg-zinc-800 text-zinc-400 rounded-lg hover:text-white transition-all shadow-md cursor-pointer"
                                       >
                                         <X size={18} />
                                       </button>
@@ -406,17 +410,17 @@ const TaskHistory = () => {
                                     <>
                                       <button
                                         onClick={() => handleOpenDiff(version, index)}
-                                        className="w-fit bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-700/50 px-10 py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-all cursor-pointer"
+                                        className="flex-1 bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800 px-6 py-4 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] shadow-md active:scale-95 transition-all cursor-pointer"
                                       >
-                                        Compare with Active
+                                        Compare
                                       </button>
                                       <button 
                                         onClick={() => setConfirmRollback(version.id)}
                                         disabled={restoring === version.id}
-                                        className="w-fit  bg-blue-500 text-white px-10 py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-[0_10px_40px_rgba(59,130,246,0.3)] hover:brightness-110 active:scale-95 transition-all flex items-center gap-3 disabled:opacity-50"
+                                        className="flex-[2] bg-blue-600 text-white px-6 py-4 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] shadow-[0_0_20px_rgba(37,99,235,0.3)] hover:shadow-[0_0_30px_rgba(37,99,235,0.5)] active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50 cursor-pointer"
                                       >
                                         {restoring === version.id ? <RefreshCw size={16} className="animate-spin" /> : <RefreshCw size={16} />}
-                                        {restoring === version.id ? 'ROLLING BACK...' : 'Authorize Rollback'}
+                                        {restoring === version.id ? 'ROLLING BACK...' : 'Rollback'}
                                       </button>
                                     </>
                                   )}
@@ -558,6 +562,7 @@ const TaskHistory = () => {
           </div>
         )}
       </AnimatePresence>
+      </div>
     </>
   );
 };

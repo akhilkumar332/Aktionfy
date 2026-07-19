@@ -64,28 +64,39 @@ const Workers = () => {
 
   return (
     <>
-      <header className="mb-12 flex flex-col md:flex-row md:items-center justify-between gap-8">
-        <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Reaper Registry</h1>
-          <p className="text-zinc-400 text-xs font-medium mt-1">Operational status of distributed execution nodes.</p>
-        </div>
-        
-        <div className="flex items-center gap-2">
-           <button 
-             onClick={fetchWorkers}
-             className="p-2 bg-zinc-900 border border-zinc-800 rounded-md text-zinc-400 hover:text-white transition-all"
-             aria-label="Refresh registry"
-           >
-             <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
-           </button>
-           <div className="bg-zinc-900 border border-zinc-800 px-3 py-1.5 rounded-md flex items-center gap-3">
-              <div className="flex flex-col">
-                 <span className="text-[10px] font-black text-white tabular-nums leading-none">{workers.length}</span>
-                 <span className="text-[8px] font-bold text-zinc-400 uppercase tracking-widest leading-none mt-0.5">ACTIVE_NODES</span>
-              </div>
-           </div>
-        </div>
-      </header>
+      <div className="space-y-8 pb-12">
+        <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-8">
+          <div>
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="flex items-center gap-3 mb-4"
+            >
+               <div className="w-8 h-8 bg-indigo-500/10 border border-indigo-500/20 rounded-lg flex items-center justify-center text-indigo-400 shadow-inner">
+                  <Server size={16} />
+               </div>
+               <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em]">Infrastructure</span>
+            </motion.div>
+            <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-zinc-500 tracking-tighter uppercase">Reaper Registry</h1>
+            <p className="text-zinc-400 text-[10px] font-black uppercase tracking-[0.2em] mt-3 ml-1">Operational status of distributed execution nodes.</p>
+          </div>
+          
+          <div className="flex items-center gap-4 bg-zinc-900/50 p-2 rounded-2xl border border-zinc-800/60 shadow-inner">
+             <div className="bg-zinc-950 border border-zinc-800/80 px-5 py-3 rounded-xl flex items-center gap-4 shadow-inner">
+                <div className="flex flex-col">
+                   <span className="text-xl font-black text-white tabular-nums leading-none drop-shadow-md">{workers.length}</span>
+                   <span className="text-[9px] font-black text-emerald-400 uppercase tracking-[0.2em] leading-none mt-1">ACTIVE_NODES</span>
+                </div>
+             </div>
+             <button 
+               onClick={fetchWorkers}
+               className="p-3.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-all shadow-md active:scale-95 border border-zinc-700 cursor-pointer"
+               aria-label="Refresh registry"
+             >
+               <RefreshCw size={18} className={refreshing ? 'animate-spin text-indigo-400' : ''} />
+             </button>
+          </div>
+        </header>
 
       <div className="grid grid-cols-1 gap-4">
         <AnimatePresence mode="popLayout">
@@ -103,11 +114,12 @@ const Workers = () => {
             <motion.div 
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="py-32 text-center pro-card border-dashed bg-zinc-900/10"
+              className="py-32 text-center bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 border-dashed rounded-[2rem] shadow-xl relative overflow-hidden group"
             >
-               <Server size={32} className="text-zinc-800 mx-auto mb-4" />
-               <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-widest">No Active Reapers Identified</h3>
-               <p className="text-[10px] text-zinc-300 font-medium mt-1 uppercase tracking-tighter">Check cluster deployment status.</p>
+               <div className="absolute top-0 right-1/4 w-96 h-96 bg-zinc-500/5 blur-[100px] rounded-full pointer-events-none group-hover:bg-zinc-500/10 transition-colors duration-1000"></div>
+               <Server size={40} className="text-zinc-600 mx-auto mb-6 drop-shadow-md group-hover:scale-110 transition-transform" />
+               <h3 className="text-lg font-black text-zinc-400 uppercase tracking-tighter">No Active Reapers Identified</h3>
+               <p className="text-[11px] text-zinc-500 font-black mt-2 uppercase tracking-[0.2em]">Check cluster deployment status.</p>
             </motion.div>
           ) : (
             workers.map((worker) => (
@@ -116,56 +128,58 @@ const Workers = () => {
                 layout
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="pro-card p-6 hover:bg-zinc-900/80 transition-all group"
+                className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 rounded-[2rem] p-8 shadow-xl hover:bg-zinc-900/60 hover:border-zinc-700 transition-all group relative overflow-hidden"
               >
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                  <div className="flex items-center gap-5">
-                    <div className="w-10 h-10 rounded-lg bg-zinc-950 border border-zinc-800 flex items-center justify-center text-zinc-400 group-hover:border-brand-primary/40 transition-all">
-                       <Server size={20} />
+                <div className={`absolute top-0 right-0 w-64 h-64 ${worker.status === 'online' ? 'bg-emerald-500/5 group-hover:bg-emerald-500/10' : 'bg-red-500/5 group-hover:bg-red-500/10'} blur-[80px] rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none transition-colors duration-700`}></div>
+                
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+                  <div className="flex items-center gap-6">
+                    <div className="w-14 h-14 rounded-[1.5rem] bg-zinc-950 border border-zinc-800/80 flex items-center justify-center text-zinc-400 group-hover:scale-110 group-hover:border-indigo-400/50 group-hover:text-indigo-400 transition-all shadow-inner">
+                       <Server size={24} />
                     </div>
                     <div>
                       <div className="flex items-center gap-3 mb-1">
-                        <h2 className="text-lg font-bold text-zinc-100 tracking-tight uppercase">{worker.hostname}</h2>
-                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${
-                          worker.status === 'online' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-zinc-800 border-zinc-700 text-zinc-400'
+                        <h2 className="text-xl font-black text-white tracking-tighter uppercase drop-shadow-md">{worker.hostname}</h2>
+                        <span className={`px-3 py-1 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] border shadow-inner ${
+                          worker.status === 'online' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'
                         }`}>
                           {worker.status}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 text-[10px] font-mono text-zinc-400 uppercase tracking-wider opacity-60">
-                         <Command size={10} /> {worker.worker_id}
+                      <div className="flex items-center gap-2 text-[10px] font-mono text-zinc-500 uppercase tracking-widest font-bold">
+                         <Command size={12} className="text-zinc-600" /> {worker.worker_id}
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-8 ml-14 lg:ml-0">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
-                         <Activity size={10} className="text-zinc-300" /> Current Load
+                  <div className="flex items-center gap-10 ml-20 lg:ml-0 bg-zinc-950/50 p-4 rounded-2xl border border-zinc-800/50 shadow-inner">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2 text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em]">
+                         <Activity size={12} className="text-indigo-400" /> Current Load
                       </div>
-                      <p className="text-lg font-bold text-white tabular-nums flex items-baseline gap-1.5">
+                      <p className="text-2xl font-black text-white tabular-nums flex items-baseline gap-1.5 drop-shadow-md">
                         {worker.task_count}
-                        <span className="text-[10px] text-zinc-300 font-bold uppercase tracking-widest">threads</span>
+                        <span className="text-[10px] text-zinc-400 font-black uppercase tracking-[0.2em]">threads</span>
                       </p>
                     </div>
                     
-                    <div className="h-8 w-px bg-zinc-800/50"></div>
+                    <div className="h-10 w-px bg-zinc-800/80 shadow-[1px_0_0_rgba(255,255,255,0.02)]"></div>
 
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
-                         <Clock size={10} className="text-zinc-300" /> Heartbeat
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2 text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em]">
+                         <Clock size={12} className="text-purple-400" /> Heartbeat
                       </div>
-                      <p className="text-xs font-semibold text-zinc-300 tabular-nums">
+                      <p className="text-sm font-black text-zinc-300 tabular-nums tracking-wider drop-shadow-sm">
                         {new Date(worker.last_heartbeat).toLocaleTimeString()}
                       </p>
                     </div>
 
-                    <div className="hidden md:block">
-                       <div className="h-1.5 w-24 bg-zinc-800 rounded-full overflow-hidden border border-zinc-700/50">
+                    <div className="hidden md:block pl-6">
+                       <div className="h-2 w-32 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800 shadow-inner">
                           <motion.div 
                             initial={{ width: 0 }}
                             animate={{ width: `${Math.min(100, (worker.task_count / maxTasks) * 100)}%` }}
-                            className={`h-full transition-all duration-1000 ${(worker.task_count / maxTasks) > 0.8 ? 'bg-red-500' : 'bg-brand-primary'}`}
+                            className={`h-full transition-all duration-1000 shadow-[0_0_10px_currentColor] ${(worker.task_count / maxTasks) > 0.8 ? 'bg-red-500 text-red-500' : 'bg-indigo-500 text-indigo-500'}`}
                           />
                        </div>
                     </div>
@@ -175,6 +189,7 @@ const Workers = () => {
             ))
           )}
         </AnimatePresence>
+      </div>
       </div>
     </>
   );

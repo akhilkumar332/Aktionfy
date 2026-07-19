@@ -1,6 +1,6 @@
 # Aktionfy MCP Server
 
-A high-performance, durable AI workflow orchestration engine powered by the **Model Context Protocol (MCP)**. This system allows you to schedule, chain, and monitor complex AI tasks with distributed reliability, visual debugging, and intelligent agentic routing.
+A high-performance, durable AI workflow orchestration engine powered by the **Model Context Protocol (MCP)**. Aktionfy allows you to schedule, chain, and monitor complex AI tasks with distributed reliability, visual debugging, and intelligent agentic routing.
 
 ![Advanced Workflow Canvas](https://img.shields.io/badge/Status-Production--Ready-brightgreen)
 ![Go](https://img.shields.io/badge/Go-1.25+-00ADD8?logo=go)
@@ -11,11 +11,13 @@ A high-performance, durable AI workflow orchestration engine powered by the **Mo
 
 ## 🚀 Key Features
 
+*   **Premium Glassmorphic UI**: A stunning, modern "bento-box glassmorphism" interface across the entire dashboard (Workflow Canvas, Dashboards, Vault, Telemetry, and Settings).
 *   **Durable Orchestration**: Native support for Cron, Intervals, and One-off dates with PostgreSQL-backed atomicity (`FOR UPDATE SKIP LOCKED`).
-*   **Zero-Key Bridge**: Privacy-first architecture. Sampling happens exclusively via your connected local host (Claude, Cursor, Antigravity). No API keys are stored on our servers.
-*   **Agentic Workflow Engine**: Chain tasks with **Decision Nodes** (LLM branching), **Workflow Looping** (iterative execution), and persistent state (`{{state.VAR}}`).
+*   **Zero-Shot Decision Routing**: Intelligent LLM-based `decision_router` logic enables conditional workflow branching automatically without pre-defined keys.
+*   **Zero-Key Bridge**: Privacy-first architecture. AI sampling happens exclusively via your connected local host (Claude, Cursor, Antigravity). No API keys are stored on our servers.
+*   **Agentic Workflow Engine**: Chain tasks, loop logic, and natively resolve dependencies using persistent state (`{{state.VAR}}`).
 *   **Human-in-the-Loop**: Built-in safety valves that pause workflows and request manual intervention for ambiguous routing decisions.
-*   **Visual Time-Travel Debugger**: An interactive Workflow Canvas (React Flow) to visually "replay" past executions and inspect data piping.
+*   **Visual Time-Travel Debugger**: An interactive Workflow Canvas to visually replay past executions and inspect data piping.
 *   **Enterprise Observability**: Full OpenTelemetry integration. Track every execution step with sub-millisecond precision in Jaeger.
 
 ---
@@ -23,17 +25,17 @@ A high-performance, durable AI workflow orchestration engine powered by the **Mo
 ## 🏗 Architecture
 
 The system is designed for massive scale and absolute privacy:
-1.  **API Layer**: High-performance Go server handling web traffic and MCP tool calls.
+1.  **API Layer**: High-performance Go server handling web traffic, native integrations, and manual mini-app triggering via `/tasks/:id/execute`.
 2.  **Orchestrator**: Distributed scheduler that claims tasks via SQL locking and dispatches them via Redis Pub/Sub.
 3.  **Neural Bridge**: A secure SSE tunnel linking the remote engine to your local AI environment.
-4.  **Privacy Layer**: Leverages MCP Sampling to delegate AI execution to your local client, keeping your keys on your machine.
+4.  **Privacy Layer**: Leverages MCP Sampling to delegate AI execution to your local client, keeping your keys strictly on your machine.
 
 ---
 
 ## 🛠 Tech Stack
 
 *   **Backend**: Go (Echo), PostgreSQL (pgx), Redis
-*   **Frontend**: React (Vite), React Flow, Tailwind CSS
+*   **Frontend**: React (Vite), Framer Motion, Tailwind CSS (Glassmorphism design)
 *   **Bridge**: Node.js CLI (Zero-dependency AI execution)
 *   **Observability**: OpenTelemetry, Jaeger, Prometheus
 

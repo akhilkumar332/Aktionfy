@@ -385,108 +385,110 @@ const AdminUsers = () => {
 
   return (
     <>
-      <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <header className="mb-10 flex flex-col xl:flex-row xl:items-end justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-black text-white tracking-tight uppercase">Identity Nexus</h1>
-          <p className="text-zinc-400 text-xs font-semibold uppercase tracking-widest mt-1.5">Manage and audit neural actor privileges and access logs</p>
+          <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-zinc-500 tracking-tighter uppercase">Identity Nexus</h1>
+          <p className="text-zinc-400 text-[10px] font-black uppercase tracking-[0.2em] mt-2 ml-1">Manage and audit neural actor privileges and access logs</p>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-4 bg-zinc-900/50 p-2 rounded-[1.5rem] border border-zinc-800/60 shadow-inner w-fit">
           {/* Glassmorphic Tabs */}
-          <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl p-1 flex gap-1 backdrop-blur-md">
+          <div className="bg-zinc-950/80 border border-zinc-800/80 rounded-xl p-1.5 flex gap-1 shadow-inner">
             <button
               onClick={() => setActiveTab('identities')}
-              className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${
+              className={`px-5 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-[0.2em] transition-all ${
                 activeTab === 'identities' 
-                  ? 'bg-zinc-800 text-white shadow-lg border border-zinc-700/50' 
-                  : 'text-zinc-400 hover:text-white'
+                  ? 'bg-zinc-800 text-white shadow-md border border-zinc-700/50' 
+                  : 'text-zinc-500 hover:text-white hover:bg-zinc-900'
               }`}
             >
               Identities
             </button>
             <button
               onClick={() => setActiveTab('invitations')}
-              className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${
+              className={`px-5 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 ${
                 activeTab === 'invitations' 
-                  ? 'bg-zinc-800 text-white shadow-lg border border-zinc-700/50' 
-                  : 'text-zinc-400 hover:text-white'
+                  ? 'bg-zinc-800 text-white shadow-md border border-zinc-700/50' 
+                  : 'text-zinc-500 hover:text-white hover:bg-zinc-900'
               }`}
             >
-              <UserPlus size={13} />
+              <UserPlus size={14} className={activeTab === 'invitations' ? 'text-indigo-400' : ''} />
               Pre-Registrations
             </button>
             <button
               onClick={() => setActiveTab('audit')}
-              className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${
+              className={`px-5 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 ${
                 activeTab === 'audit' 
-                  ? 'bg-zinc-800 text-white shadow-lg border border-zinc-700/50' 
-                  : 'text-zinc-400 hover:text-white'
+                  ? 'bg-zinc-800 text-white shadow-md border border-zinc-700/50' 
+                  : 'text-zinc-500 hover:text-white hover:bg-zinc-900'
               }`}
             >
-              <Activity size={13} />
+              <Activity size={14} className={activeTab === 'audit' ? 'text-emerald-400' : ''} />
               System Audits
             </button>
             <button
               onClick={() => setActiveTab('history')}
-              className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${
+              className={`px-5 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 ${
                 activeTab === 'history' 
-                  ? 'bg-zinc-800 text-white shadow-lg border border-zinc-700/50' 
-                  : 'text-zinc-400 hover:text-white'
+                  ? 'bg-zinc-800 text-white shadow-md border border-zinc-700/50' 
+                  : 'text-zinc-500 hover:text-white hover:bg-zinc-900'
               }`}
             >
-              <History size={13} />
+              <History size={14} className={activeTab === 'history' ? 'text-blue-400' : ''} />
               Access Logs
             </button>
           </div>
 
-          {activeTab === 'identities' && (
-             <div className="relative group">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-300 group-focus-within:text-indigo-400 transition-colors" />
-                <input 
-                  type="text" 
-                  placeholder="Query ID or Email..." 
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pro-input pl-9 w-64 !py-2 !text-xs"
-                />
-             </div>
-          )}
+          <div className="flex items-center gap-3 pr-2">
+            {activeTab === 'identities' && (
+               <div className="relative group">
+                  <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-indigo-400 transition-colors" />
+                  <input 
+                    type="text" 
+                    placeholder="Query ID or Email..." 
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="bg-zinc-950 border border-zinc-800/80 text-[11px] text-zinc-300 pl-10 pr-4 py-3 rounded-xl focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 w-64 transition-all font-mono font-bold placeholder:text-zinc-700 shadow-inner"
+                  />
+               </div>
+            )}
 
-          {activeTab === 'audit' && (
-             <div className="relative group">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-300 group-focus-within:text-indigo-400 transition-colors" />
-                <input 
-                  type="text" 
-                  placeholder="Query Action, Target ID..." 
-                  value={auditSearch}
-                  onChange={(e) => setAuditSearch(e.target.value)}
-                  className="pro-input pl-9 w-64 !py-2 !text-xs"
-                />
-             </div>
-          )}
+            {activeTab === 'audit' && (
+               <div className="relative group">
+                  <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-emerald-400 transition-colors" />
+                  <input 
+                    type="text" 
+                    placeholder="Query Action, Target ID..." 
+                    value={auditSearch}
+                    onChange={(e) => setAuditSearch(e.target.value)}
+                    className="bg-zinc-950 border border-zinc-800/80 text-[11px] text-zinc-300 pl-10 pr-4 py-3 rounded-xl focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 w-64 transition-all font-mono font-bold placeholder:text-zinc-700 shadow-inner"
+                  />
+               </div>
+            )}
 
-          {activeTab === 'invitations' && (
-            <button
-              onClick={() => setIsInviteModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 border border-indigo-500/20 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-[0_0_15px_rgba(99,102,241,0.2)] hover:shadow-[0_0_20px_rgba(99,102,241,0.4)] cursor-pointer"
+            {activeTab === 'invitations' && (
+              <button
+                onClick={() => setIsInviteModalOpen(true)}
+                className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 border border-indigo-500/20 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl transition-all shadow-[0_0_15px_rgba(99,102,241,0.3)] hover:shadow-[0_0_25px_rgba(99,102,241,0.5)] cursor-pointer active:scale-95"
+              >
+                <UserPlus size={14} />
+                Pre-Register Identity
+              </button>
+            )}
+            
+            <button 
+              onClick={
+                activeTab === 'identities' ? () => fetchUsers(search) : 
+                activeTab === 'invitations' ? fetchInvitations : 
+                activeTab === 'audit' ? () => fetchAuditLogs(auditLimit) :
+                fetchLoginHistory
+              }
+              className="p-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-all shadow-md active:scale-95 border border-zinc-700 cursor-pointer"
+              aria-label="Refresh view"
             >
-              <UserPlus size={13} />
-              Pre-Register Identity
+              <RefreshCw size={16} className={(loading || historyLoading || invitationsLoading || auditLoading) ? 'animate-spin text-indigo-400' : ''} />
             </button>
-          )}
-          
-          <button 
-            onClick={
-              activeTab === 'identities' ? () => fetchUsers(search) : 
-              activeTab === 'invitations' ? fetchInvitations : 
-              activeTab === 'audit' ? () => fetchAuditLogs(auditLimit) :
-              fetchLoginHistory
-            }
-            className="p-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white transition-all pro-focus"
-            aria-label="Refresh view"
-          >
-            <RefreshCw size={16} className={(loading || historyLoading || invitationsLoading || auditLoading) ? 'animate-spin' : ''} />
-          </button>
+          </div>
         </div>
       </header>
 
@@ -497,8 +499,9 @@ const AdminUsers = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="pro-card overflow-hidden"
+            className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 rounded-[2rem] shadow-2xl overflow-hidden p-6 relative group"
           >
+            <div className="absolute top-0 right-1/4 w-96 h-96 bg-indigo-500/5 blur-[100px] rounded-full pointer-events-none group-hover:bg-indigo-500/10 transition-colors duration-1000"></div>
             <UserTable 
               users={users}
               loading={loading}
@@ -519,8 +522,9 @@ const AdminUsers = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="pro-card overflow-hidden"
+            className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 rounded-[2rem] shadow-2xl overflow-hidden p-6 relative group"
           >
+            <div className="absolute top-0 right-1/4 w-96 h-96 bg-purple-500/5 blur-[100px] rounded-full pointer-events-none group-hover:bg-purple-500/10 transition-colors duration-1000"></div>
             <PreRegistrations 
               invitations={invitations}
               invitationsLoading={invitationsLoading}
@@ -554,8 +558,9 @@ const AdminUsers = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="pro-card overflow-hidden"
+            className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 rounded-[2rem] shadow-2xl overflow-hidden p-6 relative group"
           >
+            <div className="absolute top-0 right-1/4 w-96 h-96 bg-blue-500/5 blur-[100px] rounded-full pointer-events-none group-hover:bg-blue-500/10 transition-colors duration-1000"></div>
             <AccessLogsViewer 
               loginHistory={loginHistory}
               historyLoading={historyLoading}
