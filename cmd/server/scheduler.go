@@ -353,7 +353,7 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 		if t.MissedTaskPolicy.String == PolicyRunImmediate {
 			if err := queries.UpdateTaskNextRun(workerCtx, db.UpdateTaskNextRunParams{
 				Status:  pgtype.Text{String: StatusActive, Valid: true},
-				NextRun: pgtype.Timestamptz{Time: time.Now().UTC().Add(1 * time.Minute), Valid: true},
+				NextRun: pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},
 				ID:      t.ID,
 				UserID:  t.UserID,
 			}); err != nil {
@@ -1403,7 +1403,7 @@ func completeTask(ctx context.Context, userID string, taskID string, nextRun tim
 
 		if err := queries.UpdateTaskNextRun(ctx, db.UpdateTaskNextRunParams{
 			Status:  pgtype.Text{String: StatusActive, Valid: true},
-			NextRun: pgtype.Timestamptz{Time: time.Now().UTC().Add(1 * time.Minute), Valid: true},
+			NextRun: pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true},
 			ID:      t.ID,
 			UserID:  t.UserID,
 		}); err != nil {
