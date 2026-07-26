@@ -443,7 +443,7 @@ const Workspaces = () => {
         {loading ? (
           <div className="py-40 flex flex-col items-center justify-center gap-5 opacity-60">
             <RefreshCw className="animate-spin text-indigo-500" size={40} />
-            <p className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em] animate-pulse">Mapping Topology...</p>
+            <p className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em] animate-pulse">Loading Workspace...</p>
           </div>
         ) : workspaces.length === 0 ? (
           <div className="py-32 flex flex-col items-center justify-center text-center gap-5 bg-zinc-900/20 border border-dashed border-zinc-800/60 rounded-3xl opacity-60">

@@ -397,7 +397,7 @@ const Templates = () => {
               ) : templates.length === 0 ? (
                 <div className="py-32 flex flex-col items-center justify-center text-center gap-5 bg-zinc-900/20 border border-dashed border-zinc-800/60 rounded-3xl opacity-60">
                    <Layout size={48} className="text-zinc-700" />
-                   <span className="text-[11px] text-zinc-400 font-black uppercase tracking-[0.2em] text-center">Registry synchronized.<br/>No blueprints matching query.</span>
+                   <span className="text-[11px] text-zinc-400 font-black uppercase tracking-[0.2em] text-center">Data synchronized.<br/>No blueprints matching query.</span>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

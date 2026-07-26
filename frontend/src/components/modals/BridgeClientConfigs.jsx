@@ -55,7 +55,7 @@ export const LobeChatConfig = ({ handleCopy }) => (
             }, null, 2))}
             className="w-full py-2 bg-emerald-600/10 border border-emerald-500/20 text-emerald-400 rounded-md text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600/20 transition-all"
           >
-            Copy LobeChat Manifest
+            Copy LobeChat Configuration
           </button>
         </li>
       </ul>

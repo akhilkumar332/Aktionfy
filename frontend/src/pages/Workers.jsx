@@ -77,7 +77,7 @@ const Workers = () => {
                </div>
                <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em]">Infrastructure</span>
             </motion.div>
-            <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-zinc-500 tracking-tighter uppercase">Worker Registry</h1>
+            <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-zinc-500 tracking-tighter uppercase">Worker List</h1>
             <p className="text-zinc-400 text-[10px] font-black uppercase tracking-[0.2em] mt-3 ml-1">Operational status of distributed execution nodes.</p>
           </div>
           
@@ -91,7 +91,7 @@ const Workers = () => {
              <button 
                onClick={fetchWorkers}
                className="p-3.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-all shadow-md active:scale-95 border border-zinc-700 cursor-pointer"
-               aria-label="Refresh registry"
+               aria-label="Refresh list"
              >
                <RefreshCw size={18} className={refreshing ? 'animate-spin text-indigo-400' : ''} />
              </button>

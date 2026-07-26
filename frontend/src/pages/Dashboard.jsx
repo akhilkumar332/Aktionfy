@@ -396,7 +396,7 @@ const Dashboard = () => {
               </div>
               <div className="flex items-center gap-2 px-4 py-2 bg-zinc-950/80 border border-zinc-800/80 rounded-xl">
                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                 <span className="text-[9px] font-black text-zinc-400 uppercase tracking-[0.1em]">Live Telemetry</span>
+                 <span className="text-[9px] font-black text-zinc-400 uppercase tracking-[0.1em]">Live Analytics</span>
               </div>
            </div>
 
@@ -586,7 +586,7 @@ const Dashboard = () => {
              </div>
              <div>
                 <h3 className="text-lg font-black text-white uppercase tracking-widest">Live Activity Feed</h3>
-                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em] mt-1">Real-time telemetry stream</p>
+                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em] mt-1">Real-time analytics stream</p>
              </div>
           </div>
           <span className="px-4 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-[9px] font-black text-zinc-400 uppercase tracking-widest">Last 5 Events</span>

@@ -33,7 +33,7 @@ const StepCompute = ({ formData, updateFormData, showVariableSelector, setShowVa
 
       <div className="space-y-4">
         <div className="flex items-center justify-between ml-1">
-          <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Logic Manifest</label>
+          <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Task Logic</label>
           {formData.task_type !== 'swarm_router' && (
             <button 
               type="button"

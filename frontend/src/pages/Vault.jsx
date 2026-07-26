@@ -277,7 +277,7 @@ const Vault = () => {
                   <td colSpan="4" className="px-8 py-32 text-center bg-zinc-950/20">
                      <div className="flex flex-col items-center gap-5 opacity-40">
                         <Key size={48} className="text-zinc-500" />
-                        <span className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em] text-center">Vault registry void.<br/>No encrypted identities identified.</span>
+                        <span className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em] text-center">Vault is empty.<br/>No encrypted identities identified.</span>
                      </div>
                   </td>
                 </tr>

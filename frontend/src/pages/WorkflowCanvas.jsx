@@ -1026,7 +1026,7 @@ const WorkflowCanvas = () => {
                 <div className="p-6 border-b border-zinc-800/50 flex items-center justify-between bg-zinc-900/30 shrink-0">
                   <div>
                     <h3 className="text-xl font-bold text-white tracking-tight uppercase">Node Inspector</h3>
-                    <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-1">Core Logic & Telemetry</p>
+                    <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-1">Core Logic & Analytics</p>
                   </div>
                   <div className="flex items-center gap-3">
                     <button 
@@ -1100,7 +1100,7 @@ const WorkflowCanvas = () => {
                          <div className="space-y-8 flex-1 flex flex-col min-h-0">
                            <div className="bg-zinc-900 border border-zinc-800/50 rounded-2xl p-8 space-y-8 shrink-0">
                              <div className="flex items-center justify-between">
-                               <div className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400">Telemetry Deck</div>
+                               <div className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400">Analytics Deck</div>
                                <div className="text-[10px] font-black font-mono text-zinc-400 opacity-60">FRM_{currentTraceIndex >= 0 ? currentTraceIndex + 1 : 0} // TOTAL_{traces.length}</div>
                              </div>
                              
@@ -1208,7 +1208,7 @@ const WorkflowCanvas = () => {
                            <div className="w-20 h-20 bg-zinc-900 border border-zinc-800/50 rounded-full flex items-center justify-center">
                               <Activity size={32} className="text-zinc-700 animate-pulse" />
                            </div>
-                           <div className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-300 max-w-xs leading-relaxed">No telemetry data recorded for this execution cycle.</div>
+                           <div className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-300 max-w-xs leading-relaxed">No analytics data recorded for this execution cycle.</div>
                          </div>
                        )}
                      </div>

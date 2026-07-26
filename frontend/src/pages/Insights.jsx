@@ -118,7 +118,7 @@ const Insights = () => {
           >
             System Insights
           </motion.h1>
-          <p className="text-zinc-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-3 ml-1">Global Performance Telemetry & Trends</p>
+          <p className="text-zinc-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-3 ml-1">Global Performance Analytics & Trends</p>
         </div>
         
         <div className="flex items-center gap-4 bg-zinc-900/50 p-2 rounded-2xl border border-zinc-800/60 shadow-inner">
@@ -380,7 +380,7 @@ const Insights = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-4 text-blue-400 font-black uppercase tracking-[0.2em] text-[11px] bg-zinc-950 px-8 py-4 rounded-2xl border border-zinc-800/80 group-hover:border-blue-500/50 group-hover:bg-blue-500/10 transition-all shadow-inner relative z-10">
-                  Registry Terminal <ArrowRight size={18} className="group-hover:translate-x-2 transition-transform" />
+                  Admin Terminal <ArrowRight size={18} className="group-hover:translate-x-2 transition-transform" />
                 </div>
               </motion.div>
             </div>

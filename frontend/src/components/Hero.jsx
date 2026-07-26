@@ -98,7 +98,7 @@ const Hero = () => {
         </motion.div>
       </div>
 
-      {/* Real-time Telemetry Bar */}
+      {/* Real-time Analytics Bar */}
       <div className="absolute bottom-12 left-0 right-0 z-30">
         <div className="container mx-auto px-6">
           <div className="flex flex-wrap justify-center items-center gap-12 md:gap-24">
@@ -111,7 +111,7 @@ const Hero = () => {
              </div>
              <div className="h-4 w-px bg-zinc-900 hidden md:block"></div>
              <div className="flex items-center gap-4 text-[10px] font-black tracking-[0.3em] text-zinc-300 uppercase group hover:text-white transition-colors">
-               <Activity size={16} className="text-brand-primary group-hover:scale-125 transition-transform" /> Real-time Telemetry
+               <Activity size={16} className="text-brand-primary group-hover:scale-125 transition-transform" /> Real-time Analytics
              </div>
           </div>
         </div>

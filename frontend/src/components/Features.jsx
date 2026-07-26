@@ -36,7 +36,7 @@ const Features = () => {
       border: 'border-purple-500/20'
     },
     {
-      title: 'Real-time Telemetry',
+      title: 'Real-time Analytics',
       description: 'Fully manage tasks, secrets, and webhooks via a beautiful GUI. Monitor AI responses in real-time with high-fidelity operational streams.',
       icon: Zap,
       color: 'text-brand-primary',

@@ -631,7 +631,7 @@ const Tasks = () => {
             {loading && tasks.length === 0 ? (
               <div className="col-span-full py-32 flex flex-col items-center gap-4">
                  <RefreshCw className="w-8 h-8 text-indigo-500 animate-spin" />
-                 <span className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em]">Querying Registry...</span>
+                 <span className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em]">Querying Data...</span>
               </div>
             ) : tasks.length === 0 ? (
               <div className="col-span-full py-32 flex flex-col items-center gap-5 opacity-40">

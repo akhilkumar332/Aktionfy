@@ -23,7 +23,7 @@ const Overview = () => (
           <li><strong>Prompt Injection:</strong> Dynamic resolution of <code>{`{{state.VARIABLE}}`}</code> and parent context injection.</li>
           <li><strong>Workflow Looping:</strong> Iterative execution support based on intelligent terminal conditions.</li>
           <li><strong>Durable State:</strong> Tasks survive server restarts and client disconnections.</li>
-          <li><strong>Live Telemetry:</strong> Real-time status updates and log streaming powered by Redis.</li>
+          <li><strong>Live Analytics:</strong> Real-time status updates and log streaming powered by Redis.</li>
         </ul>
       </section>
 
@@ -468,7 +468,7 @@ const WorkerArchitecture = () => (
         <h2 className="text-2xl font-bold text-zinc-100 mb-4">Worker Heartbeats</h2>
         <p>
           Each execution node maintains a persistent heartbeat. Every 30 seconds, the node updates its 
-          status in the central registry. If a node fails to heartbeat for more than 2 minutes, the 
+          status in the central database. If a node fails to heartbeat for more than 2 minutes, the 
           system automatically flags it as offline and reassigns its pending workload.
         </p>
       </section>

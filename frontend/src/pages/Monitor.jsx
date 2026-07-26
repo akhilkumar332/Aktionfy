@@ -75,7 +75,7 @@ const LogsView = ({ logs, logSearch, setLogSearch, fetchData, refreshing, logLim
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-indigo-400 transition-colors" />
               <input 
                 type="text" 
-                placeholder="grep telemetry..." 
+                placeholder="search analytics..." 
                 value={logSearch}
                 onChange={(e) => setLogSearch(e.target.value)}
                 className="bg-zinc-950 border border-zinc-800 text-[11px] text-zinc-300 pl-9 pr-4 py-2.5 rounded-xl focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 w-56 transition-all font-mono font-bold placeholder:text-zinc-700 shadow-inner"
@@ -130,7 +130,7 @@ const LogsView = ({ logs, logSearch, setLogSearch, fetchData, refreshing, logLim
           {filteredLogs.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center gap-4 opacity-30">
                <ShieldAlert size={40} className="text-zinc-400" />
-               <span className="text-[11px] font-black text-zinc-500 uppercase tracking-[0.2em] animate-pulse">Awaiting telemetry signal...</span>
+               <span className="text-[11px] font-black text-zinc-500 uppercase tracking-[0.2em] animate-pulse">Awaiting analytics signal...</span>
             </div>
           ) : (
             <div className="space-y-1.5">
@@ -311,7 +311,7 @@ const Monitor = () => {
             transition={{ delay: 0.1 }}
             className="text-zinc-400 text-xs font-bold mt-2 uppercase tracking-[0.2em]"
           >
-            Real-time infrastructure telemetry and security audit stream
+            Real-time infrastructure analytics and security audit stream
           </motion.p>
         </div>
         
@@ -324,7 +324,7 @@ const Monitor = () => {
              onClick={() => fetchData(true)}
              disabled={refreshing}
              className="p-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-all shadow-md active:scale-95 border border-zinc-700 disabled:opacity-50"
-             aria-label="Refresh telemetry"
+             aria-label="Refresh analytics"
            >
              <RefreshCw size={16} className={refreshing ? 'animate-spin text-indigo-400' : ''} />
            </button>

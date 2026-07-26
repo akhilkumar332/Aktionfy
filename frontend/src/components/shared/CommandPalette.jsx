@@ -14,9 +14,9 @@ const CommandPalette = ({ isOpen, onClose }) => {
   const inputRef = useRef(null);
 
   const quickJumps = [
-    { type: 'sector', name: 'Neural Dashboard', id: '/dashboard', icon: Layout, subtext: 'Overview of system telemetry' },
+    { type: 'sector', name: 'Neural Dashboard', id: '/dashboard', icon: Layout, subtext: 'Overview of system analytics' },
     { type: 'sector', name: 'Workflow Canvas', id: '/canvas', icon: Layers, subtext: 'Visual orchestration designer' },
-    { type: 'sector', name: 'Task Registry', id: '/tasks', icon: Activity, subtext: 'Management of all active nodes' },
+    { type: 'sector', name: 'Task List', id: '/tasks', icon: Activity, subtext: 'Management of all active nodes' },
     { type: 'sector', name: 'Intelligence Marketplace', id: '/templates', icon: Sparkles, subtext: 'Browse and deploy blueprints' },
     { type: 'sector', name: 'Secret Vault', id: '/vault', icon: Shield, subtext: 'Manage encrypted credentials' },
   ];

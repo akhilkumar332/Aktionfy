@@ -17,7 +17,7 @@ const Installation = () => {
   const steps = [
     {
       title: 'Provision Workspace',
-      description: 'Initialize a secure neural sector and generate your cryptographically signed access key.',
+      description: 'Initialize a secure environment and generate your API password.',
       icon: Layout,
     },
     {

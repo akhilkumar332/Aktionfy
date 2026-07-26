@@ -61,12 +61,12 @@ const AdminSEO = () => {
     try {
       await axios.post('/api/v1/admin/seo', data);
       if (isMounted.current) {
-        setMessage({ type: 'success', text: 'Identity manifest updated and broadcasted.' });
+        setMessage({ type: 'success', text: 'Account settings updated and broadcasted.' });
       }
     } catch (err) {
       if (isMounted.current) {
         notify('ERROR', 'Failed to save SEO', err.response?.data?.error || err.message);
-        setMessage({ type: 'error', text: 'Failed to broadcast manifest updates.' });
+        setMessage({ type: 'error', text: 'Failed to broadcast settings updates.' });
       }
     } finally {
       if (isMounted.current) {
@@ -111,7 +111,7 @@ const AdminSEO = () => {
               className="py-40 flex flex-col items-center justify-center gap-6"
             >
               <RefreshCw className="animate-spin text-brand-primary" size={48} />
-              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-400 animate-pulse">Syncing Broadcast Manifest...</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-400 animate-pulse">Syncing Broadcast Settings...</p>
             </motion.div>
           ) : (
             <motion.div 
@@ -140,7 +140,7 @@ const AdminSEO = () => {
                       <Layout size={24} />
                    </div>
                    <div>
-                      <h2 className="text-2xl font-black text-white uppercase tracking-tighter drop-shadow-md">Manifest Logic</h2>
+                      <h2 className="text-2xl font-black text-white uppercase tracking-tighter drop-shadow-md">Settings Logic</h2>
                       <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] mt-1">Metadata Calibration</p>
                    </div>
                 </div>
@@ -185,7 +185,7 @@ const AdminSEO = () => {
                     className=" bg-indigo-600 hover:bg-indigo-500 text-white px-12 py-5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-[0_0_20px_rgba(99,102,241,0.3)] hover:shadow-[0_0_30px_rgba(99,102,241,0.5)] active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50 cursor-pointer w-fit"
                   >
                     {saving ? <RefreshCw size={16} className="animate-spin" /> : <Zap size={16} />}
-                    Broadcast Manifest
+                    Broadcast Settings
                   </button>
                 </div>
               </form>
