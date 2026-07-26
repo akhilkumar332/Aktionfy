@@ -43,7 +43,7 @@ const Webhooks = () => {
     try {
       const res = await axios.post(`/api/v1/webhooks/${webhookId}/test`);
       if (res.data.success) {
-        notify('SUCCESS', 'Test payload delivered successfully!');
+        notify('SUCCESS', 'Test data delivered successfully!');
         if (selectedWebhook?.id === webhookId) {
           fetchDeliveries(webhookId);
         }
@@ -415,7 +415,7 @@ const Webhooks = () => {
 
               <div className="space-y-6">
                 <p className="text-sm text-zinc-300 leading-relaxed">
-                  The following secret is used to sign outbound payloads. Store it securely; it will not be displayed again.
+                  The following secret is used to sign outbound data. Store it securely; it will not be displayed again.
                 </p>
 
                 <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 flex items-center justify-between group shadow-inner">
@@ -537,7 +537,7 @@ const Webhooks = () => {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <div className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Request Payload Preview</div>
+                            <div className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Request Data Preview</div>
                             <pre className="p-4 bg-black/40 border border-zinc-800 rounded-lg text-[10px] font-mono text-zinc-500 overflow-x-auto max-h-40 custom-scrollbar leading-relaxed italic">
                               {JSON.stringify({ event: delivery.event_type, timestamp: delivery.created_at, webhook_id: delivery.webhook_id }, null, 2)}
                             </pre>

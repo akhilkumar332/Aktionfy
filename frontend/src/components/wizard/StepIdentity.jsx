@@ -12,7 +12,7 @@ const StepIdentity = ({ formData, updateFormData, workspaces, loadingWorkspaces 
       className="space-y-8"
     >
       <div className="space-y-3">
-        <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Node Designation</label>
+        <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Task Name</label>
         <input 
           type="text"
           value={formData.name}

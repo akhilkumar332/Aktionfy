@@ -243,7 +243,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
         <div className="p-8 border-b border-zinc-800/50 flex items-center justify-between bg-zinc-900/30 relative z-10">
           <div>
             <h2 className="text-2xl font-bold text-white tracking-tight uppercase">
-              {initialData?.id ? 'Calibrate Node' : 'Orchestration Wizard'}
+              {initialData?.id ? 'Edit Task' : 'Task Wizard'}
             </h2>
             <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">PROTOCOL: TASK_INIT_V3</p>
           </div>

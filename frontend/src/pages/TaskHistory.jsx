@@ -182,13 +182,13 @@ const TaskHistory = () => {
               className="px-6 py-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-all shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_30px_rgba(59,130,246,0.5)] active:scale-95 flex items-center gap-3 disabled:opacity-50 cursor-pointer"
             >
               {triggering ? <RefreshCw className="animate-spin" size={16} /> : <Play size={16} />}
-              <span className="text-[10px] font-black uppercase tracking-[0.2em]">Execute Node Now</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em]">Execute Task Now</span>
             </button>
             
             <div className="flex items-center gap-6 bg-zinc-950 px-6 py-3.5 rounded-xl border border-zinc-800/80 shadow-inner relative overflow-hidden group">
                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none group-hover:bg-blue-500/20 transition-colors duration-700"></div>
                <div className="flex flex-col relative z-10">
-                  <span className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em]">Node ID</span>
+                  <span className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em]">Task ID</span>
                   <span className="text-xs font-black text-white font-mono uppercase tracking-widest drop-shadow-sm">{id?.substring(0, 13)}</span>
                </div>
             </div>
@@ -324,7 +324,7 @@ const TaskHistory = () => {
             </div>
             <div>
               <p className="text-white font-black text-xl uppercase tracking-tighter mb-2">No State Changes Detected</p>
-              <p className="text-zinc-400 text-xs font-bold uppercase tracking-widest max-w-xs leading-relaxed opacity-60">This orchestration node is operating on its baseline configuration.</p>
+              <p className="text-zinc-400 text-xs font-bold uppercase tracking-widest max-w-xs leading-relaxed opacity-60">This automation task is operating on its baseline configuration.</p>
             </div>
           </motion.div>
         ) : (

@@ -269,7 +269,7 @@ const Dashboard = () => {
             transition={{ delay: 0.1 }}
             className="text-zinc-400 text-xs font-bold mt-2 uppercase tracking-[0.2em]"
           >
-            Global orchestration overview & system health
+            Global automation overview & system health
           </motion.p>
         </div>
         
@@ -376,7 +376,7 @@ const Dashboard = () => {
                 )}
               </div>
               <p className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em]">Active Task Streams</p>
-              <p className="text-xs font-medium text-zinc-500 mt-4 leading-relaxed">Persistent orchestration threads executing across the cluster.</p>
+              <p className="text-xs font-medium text-zinc-500 mt-4 leading-relaxed">Persistent automation tasks executing across the cluster.</p>
            </div>
         </Link>
 

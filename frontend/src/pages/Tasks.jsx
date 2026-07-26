@@ -106,7 +106,7 @@ const Tasks = () => {
     try {
       if (action === 'delete') {
         await axios.delete(`/api/v1/tasks/${taskId}`);
-        notify('SUCCESS', 'Task node terminated');
+        notify('SUCCESS', 'Task terminated');
       } else {
         await axios.post(`/api/v1/tasks/${taskId}/${action}`);
         notify('SUCCESS', `Node ${action}d successfully`);
@@ -137,7 +137,7 @@ const Tasks = () => {
         }
       }
       if (action === 'delete') {
-        notify('SUCCESS', `Terminated ${ids.length} task nodes`);
+        notify('SUCCESS', `Terminated ${ids.length} tasks`);
       } else {
         notify('SUCCESS', `Successfully ${action}d ${ids.length} nodes`);
       }
@@ -287,7 +287,7 @@ const Tasks = () => {
               }}
               className="flex items-center gap-2 px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-[10px] font-black uppercase tracking-[0.1em] transition-all shadow-[0_0_20px_rgba(79,70,229,0.3)]"
             >
-              <Plus size={14} /> Initialize Node
+              <Plus size={14} /> Create Task
             </button>
           </div>
         </motion.div>
@@ -396,7 +396,7 @@ const Tasks = () => {
             className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-zinc-950/95 border border-indigo-500/40 backdrop-blur-3xl px-8 py-5 rounded-[2rem] shadow-[0_30px_100px_rgba(0,0,0,0.8)] flex items-center gap-8 ring-1 ring-white/5 pointer-events-auto"
           >
             <span className="text-[11px] font-black uppercase text-indigo-400 tracking-[0.2em] whitespace-nowrap">
-              {selectedTasks.size} Nodes Linked
+              {selectedTasks.size} Tasks Linked
             </span>
             <div className="h-8 w-px bg-zinc-800/80"></div>
             <div className="flex items-center gap-3">
@@ -404,7 +404,7 @@ const Tasks = () => {
                 onClick={() => handleBulkAction('resume')}
                 className="px-6 py-2.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-white hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] rounded-xl text-[10px] uppercase font-black tracking-widest transition-all whitespace-nowrap"
               >
-                Thaw Nodes
+                Resume Tasks
               </button>
               <button 
                 onClick={() => handleBulkAction('pause')}
@@ -464,7 +464,7 @@ const Tasks = () => {
                     <td colSpan="6" className="px-6 py-32 text-center">
                        <div className="flex flex-col items-center gap-5 opacity-40">
                           <Activity size={40} className="text-zinc-400 animate-pulse" />
-                          <span className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500">No active orchestration streams identified.<br/>Initialize your first node to begin.</span>
+                          <span className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500">No active automation tasks identified.<br/>Initialize your first node to begin.</span>
                        </div>
                     </td>
                   </tr>
@@ -552,7 +552,7 @@ const Tasks = () => {
                           <button 
                              onClick={() => setTraceTask(task)}
                              className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-indigo-400 hover:border-indigo-500/50 transition-all shadow-lg"
-                             title="Execution Traces"
+                             title="Execution Logs"
                           >
                              <Terminal size={16} />
                           </button>
@@ -580,7 +580,7 @@ const Tasks = () => {
                           <button 
                              onClick={() => handleEdit(task)}
                              className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white transition-all shadow-lg"
-                             title="Calibrate Node"
+                             title="Edit Task"
                           >
                              <Settings size={16} />
                           </button>
@@ -636,7 +636,7 @@ const Tasks = () => {
             ) : tasks.length === 0 ? (
               <div className="col-span-full py-32 flex flex-col items-center gap-5 opacity-40">
                  <Activity size={40} className="text-zinc-400 animate-pulse" />
-                 <span className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500 text-center">No active orchestration streams identified.<br/>Initialize your first node to begin.</span>
+                 <span className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500 text-center">No active automation tasks identified.<br/>Initialize your first node to begin.</span>
               </div>
             ) : paginatedTasks.length === 0 ? (
               <div className="col-span-full py-24 text-center">

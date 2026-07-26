@@ -12,7 +12,7 @@ const StepDeploy = ({ formData, error }) => {
       <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-8 space-y-8 shadow-inner relative overflow-hidden">
          <div className="grid grid-cols-2 gap-8 relative z-10">
             <div className="space-y-1">
-              <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">Node ID</span>
+              <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">Task ID</span>
               <p className="text-sm font-bold text-white tracking-tight truncate uppercase">{formData.name || 'UNNAMED_STREAM'}</p>
             </div>
             <div className="space-y-1">

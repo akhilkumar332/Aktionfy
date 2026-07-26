@@ -101,7 +101,7 @@ const Features = () => {
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-zinc-400 to-zinc-700">Decentralized Intelligence.</span>
           </h2>
           <p className="text-xl md:text-2xl text-zinc-400 font-bold max-w-3xl mx-auto leading-relaxed tracking-tight">
-            Industrial-grade orchestration engineered for developers who demand absolute reliability from their AI automation layer.
+            Industrial-grade automation engineered for developers who demand absolute reliability from their AI automation layer.
           </p>
         </motion.div>
 

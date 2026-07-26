@@ -172,7 +172,7 @@ const Vault = () => {
               <div className="flex items-start justify-between mb-8">
                 <div>
                   <h2 className="text-xl font-black text-white uppercase tracking-tight">
-                    {editMode ? "Modify Payload" : "Deposit Identity"}
+                    {editMode ? "Modify Data" : "Deposit Identity"}
                   </h2>
                   <p className="text-[10px] text-indigo-400 font-black uppercase tracking-[0.2em] mt-1">
                     {editMode ? "PROTOCOL: SECURE_VAULT_UPDATE" : "PROTOCOL: SECURE_VAULT_DEPOSIT"}
@@ -205,13 +205,13 @@ const Vault = () => {
                   />
                 </div>
                 <div className="space-y-3 relative group">
-                  <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ml-2">Sensitive Payload</label>
+                  <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ml-2">Sensitive Data</label>
                   <div className="relative">
                       <input 
                       type={showSecretValue ? "text" : "password"}
                       value={newSecret.value}
                       onChange={(e) => setNewSecret({...newSecret, value: e.target.value})}
-                      placeholder="Raw 256-bit payload..."
+                      placeholder="Raw data..."
                       className="w-full bg-zinc-900/80 border border-zinc-800 text-white px-5 py-4 pr-12 rounded-2xl text-sm font-mono placeholder:text-zinc-700 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition-all shadow-inner"
                       required
                     />
@@ -345,7 +345,7 @@ const Vault = () => {
                               <button 
                                 onClick={() => handleEditClick(secret)}
                                 className="p-2.5 bg-zinc-900/80 border border-zinc-800/80 rounded-xl text-zinc-400 hover:text-amber-400 hover:border-amber-500/30 transition-all shadow-md"
-                                title="Modify Payload"
+                                title="Modify Data"
                               >
                                 <Edit2 size={16} />
                               </button>

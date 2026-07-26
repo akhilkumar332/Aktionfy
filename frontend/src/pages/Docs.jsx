@@ -6,7 +6,7 @@ const Overview = () => (
     <div className="space-y-12">
       <header>
         <h1 className="text-4xl font-extrabold text-zinc-100 mb-4 tracking-tighter">Overview</h1>
-        <p className="text-xl text-zinc-300 font-medium text-balance">Aktionfy is a production-grade orchestration engine that brings persistence and reliability to the Model Context Protocol ecosystem.</p>
+        <p className="text-xl text-zinc-300 font-medium text-balance">Aktionfy is a production-grade automation engine that brings persistence and reliability to the Model Context Protocol ecosystem.</p>
       </header>
 
       <section>
@@ -149,7 +149,7 @@ const InstallationDocs = () => (
               <tr>
                 <td className="py-3 px-2 font-mono text-brand-primary">REDIS_URL</td>
                 <td className="py-3 px-2 font-mono">localhost:6379</td>
-                <td className="py-3 px-2 text-zinc-300">Redis orchestration and Pub/Sub</td>
+                <td className="py-3 px-2 text-zinc-300">Redis automation and Pub/Sub</td>
               </tr>
               <tr>
                 <td className="py-3 px-2 font-mono text-brand-primary">ENCRYPTION_KEY</td>

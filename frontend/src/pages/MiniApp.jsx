@@ -112,7 +112,7 @@ export default function MiniApp() {
 
             <form onSubmit={handleExecute} className="space-y-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Input Payload (JSON or Text)</label>
+                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Input Data (JSON or Text)</label>
                 <textarea 
                   value={inputs}
                   onChange={(e) => setInputs(e.target.value)}

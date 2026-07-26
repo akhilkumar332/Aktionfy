@@ -76,7 +76,7 @@ const Hero = () => {
               to="/signup" 
               className="group relative px-14 py-6 text-white font-black uppercase tracking-[0.2em] text-xs bg-brand-primary rounded-xl hover:bg-violet-500 transition-all duration-500 shadow-[0_0_40px_rgba(139,92,246,0.3)] hover:shadow-[0_0_60px_rgba(139,92,246,0.6)] flex items-center gap-4 active:scale-95 overflow-hidden"
             >
-              Initialize Node <ArrowRight size={18} className="group-hover:translate-x-2 transition-transform duration-300" />
+              Create Task <ArrowRight size={18} className="group-hover:translate-x-2 transition-transform duration-300" />
             </Link>
             <a 
               href="#installation" 

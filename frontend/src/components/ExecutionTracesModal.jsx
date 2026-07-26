@@ -159,7 +159,7 @@ const ExecutionTracesModal = ({ isOpen, onClose, taskId, taskName }) => {
                     <Activity size={20} />
                  </div>
                  <div>
-                    <h3 className="text-xl font-bold text-white tracking-tight uppercase">Execution Traces</h3>
+                    <h3 className="text-xl font-bold text-white tracking-tight uppercase">Execution Logs</h3>
                     <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{taskName || 'NODE_' + taskId?.substring(0, 8)}</p>
                  </div>
               </div>
@@ -178,7 +178,7 @@ const ExecutionTracesModal = ({ isOpen, onClose, taskId, taskName }) => {
                     {loadingExecutions ? (
                       <div className="p-4 text-center animate-pulse text-[9px] text-zinc-500 uppercase font-bold">Syncing...</div>
                     ) : executions.length === 0 ? (
-                      <div className="p-4 text-center text-[9px] text-zinc-600 uppercase font-bold italic">No traces found</div>
+                      <div className="p-4 text-center text-[9px] text-zinc-600 uppercase font-bold italic">No logs found</div>
                     ) : (
                       executions.map((exec, idx) => (
                         <button
@@ -204,7 +204,7 @@ const ExecutionTracesModal = ({ isOpen, onClose, taskId, taskName }) => {
                  </div>
               </div>
 
-              {/* Trace Details */}
+              {/* Log Details */}
               <div className="flex-1 flex flex-col bg-zinc-950 relative">
                  {loadingTraces && (
                    <div className="absolute inset-0 bg-zinc-950/50 backdrop-blur-[2px] z-20 flex items-center justify-center">

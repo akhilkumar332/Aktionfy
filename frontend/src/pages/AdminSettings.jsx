@@ -119,7 +119,7 @@ const AdminSettings = () => {
     try {
       const res = await axios.post('/api/v1/admin/workers/prune');
       if (res.data.success) {
-        notify('SUCCESS', `Cleanup complete. ${res.data.data.pruned_count} zombie nodes terminated.`);
+        notify('SUCCESS', `Cleanup complete. ${res.data.data.pruned_count} stuck tasks terminated.`);
       }
     } catch (err) {
       notify('ERROR', 'Failed to execute node termination protocol', err.response?.data?.error || err.message);
@@ -200,7 +200,7 @@ const AdminSettings = () => {
 
                 <div className="space-y-10">
                   <div className="space-y-4">
-                    <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.3em] ml-2">Node Pruning Lease (Days)</label>
+                    <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.3em] ml-2">Task Cleanup Lease (Days)</label>
                     <input 
                       type="number"
                       min="1"
@@ -316,7 +316,7 @@ const AdminSettings = () => {
                       <Trash2 size={32} />
                     </div>
                     <div>
-                      <h2 className="text-2xl font-black text-white uppercase tracking-tighter mb-2 text-red-500/90 drop-shadow-md">Manual Node Cleanup</h2>
+                      <h2 className="text-2xl font-black text-white uppercase tracking-tighter mb-2 text-red-500/90 drop-shadow-md">Manual Task Cleanup</h2>
                       <p className="text-[11px] font-black text-zinc-500 uppercase tracking-[0.2em]">Execute instantaneous cluster cleanup</p>
                     </div>
                   </div>

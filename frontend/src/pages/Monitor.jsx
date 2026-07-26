@@ -17,7 +17,7 @@ const MetricsGrid = ({ usage }) => {
   const metrics = [
     { label: 'Cluster Capacity', value: usage.users, icon: Users, color: 'text-blue-400', glow: 'bg-blue-500/10' },
     { label: 'Active Streams', value: usage.tasks, icon: Activity, color: 'text-indigo-400', glow: 'bg-indigo-500/10' },
-    { label: 'Node Success', value: usage.task_successes, icon: CheckCircle2, color: 'text-emerald-400', glow: 'bg-emerald-500/10' },
+    { label: 'Task Success', value: usage.task_successes, icon: CheckCircle2, color: 'text-emerald-400', glow: 'bg-emerald-500/10' },
     { label: 'System Errors', value: usage.task_failures, icon: AlertTriangle, color: 'text-red-400', glow: 'bg-red-500/10' },
     { label: 'Bypassed Cycles', value: usage.task_missed, icon: Clock, color: 'text-amber-400', glow: 'bg-amber-500/10' },
     { label: 'Audit Volume', value: usage.audit_log_events, icon: Database, color: 'text-purple-400', glow: 'bg-purple-500/10' },
@@ -493,9 +493,9 @@ const Monitor = () => {
                      </div>
                    </div>
 
-                   {/* Background Compute Nodes */}
+                   {/* Background Tasks */}
                    <div className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 p-8 rounded-[2rem] flex flex-col items-center justify-center relative overflow-hidden group shadow-xl hover:bg-zinc-900/60 transition-colors">
-                     <span className="text-[11px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-5">Background Compute Nodes</span>
+                     <span className="text-[11px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-5">Background Tasks</span>
                      <div className="relative w-36 h-36 flex items-center justify-center">
                        <div className="absolute inset-0 bg-purple-500/10 rounded-full blur-[30px] group-hover:bg-purple-500/20 transition-colors"></div>
                        <svg className="w-full h-full transform -rotate-90 relative z-10">

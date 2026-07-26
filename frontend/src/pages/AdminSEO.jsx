@@ -153,7 +153,7 @@ const AdminSEO = () => {
                       value={data.title}
                       onChange={(e) => setData({ ...data, title: e.target.value })}
                       className="w-full bg-black/40 border border-zinc-800/50 rounded-xl p-6 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner"
-                      placeholder="Aktionfy | Autonomous Task Orchestration"
+                      placeholder="Aktionfy | Autonomous Task Automation"
                     />
                   </div>
 
@@ -210,7 +210,7 @@ const AdminSEO = () => {
                     <span>https://aktionfy.com</span>
                   </div>
                   <h3 className="text-xl text-indigo-400 hover:underline cursor-pointer font-medium mb-1 truncate">
-                    {data.title || 'Aktionfy | Autonomous Task Orchestration'}
+                    {data.title || 'Aktionfy | Autonomous Task Automation'}
                   </h3>
                   <p className="text-sm text-zinc-400 leading-normal line-clamp-2">
                     {data.description || 'Define your autonomous task execution pipelines. Schedule jobs, configure triggers, and scale workers in a secure sandbox environment.'}

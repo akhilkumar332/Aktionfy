@@ -216,11 +216,11 @@ const AdminUsers = () => {
     try {
       const res = await axios.post('/api/v1/admin/users/impersonate', { user_id: userId });
       if (res.data.success) {
-        notify('SUCCESS', 'Impersonation session established successfully');
+        notify('SUCCESS', 'Login session established successfully');
         window.location.href = '/dashboard';
       }
     } catch (err) {
-      notify('ERROR', 'Failed to initiate impersonation', err.response?.data?.error || err.message);
+      notify('ERROR', 'Failed to login as user', err.response?.data?.error || err.message);
     }
   };
 
