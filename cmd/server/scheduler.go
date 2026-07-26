@@ -362,6 +362,14 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 			return
 		}
 
+		if t.TriggerType.String == "date" || t.TriggerType.String == "webhook" || t.TriggerType.String == "manual" {
+			queries.UpdateTaskStatus(workerCtx, db.UpdateTaskStatusParams{
+				Status: pgtype.Text{String: StatusPaused, Valid: true},
+				ID:     t.ID,
+			})
+			return
+		}
+
 		var config map[string]interface{}
 		if err := json.Unmarshal(t.TriggerConfig, &config); err == nil {
 			if newNextRun, calcErr := calculateNextRun(t.TriggerType.String, config, time.Now().UTC()); calcErr == nil {
@@ -488,8 +496,8 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 					UserID:       t.UserID,
 				})
 				queries.UpdateTaskNextRun(workerCtx, db.UpdateTaskNextRunParams{
-					Status:  pgtype.Text{String: StatusPaused, Valid: true},
-					NextRun: pgtype.Timestamptz{Time: time.Time{}, Valid: false},
+					Status:  pgtype.Text{String: StatusActive, Valid: true},
+					NextRun: pgtype.Timestamptz{Time: nextRun, Valid: true},
 					ID:      t.ID,
 					UserID:  t.UserID,
 				})
@@ -564,6 +572,11 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 					completeTask(workerCtx, t.UserID, taskID, time.Now().UTC(), false, StatusActive)
 					return
 				}
+			}
+
+			if t.TriggerType.String == "date" || t.TriggerType.String == "webhook" || t.TriggerType.String == "manual" {
+				completeTask(workerCtx, t.UserID, taskID, time.Time{}, false, StatusCompleted)
+				return
 			}
 
 			var config map[string]interface{}

@@ -797,8 +797,8 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 						}
 
 						// Iteration 2: Advance the task status
-						if triggerType == TriggerDate {
-							completeTask(dbCtx, userID, taskID, time.Now().UTC(), false, StatusCompleted)
+						if triggerType == TriggerDate || triggerType == "webhook" || triggerType == "manual" {
+							completeTask(dbCtx, userID, taskID, time.Time{}, false, StatusCompleted)
 							return
 						}
 

@@ -251,7 +251,7 @@ func failSwarm(workerCtx context.Context, t db.Task, taskID string, executionID 
 			UserID:       t.UserID,
 		})
 		queries.UpdateTaskNextRun(workerCtx, db.UpdateTaskNextRunParams{
-			Status:  pgtype.Text{String: StatusPaused, Valid: true},
+			Status:  pgtype.Text{String: StatusActive, Valid: true},
 			NextRun: pgtype.Timestamptz{Time: nextRun, Valid: true},
 			ID:      t.ID,
 			UserID:  t.UserID,
@@ -296,6 +296,11 @@ func succeedSwarm(workerCtx context.Context, t db.Task, taskID string, execution
 		StepName:    "Swarm Orchestration Consensus Reached",
 		OutputData:  pgtype.Text{String: result, Valid: true},
 	})
+
+			if t.TriggerType.String == "date" || t.TriggerType.String == "webhook" || t.TriggerType.String == "manual" {
+				completeTask(workerCtx, t.UserID, taskID, time.Time{}, false, StatusCompleted)
+				return
+			}
 
 			var config map[string]interface{}
 			nextRun := time.Time{}

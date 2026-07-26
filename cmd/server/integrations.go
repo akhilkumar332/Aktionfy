@@ -171,7 +171,7 @@ func failIntegration(workerCtx context.Context, t db.Task, taskID string, execut
 			UserID:       t.UserID,
 		})
 		queries.UpdateTaskNextRun(workerCtx, db.UpdateTaskNextRunParams{
-			Status:  pgtype.Text{String: StatusPaused, Valid: true},
+			Status:  pgtype.Text{String: StatusActive, Valid: true},
 			NextRun: pgtype.Timestamptz{Time: nextRun, Valid: true},
 			ID:      t.ID,
 			UserID:  t.UserID,
@@ -216,6 +216,11 @@ func succeedIntegration(workerCtx context.Context, t db.Task, taskID string, exe
 		StepName:    "Integration Execution Success",
 		OutputData:  pgtype.Text{String: result, Valid: true},
 	})
+
+			if t.TriggerType.String == "date" || t.TriggerType.String == "webhook" || t.TriggerType.String == "manual" {
+				completeTask(workerCtx, t.UserID, taskID, time.Time{}, false, StatusCompleted)
+				return
+			}
 
 			var config map[string]interface{}
 			nextRun := time.Time{}
