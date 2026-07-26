@@ -77,16 +77,16 @@ const StepCompute = ({ formData, updateFormData, showVariableSelector, setShowVa
 
             <div className="space-y-4">
               <div className="flex items-center justify-between ml-1">
-                <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">Agent Council</span>
+                <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">Team Members</span>
                 <button 
                   type="button"
                   onClick={() => {
-                    const newCouncil = [...formData.swarm_config.council, { name: `Agent ${formData.swarm_config.council.length + 1}`, prompt: '' }];
+                    const newCouncil = [...formData.swarm_config.council, { name: `Member ${formData.swarm_config.council.length + 1}`, prompt: '' }];
                     updateFormData('swarm_config', { ...formData.swarm_config, council: newCouncil });
                   }}
                   className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest hover:text-indigo-300 flex items-center gap-1"
                 >
-                  <Plus size={10} /> Enlist Actor
+                  <Plus size={10} /> Add Member
                 </button>
               </div>
 

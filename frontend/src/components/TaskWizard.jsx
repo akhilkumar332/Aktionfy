@@ -45,7 +45,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
     swarm_config: {
       consensus_mode: 'voting',
       supervisor_prompt: 'You are the Executive Director. Read the council\'s debate and choose the best path.',
-      council: [{ name: 'AGENT_1', prompt: 'Analyze this data.' }]
+      council: [{ name: 'MEMBER_1', prompt: 'Analyze this data.' }]
     },
     max_retries: 3,
     backoff_strategy: 'exponential'
@@ -77,7 +77,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
       swarm_config: {
         consensus_mode: 'voting',
         supervisor_prompt: 'You are the Executive Director. Read the council\'s debate and choose the best path.',
-        council: [{ name: 'AGENT_1', prompt: 'Analyze this data.' }]
+        council: [{ name: 'MEMBER_1', prompt: 'Analyze this data.' }]
       },
       max_retries: 3,
       backoff_strategy: 'exponential'

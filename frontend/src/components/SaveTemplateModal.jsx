@@ -48,7 +48,7 @@ const SaveTemplateModal = ({ isOpen, onClose, task }) => {
         swarm_config: task.swarm_config || {
           consensus_mode: 'voting',
           supervisor_prompt: "You are the Executive Director. Read the council's debate and choose the best path.",
-          council: [{ name: 'AGENT_1', prompt: 'Analyze this data.' }]
+          council: [{ name: 'MEMBER_1', prompt: 'Analyze this data.' }]
         },
         is_bundle_root: task.is_bundle_root || false
       };
