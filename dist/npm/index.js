@@ -164,7 +164,6 @@ async function main() {
 main();
 
 async function callGeminiDirectly(params, apiKey) {
-  console.warn("Aktionfy Bridge Call: params =", JSON.stringify(params, null, 2));
   const contents = params.messages.map(m => {
     let role = m.role === 'assistant' ? 'model' : 'user';
     let text = '';
@@ -198,16 +197,6 @@ async function callGeminiDirectly(params, apiKey) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
   const maxOutputTokens = Math.max(params.maxTokens || 1000, 8192);
 
-  console.warn("Aktionfy Bridge Call: URL =", url.split('?key=')[0] + '?key=***');
-  console.warn("Aktionfy Bridge Call: requestBody =", JSON.stringify({
-    contents,
-    systemInstruction,
-    generationConfig: {
-      temperature: params.temperature,
-      maxOutputTokens: maxOutputTokens
-    }
-  }, null, 2));
-
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -227,7 +216,6 @@ async function callGeminiDirectly(params, apiKey) {
   }
 
   const json = await response.json();
-  console.warn("Aktionfy Bridge Call: response =", JSON.stringify(json, null, 2));
   
   // Join all parts of the candidate's content
   const text = json.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
