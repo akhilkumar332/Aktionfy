@@ -126,8 +126,8 @@ const AdminDatabase = () => {
         <div className="flex-1 flex gap-6 min-h-0">
           {/* Tables Sidebar */}
           <div className="w-64 shrink-0 flex flex-col bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden backdrop-blur-sm">
-            <div className="p-4 border-b border-zinc-800">
-              <div className="relative">
+            <div className="p-4 border-b border-zinc-800 flex justify-between items-center gap-2">
+              <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
                 <input
                   type="text"
@@ -137,6 +137,14 @@ const AdminDatabase = () => {
                   className="w-full pl-9 pr-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-brand-primary"
                 />
               </div>
+              <button 
+                onClick={fetchTables} 
+                disabled={loading}
+                className="p-2 bg-zinc-900 border border-zinc-700 rounded-lg text-zinc-400 hover:text-white disabled:opacity-50 transition-colors"
+                title="Refresh Tables"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              </button>
             </div>
             <div className="flex-1 overflow-y-auto p-2">
               {filteredTables.map(tableName => (
@@ -299,9 +307,9 @@ const AdminDatabase = () => {
                     {queryResult.rows.length === 0 && (
                       <tr>
                         <td colSpan={queryResult.columns.length || 1} className="px-4 py-8 text-center text-zinc-500">
-                          {queryResult.rows_affected !== undefined && queryResult.rows_affected > 0 
-                            ? `Query executed successfully. ${queryResult.rows_affected} rows affected.` 
-                            : 'Query executed successfully, but returned no rows.'}
+                          {queryResult.command_tag && queryResult.command_tag.startsWith('SELECT') && queryResult.rows.length === 0 
+                            ? 'Query executed successfully, but returned no rows.' 
+                            : `Query executed successfully. ${queryResult.rows_affected !== undefined ? queryResult.rows_affected : 0} rows affected.`}
                         </td>
                       </tr>
                     )}

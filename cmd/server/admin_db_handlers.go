@@ -113,7 +113,7 @@ func apiAdminGetTableDataHandler(c echo.Context) error {
 
 	var quotedColumns = make([]string, 0)
 	for _, col := range columns {
-		quotedColumns = append(quotedColumns, fmt.Sprintf(`"%s"`, col))
+		quotedColumns = append(quotedColumns, fmt.Sprintf(`"%s"`, strings.ReplaceAll(col, `"`, `""`)))
 	}
 
 	// Get rows using string formatting to force simple query protocol and guarantee text return values
@@ -197,11 +197,16 @@ func apiAdminExecuteQueryHandler(c echo.Context) error {
 
 	for _, fd := range fieldDescriptions {
 		name := string(fd.Name)
-		if count, exists := colNameCounts[name]; exists {
-			colNameCounts[name] = count + 1
-			name = fmt.Sprintf("%s_%d", name, count)
-		} else {
-			colNameCounts[name] = 1
+		originalName := name
+		suffix := 1
+		for {
+			if _, exists := colNameCounts[name]; exists {
+				name = fmt.Sprintf("%s_%d", originalName, suffix)
+				suffix++
+			} else {
+				colNameCounts[name] = 1
+				break
+			}
 		}
 		columns = append(columns, name)
 	}
@@ -230,6 +235,7 @@ func apiAdminExecuteQueryHandler(c echo.Context) error {
 			"columns": columns,
 			"rows": results,
 			"rows_affected": rows.CommandTag().RowsAffected(),
+			"command_tag": rows.CommandTag().String(),
 		},
 	})
 }
