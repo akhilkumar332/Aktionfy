@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useNotify } from '../context/NotificationContext';
 import { Database, Table, Code2, Search, Play, Loader2, ChevronLeft, ChevronRight, AlertCircle, RefreshCw } from 'lucide-react';
@@ -22,6 +22,8 @@ const AdminDatabase = () => {
   const [queryResult, setQueryResult] = useState(null);
   const [queryLoading, setQueryLoading] = useState(false);
   const [queryError, setQueryError] = useState('');
+
+  const tableRequestVersion = useRef(0);
 
   useEffect(() => {
     fetchTables();
@@ -48,18 +50,23 @@ const AdminDatabase = () => {
   };
 
   const fetchTableData = async (tableName, pageIndex) => {
+    const currentVersion = ++tableRequestVersion.current;
     setDataLoading(true);
     if (pageIndex === 0) setTableData(null);
     try {
       const offset = pageIndex * limit;
       const res = await axios.get(`/api/v1/admin/database/tables/${tableName}?limit=${limit}&offset=${offset}`);
-      if (res.data.success) {
+      if (currentVersion === tableRequestVersion.current && res.data.success) {
         setTableData(res.data.data);
       }
     } catch (err) {
-      notify('Failed to load table data', 'error');
+      if (currentVersion === tableRequestVersion.current) {
+        notify('Failed to load table data', 'error');
+      }
     } finally {
-      setDataLoading(false);
+      if (currentVersion === tableRequestVersion.current) {
+        setDataLoading(false);
+      }
     }
   };
 
@@ -283,6 +290,11 @@ const AdminDatabase = () => {
               className="w-full h-full bg-zinc-950 text-zinc-300 font-mono text-sm p-4 focus:outline-none resize-none"
               spellCheck="false"
               onKeyDown={(e) => {
+                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                  e.preventDefault();
+                  if (!queryLoading) executeQuery();
+                  return;
+                }
                 if (e.key === 'Tab') {
                   if (e.target.selectionStart === e.target.selectionEnd) {
                     e.preventDefault();

@@ -17,10 +17,12 @@ func apiAdminListTablesHandler(c echo.Context) error {
 	}
 
 	query := `
-		SELECT table_name 
-		FROM information_schema.tables 
-		WHERE table_schema = 'public'
-		ORDER BY table_type, table_name;
+		SELECT c.relname as table_name
+		FROM pg_catalog.pg_class c
+		JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+		WHERE n.nspname = 'public' 
+		  AND c.relkind IN ('r', 'v', 'm', 'p')
+		ORDER BY c.relkind, c.relname;
 	`
 	rows, err := dbPool.Query(c.Request().Context(), query)
 	if err != nil {
@@ -83,10 +85,15 @@ func apiAdminGetTableDataHandler(c echo.Context) error {
 
 	// Get columns
 	columnsQuery := `
-		SELECT column_name 
-		FROM information_schema.columns 
-		WHERE table_schema = 'public' AND table_name = $1
-		ORDER BY ordinal_position;
+		SELECT a.attname as column_name
+		FROM pg_catalog.pg_attribute a
+		JOIN pg_catalog.pg_class c ON a.attrelid = c.oid
+		JOIN pg_catalog.pg_namespace n ON c.relnamespace = n.oid
+		WHERE n.nspname = 'public' 
+		  AND c.relname = $1 
+		  AND a.attnum > 0 
+		  AND NOT a.attisdropped
+		ORDER BY a.attnum;
 	`
 	colRows, err := dbPool.Query(ctx, columnsQuery, tableName)
 	if err != nil {
