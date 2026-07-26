@@ -17,10 +17,10 @@ func apiAdminListTablesHandler(c echo.Context) error {
 	}
 
 	query := `
-		SELECT tablename 
-		FROM pg_catalog.pg_tables 
-		WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema'
-		ORDER BY tablename;
+		SELECT table_name 
+		FROM information_schema.tables 
+		WHERE table_schema = 'public'
+		ORDER BY table_type, table_name;
 	`
 	rows, err := dbPool.Query(c.Request().Context(), query)
 	if err != nil {
@@ -185,8 +185,17 @@ func apiAdminExecuteQueryHandler(c echo.Context) error {
 
 	fieldDescriptions := rows.FieldDescriptions()
 	var columns = make([]string, 0)
+	colNameCounts := make(map[string]int)
+
 	for _, fd := range fieldDescriptions {
-		columns = append(columns, string(fd.Name))
+		name := string(fd.Name)
+		if count, exists := colNameCounts[name]; exists {
+			colNameCounts[name] = count + 1
+			name = fmt.Sprintf("%s_%d", name, count)
+		} else {
+			colNameCounts[name] = 1
+		}
+		columns = append(columns, name)
 	}
 
 	var results = make([]map[string]interface{}, 0)
