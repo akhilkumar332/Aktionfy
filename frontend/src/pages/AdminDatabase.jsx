@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNotify } from '../context/NotificationContext';
-import { Database, Table, Code2, Search, Play, Maximize2, Loader2, ChevronLeft, ChevronRight, AlertCircle, RefreshCw } from 'lucide-react';
+import { Database, Table, Code2, Search, Play, Loader2, ChevronLeft, ChevronRight, AlertCircle, RefreshCw } from 'lucide-react';
 
 const AdminDatabase = () => {
   const { notify } = useNotify();
@@ -48,6 +48,7 @@ const AdminDatabase = () => {
 
   const fetchTableData = async (tableName, pageIndex) => {
     setDataLoading(true);
+    if (pageIndex === 0) setTableData(null);
     try {
       const offset = pageIndex * limit;
       const res = await axios.get(`/api/v1/admin/database/tables/${tableName}?limit=${limit}&offset=${offset}`);

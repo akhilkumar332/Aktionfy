@@ -35,6 +35,10 @@ func apiAdminListTablesHandler(c echo.Context) error {
 			tables = append(tables, table)
 		}
 	}
+	
+	if err := rows.Err(); err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to iterate tables: " + err.Error()})
+	}
 
 	return c.JSON(http.StatusOK, APIResponse{Success: true, Data: tables})
 }
@@ -98,6 +102,10 @@ func apiAdminGetTableDataHandler(c echo.Context) error {
 		}
 	}
 	colRows.Close()
+
+	if err := colRows.Err(); err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to iterate columns: " + err.Error()})
+	}
 
 	if len(columns) == 0 {
 		return c.JSON(http.StatusNotFound, APIResponse{Success: false, Error: "Table not found or has no columns"})
