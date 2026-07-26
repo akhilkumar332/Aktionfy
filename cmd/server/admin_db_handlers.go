@@ -54,13 +54,6 @@ func apiAdminGetTableDataHandler(c echo.Context) error {
 
 	tableName := c.Param("table_name")
 	
-	// Basic sanitization for table name (only alphanumeric and underscores)
-	for _, char := range tableName {
-		if !(char >= 'a' && char <= 'z') && !(char >= 'A' && char <= 'Z') && !(char >= '0' && char <= '9') && char != '_' {
-			return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Invalid table name"})
-		}
-	}
-
 	limitStr := c.QueryParam("limit")
 	offsetStr := c.QueryParam("offset")
 	
@@ -76,9 +69,12 @@ func apiAdminGetTableDataHandler(c echo.Context) error {
 
 	ctx := c.Request().Context()
 	
+	// Safely quote the table name to prevent SQL injection while allowing any characters (e.g. hyphens)
+	safeTableName := fmt.Sprintf(`"%s"`, strings.ReplaceAll(tableName, `"`, `""`))
+
 	// Get total count
 	var totalCount int64
-	err := dbPool.QueryRow(ctx, fmt.Sprintf("SELECT COUNT(*) FROM \"%s\"", tableName)).Scan(&totalCount)
+	err := dbPool.QueryRow(ctx, fmt.Sprintf("SELECT COUNT(*) FROM %s", safeTableName)).Scan(&totalCount)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to count rows: " + err.Error()})
 	}
@@ -124,7 +120,7 @@ func apiAdminGetTableDataHandler(c echo.Context) error {
 	}
 
 	// Get rows using string formatting to force simple query protocol and guarantee text return values
-	dataQuery := fmt.Sprintf("SELECT %s FROM \"%s\" LIMIT %d OFFSET %d", strings.Join(quotedColumns, ", "), tableName, limit, offset)
+	dataQuery := fmt.Sprintf("SELECT %s FROM %s LIMIT %d OFFSET %d", strings.Join(quotedColumns, ", "), safeTableName, limit, offset)
 	rows, err := dbPool.Query(ctx, dataQuery)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to query data: " + err.Error()})

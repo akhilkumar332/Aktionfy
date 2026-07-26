@@ -85,6 +85,7 @@ const AdminDatabase = () => {
       }
     } catch (err) {
       setQueryError(err.response?.data?.error || 'Failed to execute query');
+      setQueryResult(null);
     } finally {
       setQueryLoading(false);
     }
@@ -286,6 +287,7 @@ const AdminDatabase = () => {
             <textarea
               value={rawQuery}
               onChange={(e) => setRawQuery(e.target.value)}
+              disabled={queryLoading}
               placeholder="SELECT * FROM tasks WHERE status = 'error' LIMIT 10;"
               className="w-full h-full bg-zinc-950 text-zinc-300 font-mono text-sm p-4 focus:outline-none resize-none"
               spellCheck="false"
