@@ -72,7 +72,7 @@ func apiAdminGetTableDataHandler(c echo.Context) error {
 	
 	// Get total count
 	var totalCount int64
-	err := dbPool.QueryRow(ctx, fmt.Sprintf("SELECT COUNT(*) FROM %s", tableName)).Scan(&totalCount)
+	err := dbPool.QueryRow(ctx, fmt.Sprintf("SELECT COUNT(*) FROM \"%s\"", tableName)).Scan(&totalCount)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to count rows: " + err.Error()})
 	}
@@ -103,8 +103,13 @@ func apiAdminGetTableDataHandler(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, APIResponse{Success: false, Error: "Table not found or has no columns"})
 	}
 
+	var quotedColumns = make([]string, 0)
+	for _, col := range columns {
+		quotedColumns = append(quotedColumns, fmt.Sprintf(`"%s"`, col))
+	}
+
 	// Get rows using string formatting to force simple query protocol and guarantee text return values
-	dataQuery := fmt.Sprintf("SELECT %s FROM %s LIMIT %d OFFSET %d", strings.Join(columns, ", "), tableName, limit, offset)
+	dataQuery := fmt.Sprintf("SELECT %s FROM \"%s\" LIMIT %d OFFSET %d", strings.Join(quotedColumns, ", "), tableName, limit, offset)
 	rows, err := dbPool.Query(ctx, dataQuery)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to query data: " + err.Error()})
@@ -123,6 +128,10 @@ func apiAdminGetTableDataHandler(c echo.Context) error {
 			}
 		}
 		results = append(results, rowMap)
+	}
+	
+	if err := rows.Err(); err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Error iterating rows: " + err.Error()})
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
@@ -194,11 +203,16 @@ func apiAdminExecuteQueryHandler(c echo.Context) error {
 		results = append(results, rowMap)
 	}
 
+	if err := rows.Err(); err != nil {
+		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Error iterating rows: " + err.Error()})
+	}
+
 	return c.JSON(http.StatusOK, APIResponse{
 		Success: true, 
 		Data: map[string]interface{}{
 			"columns": columns,
 			"rows": results,
+			"rows_affected": rows.CommandTag().RowsAffected(),
 		},
 	})
 }

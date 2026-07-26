@@ -297,7 +297,11 @@ const AdminDatabase = () => {
                     ))}
                     {queryResult.rows.length === 0 && (
                       <tr>
-                        <td colSpan={queryResult.columns.length} className="px-4 py-8 text-center text-zinc-500">Query executed successfully, but returned no rows.</td>
+                        <td colSpan={queryResult.columns.length || 1} className="px-4 py-8 text-center text-zinc-500">
+                          {queryResult.rows_affected !== undefined && queryResult.rows_affected > 0 
+                            ? `Query executed successfully. ${queryResult.rows_affected} rows affected.` 
+                            : 'Query executed successfully, but returned no rows.'}
+                        </td>
                       </tr>
                     )}
                   </tbody>
