@@ -473,12 +473,12 @@ const Monitor = () => {
                      </div>
                    </div>
 
-                   {/* Active Neural Actors (WebSocket Presence) */}
+                   {/* Active System Users (WebSocket Presence) */}
                    <div className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 p-8 rounded-[2rem] flex flex-col items-center justify-center relative overflow-hidden group shadow-xl hover:bg-zinc-900/60 transition-colors">
                      <div className="absolute top-0 right-0 p-6 opacity-[0.02] group-hover:opacity-[0.05] group-hover:scale-110 transition-all duration-500">
                        <Users size={120} />
                      </div>
-                     <span className="text-[11px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-5">Active Neural Actors</span>
+                     <span className="text-[11px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-5">Active System Users</span>
                      <div className="text-5xl font-black text-white font-mono tracking-tighter tabular-nums bg-zinc-950/80 border border-zinc-800 px-8 py-6 rounded-[2rem] shadow-inner relative overflow-hidden drop-shadow-md">
                        {onlineUsers.length}
                        <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-emerald-500 opacity-40 animate-pulse shadow-[0_0_15px_rgba(16,185,129,1)]"></div>

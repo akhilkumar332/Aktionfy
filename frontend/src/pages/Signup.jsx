@@ -64,7 +64,7 @@ const Signup = () => {
   return (
     <AuthForm
       title="Join the Network"
-      subtitle="Neural Identity Initialization"
+      subtitle="Account Initialization"
       onSubmit={handleSubmit}
       isSubmitting={submitting}
       error={error}

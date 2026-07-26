@@ -315,7 +315,7 @@ const Templates = () => {
                     transition={{ delay: 0.1 }}
                     className="text-zinc-400 text-xs font-bold mt-2 uppercase tracking-[0.2em]"
                   >
-                    Industrial blueprints for high-frequency neural orchestration
+                    Industrial blueprints for high-frequency task orchestration
                   </motion.p>
                 </div>
                 
@@ -376,7 +376,7 @@ const Templates = () => {
                         <div>
                           <h4 className="text-sm font-black text-white uppercase tracking-tight truncate mb-2 group-hover:text-indigo-400 transition-colors pr-6">{t.name}</h4>
                           <p className="text-[10px] text-zinc-500 line-clamp-2 leading-relaxed font-medium">
-                            {t.description || "Baseline neural configuration."}
+                            {t.description || "Baseline workflow configuration."}
                           </p>
                         </div>
                         <div className="text-[10px] text-zinc-400 font-bold uppercase tracking-[0.2em] mt-6 flex items-center gap-2">
@@ -419,7 +419,7 @@ const Templates = () => {
 
                       <h3 className="text-lg font-black text-white uppercase tracking-tight mb-3 group-hover:text-indigo-400 transition-colors">{t.name}</h3>
                       <p className="text-xs text-zinc-400 leading-relaxed font-medium mb-10 flex-grow">
-                        {t.description || "Baseline neural configuration for autonomous task orchestration."}
+                        {t.description || "Baseline workflow configuration for autonomous task orchestration."}
                       </p>
 
                       <div className="flex items-center justify-between pt-6 border-t border-zinc-800/60">

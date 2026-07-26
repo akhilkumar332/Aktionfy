@@ -57,7 +57,7 @@ const QuickStart = () => (
       </section>
 
       <section>
-        <h2 className="text-2xl font-bold text-zinc-100 mb-6">2. Connect your Neural Bridge</h2>
+        <h2 className="text-2xl font-bold text-zinc-100 mb-6">2. Connect your Local Bridge</h2>
         <p className="mb-4">Establish a secure link between your local AI and the Aktionfy engine:</p>
         <div className="space-y-4">
           <pre className="p-6 rounded-2xl bg-zinc-900/50 text-emerald-400 font-mono text-sm shadow-xl">
@@ -185,7 +185,7 @@ const CoreConcepts = () => (
           <div>
             <h3 className="text-2xl font-bold text-zinc-100 mb-2">Zero-Key Bridge</h3>
             <p className="text-zinc-300 leading-relaxed">
-              Execution doesn't happen on our server. Instead, we use a **Neural Bridge** to notify your 
+              Execution doesn't happen on our server. Instead, we use a **Local Bridge** to notify your 
               local host that a task is due. Your host (Claude, Cursor, etc.) uses its own API keys 
               to "sample" the LLM. We never see your AI credentials.
             </p>
@@ -197,7 +197,7 @@ const CoreConcepts = () => (
             <Shield size={24} />
           </div>
           <div>
-            <h3 className="text-2xl font-bold text-zinc-100 mb-2">Neural Sandbox</h3>
+            <h3 className="text-2xl font-bold text-zinc-100 mb-2">Isolated Sandbox</h3>
             <p className="text-zinc-300 leading-relaxed">
               If you run custom logic (Native Actions), they are executed in a hardened Goja sandbox. 
               This ensures that user scripts cannot access the host filesystem or network, 
@@ -239,9 +239,9 @@ const CoreConcepts = () => (
             <Globe size={24} />
           </div>
           <div>
-            <h3 className="text-2xl font-bold text-zinc-100 mb-2">Zero-Shot Decision Routing</h3>
+            <h3 className="text-2xl font-bold text-zinc-100 mb-2">Smart Decision Routing</h3>
             <p className="text-zinc-300 leading-relaxed">
-              Dynamically route execution flow using our built-in <strong>Decision Router</strong>. This zero-shot LLM classifier intelligently evaluates parent task outputs and diverts workflow execution down specific paths based on semantic intent, eliminating the need for rigid if/else statements.
+              Dynamically route execution flow using our built-in <strong>Decision Router</strong>. This intelligent LLM classifier intelligently evaluates parent task outputs and diverts workflow execution down specific paths based on semantic intent, eliminating the need for rigid if/else statements.
             </p>
           </div>
         </div>
@@ -456,7 +456,7 @@ const WorkerArchitecture = () => (
       </section>
 
       <section>
-        <h2 className="text-2xl font-bold text-zinc-100 mb-4">The Reaper Process</h2>
+        <h2 className="text-2xl font-bold text-zinc-100 mb-4">The Background Cleanup Process</h2>
         <p>
           To ensure reliability, a separate <strong>Reaper</strong> process runs every 1 minute. 
           It scans the database for tasks that have been in the "processing" state for more than 5 minutes 

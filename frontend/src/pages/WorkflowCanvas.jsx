@@ -724,7 +724,7 @@ const WorkflowCanvas = () => {
         setEdges((eds) => addEdge({ ...params, type: 'smoothstep', animated: true, style: { stroke: '#d97706' } }, eds));
         // Refresh tasks to get updated dependency state
         fetchTasks();
-        notify('SUCCESS', 'Neural links established');
+        notify('SUCCESS', 'Node links established');
       }
     } catch (err) {
       notify('ERROR', 'Failed to link tasks', err.response?.data?.error || err.message);
@@ -780,7 +780,7 @@ const WorkflowCanvas = () => {
         setIsSidebarOpen(false);
         setIsDeleting(false);
         fetchTasks();
-        notify('SUCCESS', 'Neural node terminated');
+        notify('SUCCESS', 'Task node terminated');
       }
     } catch (err) {
       notify('ERROR', 'Failed to delete task', err.response?.data?.error || err.message);
@@ -822,7 +822,7 @@ const WorkflowCanvas = () => {
             </motion.h1>
             <div className="flex items-center gap-2 mt-1 ml-11">
                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-               <p className="text-zinc-400 font-bold uppercase text-[9px] tracking-[0.2em]">Neural Interconnect</p>
+               <p className="text-zinc-400 font-bold uppercase text-[9px] tracking-[0.2em]">Node Interconnect</p>
             </div>
           </div>
 
@@ -905,7 +905,7 @@ const WorkflowCanvas = () => {
         </button>
         
         <button 
-          onClick={() => notify('SUCCESS', 'Neural Validation Passed: All orchestration paths reachable.')}
+          onClick={() => notify('SUCCESS', 'Workflow Validation Passed: All orchestration paths reachable.')}
           className="p-3 text-zinc-400 rounded-xl hover:bg-emerald-500/10 hover:text-emerald-400 transition-all group"
           title="Validate Flow"
         >
@@ -963,7 +963,7 @@ const WorkflowCanvas = () => {
                 <div className="w-24 h-24 bg-zinc-900 rounded-full flex items-center justify-center mx-auto mb-8 border border-zinc-800/50">
                    <Layers size={40} className="text-zinc-700" />
                 </div>
-                <h2 className="text-xl font-black text-white uppercase tracking-widest mb-4">Neural Void</h2>
+                <h2 className="text-xl font-black text-white uppercase tracking-widest mb-4">Empty Workspace</h2>
                 <p className="text-zinc-400 text-xs font-bold uppercase tracking-widest leading-relaxed">No orchestration streams identified in this environment.</p>
                 <button 
                   onClick={handleCreateNew}
@@ -1025,7 +1025,7 @@ const WorkflowCanvas = () => {
               >
                 <div className="p-6 border-b border-zinc-800/50 flex items-center justify-between bg-zinc-900/30 shrink-0">
                   <div>
-                    <h3 className="text-xl font-bold text-white tracking-tight uppercase">Neural Inspector</h3>
+                    <h3 className="text-xl font-bold text-white tracking-tight uppercase">Node Inspector</h3>
                     <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-1">Core Logic & Telemetry</p>
                   </div>
                   <div className="flex items-center gap-3">
@@ -1162,7 +1162,7 @@ const WorkflowCanvas = () => {
                            </div>
 
                            <div className="space-y-4 flex-1 flex flex-col min-h-0 overflow-hidden">
-                             <div className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 ml-1 shrink-0">Neural Frame Details</div>
+                             <div className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 ml-1 shrink-0">Node Details</div>
                              <div className="bg-zinc-900 border border-zinc-800/50 rounded-2xl p-8 space-y-8 flex-1 flex flex-col min-h-0">
                                <div className="shrink-0">
                                  <div className="text-[9px] font-black uppercase text-zinc-300 tracking-widest mb-1.5">Step Designation</div>
@@ -1195,7 +1195,7 @@ const WorkflowCanvas = () => {
                                  </div>
                                </div>
                                <div className="flex items-center justify-between pt-6 border-t border-zinc-800/50 shrink-0">
-                                 <div className="text-[9px] font-black uppercase text-zinc-300 tracking-widest">Temporal Duration</div>
+                                 <div className="text-[9px] font-black uppercase text-zinc-300 tracking-widest">Execution Duration</div>
                                  <div className="text-xs font-black text-white font-mono bg-zinc-900 px-3 py-1.5 rounded-lg border border-zinc-800/50">
                                    {currentTraceIndex >= 0 ? ((new Date(traces[currentTraceIndex].end_time) - new Date(traces[currentTraceIndex].start_time)) / 1000).toFixed(3) : '0.000'}s
                                  </div>

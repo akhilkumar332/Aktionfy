@@ -35,7 +35,7 @@ const Login = () => {
   return (
     <AuthForm
       title="Welcome Back"
-      subtitle="Neural Identity Authentication"
+      subtitle="User Authentication"
       onSubmit={handleSubmit}
       isSubmitting={submitting}
       error={error}

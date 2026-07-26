@@ -109,7 +109,7 @@ const Vault = () => {
             animate={{ opacity: 1, x: 0 }}
             className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-zinc-500 tracking-tight"
           >
-            Neural Secret Vault
+            Secret Vault
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, x: -20 }}

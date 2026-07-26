@@ -388,7 +388,7 @@ const AdminUsers = () => {
       <header className="mb-10 flex flex-col xl:flex-row xl:items-end justify-between gap-6">
         <div>
           <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-zinc-500 tracking-tighter uppercase">Identity Nexus</h1>
-          <p className="text-zinc-400 text-[10px] font-black uppercase tracking-[0.2em] mt-2 ml-1">Manage and audit neural actor privileges and access logs</p>
+          <p className="text-zinc-400 text-[10px] font-black uppercase tracking-[0.2em] mt-2 ml-1">Manage and audit user privileges and access logs</p>
         </div>
         
         <div className="flex flex-wrap items-center gap-4 bg-zinc-900/50 p-2 rounded-[1.5rem] border border-zinc-800/60 shadow-inner w-fit">

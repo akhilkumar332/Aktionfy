@@ -227,7 +227,7 @@ const Insights = () => {
                       <BarChart3 size={24} />
                     </div>
                     <div>
-                      <h2 className="text-2xl font-black text-white uppercase tracking-tighter drop-shadow-md">Neural Throughput</h2>
+                      <h2 className="text-2xl font-black text-white uppercase tracking-tighter drop-shadow-md">Task Throughput</h2>
                       <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] mt-1">24-Hour Execution Frequency</p>
                     </div>
                   </div>
@@ -332,7 +332,7 @@ const Insights = () => {
                     <Zap size={24} />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-black text-white uppercase tracking-tighter drop-shadow-md">Hourly Chrono-Flux</h2>
+                    <h2 className="text-2xl font-black text-white uppercase tracking-tighter drop-shadow-md">Hourly Activity Trend</h2>
                     <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] mt-1">Execution load per hour over the last 24 hours</p>
                   </div>
                 </div>

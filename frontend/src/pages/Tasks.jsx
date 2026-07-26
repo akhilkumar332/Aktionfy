@@ -106,7 +106,7 @@ const Tasks = () => {
     try {
       if (action === 'delete') {
         await axios.delete(`/api/v1/tasks/${taskId}`);
-        notify('SUCCESS', 'Neural node terminated');
+        notify('SUCCESS', 'Task node terminated');
       } else {
         await axios.post(`/api/v1/tasks/${taskId}/${action}`);
         notify('SUCCESS', `Node ${action}d successfully`);
@@ -137,7 +137,7 @@ const Tasks = () => {
         }
       }
       if (action === 'delete') {
-        notify('SUCCESS', `Terminated ${ids.length} neural nodes`);
+        notify('SUCCESS', `Terminated ${ids.length} task nodes`);
       } else {
         notify('SUCCESS', `Successfully ${action}d ${ids.length} nodes`);
       }
@@ -248,7 +248,7 @@ const Tasks = () => {
             animate={{ opacity: 1, x: 0 }}
             className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-zinc-500 tracking-tight"
           >
-            Neural Streams
+            Task Streams
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, x: -20 }}
@@ -587,7 +587,7 @@ const Tasks = () => {
                           <button 
                              onClick={() => navigate(`/tasks/${task.id}/history`)} 
                              className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white transition-all shadow-lg" 
-                             title="Neural Archive"
+                             title="Task Archive"
                           >
                              <History size={16} />
                           </button>

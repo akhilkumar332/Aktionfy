@@ -232,7 +232,7 @@ const AdminSettings = () => {
                   </div>
 
                   <div className="space-y-4">
-                    <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.3em] ml-2">Stuck Task Reaper Lease (Minutes)</label>
+                    <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.3em] ml-2">Stuck Task Cleanup Lease (Minutes)</label>
                     <input 
                       type="number"
                       min="1"
@@ -316,7 +316,7 @@ const AdminSettings = () => {
                       <Trash2 size={32} />
                     </div>
                     <div>
-                      <h2 className="text-2xl font-black text-white uppercase tracking-tighter mb-2 text-red-500/90 drop-shadow-md">Manual Node Reaper</h2>
+                      <h2 className="text-2xl font-black text-white uppercase tracking-tighter mb-2 text-red-500/90 drop-shadow-md">Manual Node Cleanup</h2>
                       <p className="text-[11px] font-black text-zinc-500 uppercase tracking-[0.2em]">Execute instantaneous cluster cleanup</p>
                     </div>
                   </div>

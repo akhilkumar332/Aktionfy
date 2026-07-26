@@ -61,7 +61,7 @@ const AdminSEO = () => {
     try {
       await axios.post('/api/v1/admin/seo', data);
       if (isMounted.current) {
-        setMessage({ type: 'success', text: 'Neural identity manifest updated and broadcasted.' });
+        setMessage({ type: 'success', text: 'Identity manifest updated and broadcasted.' });
       }
     } catch (err) {
       if (isMounted.current) {
@@ -95,7 +95,7 @@ const AdminSEO = () => {
               animate={{ opacity: 1, y: 0 }}
               className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-zinc-500 tracking-tighter"
             >
-              Neural SEO
+              SEO Configuration
             </motion.h1>
             <p className="text-zinc-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-3 ml-1">Meta-Data Configuration & Global Search Presence</p>
           </div>
@@ -141,13 +141,13 @@ const AdminSEO = () => {
                    </div>
                    <div>
                       <h2 className="text-2xl font-black text-white uppercase tracking-tighter drop-shadow-md">Manifest Logic</h2>
-                      <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] mt-1">Neural Metadata Calibration</p>
+                      <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] mt-1">Metadata Calibration</p>
                    </div>
                 </div>
 
                 <div className="space-y-10 relative z-10">
                   <div className="space-y-4">
-                    <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.3em] ml-2">Neural Title (Meta Title)</label>
+                    <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.3em] ml-2">Page Title (Meta Title)</label>
                     <input 
                       type="text"
                       value={data.title}

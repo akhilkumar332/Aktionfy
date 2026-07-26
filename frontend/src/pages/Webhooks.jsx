@@ -153,7 +153,7 @@ const Webhooks = () => {
             >
               Outbound Hooks
             </motion.h1>
-            <p className="text-zinc-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-3 ml-1">Industrial event-driven synchronization with external neural clients.</p>
+            <p className="text-zinc-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-3 ml-1">Industrial event-driven synchronization with external external clients.</p>
           </div>
           <div className="flex items-center gap-4 bg-zinc-900/50 p-2 rounded-2xl border border-zinc-800/60 shadow-inner">
              <button 
@@ -201,7 +201,7 @@ const Webhooks = () => {
 
               <form onSubmit={handleCreate} className="space-y-6">
                 <div className="space-y-2">
-                  <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-1">Neural Endpoint (URL)</label>
+                  <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-1">Webhook Endpoint (URL)</label>
                   <input 
                     type="url"
                     value={newWebhook.endpoint_url}
@@ -267,7 +267,7 @@ const Webhooks = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="pro-table-header">
-                <th className="px-6 py-4">Neural Endpoint</th>
+                <th className="px-6 py-4">Webhook Endpoint</th>
                 <th className="px-6 py-4 text-center">Status</th>
                 <th className="px-6 py-4 text-center">Synchronized</th>
                 <th className="px-6 py-4 text-right">Overrides</th>

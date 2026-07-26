@@ -61,7 +61,7 @@ const UserTable = ({
                 className="w-4 h-4 accent-brand-primary rounded bg-zinc-900 border-zinc-800 cursor-pointer"
               />
             </th>
-            <th className="px-4 py-4 text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Neural Actor</th>
+            <th className="px-4 py-4 text-xs font-black uppercase tracking-[0.2em] text-zinc-400">System User</th>
             <th className="px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Signature</th>
             <th className="px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Privilege</th>
             <th className="px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Tier</th>

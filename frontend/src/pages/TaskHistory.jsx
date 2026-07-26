@@ -124,7 +124,7 @@ const TaskHistory = () => {
     setRestoring(versionId);
     try {
       await axios.post(`/api/v1/tasks/${id}/restore/${versionId}`);
-      notify('SUCCESS', 'Neural rollback executed successfully');
+      notify('SUCCESS', 'System rollback executed successfully');
       fetchHistory();
     } catch (err) {
       notify('ERROR', 'Failed to restore task state', err.response?.data?.error || err.message);
@@ -162,9 +162,9 @@ const TaskHistory = () => {
               animate={{ opacity: 1, y: 0 }}
               className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-zinc-500 tracking-tighter"
             >
-              Neural Timeline
+              Execution Timeline
             </motion.h1>
-            <p className="text-zinc-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-3 ml-1">Temporal execution record</p>
+            <p className="text-zinc-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-3 ml-1">Scheduled execution record</p>
           </div>
           
           <div className="flex items-center gap-4 bg-zinc-900/50 p-2 rounded-2xl border border-zinc-800/60 shadow-inner">
@@ -241,7 +241,7 @@ const TaskHistory = () => {
                       <Zap size={20} className="text-indigo-400" />
                     </div>
                     <div>
-                      <h2 className="text-xl font-black text-white uppercase tracking-tighter drop-shadow-md">Hourly Chrono-Flux</h2>
+                      <h2 className="text-xl font-black text-white uppercase tracking-tighter drop-shadow-md">Hourly Activity Trend</h2>
                       <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] mt-0.5">Execution load over time</p>
                     </div>
                   </div>

@@ -375,7 +375,7 @@ const Dashboard = () => {
                   <p className="text-5xl font-black text-white tabular-nums tracking-tighter">{taskCount}</p>
                 )}
               </div>
-              <p className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em]">Active Neural Streams</p>
+              <p className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em]">Active Task Streams</p>
               <p className="text-xs font-medium text-zinc-500 mt-4 leading-relaxed">Persistent orchestration threads executing across the cluster.</p>
            </div>
         </Link>
@@ -452,7 +452,7 @@ const Dashboard = () => {
                     <Key size={24} className="text-amber-400" />
                  </div>
                  <div>
-                    <h3 className="text-xl font-black text-white tracking-tight">Neural Access Key</h3>
+                    <h3 className="text-xl font-black text-white tracking-tight">API Access Key</h3>
                     <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mt-1">Private Protocol Token</p>
                  </div>
               </div>

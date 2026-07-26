@@ -77,7 +77,7 @@ const Workers = () => {
                </div>
                <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em]">Infrastructure</span>
             </motion.div>
-            <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-zinc-500 tracking-tighter uppercase">Reaper Registry</h1>
+            <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-zinc-500 tracking-tighter uppercase">Worker Registry</h1>
             <p className="text-zinc-400 text-[10px] font-black uppercase tracking-[0.2em] mt-3 ml-1">Operational status of distributed execution nodes.</p>
           </div>
           
@@ -118,7 +118,7 @@ const Workers = () => {
             >
                <div className="absolute top-0 right-1/4 w-96 h-96 bg-zinc-500/5 blur-[100px] rounded-full pointer-events-none group-hover:bg-zinc-500/10 transition-colors duration-1000"></div>
                <Server size={40} className="text-zinc-600 mx-auto mb-6 drop-shadow-md group-hover:scale-110 transition-transform" />
-               <h3 className="text-lg font-black text-zinc-400 uppercase tracking-tighter">No Active Reapers Identified</h3>
+               <h3 className="text-lg font-black text-zinc-400 uppercase tracking-tighter">No Active Workers Identified</h3>
                <p className="text-[11px] text-zinc-500 font-black mt-2 uppercase tracking-[0.2em]">Check cluster deployment status.</p>
             </motion.div>
           ) : (
