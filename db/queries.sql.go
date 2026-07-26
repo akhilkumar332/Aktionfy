@@ -2603,11 +2603,11 @@ func (q *Queries) PruneZombieWorkers(ctx context.Context, dollar_1 interface{}) 
 const reapStuckTasks = `-- name: ReapStuckTasks :execrows
 UPDATE tasks
 SET status = 'active', locked_by = NULL
-WHERE status = 'processing' AND next_run < $1
+WHERE status = 'processing' AND locked_at < $1
 `
 
-func (q *Queries) ReapStuckTasks(ctx context.Context, nextRun pgtype.Timestamptz) (int64, error) {
-	result, err := q.db.Exec(ctx, reapStuckTasks, nextRun)
+func (q *Queries) ReapStuckTasks(ctx context.Context, lockedAt pgtype.Timestamptz) (int64, error) {
+	result, err := q.db.Exec(ctx, reapStuckTasks, lockedAt)
 	if err != nil {
 		return 0, err
 	}

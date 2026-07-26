@@ -122,7 +122,7 @@ SELECT fn_complete_task($1, $2, $3);
 -- name: ReapStuckTasks :execrows
 UPDATE tasks
 SET status = 'active', locked_by = NULL
-WHERE status = 'processing' AND next_run < $1;
+WHERE status = 'processing' AND locked_at < $1;
 -- name: CheckTaskOwnership :one
 SELECT EXISTS(SELECT 1 FROM tasks WHERE id = $1 AND user_id = $2);
 
