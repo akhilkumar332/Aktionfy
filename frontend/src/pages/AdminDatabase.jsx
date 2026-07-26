@@ -188,63 +188,72 @@ const AdminDatabase = () => {
                     <div className="flex h-full items-center justify-center">
                       <Loader2 className="w-8 h-8 animate-spin text-brand-primary" />
                     </div>
-                  ) : tableData && tableData.columns.length > 0 ? (
-                    <table className="w-full text-left border-collapse text-sm">
-                      <thead className="sticky top-0 bg-zinc-900 border-b border-zinc-800 shadow-sm z-10">
-                        <tr>
-                          {tableData.columns.map(col => (
-                            <th key={col} className="px-4 py-3 font-medium text-zinc-300 whitespace-nowrap border-r border-zinc-800/50 last:border-0">{col}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-zinc-800/50">
-                        {tableData.rows.map((row, idx) => (
-                          <tr key={idx} className="hover:bg-zinc-800/50 transition-colors">
-                            {tableData.columns.map(col => (
-                              <td key={col} className="px-4 py-2 text-zinc-400 whitespace-nowrap max-w-xs truncate border-r border-zinc-800/50 last:border-0" title={row[col]?.toString() || 'null'}>
-                                {row[col] === null ? <span className="text-zinc-600 italic">null</span> : row[col].toString()}
-                              </td>
+                  ) : tableData ? (
+                    <div className="flex-1 flex flex-col min-h-0 bg-black/20">
+                      <div className="flex-1 overflow-auto relative">
+                        <table className="w-full text-left border-collapse text-sm">
+                          <thead className="sticky top-0 bg-zinc-900 border-b border-zinc-800 shadow-sm z-10">
+                            <tr>
+                              {tableData.columns.map(col => (
+                                <th key={col} className="px-4 py-3 font-medium text-zinc-300 whitespace-nowrap border-r border-zinc-800/50 last:border-0">{col}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-zinc-800/50">
+                            {tableData.rows.map((row, idx) => (
+                              <tr key={idx} className="hover:bg-zinc-800/50 transition-colors">
+                                {tableData.columns.map(col => (
+                                  <td key={col} className="px-4 py-2 text-zinc-400 whitespace-nowrap max-w-xs truncate border-r border-zinc-800/50 last:border-0" title={row[col]?.toString() || 'null'}>
+                                    {row[col] === null ? <span className="text-zinc-600 italic">null</span> : row[col].toString()}
+                                  </td>
+                                ))}
+                              </tr>
                             ))}
-                          </tr>
-                        ))}
-                        {tableData.rows.length === 0 && (
-                          <tr>
-                            <td colSpan={tableData.columns.length || 1} className="px-4 py-8 text-center text-zinc-500">No data in this table.</td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
+                            {tableData.rows.length === 0 && (
+                              <tr>
+                                <td colSpan={tableData.columns.length || 1} className="px-4 py-8 text-center text-zinc-500">No data in this table.</td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                      {/* Pagination */}
+                      {tableData.total > limit && (
+                        <div className="p-3 border-t border-zinc-800 flex items-center justify-between bg-zinc-900/80">
+                          <div className="text-xs text-zinc-400">
+                            Showing {page * limit + 1} to {Math.min((page + 1) * limit, tableData.total)} of {tableData.total}
+                          </div>
+                          <div className="flex gap-2">
+                            <button 
+                              disabled={page === 0 || dataLoading}
+                              onClick={() => setPage(p => p - 1)}
+                              className="p-1 rounded bg-zinc-800 text-zinc-300 hover:text-white disabled:opacity-50 transition-colors"
+                            >
+                              <ChevronLeft className="w-5 h-5" />
+                            </button>
+                            <button 
+                              disabled={(page + 1) * limit >= tableData.total || dataLoading}
+                              onClick={() => setPage(p => p + 1)}
+                              className="p-1 rounded bg-zinc-800 text-zinc-300 hover:text-white disabled:opacity-50 transition-colors"
+                            >
+                              <ChevronRight className="w-5 h-5" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : selectedTable ? (
+                    <div className="flex h-full items-center justify-center text-zinc-500 flex-col gap-4">
+                      <AlertCircle className="w-12 h-12 opacity-20 text-red-500" />
+                      <p>Failed to load data for {selectedTable}.</p>
+                    </div>
                   ) : (
-                    <div className="flex h-full items-center justify-center text-zinc-500">
-                      Could not load table structure.
+                    <div className="flex h-full items-center justify-center text-zinc-500 flex-col gap-4">
+                      <Database className="w-12 h-12 opacity-20" />
+                      <p>Select a table from the sidebar to view its data</p>
                     </div>
                   )}
                 </div>
-
-                {/* Pagination */}
-                {tableData && tableData.total > limit && (
-                  <div className="p-3 border-t border-zinc-800 flex items-center justify-between bg-zinc-900/80">
-                    <div className="text-xs text-zinc-400">
-                      Showing {page * limit + 1} to {Math.min((page + 1) * limit, tableData.total)} of {tableData.total}
-                    </div>
-                    <div className="flex gap-2">
-                      <button 
-                        disabled={page === 0 || dataLoading}
-                        onClick={() => setPage(p => p - 1)}
-                        className="p-1 rounded bg-zinc-800 text-zinc-300 hover:text-white disabled:opacity-50 transition-colors"
-                      >
-                        <ChevronLeft className="w-5 h-5" />
-                      </button>
-                      <button 
-                        disabled={(page + 1) * limit >= tableData.total || dataLoading}
-                        onClick={() => setPage(p => p + 1)}
-                        className="p-1 rounded bg-zinc-800 text-zinc-300 hover:text-white disabled:opacity-50 transition-colors"
-                      >
-                        <ChevronRight className="w-5 h-5" />
-                      </button>
-                    </div>
-                  </div>
-                )}
               </>
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center text-zinc-500">
@@ -275,13 +284,14 @@ const AdminDatabase = () => {
               spellCheck="false"
               onKeyDown={(e) => {
                 if (e.key === 'Tab') {
-                  e.preventDefault();
-                  const start = e.target.selectionStart;
-                  const end = e.target.selectionEnd;
-                  setRawQuery(rawQuery.substring(0, start) + '  ' + rawQuery.substring(end));
-                  setTimeout(() => {
-                    e.target.selectionStart = e.target.selectionEnd = start + 2;
-                  }, 0);
+                  if (e.target.selectionStart === e.target.selectionEnd) {
+                    e.preventDefault();
+                    const start = e.target.selectionStart;
+                    setRawQuery(rawQuery.substring(0, start) + '  ' + rawQuery.substring(start));
+                    setTimeout(() => {
+                      e.target.selectionStart = e.target.selectionEnd = start + 2;
+                    }, 0);
+                  }
                 }
               }}
             />
