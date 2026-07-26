@@ -39,13 +39,13 @@ const Login = () => {
       onSubmit={handleSubmit}
       isSubmitting={submitting}
       error={error}
-      submitText="Establish Connection"
-      alternateLinkText="Request Identity"
+      submitText="Log In"
+      alternateLinkText="Sign Up"
       alternateLinkTo="/signup"
-      alternateLinkMessage="New Actor?"
+      alternateLinkMessage="New User?"
     >
       <div className="space-y-2">
-        <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Identity (Email)</label>
+        <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Email Address</label>
         <input
           type="email"
           value={email}
@@ -57,7 +57,7 @@ const Login = () => {
       </div>
       <div className="space-y-2">
         <div className="flex items-center justify-between ml-1 pr-1">
-          <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest">Access Key</label>
+          <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest">Password</label>
           <button 
             type="button" 
             onClick={() => setShowPassword(!showPassword)}

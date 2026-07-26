@@ -85,7 +85,7 @@ const ProtectedRoute = ({ roles }) => {
       <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-white font-sans">
         <div className="flex flex-col items-center gap-4">
            <div className="w-10 h-10 border-2 border-brand-primary/20 border-t-brand-primary rounded-full animate-spin"></div>
-           <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 animate-pulse">Establishing Connection...</span>
+           <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 animate-pulse">Connecting...</span>
         </div>
       </div>
     );

@@ -58,7 +58,7 @@ const QuickStart = () => (
 
       <section>
         <h2 className="text-2xl font-bold text-zinc-100 mb-6">2. Connect your Local Bridge</h2>
-        <p className="mb-4">Establish a secure link between your local AI and the Aktionfy engine:</p>
+        <p className="mb-4">Establish a secure link between your local machine and the Aktionfy engine:</p>
         <div className="space-y-4">
           <pre className="p-6 rounded-2xl bg-zinc-900/50 text-emerald-400 font-mono text-sm shadow-xl">
             $ npx @aktionfy/mcp start --api-key YOUR_KEY

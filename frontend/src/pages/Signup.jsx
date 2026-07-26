@@ -64,17 +64,17 @@ const Signup = () => {
   return (
     <AuthForm
       title="Join the Network"
-      subtitle="Account Initialization"
+      subtitle="Create Account"
       onSubmit={handleSubmit}
       isSubmitting={submitting}
       error={error}
-      submitText="Request Initialization"
+      submitText="Sign Up"
       alternateLinkText="Authenticate"
       alternateLinkTo="/login"
       alternateLinkMessage="Already provisioned?"
     >
       <div className="space-y-2">
-        <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Desired Identity (Email)</label>
+        <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Desired Email Address</label>
         <input
           type="email"
           value={email}
@@ -87,7 +87,7 @@ const Signup = () => {
       
       <div className="space-y-2">
         <div className="flex items-center justify-between ml-1 pr-1">
-          <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest">Secure Protocol Key (Password)</label>
+          <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest">Password</label>
           <button 
             type="button" 
             onClick={() => setShowPassword(!showPassword)}
@@ -125,7 +125,7 @@ const Signup = () => {
 
       <div className="space-y-2 pt-2">
         <div className="flex items-center justify-between ml-1 pr-1">
-          <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest">Verify Protocol Key</label>
+          <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest">Confirm Password</label>
           <button 
             type="button" 
             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
