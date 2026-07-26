@@ -28,7 +28,7 @@ func apiAdminListTablesHandler(c echo.Context) error {
 	}
 	defer rows.Close()
 
-	var tables []string
+	var tables = make([]string, 0)
 	for rows.Next() {
 		var table string
 		if err := rows.Scan(&table); err == nil {
@@ -90,7 +90,7 @@ func apiAdminGetTableDataHandler(c echo.Context) error {
 	}
 	defer colRows.Close()
 
-	var columns []string
+	var columns = make([]string, 0)
 	for colRows.Next() {
 		var col string
 		if err := colRows.Scan(&col); err == nil {
@@ -103,15 +103,15 @@ func apiAdminGetTableDataHandler(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, APIResponse{Success: false, Error: "Table not found or has no columns"})
 	}
 
-	// Get rows
-	dataQuery := fmt.Sprintf("SELECT %s FROM %s LIMIT $1 OFFSET $2", strings.Join(columns, ", "), tableName)
-	rows, err := dbPool.Query(ctx, dataQuery, limit, offset)
+	// Get rows using string formatting to force simple query protocol and guarantee text return values
+	dataQuery := fmt.Sprintf("SELECT %s FROM %s LIMIT %d OFFSET %d", strings.Join(columns, ", "), tableName, limit, offset)
+	rows, err := dbPool.Query(ctx, dataQuery)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to query data: " + err.Error()})
 	}
 	defer rows.Close()
 
-	var results []map[string]interface{}
+	var results = make([]map[string]interface{}, 0)
 	for rows.Next() {
 		values := rows.RawValues()
 		rowMap := make(map[string]interface{})
@@ -175,12 +175,12 @@ func apiAdminExecuteQueryHandler(c echo.Context) error {
 	defer rows.Close()
 
 	fieldDescriptions := rows.FieldDescriptions()
-	var columns []string
+	var columns = make([]string, 0)
 	for _, fd := range fieldDescriptions {
 		columns = append(columns, string(fd.Name))
 	}
 
-	var results []map[string]interface{}
+	var results = make([]map[string]interface{}, 0)
 	for rows.Next() {
 		values := rows.RawValues()
 		rowMap := make(map[string]interface{})
