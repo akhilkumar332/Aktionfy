@@ -285,8 +285,16 @@ const AdminDatabase = () => {
 
           <div className="flex-1 bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden backdrop-blur-sm flex flex-col min-h-0">
             {queryResult ? (
-              <div className="flex-1 overflow-auto bg-zinc-950/50 relative">
-                <table className="w-full text-left border-collapse text-sm">
+              <div className="flex-1 overflow-x-auto min-h-0 relative bg-black/20 rounded-lg border border-zinc-800">
+                {queryResult.limit_reached && (
+                  <div className="m-4 bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 px-4 py-3 rounded-md flex items-center gap-3">
+                    <AlertCircle className="w-5 h-5 shrink-0" />
+                    <span className="text-sm">
+                      <strong>Memory Protection Limit Reached:</strong> Results have been safely truncated to the first 500 rows to prevent server exhaustion. Please use a LIMIT clause.
+                    </span>
+                  </div>
+                )}
+                <table className="w-full text-sm text-left">
                   <thead className="sticky top-0 bg-zinc-900 border-b border-zinc-800 shadow-sm z-10">
                     <tr>
                       {queryResult.columns.map(col => (

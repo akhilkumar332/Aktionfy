@@ -212,7 +212,12 @@ func apiAdminExecuteQueryHandler(c echo.Context) error {
 	}
 
 	var results = make([]map[string]interface{}, 0)
+	limitReached := false
 	for rows.Next() {
+		if len(results) >= 500 {
+			limitReached = true
+			break
+		}
 		values := rows.RawValues()
 		rowMap := make(map[string]interface{})
 		for i, v := range values {
@@ -225,6 +230,9 @@ func apiAdminExecuteQueryHandler(c echo.Context) error {
 		results = append(results, rowMap)
 	}
 
+	// Close rows explicitly to populate CommandTag correctly
+	rows.Close()
+
 	if err := rows.Err(); err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Error iterating rows: " + err.Error()})
 	}
@@ -236,6 +244,7 @@ func apiAdminExecuteQueryHandler(c echo.Context) error {
 			"rows": results,
 			"rows_affected": rows.CommandTag().RowsAffected(),
 			"command_tag": rows.CommandTag().String(),
+			"limit_reached": limitReached,
 		},
 	})
 }
