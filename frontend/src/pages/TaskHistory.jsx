@@ -206,7 +206,7 @@ const TaskHistory = () => {
                   onChange={(e) => setTriggerFilter(e.target.value)}
                   className="bg-transparent text-xs text-zinc-300 font-bold uppercase tracking-wider focus:outline-none border-none cursor-pointer pr-4"
                 >
-                  <option value="all">All Vectors</option>
+                  <option value="all">All Triggers</option>
                   <option value="cron">Cron</option>
                   <option value="webhook">Webhook</option>
                   <option value="manual">Manual</option>
@@ -380,7 +380,7 @@ const TaskHistory = () => {
                                   <p className="text-sm font-black text-white tabular-nums uppercase drop-shadow-sm">{new Date(version.created_at).toLocaleString()}</p>
                                 </div>
                                 <div className="text-right">
-                                  <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-1.5">Vector Type</p>
+                                  <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-1.5">Trigger Type</p>
                                   <div className="inline-flex items-center gap-2 px-3 py-1 bg-zinc-900 border border-zinc-800 rounded-xl text-[10px] font-black text-zinc-300 uppercase tracking-[0.2em] shadow-inner">
                                      <GitBranch size={12} className="text-indigo-400" /> {version.trigger_type}
                                   </div>

@@ -214,7 +214,7 @@ export const GeminiCliConfig = ({ installCommand, showKey, setShowKey, handleCop
              </button>
            </div>
         </div>
-        <p className="text-[10px] text-zinc-500 italic">This establishes a secure IPC bridge between the Gemini runtime and the Aktionfy engine.</p>
+        <p className="text-[10px] text-zinc-500 italic">This establishes a secure secure connection between the Gemini runtime and the Aktionfy engine.</p>
       </div>
     </div>
   </div>

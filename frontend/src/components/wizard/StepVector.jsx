@@ -10,7 +10,7 @@ const StepVector = ({ formData, updateFormData, setFormData }) => {
       className="space-y-8"
     >
       <div className="space-y-4">
-        <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Initiation Vector</label>
+        <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Task Trigger</label>
         <div className="grid grid-cols-3 gap-3">
           {[
             { id: 'cron', label: 'Temporal', icon: Calendar },

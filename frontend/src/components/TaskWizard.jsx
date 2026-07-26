@@ -225,7 +225,7 @@ const TaskWizard = ({ isOpen, onClose, onTaskCreated, initialData, isInline = fa
     { id: 1, name: 'Identity', icon: Command },
     { id: 2, name: 'Compute', icon: Cpu },
     { id: 3, name: 'Neural Link', icon: GitBranch },
-    { id: 4, name: 'Vector', icon: Zap },
+    { id: 4, name: 'Trigger', icon: Zap },
     { id: 5, name: 'Deploy', icon: Sparkles }
   ];
 

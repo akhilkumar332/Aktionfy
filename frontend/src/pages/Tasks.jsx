@@ -446,7 +446,7 @@ const Tasks = () => {
                     />
                   </th>
                   <th className="px-6 py-5">Designation</th>
-                  <th className="px-6 py-5">Vector</th>
+                  <th className="px-6 py-5">Trigger</th>
                   <th className="px-6 py-5 text-center">Status</th>
                   <th className="px-6 py-5 text-center">Next Emission</th>
                   <th className="px-8 py-5 text-right">Overrides</th>
@@ -667,7 +667,7 @@ const Tasks = () => {
                   
                   <div className="flex flex-col gap-3 mt-2">
                     <div className="flex items-center justify-between bg-zinc-900/50 px-4 py-3 rounded-xl border border-zinc-800/50 shadow-inner">
-                      <span className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em]">Vector</span>
+                      <span className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em]">Trigger</span>
                       <span className="text-[10px] font-black text-zinc-300 uppercase tracking-widest">{task.trigger_type}</span>
                     </div>
                     <div className="flex items-center justify-between bg-zinc-900/50 px-4 py-3 rounded-xl border border-zinc-800/50 shadow-inner">
