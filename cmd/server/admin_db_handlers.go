@@ -175,13 +175,18 @@ func apiAdminExecuteQueryHandler(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, APIResponse{Success: false, Error: "Query cannot be empty"})
 	}
 	
+	logQuery := req.Query
+	if len(logQuery) > 100000 {
+		logQuery = logQuery[:100000] + "... (truncated)"
+	}
+
 	// Ensure audit logging for custom queries
 	writeAuditLog(c.Request().Context(), AuditEvent{
 		UserID:       admin.ID,
 		Action:       "admin.database_query",
 		ResourceType: "database",
 		Metadata: map[string]interface{}{
-			"query": req.Query,
+			"query": logQuery,
 		},
 	})
 

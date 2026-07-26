@@ -155,22 +155,34 @@ const AdminDatabase = () => {
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-2">
-              {filteredTables.map(tableName => (
+              {filteredTables.slice(0, 200).map(tableName => (
                 <button
                   key={tableName}
-                  onClick={() => { setSelectedTable(tableName); setPage(0); }}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2 mb-1 ${
+                  onClick={() => {
+                    setSelectedTable(tableName);
+                    setPage(0);
+                  }}
+                  className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
                     selectedTable === tableName 
-                      ? 'bg-brand-primary/10 text-brand-primary border border-brand-primary/20' 
-                      : 'text-zinc-300 hover:bg-zinc-800 border border-transparent'
+                      ? 'bg-brand-primary/20 text-brand-primary' 
+                      : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-300'
                   }`}
                 >
-                  <Table className="w-4 h-4 shrink-0" />
-                  <span className="truncate">{tableName}</span>
+                  <div className="flex items-center gap-2">
+                    <Table className="w-4 h-4 shrink-0" />
+                    <span className="truncate">{tableName}</span>
+                  </div>
                 </button>
               ))}
               {filteredTables.length === 0 && (
-                <div className="text-center py-4 text-sm text-zinc-500">No tables found.</div>
+                <div className="px-3 py-8 text-center text-sm text-zinc-500">
+                  {searchQuery ? 'No tables match search' : 'No tables found'}
+                </div>
+              )}
+              {filteredTables.length > 200 && (
+                <div className="px-3 py-3 mt-2 border-t border-zinc-800/50 text-center text-xs text-zinc-500">
+                  Showing top 200 tables.<br/>Use search to find more.
+                </div>
               )}
             </div>
           </div>
@@ -297,7 +309,11 @@ const AdminDatabase = () => {
                   if (!queryLoading) executeQuery();
                   return;
                 }
-                if (e.key === 'Tab') {
+                if (e.key === 'Escape') {
+                  e.target.blur();
+                  return;
+                }
+                if (e.key === 'Tab' && !e.shiftKey) {
                   if (e.target.selectionStart === e.target.selectionEnd) {
                     e.preventDefault();
                     const start = e.target.selectionStart;
