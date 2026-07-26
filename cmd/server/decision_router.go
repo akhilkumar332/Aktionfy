@@ -149,7 +149,7 @@ INSTRUCTIONS:
 			Payload:   fmt.Sprintf(`{"task_id":"%s"}`, taskIDStr),
 		})
 		
-		completeTask(workerCtx, t.UserID, taskIDStr, time.Time{}, "paused")
+		completeTask(workerCtx, t.UserID, taskIDStr, time.Time{}, true, "paused")
 		return
 	}
 
@@ -178,7 +178,7 @@ INSTRUCTIONS:
 			EventType: "task_updated",
 			Payload:   fmt.Sprintf(`{"task_id":"%s"}`, taskIDStr),
 		})
-		completeTask(workerCtx, t.UserID, taskIDStr, time.Time{}, "paused")
+		completeTask(workerCtx, t.UserID, taskIDStr, time.Time{}, true, "paused")
 		return
 	}
 
@@ -204,5 +204,5 @@ INSTRUCTIONS:
 	})
 	
 	// Mark router task itself as complete
-	completeTask(workerCtx, t.UserID, taskIDStr, time.Time{}, "completed")
+	completeTask(workerCtx, t.UserID, taskIDStr, time.Time{}, true, "completed")
 }

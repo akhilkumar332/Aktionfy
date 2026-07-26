@@ -791,14 +791,14 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 							if evaluateWorkflowLoop(t.LoopCondition, stateMap) {
 								log.Printf("Loop condition met for task %s, triggering next iteration.", taskID)
 								// Trigger immediate re-run by setting next_run to now and status to active
-								completeTask(dbCtx, userID, taskID, time.Now().UTC(), StatusActive)
+								completeTask(dbCtx, userID, taskID, time.Now().UTC(), false, StatusActive)
 								return
 							}
 						}
 
 						// Iteration 2: Advance the task status
 						if triggerType == TriggerDate {
-							completeTask(dbCtx, userID, taskID, time.Now().UTC(), StatusCompleted)
+							completeTask(dbCtx, userID, taskID, time.Now().UTC(), false, StatusCompleted)
 							return
 						}
 
@@ -828,7 +828,7 @@ func (sm *SessionManager) MaintainHeartbeat(ctx context.Context, userID string, 
 							return
 						}
 
-						completeTask(dbCtx, userID, taskID, newNextRun)
+						completeTask(dbCtx, userID, taskID, newNextRun, false)
 					}(msg.Payload)
 				}
 			}

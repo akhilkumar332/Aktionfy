@@ -365,7 +365,7 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 		var config map[string]interface{}
 		if err := json.Unmarshal(t.TriggerConfig, &config); err == nil {
 			if newNextRun, calcErr := calculateNextRun(t.TriggerType.String, config, time.Now().UTC()); calcErr == nil {
-				completeTask(workerCtx, t.UserID, taskID, newNextRun)
+				completeTask(workerCtx, t.UserID, taskID, newNextRun, false)
 				return
 			}
 		}
@@ -561,24 +561,23 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 
 				if evaluateWorkflowLoop(t.LoopCondition, stateMap) {
 					log.Printf("Loop condition met for native task %s, triggering next iteration.", taskID)
-					completeTask(workerCtx, t.UserID, taskID, time.Now().UTC(), StatusActive)
+					completeTask(workerCtx, t.UserID, taskID, time.Now().UTC(), false, StatusActive)
 					return
 				}
 			}
 
 			var config map[string]interface{}
+			nextRun := time.Time{}
+			finalStatus := StatusPaused
+
 			if err := json.Unmarshal(t.TriggerConfig, &config); err == nil {
 				if newNextRun, calcErr := calculateNextRun(t.TriggerType.String, config, time.Now().UTC()); calcErr == nil {
-					completeTask(workerCtx, t.UserID, taskID, newNextRun)
-					return
+					nextRun = newNextRun
+					finalStatus = StatusActive
 				}
 			}
-			if err := queries.UpdateTaskStatus(workerCtx, db.UpdateTaskStatusParams{
-				Status: pgtype.Text{String: StatusPaused, Valid: true},
-				ID:     t.ID,
-			}); err != nil {
-				log.Printf("Error pausing task %s: %v", taskID, err)
-			}
+
+			completeTask(workerCtx, t.UserID, taskID, nextRun, false, finalStatus)
 		}
 		return
 	}
@@ -1334,7 +1333,7 @@ func parseLLMChoice(res interface{}) string {
 }
 
 // completeTask calls the PLpgSQL function to set the task back to active and update next_run
-func completeTask(ctx context.Context, userID string, taskID string, nextRun time.Time, status ...string) {
+func completeTask(ctx context.Context, userID string, taskID string, nextRun time.Time, skipDependents bool, status ...string) {
 	finalStatus := StatusActive
 	if len(status) > 0 {
 		finalStatus = status[0]
@@ -1348,7 +1347,7 @@ func completeTask(ctx context.Context, userID string, taskID string, nextRun tim
 
 	err := queries.CompleteTask(ctx, db.CompleteTaskParams{
 		TaskID:     tid,
-		NewNextRun: pgtype.Timestamptz{Time: nextRun, Valid: true},
+		NewNextRun: pgtype.Timestamptz{Time: nextRun, Valid: !nextRun.IsZero()},
 		NewStatus:  finalStatus,
 	})
 	if err != nil {
@@ -1386,6 +1385,10 @@ func completeTask(ctx context.Context, userID string, taskID string, nextRun tim
 			})
 			return // DO NOT trigger dependents if looping
 		}
+	}
+
+	if skipDependents {
+		return
 	}
 
 	// Step 1: Trigger dependent tasks immediately

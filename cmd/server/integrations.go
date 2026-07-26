@@ -217,17 +217,18 @@ func succeedIntegration(workerCtx context.Context, t db.Task, taskID string, exe
 		OutputData:  pgtype.Text{String: result, Valid: true},
 	})
 
-	var config map[string]interface{}
-	if err := json.Unmarshal(t.TriggerConfig, &config); err == nil {
-		if newNextRun, calcErr := calculateNextRun(t.TriggerType.String, config, time.Now().UTC()); calcErr == nil {
-			completeTask(workerCtx, t.UserID, taskID, newNextRun)
-			return
-		}
-	}
-	queries.UpdateTaskStatus(workerCtx, db.UpdateTaskStatusParams{
-		Status: pgtype.Text{String: StatusPaused, Valid: true},
-		ID:     t.ID,
-	})
+			var config map[string]interface{}
+			nextRun := time.Time{}
+			finalStatus := StatusPaused
+
+			if err := json.Unmarshal(t.TriggerConfig, &config); err == nil {
+				if newNextRun, calcErr := calculateNextRun(t.TriggerType.String, config, time.Now().UTC()); calcErr == nil {
+					nextRun = newNextRun
+					finalStatus = StatusActive
+				}
+			}
+
+			completeTask(workerCtx, t.UserID, taskID, nextRun, false, finalStatus)
 }
 
 // Implementations for Phase 2 integrations
