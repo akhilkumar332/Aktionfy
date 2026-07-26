@@ -21,6 +21,7 @@ const WorkflowCanvas = lazy(() => import('./pages/WorkflowCanvas'));
 const AdminUsers = lazy(() => import('./pages/AdminUsers'));
 const AdminSEO = lazy(() => import('./pages/AdminSEO'));
 const AdminSettings = lazy(() => import('./pages/AdminSettings'));
+const AdminDatabase = lazy(() => import('./pages/AdminDatabase'));
 const Insights = lazy(() => import('./pages/Insights'));
 const Workers = lazy(() => import('./pages/Workers'));
 const MiniApp = lazy(() => import('./pages/MiniApp'));
@@ -161,6 +162,7 @@ const AppRoutes = () => {
         <Route path="/admin/users" element={<AdminUsers />} />
         <Route path="/admin/seo" element={<AdminSEO />} />
         <Route path="/admin/settings" element={<AdminSettings />} />
+        <Route path="/admin/database" element={<AdminDatabase />} />
         <Route path="/admin/insights" element={<Insights />} />
         <Route path="/admin/workers" element={<Workers />} />
       </Route>

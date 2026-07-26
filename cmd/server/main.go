@@ -558,8 +558,12 @@ func main() {
 	admin.POST("/users/revoke-sessions", apiAdminRevokeSessionsHandler)
 	admin.POST("/users/rollover-key", apiAdminRolloverKeyHandler)
 	admin.GET("/invitations", apiAdminListInvitationsHandler)
-	admin.POST("/invitations", apiAdminCreateInvitationHandler)
 	admin.DELETE("/invitations/:id", apiAdminDeleteInvitationHandler)
+	admin.POST("/invitations", apiAdminCreateInvitationHandler)
+	admin.GET("/database/tables", apiAdminListTablesHandler)
+	admin.GET("/database/tables/:table_name", apiAdminGetTableDataHandler)
+	admin.POST("/database/query", apiAdminExecuteQueryHandler)
+
 	admin.POST("/maintenance", apiAdminToggleMaintenanceHandler)
 
 	e.POST("/webhooks/stripe", apiStripeWebhook)
