@@ -61,8 +61,8 @@ const Hero = () => {
             transition={{ delay: 0.5, duration: 1.5 }}
             className="mb-16 text-xl md:text-3xl text-zinc-400 font-bold leading-relaxed max-w-4xl text-balance tracking-tight"
           >
-            A world-class state machine for Model Context Protocol. <br className="hidden md:block" />
-            <span className="text-zinc-300">Durable scheduling. High-fidelity observability. Autonomous swarm logic.</span>
+            A world-class workflow engine for Model Context Protocol. <br className="hidden md:block" />
+            <span className="text-zinc-300">Reliable scheduling. Clear monitoring. Autonomous team logic.</span>
           </motion.p>
 
           {/* Premium CTAs */}

@@ -315,7 +315,7 @@ const Templates = () => {
                     transition={{ delay: 0.1 }}
                     className="text-zinc-400 text-xs font-bold mt-2 uppercase tracking-[0.2em]"
                   >
-                    Industrial blueprints for high-frequency task automation
+                    Ready-to-use templates for high-frequency task automation
                   </motion.p>
                 </div>
                 

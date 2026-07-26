@@ -53,7 +53,7 @@ const Features = () => {
     },
     {
       title: 'Auto-Recovery Reaper',
-      description: 'Built-in node reapers and dead letter queues. Failed tasks are automatically recovered or escalated based on custom policies.',
+      description: 'Built-in task cleaners and failed task queues. Failed tasks are automatically recovered or escalated based on custom policies.',
       icon: Repeat,
       color: 'text-red-400',
       bg: 'bg-red-500/10',

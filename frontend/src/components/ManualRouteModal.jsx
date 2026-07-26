@@ -45,7 +45,7 @@ const ManualRouteModal = ({ isOpen, onClose, task, tasks, onRouted }) => {
 
         <div className="p-8">
           <p className="text-sm text-zinc-400 mb-8 leading-relaxed">
-            {task?.task_type === 'swarm_router' ? 'Swarm' : 'Decision'} Node <span className={`font-bold ${task?.task_type === 'swarm_router' ? 'text-purple-400' : 'text-indigo-400'}`}>"{task?.name}"</span> could not automatically determine the next path. Please select a branch to continue execution.
+            {task?.task_type === 'swarm_router' ? 'Team' : 'Decision'} Node <span className={`font-bold ${task?.task_type === 'swarm_router' ? 'text-purple-400' : 'text-indigo-400'}`}>"{task?.name}"</span> could not automatically determine the next path. Please select a branch to continue execution.
           </p>
 
           <div className="space-y-4">

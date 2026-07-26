@@ -164,7 +164,7 @@ const AdminSEO = () => {
                       onChange={(e) => setData({ ...data, description: e.target.value })}
                       rows={4}
                       className="w-full bg-black/40 border border-zinc-800/50 rounded-2xl p-8 text-white font-mono text-sm focus:outline-none focus:border-brand-primary/50 transition-all shadow-inner resize-none custom-scrollbar"
-                      placeholder="Establish a high-performance state machine for your AI workflows..."
+                      placeholder="Establish a high-performance workflow engine for your AI workflows..."
                     />
                   </div>
 

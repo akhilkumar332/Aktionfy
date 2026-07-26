@@ -23,7 +23,7 @@ const StepDeploy = ({ formData, error }) => {
          <div className="pt-6 border-t border-zinc-800/50">
             <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">Logic Digest</span>
             <div className="mt-3 bg-zinc-900/50 border border-zinc-800/50 rounded-lg p-4 font-mono text-[10px] text-zinc-400 overflow-y-auto max-h-40 custom-scrollbar">
-               {formData.task_type === 'swarm_router' ? 'SWARM_PROTOCOL_INIT' : (formData.task_type === 'native_action' ? formData.native_code : formData.agent_prompt) || 'NULL_BUFFER'}
+               {formData.task_type === 'swarm_router' ? 'TEAM_PROTOCOL_INIT' : (formData.task_type === 'native_action' ? formData.native_code : formData.agent_prompt) || 'NULL_BUFFER'}
             </div>
          </div>
       </div>

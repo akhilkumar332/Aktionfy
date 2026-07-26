@@ -14,7 +14,7 @@ const Footer = () => {
               <span className="font-bold text-white tracking-tight">Aktionfy</span>
             </Link>
             <p className="text-xs leading-relaxed max-w-xs font-medium">
-              Precision orchestration for high-performance AI task delivery and swarm synchronization.
+              Precision orchestration for high-performance AI task delivery and team synchronization.
             </p>
           </div>
 

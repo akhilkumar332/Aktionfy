@@ -16,7 +16,7 @@ const StepCompute = ({ formData, updateFormData, showVariableSelector, setShowVa
             { id: 'mcp_sampling', icon: Cpu, label: 'LLM Task', textClass: 'text-indigo-500', borderClass: 'border-indigo-500/50', ringClass: 'ring-indigo-500/30' },
             { id: 'native_action', icon: Terminal, label: 'Sandbox', textClass: 'text-blue-500', borderClass: 'border-blue-500/50', ringClass: 'ring-blue-500/30' },
             { id: 'decision_router', icon: GitBranch, label: 'Router', textClass: 'text-emerald-500', borderClass: 'border-emerald-500/50', ringClass: 'ring-emerald-500/30' },
-            { id: 'swarm_router', icon: Users, label: 'Swarm', textClass: 'text-purple-500', borderClass: 'border-purple-500/50', ringClass: 'ring-purple-500/30' }
+            { id: 'swarm_router', icon: Users, label: 'Team', textClass: 'text-purple-500', borderClass: 'border-purple-500/50', ringClass: 'ring-purple-500/30' }
           ].map((type) => (
             <button 
               key={type.id}

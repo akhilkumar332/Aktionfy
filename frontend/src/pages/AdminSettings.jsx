@@ -153,7 +153,7 @@ const AdminSettings = () => {
             >
               Control Center
             </motion.h1>
-            <p className="text-zinc-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-3 ml-1">System-Wide Protocol & Node Governance</p>
+            <p className="text-zinc-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-3 ml-1">System-Wide Protocol & Task Management</p>
           </div>
           <div className="flex items-center gap-4 bg-zinc-900/50 p-2 rounded-2xl border border-zinc-800/60 shadow-inner">
              <button 
