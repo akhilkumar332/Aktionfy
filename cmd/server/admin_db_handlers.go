@@ -142,9 +142,9 @@ func apiAdminGetTableDataHandler(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Error iterating rows: " + err.Error()})
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
-		"success": true,
-		"data": map[string]interface{}{
+	return c.JSON(http.StatusOK, APIResponse{
+		Success: true,
+		Data: map[string]interface{}{
 			"columns": columns,
 			"rows":    results,
 			"total":   totalCount,

@@ -34,6 +34,7 @@ const AdminDatabase = () => {
   }, [selectedTable, page, activeTab]);
 
   const fetchTables = async () => {
+    setLoading(true);
     try {
       const res = await axios.get('/api/v1/admin/database/tables');
       if (res.data.success) {
@@ -69,7 +70,6 @@ const AdminDatabase = () => {
     }
     setQueryLoading(true);
     setQueryError('');
-    setQueryResult(null);
     try {
       const res = await axios.post('/api/v1/admin/database/query', { query: rawQuery });
       if (res.data.success) {
@@ -209,7 +209,7 @@ const AdminDatabase = () => {
                         ))}
                         {tableData.rows.length === 0 && (
                           <tr>
-                            <td colSpan={tableData.columns.length} className="px-4 py-8 text-center text-zinc-500">No data in this table.</td>
+                            <td colSpan={tableData.columns.length || 1} className="px-4 py-8 text-center text-zinc-500">No data in this table.</td>
                           </tr>
                         )}
                       </tbody>
@@ -273,6 +273,17 @@ const AdminDatabase = () => {
               placeholder="SELECT * FROM tasks WHERE status = 'error' LIMIT 10;"
               className="w-full h-full bg-zinc-950 text-zinc-300 font-mono text-sm p-4 focus:outline-none resize-none"
               spellCheck="false"
+              onKeyDown={(e) => {
+                if (e.key === 'Tab') {
+                  e.preventDefault();
+                  const start = e.target.selectionStart;
+                  const end = e.target.selectionEnd;
+                  setRawQuery(rawQuery.substring(0, start) + '  ' + rawQuery.substring(end));
+                  setTimeout(() => {
+                    e.target.selectionStart = e.target.selectionEnd = start + 2;
+                  }, 0);
+                }
+              }}
             />
           </div>
 
@@ -283,7 +294,12 @@ const AdminDatabase = () => {
             </div>
           )}
 
-          <div className="flex-1 bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden backdrop-blur-sm flex flex-col min-h-0">
+          <div className="flex-1 bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden backdrop-blur-sm flex flex-col min-h-0 relative">
+            {queryLoading && (
+              <div className="absolute inset-0 bg-zinc-950/50 backdrop-blur-[1px] flex items-center justify-center z-20">
+                <Loader2 className="w-8 h-8 animate-spin text-brand-primary" />
+              </div>
+            )}
             {queryResult ? (
               <div className="flex-1 overflow-x-auto min-h-0 relative bg-black/20 rounded-lg border border-zinc-800">
                 {queryResult.limit_reached && (
