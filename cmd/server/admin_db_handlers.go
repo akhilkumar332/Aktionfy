@@ -129,18 +129,26 @@ func apiAdminGetTableDataHandler(c echo.Context) error {
 
 	var results = make([]map[string]interface{}, 0)
 	for rows.Next() {
-		values := rows.RawValues()
+		values := make([]*string, len(columns))
+		scanArgs := make([]interface{}, len(columns))
+		for i := range values {
+			scanArgs[i] = &values[i]
+		}
+		if err := rows.Scan(scanArgs...); err != nil {
+			return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to scan row: " + err.Error()})
+		}
+		
 		rowMap := make(map[string]interface{})
 		for i, v := range values {
 			if v == nil {
 				rowMap[columns[i]] = nil
 			} else {
-				rowMap[columns[i]] = string(v) // Return raw strings for all data to avoid type issues
+				rowMap[columns[i]] = *v
 			}
 		}
 		results = append(results, rowMap)
 	}
-	
+
 	if err := rows.Err(); err != nil {
 		return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Error iterating rows: " + err.Error()})
 	}
@@ -226,13 +234,22 @@ func apiAdminExecuteQueryHandler(c echo.Context) error {
 			limitReached = true
 			break
 		}
-		values := rows.RawValues()
+		
+		values := make([]*string, len(columns))
+		scanArgs := make([]interface{}, len(columns))
+		for i := range values {
+			scanArgs[i] = &values[i]
+		}
+		if err := rows.Scan(scanArgs...); err != nil {
+			return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to scan row: " + err.Error()})
+		}
+		
 		rowMap := make(map[string]interface{})
 		for i, v := range values {
 			if v == nil {
 				rowMap[columns[i]] = nil
 			} else {
-				rowMap[columns[i]] = string(v)
+				rowMap[columns[i]] = *v
 			}
 		}
 		results = append(results, rowMap)
