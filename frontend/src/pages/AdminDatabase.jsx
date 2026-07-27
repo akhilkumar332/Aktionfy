@@ -86,6 +86,8 @@ const AdminDatabase = () => {
       if (res.data.success) {
         setQueryResult(res.data.data);
         notify('Query executed successfully', 'success');
+        // Refresh sidebar tables silently to reflect any potential DDL changes (CREATE/DROP)
+        fetchTables();
       }
     } catch (err) {
       setQueryError(err.response?.data?.error || 'Failed to execute query');
@@ -248,7 +250,7 @@ const AdminDatabase = () => {
                         </table>
                       </div>
                       {/* Pagination */}
-                      {tableData.total > limit && (
+                      {tableData.total > 0 && (
                         <div className="p-3 border-t border-zinc-800 flex items-center justify-between bg-zinc-900/80">
                           <div className="text-xs text-zinc-400">
                             Showing {(page * limit + 1).toLocaleString()} to {Math.min((page + 1) * limit, tableData.total).toLocaleString()} of {tableData.total.toLocaleString()}
@@ -326,11 +328,8 @@ const AdminDatabase = () => {
                 if (e.key === 'Tab' && !e.shiftKey) {
                   if (e.target.selectionStart === e.target.selectionEnd) {
                     e.preventDefault();
-                    const start = e.target.selectionStart;
-                    setRawQuery(rawQuery.substring(0, start) + '  ' + rawQuery.substring(start));
-                    setTimeout(() => {
-                      e.target.selectionStart = e.target.selectionEnd = start + 2;
-                    }, 0);
+                    // Use execCommand to preserve the browser's native Undo/Redo stack (Ctrl+Z)
+                    document.execCommand('insertText', false, '  ');
                   }
                 }
               }}

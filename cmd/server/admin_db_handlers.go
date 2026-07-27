@@ -197,7 +197,10 @@ func apiAdminExecuteQueryHandler(c echo.Context) error {
 	
 	logQuery := req.Query
 	if len(logQuery) > 100000 {
-		logQuery = logQuery[:100000] + "... (truncated)"
+		runes := []rune(logQuery)
+		if len(runes) > 100000 {
+			logQuery = string(runes[:100000]) + "... (truncated)"
+		}
 	}
 
 	// Ensure audit logging for custom queries
