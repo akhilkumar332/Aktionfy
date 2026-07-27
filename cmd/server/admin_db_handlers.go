@@ -116,10 +116,9 @@ func apiAdminGetTableDataHandler(c echo.Context) error {
 
 	var quotedColumns = make([]string, 0)
 	for _, col := range columns {
-		quotedColumns = append(quotedColumns, fmt.Sprintf(`"%s"`, strings.ReplaceAll(col, `"`, `""`)))
+		quotedColumns = append(quotedColumns, fmt.Sprintf(`"%s"::text`, strings.ReplaceAll(col, `"`, `""`)))
 	}
 
-	// Get rows using string formatting to force simple query protocol and guarantee text return values
 	dataQuery := fmt.Sprintf("SELECT %s FROM %s LIMIT %d OFFSET %d", strings.Join(quotedColumns, ", "), safeTableName, limit, offset)
 	rows, err := dbPool.Query(ctx, dataQuery)
 	if err != nil {
@@ -129,21 +128,27 @@ func apiAdminGetTableDataHandler(c echo.Context) error {
 
 	var results = make([]map[string]interface{}, 0)
 	for rows.Next() {
-		values := make([]*string, len(columns))
-		scanArgs := make([]interface{}, len(columns))
-		for i := range values {
-			scanArgs[i] = &values[i]
-		}
-		if err := rows.Scan(scanArgs...); err != nil {
-			return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to scan row: " + err.Error()})
+		values, err := rows.Values()
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to read row values: " + err.Error()})
 		}
 		
 		rowMap := make(map[string]interface{})
 		for i, v := range values {
 			if v == nil {
 				rowMap[columns[i]] = nil
-			} else {
-				rowMap[columns[i]] = *v
+				continue
+			}
+
+			switch val := v.(type) {
+			case [16]byte: // UUID
+				rowMap[columns[i]] = fmt.Sprintf("%x-%x-%x-%x-%x", val[0:4], val[4:6], val[6:8], val[8:10], val[10:16])
+			case time.Time:
+				rowMap[columns[i]] = val.Format(time.RFC3339)
+			case []byte:
+				rowMap[columns[i]] = string(val)
+			default:
+				rowMap[columns[i]] = fmt.Sprintf("%v", val)
 			}
 		}
 		results = append(results, rowMap)
@@ -235,21 +240,27 @@ func apiAdminExecuteQueryHandler(c echo.Context) error {
 			break
 		}
 		
-		values := make([]*string, len(columns))
-		scanArgs := make([]interface{}, len(columns))
-		for i := range values {
-			scanArgs[i] = &values[i]
-		}
-		if err := rows.Scan(scanArgs...); err != nil {
-			return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to scan row: " + err.Error()})
+		values, err := rows.Values()
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Error: "Failed to read row values: " + err.Error()})
 		}
 		
 		rowMap := make(map[string]interface{})
 		for i, v := range values {
 			if v == nil {
 				rowMap[columns[i]] = nil
-			} else {
-				rowMap[columns[i]] = *v
+				continue
+			}
+
+			switch val := v.(type) {
+			case [16]byte: // UUID
+				rowMap[columns[i]] = fmt.Sprintf("%x-%x-%x-%x-%x", val[0:4], val[4:6], val[6:8], val[8:10], val[10:16])
+			case time.Time:
+				rowMap[columns[i]] = val.Format(time.RFC3339)
+			case []byte:
+				rowMap[columns[i]] = string(val)
+			default:
+				rowMap[columns[i]] = fmt.Sprintf("%v", val)
 			}
 		}
 		results = append(results, rowMap)
