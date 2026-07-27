@@ -91,7 +91,7 @@ const BridgeAssistant = ({ isOpen, onClose, systemStatus, fetchStatus }) => {
       id: 'lobechat', 
       name: 'LobeChat', 
       icon: Globe, 
-      desc: 'Modern web-based LLM UI' 
+      desc: 'Modern web-based AI Assistant' 
     }
   ];
 

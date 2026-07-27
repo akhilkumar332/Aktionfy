@@ -61,7 +61,7 @@ const Features = () => {
     },
     {
       title: 'Multi-Path Branching',
-      description: 'Intelligent decision nodes that route execution based on LLM analysis or custom JS logic. Build dynamic self-healing workflows.',
+      description: 'Intelligent decision nodes that route execution based on AI analysis or custom JS logic. Build dynamic self-healing workflows.',
       icon: GitMerge,
       color: 'text-cyan-400',
       bg: 'bg-cyan-500/10',

@@ -13,14 +13,14 @@ const Overview = () => (
         <h2 className="text-2xl font-bold text-zinc-100 mb-4">The Persistence Gap</h2>
         <p>
           Standard MCP implementations are inherently transient. Tools only exist while a session is active, 
-          and there is no native way to trigger actions based on wall-clock time. If your LLM needs to 
+          and there is no native way to trigger actions based on wall-clock time. If your AI needs to 
           "remember" to perform a task in 4 hours, or every Monday at 9 AM, standard MCP fails.
         </p>
         <p className="mt-4 font-bold">Aktionfy fills this gap by providing:</p>
         <ul className="list-disc pl-6 space-y-2 mt-4 text-zinc-300">
           <li><strong>Autonomous Pipelines:</strong> Sequential task chaining where completion triggers the next action.</li>
           <li><strong>Zero-Key Privacy:</strong> AI execution happens on your machine. We never see or store your API keys.</li>
-          <li><strong>Prompt Injection:</strong> Dynamic resolution of <code>{`{{state.VARIABLE}}`}</code> and parent context injection.</li>
+          <li><strong>Instruction Injection:</strong> Dynamic resolution of <code>{`{{state.VARIABLE}}`}</code> and parent context injection.</li>
           <li><strong>Workflow Looping:</strong> Iterative execution support based on intelligent terminal conditions.</li>
           <li><strong>Durable State:</strong> Tasks survive server restarts and client disconnections.</li>
           <li><strong>Live Analytics:</strong> Real-time status updates and log streaming powered by Redis.</li>
@@ -79,7 +79,7 @@ const QuickStart = () => (
 
       <section>
         <h2 className="text-2xl font-bold text-zinc-100 mb-6">3. Schedule a Task</h2>
-        <p>Use your LLM (Claude/Cursor) to create a task via the <code>create_task</code> tool:</p>
+        <p>Use your AI (Claude/Cursor) to create a task via the <code>create_task</code> tool:</p>
         <div className="bg-zinc-900 p-6 rounded-2xl font-medium border border-zinc-800">
           "Create a task named 'Check News' that runs every hour at minute 0 using cron '0 * * * *' and asks me 'What's happening in AI today?'"
         </div>
@@ -187,7 +187,7 @@ const CoreConcepts = () => (
             <p className="text-zinc-300 leading-relaxed">
               Execution doesn't happen on our server. Instead, we use a **Local Bridge** to notify your 
               local host that a task is due. Your host (Claude, Cursor, etc.) uses its own API keys 
-              to "sample" the LLM. We never see your AI credentials.
+              to process the task. We never see your AI credentials.
             </p>
           </div>
         </div>
@@ -214,7 +214,7 @@ const CoreConcepts = () => (
             <h3 className="text-2xl font-bold text-zinc-100 mb-2">Workspace Environment</h3>
             <p className="text-zinc-300 leading-relaxed">
               Isolate configurations using Workspaces. You can define environment variables at the 
-              workspace level and inject them into any task prompt using the <code>{`{{env.KEY}}`}</code> 
+              workspace level and inject them into any task's instructions using the <code>{`{{env.KEY}}`}</code> 
               syntax, enabling seamless switching between dev, staging, and production contexts.
             </p>
           </div>
@@ -228,7 +228,7 @@ const CoreConcepts = () => (
             <h3 className="text-2xl font-bold text-zinc-100 mb-2">Sequential Pipelines</h3>
             <p className="text-zinc-300 leading-relaxed">
               Tasks can be chained together. When a parent task finishes, any dependent tasks flagged with 
-              <code>trigger_on_completion</code> are fired immediately. The parent task's LLM output is 
+              <code>trigger_on_completion</code> are fired immediately. The parent task's output is 
               automatically injected into the child task's context, enabling complex multi-step workflows.
             </p>
           </div>
@@ -241,7 +241,7 @@ const CoreConcepts = () => (
           <div>
             <h3 className="text-2xl font-bold text-zinc-100 mb-2">Smart Decision Routing</h3>
             <p className="text-zinc-300 leading-relaxed">
-              Dynamically route execution flow using our built-in <strong>Decision Router</strong>. This intelligent LLM classifier intelligently evaluates parent task outputs and diverts workflow execution down specific paths based on semantic intent, eliminating the need for rigid if/else statements.
+              Dynamically route execution flow using our built-in <strong>Decision Router</strong>. This intelligent AI classifier intelligently evaluates parent task outputs and diverts workflow execution down specific paths based on semantic intent, eliminating the need for rigid if/else statements.
             </p>
           </div>
         </div>
@@ -253,9 +253,9 @@ const CoreConcepts = () => (
           <div>
             <h3 className="text-2xl font-bold text-zinc-100 mb-2">Secure Injection</h3>
             <p className="text-zinc-300 leading-relaxed">
-              Our <strong>Prompt Resolver</strong> securely handles credentials. When a task runs, any 
-              <code>{`{{secrets.NAME}}`}</code> tags in your prompt are replaced with decrypted values 
-              from the vault. This happens in-memory just milliseconds before the physical LLM call.
+              Our <strong>Context Resolver</strong> securely handles credentials. When a task runs, any 
+              <code>{`{{secrets.NAME}}`}</code> tags in your instructions are replaced with decrypted values 
+              from the vault. This happens in-memory just milliseconds before the AI request.
             </p>
           </div>
         </div>
@@ -307,7 +307,7 @@ const ApiReference = () => (
               <span className="text-[10px] font-bold uppercase tracking-widest bg-blue-100 text-blue-700 px-2 py-0.5 rounded">Core</span>
             </div>
             <div className="p-6">
-              <p className="text-sm text-zinc-300">Modifies prompts, loop conditions, or dependencies for an existing task.</p>
+              <p className="text-sm text-zinc-300">Modifies instructions, loop conditions, or dependencies for an existing task.</p>
             </div>
           </div>
           <div className="border border-zinc-800/50 rounded-2xl overflow-hidden shadow-sm bg-zinc-900">
@@ -316,7 +316,7 @@ const ApiReference = () => (
               <span className="text-[10px] font-bold uppercase tracking-widest bg-purple-100 text-purple-700 px-2 py-0.5 rounded">Query</span>
             </div>
             <div className="p-6">
-              <p className="text-sm text-zinc-300">Perform full-text search across all tasks by name or agent prompt.</p>
+              <p className="text-sm text-zinc-300">Perform full-text search across all tasks by name or instructions.</p>
             </div>
           </div>
 
@@ -381,7 +381,7 @@ const ApiReference = () => (
            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
                  <p className="font-mono text-xs font-bold text-brand-primary">task_executed</p>
-                 <p className="text-[11px] text-zinc-300">Fires when a task completes successfully with LLM output.</p>
+                 <p className="text-[11px] text-zinc-300">Fires when a task completes successfully with AI output.</p>
               </div>
               <div className="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
                  <p className="font-mono text-xs font-bold text-red-500">task_failed</p>

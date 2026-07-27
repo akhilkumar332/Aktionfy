@@ -498,7 +498,7 @@ const TaskHistory = () => {
 
                   <div className={`p-4 bg-zinc-950/45 border rounded-xl space-y-2 ${(diffActive.agent_prompt || diffActive.native_code) !== (diffHistoric.agent_prompt || diffHistoric.native_code) ? 'border-amber-500/20 bg-amber-500/[0.01]' : 'border-zinc-800/80'}`}>
                     <div className="flex justify-between items-center mb-1">
-                      <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">Prompt / Execution Logic</span>
+                      <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">Task Instructions / Logic</span>
                       {(diffActive.agent_prompt || diffActive.native_code) !== (diffHistoric.agent_prompt || diffHistoric.native_code) && (
                         <span className="text-[8px] px-1.5 py-0.5 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded uppercase font-black">Changed</span>
                       )}
@@ -537,7 +537,7 @@ const TaskHistory = () => {
 
                   <div className={`p-4 bg-zinc-950/45 border rounded-xl space-y-2 ${(diffActive.agent_prompt || diffActive.native_code) !== (diffHistoric.agent_prompt || diffHistoric.native_code) ? 'border-amber-500/20 bg-amber-500/[0.01]' : 'border-zinc-800/80'}`}>
                     <div className="flex justify-between items-center mb-1">
-                      <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">Prompt / Execution Logic</span>
+                      <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">Task Instructions / Logic</span>
                       {(diffActive.agent_prompt || diffActive.native_code) !== (diffHistoric.agent_prompt || diffHistoric.native_code) && (
                         <span className="text-[8px] px-1.5 py-0.5 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded uppercase font-black">Changed</span>
                       )}

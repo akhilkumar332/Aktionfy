@@ -13,7 +13,7 @@ const StepCompute = ({ formData, updateFormData, showVariableSelector, setShowVa
         <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Execution Architecture</label>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { id: 'mcp_sampling', icon: Cpu, label: 'LLM Task', textClass: 'text-indigo-500', borderClass: 'border-indigo-500/50', ringClass: 'ring-indigo-500/30' },
+            { id: 'mcp_sampling', icon: Cpu, label: 'AI Assistant', textClass: 'text-indigo-500', borderClass: 'border-indigo-500/50', ringClass: 'ring-indigo-500/30' },
             { id: 'native_action', icon: Terminal, label: 'Sandbox', textClass: 'text-blue-500', borderClass: 'border-blue-500/50', ringClass: 'ring-blue-500/30' },
             { id: 'decision_router', icon: GitBranch, label: 'Router', textClass: 'text-emerald-500', borderClass: 'border-emerald-500/50', ringClass: 'ring-emerald-500/30' },
             { id: 'swarm_router', icon: Users, label: 'Team', textClass: 'text-purple-500', borderClass: 'border-purple-500/50', ringClass: 'ring-purple-500/30' }
@@ -33,7 +33,7 @@ const StepCompute = ({ formData, updateFormData, showVariableSelector, setShowVa
 
       <div className="space-y-4">
         <div className="flex items-center justify-between ml-1">
-          <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Task Logic</label>
+          <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Task Instructions</label>
           {formData.task_type !== 'swarm_router' && (
             <button 
               type="button"
@@ -66,7 +66,7 @@ const StepCompute = ({ formData, updateFormData, showVariableSelector, setShowVa
 
             {formData.swarm_config.consensus_mode === 'supervisor' && (
               <div className="space-y-2">
-                <label className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest ml-1">Supervisor Persona</label>
+                <label className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest ml-1">Team Leader Instructions</label>
                 <textarea 
                   value={formData.swarm_config.supervisor_prompt}
                   onChange={(e) => updateFormData('swarm_config', { ...formData.swarm_config, supervisor_prompt: e.target.value })}
@@ -121,7 +121,7 @@ const StepCompute = ({ formData, updateFormData, showVariableSelector, setShowVa
                         newCouncil[idx].prompt = e.target.value;
                         updateFormData('swarm_config', { ...formData.swarm_config, council: newCouncil });
                       }}
-                      placeholder="Logic definition..."
+                      placeholder="Member instructions..."
                       className="w-full bg-zinc-950 border border-zinc-800/50 rounded-lg p-3 text-[10px] text-zinc-300 focus:outline-none focus:border-indigo-500/30 h-20 resize-none shadow-inner"
                     />
                   </div>
@@ -134,7 +134,7 @@ const StepCompute = ({ formData, updateFormData, showVariableSelector, setShowVa
             <textarea 
               value={formData.task_type === 'native_action' ? formData.native_code : formData.agent_prompt}
               onChange={(e) => updateFormData(formData.task_type === 'native_action' ? 'native_code' : 'agent_prompt', e.target.value)}
-              placeholder={formData.task_type === 'mcp_sampling' ? "Establish objectives..." : "// Logic kernel..."}
+              placeholder={formData.task_type === 'mcp_sampling' ? "Establish objectives..." : "// Custom code..."}
               className="w-full pro-input !py-5 h-64 font-mono !text-[11px] shadow-inner resize-none custom-scrollbar"
             />
             <div className="absolute top-4 right-4 opacity-5 pointer-events-none group-focus-within:opacity-20 transition-opacity">
