@@ -193,10 +193,13 @@ const AdminDatabase = () => {
               <>
                 <div className="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/80">
                   <div className="flex items-center gap-3">
-                    <h3 className="font-semibold text-white">{selectedTable}</h3>
-                    <span className="px-2 py-0.5 rounded text-xs bg-zinc-800 text-zinc-400 border border-zinc-700">
-                      {tableData ? tableData.total : 0} rows
-                    </span>
+                    <Table className="w-5 h-5 text-brand-primary" />
+                    <h2 className="text-lg font-medium text-white">{selectedTable}</h2>
+                    {tableData && (
+                      <span className="px-2 py-0.5 rounded-full bg-zinc-800 text-xs text-zinc-400">
+                        {tableData.total.toLocaleString()} rows
+                      </span>
+                    )}
                   </div>
                   <button onClick={() => fetchTableData(selectedTable, page)} className="text-zinc-400 hover:text-white transition-colors" title="Refresh">
                     <RefreshCw className={`w-4 h-4 ${dataLoading ? 'animate-spin' : ''}`} />
@@ -241,7 +244,7 @@ const AdminDatabase = () => {
                       {tableData.total > limit && (
                         <div className="p-3 border-t border-zinc-800 flex items-center justify-between bg-zinc-900/80">
                           <div className="text-xs text-zinc-400">
-                            Showing {page * limit + 1} to {Math.min((page + 1) * limit, tableData.total)} of {tableData.total}
+                            Showing {(page * limit + 1).toLocaleString()} to {Math.min((page + 1) * limit, tableData.total).toLocaleString()} of {tableData.total.toLocaleString()}
                           </div>
                           <div className="flex gap-2">
                             <button 
@@ -371,9 +374,11 @@ const AdminDatabase = () => {
                     {queryResult.rows.length === 0 && (
                       <tr>
                         <td colSpan={queryResult.columns.length || 1} className="px-4 py-8 text-center text-zinc-500">
-                          {queryResult.command_tag && queryResult.command_tag.startsWith('SELECT') && queryResult.rows.length === 0 
-                            ? 'Query executed successfully, but returned no rows.' 
-                            : `Query executed successfully. ${queryResult.rows_affected !== undefined ? queryResult.rows_affected : 0} rows affected.`}
+                          {queryResult.command_tag && queryResult.command_tag.startsWith('SELECT') ? (
+                            'Query executed successfully, but returned no rows.'
+                          ) : (
+                            `Query executed successfully. ${(queryResult.rows_affected || 0).toLocaleString()} rows affected.`
+                          )}
                         </td>
                       </tr>
                     )}
