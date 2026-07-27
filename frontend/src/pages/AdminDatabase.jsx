@@ -146,6 +146,9 @@ const AdminDatabase = () => {
                   placeholder="Search tables..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') setSearchQuery('');
+                  }}
                   className="w-full pl-9 pr-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-brand-primary"
                 />
               </div>
@@ -350,10 +353,10 @@ const AdminDatabase = () => {
             {queryResult ? (
               <div className="flex-1 overflow-x-auto min-h-0 relative bg-black/20 rounded-lg border border-zinc-800">
                 {queryResult.limit_reached && (
-                  <div className="m-4 bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 px-4 py-3 rounded-md flex items-center gap-3">
+                  <div className="m-4 bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 px-4 py-3 rounded-md flex items-center gap-3 shrink-0">
                     <AlertCircle className="w-5 h-5 shrink-0" />
                     <span className="text-sm">
-                      <strong>Memory Protection Limit Reached:</strong> Results have been safely truncated to the first 500 rows to prevent server exhaustion. Please use a LIMIT clause.
+                      <strong>Memory Protection Limit Reached:</strong> Results have been safely truncated to the first 100 rows to prevent server exhaustion. Please use a LIMIT clause.
                     </span>
                   </div>
                 )}

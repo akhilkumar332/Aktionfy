@@ -111,7 +111,14 @@ func apiAdminGetTableDataHandler(c echo.Context) error {
 	}
 
 	if len(columns) == 0 {
-		return c.JSON(http.StatusNotFound, APIResponse{Success: false, Error: "Table not found or has no columns"})
+		return c.JSON(http.StatusOK, APIResponse{
+			Success: true,
+			Data: map[string]interface{}{
+				"columns": []string{},
+				"rows":    []map[string]interface{}{},
+				"total":   totalCount,
+			},
+		})
 	}
 
 	var quotedColumns = make([]string, 0)
@@ -235,7 +242,7 @@ func apiAdminExecuteQueryHandler(c echo.Context) error {
 	var results = make([]map[string]interface{}, 0)
 	limitReached := false
 	for rows.Next() {
-		if len(results) >= 500 {
+		if len(results) >= 100 {
 			limitReached = true
 			break
 		}
