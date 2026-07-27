@@ -57,7 +57,11 @@ const AdminDatabase = () => {
       const offset = pageIndex * limit;
       const res = await axios.get(`/api/v1/admin/database/tables/${tableName}?limit=${limit}&offset=${offset}`);
       if (currentVersion === tableRequestVersion.current && res.data.success) {
-        setTableData(res.data.data);
+        if (res.data.data.rows.length === 0 && pageIndex > 0) {
+          setPage(0);
+        } else {
+          setTableData(res.data.data);
+        }
       }
     } catch (err) {
       if (currentVersion === tableRequestVersion.current) {
@@ -131,9 +135,9 @@ const AdminDatabase = () => {
       </div>
 
       {activeTab === 'tables' ? (
-        <div className="flex-1 flex gap-6 min-h-0">
+        <div className="flex-1 flex flex-col md:flex-row gap-6 min-h-0">
           {/* Tables Sidebar */}
-          <div className="w-64 shrink-0 flex flex-col bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden backdrop-blur-sm">
+          <div className="w-full md:w-64 shrink-0 flex flex-col bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden backdrop-blur-sm">
             <div className="p-4 border-b border-zinc-800 flex justify-between items-center gap-2">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
@@ -226,7 +230,7 @@ const AdminDatabase = () => {
                             {tableData.rows.map((row, idx) => (
                               <tr key={idx} className="hover:bg-zinc-800/50 transition-colors">
                                 {tableData.columns.map(col => (
-                                  <td key={col} className="px-4 py-2 text-zinc-400 whitespace-nowrap max-w-xs truncate border-r border-zinc-800/50 last:border-0" title={row[col]?.toString() || 'null'}>
+                                  <td key={col} className="px-4 py-2 text-zinc-400 whitespace-nowrap max-w-xs truncate border-r border-zinc-800/50 last:border-0" title={row[col] === null ? 'null' : (row[col]?.toString() ?? '')}>
                                     {row[col] === null ? <span className="text-zinc-600 italic">null</span> : row[col].toString()}
                                   </td>
                                 ))}
@@ -304,7 +308,7 @@ const AdminDatabase = () => {
               onChange={(e) => setRawQuery(e.target.value)}
               disabled={queryLoading}
               placeholder="SELECT * FROM tasks WHERE status = 'error' LIMIT 10;"
-              className="w-full h-full bg-zinc-950 text-zinc-300 font-mono text-sm p-4 focus:outline-none resize-none"
+              className="w-full h-full bg-zinc-950 text-zinc-300 font-mono text-sm p-4 focus:outline-none resize-none disabled:opacity-50 disabled:cursor-not-allowed"
               spellCheck="false"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
