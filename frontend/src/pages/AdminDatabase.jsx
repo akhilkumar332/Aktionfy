@@ -210,7 +210,12 @@ const AdminDatabase = () => {
                       </span>
                     )}
                   </div>
-                  <button onClick={() => fetchTableData(selectedTable, page)} className="text-zinc-400 hover:text-white transition-colors" title="Refresh">
+                  <button 
+                    onClick={() => fetchTableData(selectedTable, page)} 
+                    disabled={dataLoading}
+                    className="text-zinc-400 hover:text-white transition-colors disabled:opacity-50" 
+                    title="Refresh"
+                  >
                     <RefreshCw className={`w-4 h-4 ${dataLoading ? 'animate-spin' : ''}`} />
                   </button>
                 </div>
@@ -350,7 +355,7 @@ const AdminDatabase = () => {
               </div>
             )}
             {queryResult ? (
-              <div className="flex-1 overflow-x-auto min-h-0 relative bg-black/20 rounded-lg border border-zinc-800">
+              <div className="flex-1 flex flex-col min-h-0 relative bg-black/20 rounded-lg border border-zinc-800">
                 {queryResult.limit_reached && (
                   <div className="m-4 bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 px-4 py-3 rounded-md flex items-center gap-3 shrink-0">
                     <AlertCircle className="w-5 h-5 shrink-0" />
@@ -359,19 +364,20 @@ const AdminDatabase = () => {
                     </span>
                   </div>
                 )}
-                <table className="w-full text-sm text-left">
-                  <thead className="sticky top-0 bg-zinc-900 border-b border-zinc-800 shadow-sm z-10">
-                    <tr>
-                      {queryResult.columns.map(col => (
-                        <th key={col} className="px-4 py-3 font-medium text-zinc-300 whitespace-nowrap border-r border-zinc-800/50 last:border-0">{col}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-800/50">
+                <div className="flex-1 overflow-auto min-h-0">
+                  <table className="w-full text-left border-collapse text-sm">
+                    <thead className="sticky top-0 bg-zinc-900 border-b border-zinc-800 shadow-sm z-10">
+                      <tr>
+                        {queryResult.columns.map(col => (
+                          <th key={col} className="px-4 py-3 font-medium text-zinc-300 whitespace-nowrap border-r border-zinc-800/50 last:border-0">{col}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-800/50">
                     {queryResult.rows.map((row, idx) => (
                       <tr key={idx} className="hover:bg-zinc-800/50 transition-colors">
                         {queryResult.columns.map(col => (
-                          <td key={col} className="px-4 py-2 text-zinc-400 whitespace-nowrap max-w-[400px] truncate border-r border-zinc-800/50 last:border-0" title={row[col]?.toString() || 'null'}>
+                          <td key={col} className="px-4 py-2 text-zinc-400 whitespace-nowrap max-w-[400px] truncate border-r border-zinc-800/50 last:border-0" title={row[col] === null ? 'null' : (row[col]?.toString() ?? '')}>
                             {row[col] === null ? <span className="text-zinc-600 italic">null</span> : row[col].toString()}
                           </td>
                         ))}
@@ -391,8 +397,9 @@ const AdminDatabase = () => {
                   </tbody>
                 </table>
               </div>
-            ) : (
-              <div className="flex h-full items-center justify-center text-zinc-600">
+            </div>
+          ) : (
+            <div className="flex h-full items-center justify-center text-zinc-600">
                 <Code2 className="w-12 h-12 text-zinc-800 mb-4" />
                 <p>Run a SQL query to see results here</p>
               </div>
