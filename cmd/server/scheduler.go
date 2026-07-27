@@ -282,6 +282,24 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 		emailStr = userEmail.String
 	}
 
+	// Auto-inject parent output into triggerPayload if this task was triggered by a parent and no payload exists
+	if triggerPayload == nil && t.DependsOnTaskID.Valid {
+		parentOutputBytes, err := queries.GetTaskOutput(workerCtx, db.GetTaskOutputParams{
+			TaskID: t.DependsOnTaskID,
+			UserID: t.UserID,
+		})
+		if err == nil && len(parentOutputBytes.String) > 0 {
+			var parsedPayload map[string]interface{}
+			if unmarshalErr := json.Unmarshal([]byte(parentOutputBytes.String), &parsedPayload); unmarshalErr == nil {
+				triggerPayload = parsedPayload
+			} else {
+				triggerPayload = map[string]interface{}{
+					"parent_output": parentOutputBytes.String,
+				}
+			}
+		}
+	}
+
 	if t.RequiresApproval.Bool && t.LastApprovalStatus.String != "approved" {
 		observeTaskOutcome("approval_required")
 		log.Printf("Task %s requires approval. Pausing.", taskID)
@@ -387,6 +405,8 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 	}
 
 	if t.TaskType.String == "native_action" {
+		resolvedNativeCode := resolvePromptVariables(workerCtx, t.UserID, t.NativeCode.String, triggerPayload, state)
+		
 		inputMap := map[string]interface{}{
 			"task_id":      taskID,
 			"execution_id": executionID,
@@ -407,7 +427,7 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 			log.Printf("Trace error for task %s: %v", taskID, err)
 		}
 
-		result, err := executeNativeJS(workerCtx, t.NativeCode.String, inputMap)
+		result, err := executeNativeJS(workerCtx, resolvedNativeCode, inputMap)
 		if err != nil {
 			log.Printf("Native execution failed for task %s: %v", taskID, err)
 			observeTaskOutcome("execution_failure")
@@ -601,12 +621,12 @@ func handleDispatchTask(workerCtx context.Context, t db.Task, triggerPayload map
 	}
 
 	if t.TaskType.String == "swarm_router" {
-		handleSwarmRouterAction(workerCtx, t, triggerPayload)
+		handleSwarmRouterAction(workerCtx, t, triggerPayload, state)
 		return
 	}
 
 	if t.TaskType.String == TaskTypeDecisionRouter {
-		handleDecisionRouterAction(workerCtx, t, triggerPayload)
+		handleDecisionRouterAction(workerCtx, t, triggerPayload, state)
 		return
 	}
 

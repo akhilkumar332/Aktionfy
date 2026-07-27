@@ -13,7 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-func handleDecisionRouterAction(workerCtx context.Context, t db.Task, triggerPayload map[string]interface{}) {
+func handleDecisionRouterAction(workerCtx context.Context, t db.Task, triggerPayload map[string]interface{}, state map[string]interface{}) {
 	taskIDStr := formatUUID(t.ID)
 	executionID := fmt.Sprintf("%s-%d", taskIDStr, time.Now().UTC().UnixNano())
 
@@ -36,6 +36,47 @@ func handleDecisionRouterAction(workerCtx context.Context, t db.Task, triggerPay
 			ErrorMessage: pgtype.Text{String: err.Error(), Valid: true},
 		})
 		RecordTaskExecutionTelemetry(workerCtx, t.UserID, taskIDStr, "failure")
+
+		failureCount := t.FailureCount.Int32 + 1
+		retryCount := t.RetryCount.Int32 + 1
+		maxRetries := t.MaxRetries.Int32
+		if maxRetries == 0 {
+			maxRetries = 3
+		}
+
+		if retryCount > maxRetries {
+			queries.UpdateTaskStatusAndFailureCount(workerCtx, db.UpdateTaskStatusAndFailureCountParams{
+				Status:       pgtype.Text{String: StatusError, Valid: true},
+				FailureCount: pgtype.Int4{Int32: failureCount, Valid: true},
+				RetryCount:   pgtype.Int4{Int32: retryCount, Valid: true},
+				ID:           t.ID,
+				UserID:       t.UserID,
+			})
+			queries.MoveToDLQ(workerCtx, db.MoveToDLQParams{
+				TaskID:       t.ID,
+				ErrorMessage: pgtype.Text{String: err.Error(), Valid: true},
+			})
+			sendFailureEmail(workerCtx, t.UserID, taskIDStr, t.Name)
+		} else {
+			backoffMinutes := int(retryCount) * 2
+			if t.BackoffStrategy.String == "exponential" {
+				backoffMinutes = 1 << retryCount
+			}
+			nextRun := time.Now().UTC().Add(time.Duration(backoffMinutes) * time.Minute)
+			queries.UpdateTaskStatusAndFailureCount(workerCtx, db.UpdateTaskStatusAndFailureCountParams{
+				Status:       pgtype.Text{String: StatusActive, Valid: true},
+				FailureCount: pgtype.Int4{Int32: failureCount, Valid: true},
+				RetryCount:   pgtype.Int4{Int32: retryCount, Valid: true},
+				ID:           t.ID,
+				UserID:       t.UserID,
+			})
+			queries.UpdateTaskNextRun(workerCtx, db.UpdateTaskNextRunParams{
+				Status:  pgtype.Text{String: StatusActive, Valid: true},
+				NextRun: pgtype.Timestamptz{Time: nextRun, Valid: true},
+				ID:      t.ID,
+				UserID:  t.UserID,
+			})
+		}
 	}
 
 	// Fetch downstream tasks
@@ -78,6 +119,8 @@ func handleDecisionRouterAction(workerCtx context.Context, t db.Task, triggerPay
 
 	payloadJSON, _ := json.MarshalIndent(triggerPayload, "", "  ")
 
+	resolvedAgentPrompt := resolvePromptVariables(workerCtx, t.UserID, t.AgentPrompt, triggerPayload, state)
+
 	systemPrompt := fmt.Sprintf(`You are an AI decision router (zero-shot classification).
 Your job is to evaluate the Trigger Payload according to the User's Routing Rules, and select EXACTLY ONE downstream Task ID to execute.
 
@@ -94,7 +137,7 @@ INSTRUCTIONS:
 1. Output ONLY the exact UUID of the chosen route.
 2. Do not include any other text, markdown, or explanation.
 3. If the payload is ambiguous, does not match any rules clearly, or you cannot decide, output the exact word: HALT`,
-		strings.Join(routesDesc, "\n"), t.AgentPrompt, string(payloadJSON))
+		strings.Join(routesDesc, "\n"), resolvedAgentPrompt, string(payloadJSON))
 
 	inputMap := map[string]interface{}{
 		"system_prompt": systemPrompt,

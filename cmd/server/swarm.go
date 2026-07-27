@@ -16,7 +16,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-func handleSwarmRouterAction(workerCtx context.Context, t db.Task, triggerPayload map[string]interface{}) {
+func handleSwarmRouterAction(workerCtx context.Context, t db.Task, triggerPayload map[string]interface{}, state map[string]interface{}) {
 	taskID := formatUUID(t.ID)
 	executionID := fmt.Sprintf("%s-%d", taskID, time.Now().UTC().UnixNano())
 
@@ -68,8 +68,9 @@ func handleSwarmRouterAction(workerCtx context.Context, t db.Task, triggerPayloa
 	}
 
 	// Begin the Swarm Debate
+	resolvedAgentPrompt := resolvePromptVariables(workerCtx, t.UserID, t.AgentPrompt, triggerPayload, state)
 	var conversationHistory []string
-	conversationHistory = append(conversationHistory, fmt.Sprintf("SYSTEM: The user prompt is: %s", t.AgentPrompt))
+	conversationHistory = append(conversationHistory, fmt.Sprintf("SYSTEM: The user prompt is: %s", resolvedAgentPrompt))
 
 	maxTurns := 5 // Hardcode or extract from config if we add it later
 
@@ -85,8 +86,9 @@ func handleSwarmRouterAction(workerCtx context.Context, t db.Task, triggerPayloa
 			stepName := fmt.Sprintf("Agent Turn: %s", agent.Name)
 
 			// Build LLM context
+			resolvedCouncilPrompt := resolvePromptVariables(workerCtx, t.UserID, agent.Prompt, triggerPayload, state)
 			llmPrompt := fmt.Sprintf("%s\n\nConversation so far:\n%s\n\nProvide your response. If consensus is reached and the task is fully complete, include the exact string [CONSENSUS_REACHED] in your response.",
-				agent.Prompt, strings.Join(conversationHistory, "\n"))
+				resolvedCouncilPrompt, strings.Join(conversationHistory, "\n"))
 
 			// Native LLM Call
 			response, llmErr := callOpenAI(apiKey, llmPrompt)
